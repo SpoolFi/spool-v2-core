@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
-import "./interfaces/IGuardManager.sol";
-
-contract GuardManager is IGuardManager {
+contract SmartVaultIncentives {
     /* ========== STATE VARIABLES ========== */
 
     /* ========== CONSTRUCTOR ========== */
@@ -11,14 +9,11 @@ contract GuardManager is IGuardManager {
     /**
      * @notice Initializes variables
      */
-    constructor()
-    {
-
-    }
+    constructor() {}
 
     /* ========== MODIFIERS ========== */
 
-    /* ========== EXTERNAL FUNCTIONS ========== */
+    /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
