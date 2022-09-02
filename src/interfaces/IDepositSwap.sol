@@ -6,6 +6,6 @@ interface IDepositSwap {
         address vault,
         uint256[] calldata inAssets,
         uint256[] calldata slippages,
-        uint256[] calldata depositAssets,
+        uint256[] calldata outAssets,
         address receiver) external returns (uint256 depositNFTId);
 }

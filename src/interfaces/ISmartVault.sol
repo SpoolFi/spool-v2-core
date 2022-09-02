@@ -10,10 +10,9 @@ interface ISmartVault is IVault {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /**
-     * @notice TODO
      * @return name Name of the vault
      */
-    function name() external view returns (string memory name);
+    function vaultName() external view returns (string memory name);
 
     /**
      * @notice Returns the address of the current owner.
@@ -68,26 +67,46 @@ interface ISmartVault is IVault {
 
     /**
      * @notice TODO
+     * @param depositor
      * @param assets
      * @param receiver
      * @param slippages
      * @return depositNFTId
      */
-    function depositFast(uint256[] calldata assets, address receiver, uint256[][] calldata slippages) external returns (uint256 depositNFTId);
+    function depositFor(
+        uint256[] calldata assets,
+        address receiver,
+        address depositor
+    ) external returns (uint256 depositNFTId);
 
     /**
      * @notice TODO
-     * @param shares
+     * @param assets
+     * @param receiver
+     * @param slippages
+     * @return receipt
+     */
+    function depositFast(
+        uint256[] calldata assets,
+        address receiver,
+        uint256[][] calldata slippages
+    ) external returns (uint256 receipt);
+
+    /**
+     * @notice Used to withdraw underlying asset.
+     * @param assets
+     * @param tokens
      * @param receiver
      * @param owner
      * @param slippages
      * @return assets
      */
-    function redeem(
-        uint256 shares,
+    function withdrawFast(
+        uint256[] calldata assets,
+        address[] tokens,
         address receiver,
-        address owner,
-        uint256[][] slippages
+        uint256[][] slippages,
+        address owner
     ) external returns (uint256[] memory assets);
 
     /**
