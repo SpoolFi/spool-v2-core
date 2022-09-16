@@ -4,7 +4,7 @@
 
 ### Comments
 
-[NatSpec format](https://docs.soliditylang.org/en/v0.8.15/natspec-format.html)
+[NatSpec format](https://docs.soliditylang.org/en/v0.8.17/natspec-format.html)
 
 - External and private must include `@notice`.
 - To explain technical implementation details you can optionally use `@dev`.
@@ -19,7 +19,7 @@ TO comment struct parameters use `@custom:member` followed by the parameter valu
 
 ### Function Names
 
-[NatSpec format](https://docs.soliditylang.org/en/v0.8.16/style-guide.html)
+[Solidity Style Guide](https://docs.soliditylang.org/en/v0.8.17/style-guide.html)
 
 - use pascal case for function names
 - private and internal function names start with the underscore "_"
