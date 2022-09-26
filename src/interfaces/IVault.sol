@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
-import "../../lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "../../lib/openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
 
 
 /**
@@ -110,7 +110,7 @@ interface IWithdraw {
      */
     function withdraw(
         uint256[] calldata assets,
-        address[] tokens,
+        address[] calldata tokens,
         address receiver,
         address owner
     ) external returns (uint256 receipt);
@@ -199,7 +199,7 @@ interface IRedeem {
  * @title IVault
  * @dev Multi-collateral take on ERC4626
  */
-interface IVault is IWithdraw, IRedeem, IDeposit, IMint, IERC20, IERC20Metadata {
+interface IVault is IWithdraw, IRedeem, IDeposit, IMint, IERC1155 {
     event Deposit(
         address indexed sender,
         address indexed owner,

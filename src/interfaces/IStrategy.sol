@@ -1,5 +1,6 @@
 pragma solidity ^0.8.16;
 
+import "../../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "./IVault.sol";
 
 /**
@@ -30,25 +31,27 @@ interface IStrategy is IVault {
 
     /**
      * @notice Fast withdraw
-     * @param shares Shares to fast withdraw
-     * @param slippages Array of slippage parameters to apply when withdrawing
-     * @param swapData Swap slippage and path array
-     * @return Withdrawn amount withdrawn
+     * @param assets TODO
+     * @param tokens TODO
+     * @param receiver TODO
+     * @param slippages TODO
+     * @param swapData TODO
+     * @return returnedAssets Withdrawn amount withdrawn
      */
     function withdrawFast(
         uint256[] calldata assets,
-        address[] tokens,
+        address[] calldata tokens,
         address receiver,
-        uint256[][] slippages,
+        uint256[][] calldata slippages,
         SwapData[] calldata swapData
-    ) external override returns(uint256[] assets);
+    ) external returns(uint256[] memory returnedAssets);
 
     /**
      * @notice TODO
-     * @param assets
-     * @param receiver
-     * @param slippages
-     * @return receipt
+     * @param assets TODO
+     * @param receiver TODO
+     * @param slippages TODO
+     * @return receipt TODO
      */
     function depositFast(
         uint256[] calldata assets,

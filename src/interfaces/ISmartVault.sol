@@ -15,21 +15,16 @@ interface ISmartVault is IVault {
     function vaultName() external view returns (string memory name);
 
     /**
-     * @notice Returns the address of the current owner.
-     */
-    function owner() public view virtual returns (address owner);
-
-    /**
      * @notice TODO
      * @return riskTolerance
      */
-    function riskTolerance() external view returns (int memory riskTolerance);
+    function riskTolerance() external view returns (int riskTolerance);
 
     /**
      * @notice TODO
      * @return riskProviderAddress
      */
-    function riskProvider() external view returns (address memory riskProviderAddress);
+    function riskProvider() external view returns (address riskProviderAddress);
 
     /**
      * @notice TODO
@@ -53,25 +48,24 @@ interface ISmartVault is IVault {
 
     /**
      * @notice TODO
-     * @param nftIds
-     * @return shares
+     * @param nftIds TODO
+     * @return shares TODO
      */
     function burnDepositNFTs(uint256[] calldata nftIds) external returns (uint256 shares);
 
     /**
      * @notice TODO
-     * @param nftIds
-     * @return assets
+     * @param nftIds TODO
+     * @return assets TODO
      */
     function burnWithdrawalNFTs(uint256[] calldata nftIds) external returns (uint256[] memory assets);
 
     /**
      * @notice TODO
-     * @param depositor
-     * @param assets
-     * @param receiver
-     * @param slippages
-     * @return depositNFTId
+     * @param assets TODO
+     * @param receiver TODO
+     * @param depositor TODO
+     * @return depositNFTId TODO
      */
     function depositFor(
         uint256[] calldata assets,
@@ -81,10 +75,10 @@ interface ISmartVault is IVault {
 
     /**
      * @notice TODO
-     * @param assets
-     * @param receiver
-     * @param slippages
-     * @return receipt
+     * @param assets TODO
+     * @param receiver TODO
+     * @param slippages TODO
+     * @return receipt TODO
      */
     function depositFast(
         uint256[] calldata assets,
@@ -94,24 +88,19 @@ interface ISmartVault is IVault {
 
     /**
      * @notice Used to withdraw underlying asset.
-     * @param assets
-     * @param tokens
-     * @param receiver
-     * @param owner
-     * @param slippages
-     * @return assets
+     * @param assets TODO
+     * @param tokens TODO
+     * @param receiver TODO
+     * @param owner TODO
+     * @param slippages TODO
+     * @param owner TODO
+     * @return returnedAssets  TODO
      */
     function withdrawFast(
         uint256[] calldata assets,
-        address[] tokens,
+        address[] calldata tokens,
         address receiver,
-        uint256[][] slippages,
+        uint256[][] calldata slippages,
         address owner
-    ) external returns (uint256[] memory assets);
-
-    /**
-     * @notice TODO
-     * @param newOwner
-     */
-    function transferOwnership(address newOwner) external;
+    ) external returns (uint256[] memory returnedAssets);
 }
