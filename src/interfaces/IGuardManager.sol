@@ -4,11 +4,10 @@ pragma solidity ^0.8.16;
 
 enum GuardParamType {
     VaultAddress,
-    UserAddress,
-    UserDepositAmounts,
+    Depositor,
+    Receiver,
+    Amounts,
     Tokens,
-    UserWithdrawalAmount,
-    UserWithdrawalTokens,
     RiskModel,
     RiskApetite,
     TokenID,
@@ -19,14 +18,22 @@ enum GuardParamType {
 struct Guard {
     address contractAddress;
     string methodSignature;
+    bytes32 expectedValue;
     GuardParamType[] methodParamTypes;
     bytes32[] methodParamValues;
     bytes2 operator;
-    bytes32 expectedValue;
+}
+
+struct RequestContext {
+    address receiver;
+    address depositor;
+    bool isDeposit;
+    uint256[] amounts;
+    address[] tokens;
 }
 
 interface IGuardManager {
-    function runGuards(address smartVaultId, address user) external;
+    function runGuards(address smartVaultId, RequestContext calldata context) external view;
     function readGuards(address smartVaultId) external view returns (Guard[] memory);
 
     event GuardsInitialized(address indexed smartVaultId);

@@ -87,7 +87,10 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
         uint256[] calldata assets,
         address receiver,
         address depositor
-    ) external returns (uint256 depositNFTId) { revert("0"); }
+    ) 
+        external 
+        runGuards(depositor, receiver, assets, _assetGroup, true)
+        returns (uint256 depositNFTId) { revert("0"); }
 
     /**
      * @notice TODO
@@ -353,4 +356,37 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * from.
      */
     function convertToAssets(uint256 shares) external view returns (uint256[] memory assets) { revert("0"); }
+
+    /* ========== INTERNAL FUNCTIONS ========== */
+
+    function _runGuards(
+        address depositor, 
+        address receiver, 
+        uint256[] memory amounts, 
+        address[] memory assets, 
+        bool isDeposit
+    ) internal view {
+        RequestContext memory context = RequestContext(
+            receiver,
+            depositor,
+            isDeposit,
+            amounts,
+            assets
+        );
+        guardManager.runGuards(address(this), context);
+    }
+
+    /* ========== MODIFIERS ========== */
+
+    modifier runGuards(
+        address depositor, 
+        address receiver, 
+        uint256[] memory amounts, 
+        address[] memory assets, 
+        bool isDeposit
+    ) {
+        _runGuards(depositor, receiver, amounts, assets, isDeposit);
+        _;
+    }
+
 }

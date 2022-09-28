@@ -21,11 +21,11 @@ contract GuardManager is Ownable, IGuardManager {
     /**
      * @notice Loop through and run guards for given Smart Vault.
      * @param smartVaultId Smart Vault address
-     * @param user User address
+     * @param context Request context
      */
     function runGuards(
         address smartVaultId, 
-        address user
+        RequestContext calldata context
     ) 
         external 
         view 
@@ -36,7 +36,7 @@ contract GuardManager is Ownable, IGuardManager {
         for(uint256 i = 0; i < guards.length; i++) {
             Guard memory guard = guards[i];
 
-            bytes memory encoded = _encodeFunctionCall(smartVaultId, guard, user);
+            bytes memory encoded = _encodeFunctionCall(smartVaultId, guard, context);
             (bool success, bytes memory data) = guard.contractAddress.staticcall(encoded);
             _checkResult(success, data, guard.operator, guard.expectedValue);
         }
@@ -144,7 +144,7 @@ contract GuardManager is Ownable, IGuardManager {
     function _encodeFunctionCall(
         address smartVaultId,
         Guard memory guard,
-        address user
+        RequestContext memory context
     ) 
         internal
         pure
@@ -165,17 +165,18 @@ contract GuardManager is Ownable, IGuardManager {
                 customValueCounter++;
             } else if (paramType == GuardParamType.VaultAddress) {
                 result = bytes.concat(result, abi.encode(smartVaultId));
-            } else if (paramType == GuardParamType.UserAddress) {
-                result = bytes.concat(result, abi.encode(user));
-
-            } else if (paramType == UserDepositAmounts) {
-            } else if (paramType == Tokens) {
-            } else if (paramType == UserWithdrawalAmount) {
-            } else if (paramType == UserWithdrawalTokens) {
-            } else if (paramType == RiskModel) {
-            } else if (paramType == RiskApetite) {
-            } else if (paramType == TokenID) {
-            } else if (paramType == AssetGroup) {
+            } else if (paramType == GuardParamType.Receiver) {
+                result = bytes.concat(result, abi.encode(context.receiver));
+            } else if (paramType == GuardParamType.Depositor) {
+                result = bytes.concat(result, abi.encode(context.depositor));
+            } else if (paramType == GuardParamType.Amounts) {
+                result = bytes.concat(result, abi.encode(context.amounts));
+            } else if (paramType == GuardParamType.Tokens) {
+                result = bytes.concat(result, abi.encode(context.tokens));
+            } else if (paramType == GuardParamType.RiskModel) {
+            } else if (paramType == GuardParamType.RiskApetite) {
+            } else if (paramType == GuardParamType.TokenID) {
+            } else if (paramType == GuardParamType.AssetGroup) {
             } else {
                 revert("Invalid param type");
             }
