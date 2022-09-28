@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
-import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
-import "../lib/sstore2/contracts/SSTORE2Map.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "@0xsequence/sstore2/contracts/SSTORE2Map.sol";
 import "./interfaces/IGuardManager.sol";
 
 enum GuardParamType {
@@ -29,31 +30,60 @@ struct Guard {
 }
 
 contract GuardManager is Ownable, IGuardManager {
+
     /* ========== STATE VARIABLES ========== */
 
-    /* ========== CONSTRUCTOR ========== */
+    constructor () {}
 
-    function _getGuards(address smartVaultId) internal view returns (Guard[] memory guards) { 
-        // TODO: Load guards from contract bytecode using that fancy lib
-        revert("0"); 
-    }
+    /* ========== EXTERNAL FUNCTIONS ========== */
 
-    function saveGuards(address smartVaultId, Guard[] calldata guards) external {
-        SSTORE2Map.write(smartVaultId, abi.encode(guards));
-    }
+    function runGuards(address smartVaultId) public view {
+        Guard[] memory guards = _readGuards(smartVaultId);
 
-    function toBytes(address a) public pure returns (bytes memory b){
-        assembly {
-            let m := mload(0x40)
-            a := and(a, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
-            mstore(add(m, 20), xor(0x140000000000000000000000000000000000000000, a))
-            mstore(0x40, add(m, 52))
-            b := m
+        // TODO: loop through guards
+        for(uint256 i = 0; i < guards.length; i++) {
+            Guard memory guard = guards[i];
+
+            bytes[] memory parameters = _resolveParameters(smartVaultId, guard);
+            bytes memory encoded = abi.encodeWithSignature(guard.methodSignature, parameters);
+            (bool success, bytes memory data) = guard.contractAddress.staticcall(encoded);
+            require(success, "Guard failed");
         }
     }
 
+    function readGuards(address smartVaultId) public view returns (Guard[] memory) {
+        return _readGuards(smartVaultId);
+    }
+
+    function setGuards(address smartVaultId, Guard[] calldata guards) public {
+        _writeGuards(smartVaultId, guards);
+    }
+
+    /* ========== MODIFIERS ========== */
+
+    /* ========== PUBLIC FUNCTIONS ========== */
+
+    /* ========== INTERNAL FUNCTIONS ========== */
+
+    function _readGuards(address smartVaultId) internal view returns (Guard[] memory guards) { 
+        string memory key = _addressToString(smartVaultId);
+        bytes memory value = SSTORE2Map.read(key);
+        return abi.decode(value, (Guard[]));
+    }
+
+    function _writeGuards(address smartVaultId, Guard[] calldata guards) internal {
+        string memory key = _addressToString(smartVaultId);
+        SSTORE2Map.write(key, abi.encode(guards));
+    }
+
+    function _addressToString(address address_) internal pure returns(string memory) {
+        return Strings.toHexString(uint256(uint160(address_)), 20);
+    }
+
+    /**
+     * @notice Resolve parameter values to be used in the guard function call - based on parameter types defined in the guard object.
+     */
     function _resolveParameters(address smartVaultId, Guard memory guard) internal view returns (bytes[] memory) {
-        // TODO: loop through methodParamValues + methodParamTypes and resolve values
         uint16 customValueCounter = 0;
         bytes[] memory params = new bytes[](guard.methodParamTypes.length);
 
@@ -74,30 +104,4 @@ contract GuardManager is Ownable, IGuardManager {
 
         return params;
     }
-
-    function runGuards(address smartVaultId, Guard[] memory guards) public view {
-        Guard[] memory guards = _getGuards(smartVaultId);
-
-        // TODO: loop through guards
-        for(uint256 i = 0; i < guards.length; i++) {
-            Guard memory guard = guards[i];
-
-            bytes[] memory parameters = _resolveParameters(smartVaultId, guard);
-            bytes memory encoded = abi.encodeWithSignature(guard.methodSignature, parameters);
-            (bool success, bytes memory data) = guard.contractAddress.staticcall(encoded);
-            require(success, "Guard failed");
-        }
-    }
-
-    /* ========== MODIFIERS ========== */
-
-    /* ========== EXTERNAL FUNCTIONS ========== */
-
-    /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
-
-    /* ========== PUBLIC FUNCTIONS ========== */
-
-    /* ========== INTERNAL FUNCTIONS ========== */
-
-    /* ========== PRIVATE FUNCTIONS ========== */
 }
