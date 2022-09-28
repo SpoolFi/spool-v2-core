@@ -167,6 +167,15 @@ contract GuardManager is Ownable, IGuardManager {
                 result = bytes.concat(result, abi.encode(smartVaultId));
             } else if (paramType == GuardParamType.UserAddress) {
                 result = bytes.concat(result, abi.encode(user));
+
+            } else if (paramType == UserDepositAmounts) {
+            } else if (paramType == Tokens) {
+            } else if (paramType == UserWithdrawalAmount) {
+            } else if (paramType == UserWithdrawalTokens) {
+            } else if (paramType == RiskModel) {
+            } else if (paramType == RiskApetite) {
+            } else if (paramType == TokenID) {
+            } else if (paramType == AssetGroup) {
             } else {
                 revert("Invalid param type");
             }
