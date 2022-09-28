@@ -26,8 +26,8 @@ struct Guard {
     string methodSignature;
     GuardParamType[] methodParamTypes;
     bytes32[] methodParamValues;
-    bytes operator;
-    bytes expectedValue;
+    bytes2 operator;
+    bytes32 expectedValue;
 }
 
 contract GuardManager is Ownable, IGuardManager {
@@ -46,8 +46,7 @@ contract GuardManager is Ownable, IGuardManager {
         for(uint256 i = 0; i < guards.length; i++) {
             Guard memory guard = guards[i];
 
-            bytes memory encoded = _resolveParameters(smartVaultId, guard);
-            console.logBytes(encoded);
+            bytes memory encoded = _encodeFunctionCall(smartVaultId, guard);
             (bool success, bytes memory data) = guard.contractAddress.staticcall(encoded);
             _checkResult(success, data, guard.operator, guard.expectedValue);
         }
@@ -101,20 +100,33 @@ contract GuardManager is Ownable, IGuardManager {
         return Strings.toHexString(uint256(uint160(address_)), 20);
     }
 
-    function _checkResult(bool success, bytes memory returnValue, bytes memory operator, bytes memory value) internal view {
+    function _checkResult(bool success, bytes memory returnValue, bytes2 operator, bytes32 value) internal view {
         require(success, "GuardManager::_checkResult: Guard call failed.");
+        string memory errorMessage = "GuardManager::_checkResult: A-a, go back.";
 
-        if (operator.length == bytes("==").length) {
-
+        if (operator == bytes2("==")) {
+            require(abi.decode(returnValue, (bytes32)) == value, errorMessage);
+        } else if (operator == bytes2("<=")) {
+            require(abi.decode(returnValue, (bytes32)) <= value, errorMessage);
+        } else if (operator == bytes2(">=")) {
+            require(abi.decode(returnValue, (bytes32)) >= value, errorMessage);
+        } else if (operator == bytes2("<")) {
+            require(abi.decode(returnValue, (bytes32)) < value, errorMessage);
+        } else if (operator == bytes2(">")) {
+            require(abi.decode(returnValue, (bytes32)) > value, errorMessage);
         } else {
-            require(abi.decode(returnValue, (bool)), "GuardManager::_checkResult: Guard stop.");
+            require(abi.decode(returnValue, (bool)), errorMessage);
         }
+    }
+
+    function compareOperator(bytes2 operator) external view returns (bool) {
+        return bytes2("==") == operator;
     }
 
     /**
      * @notice Resolve parameter values to be used in the guard function call - based on parameter types defined in the guard object.
      */
-    function _resolveParameters(address smartVaultId, Guard memory guard) internal view returns (bytes memory) {
+    function _encodeFunctionCall(address smartVaultId, Guard memory guard) internal view returns (bytes memory) {
         uint16 customValueCounter = 0;
 
         bytes4 methodID = bytes4(keccak256(abi.encodePacked(guard.methodSignature)));

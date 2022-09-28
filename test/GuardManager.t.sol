@@ -26,8 +26,8 @@ contract GuardManagerTest is Test {
             "isWhitelisted(address)",
             paramTypes,
             new bytes32[](0),
-            "",
-            ""
+            "==",
+            bytes32(uint(1))
         );
 
         Guard[] memory guards = new Guard[](1);
@@ -53,7 +53,7 @@ contract GuardManagerTest is Test {
 
         guardManager.setGuards(smartVaultId, _createGuards());
 
-        vm.expectRevert("GuardManager::_checkResult: Guard stop.");
+        vm.expectRevert("GuardManager::_checkResult: A-a, go back.");
         guardManager.runGuards(smartVaultId);
 
         mockGuard.setWhitelist(user, true);
