@@ -17,7 +17,7 @@ contract GuardManagerTest is Test {
         mockGuard = new MockGuard();
     }
 
-    function _createGuards() internal returns(Guard[] memory) {
+    function _createGuards() internal view returns(Guard[] memory) {
         GuardParamType[] memory paramTypes = new GuardParamType[](1);
         paramTypes[0] = GuardParamType.UserAddress;
 
@@ -49,15 +49,13 @@ contract GuardManagerTest is Test {
     }
 
     function testRunGuards() public {
-        vm.startPrank(user);
-
         guardManager.setGuards(smartVaultId, _createGuards());
 
         vm.expectRevert("GuardManager::_checkResult: A-a, go back.");
-        guardManager.runGuards(smartVaultId);
+        guardManager.runGuards(smartVaultId, address(user));
 
         mockGuard.setWhitelist(user, true);
         
-        guardManager.runGuards(smartVaultId);
+        guardManager.runGuards(smartVaultId, address(user));
     }
 }

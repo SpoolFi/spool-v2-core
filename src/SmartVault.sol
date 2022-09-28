@@ -5,19 +5,22 @@ import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC1155/ERC1155.sol";
 import "./interfaces/ISmartVault.sol";
+import "./interfaces/IGuardManager.sol";
 
 contract SmartVault is ISmartVault, Ownable, ERC1155 {
     /* ========== STATE VARIABLES ========== */
 
-    /* ========== CONSTRUCTOR ========== */
-
+    IGuardManager immutable internal guardManager;
     address[] internal _assetGroup;
+
+    /* ========== CONSTRUCTOR ========== */
 
     /**
      * @notice Initializes variables
      */
-    constructor(address[] memory _assets) ERC1155("") {
-        _assetGroup = _assets;
+    constructor(address[] memory assets_, IGuardManager guardManager_) ERC1155("") {
+        _assetGroup = assets_;
+        guardManager = guardManager_;
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
