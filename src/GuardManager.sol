@@ -2,6 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
+import "../lib/sstore2/contracts/SSTORE2Map.sol";
 import "./interfaces/IGuardManager.sol";
 
 enum GuardParamType {
@@ -37,8 +38,8 @@ contract GuardManager is Ownable, IGuardManager {
         revert("0"); 
     }
 
-    function saveGuards(address smartVaultId, Guard[] calldata guard) external {
-
+    function saveGuards(address smartVaultId, Guard[] calldata guards) external {
+        SSTORE2Map.write(smartVaultId, abi.encode(guards));
     }
 
     function toBytes(address a) public pure returns (bytes memory b){

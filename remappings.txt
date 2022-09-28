@@ -1,0 +1,4 @@
+ds-test/=lib/forge-std/lib/ds-test/src/
+forge-std/=lib/forge-std/src/
+@0xsequence/sstore2/=lib/sstore2/
+@0xsequence/create3/=lib/create3/
