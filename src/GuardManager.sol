@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
+import {console} from "forge-std/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@0xsequence/sstore2/contracts/SSTORE2Map.sol";
@@ -24,30 +25,31 @@ struct Guard {
     address contractAddress;
     string methodSignature;
     GuardParamType[] methodParamTypes;
-    bytes[] methodParamValues;
-    string operator;
-    bytes value;
+    bytes32[] methodParamValues;
+    bytes operator;
+    bytes expectedValue;
 }
 
 contract GuardManager is Ownable, IGuardManager {
 
     /* ========== STATE VARIABLES ========== */
 
+    mapping(address => bool) public guardsInitialized;
+
     constructor () {}
 
     /* ========== EXTERNAL FUNCTIONS ========== */
 
-    function runGuards(address smartVaultId) public view {
+    function runGuards(address smartVaultId) public view hasGuards(smartVaultId) {
         Guard[] memory guards = _readGuards(smartVaultId);
 
-        // TODO: loop through guards
         for(uint256 i = 0; i < guards.length; i++) {
             Guard memory guard = guards[i];
 
-            bytes[] memory parameters = _resolveParameters(smartVaultId, guard);
-            bytes memory encoded = abi.encodeWithSignature(guard.methodSignature, parameters);
+            bytes memory encoded = _resolveParameters(smartVaultId, guard);
+            console.logBytes(encoded);
             (bool success, bytes memory data) = guard.contractAddress.staticcall(encoded);
-            require(success, "Guard failed");
+            _checkResult(success, data, guard.operator, guard.expectedValue);
         }
     }
 
@@ -55,15 +57,34 @@ contract GuardManager is Ownable, IGuardManager {
         return _readGuards(smartVaultId);
     }
 
-    function setGuards(address smartVaultId, Guard[] calldata guards) public {
+    function setGuards(address smartVaultId, Guard[] calldata guards) public hasNoGuards(smartVaultId) {
         _writeGuards(smartVaultId, guards);
+        guardsInitialized[smartVaultId] = true;
     }
 
     /* ========== MODIFIERS ========== */
 
+    modifier hasNoGuards(address smartVaultId) {
+        _guardsNotInitialized(smartVaultId);
+        _;
+    }
+
+    modifier hasGuards(address smartVaultId) {
+        _guardsInitialized(smartVaultId);
+        _;
+    }
+
     /* ========== PUBLIC FUNCTIONS ========== */
 
     /* ========== INTERNAL FUNCTIONS ========== */
+
+    function _guardsNotInitialized(address smartVaultId) internal view returns (bool) {
+        require(!guardsInitialized[smartVaultId], "GuardManager::_guardsNotInitialized: Guards already initialized.");
+    }
+
+    function _guardsInitialized(address smartVaultId) internal view returns (bool) {
+        require(guardsInitialized[smartVaultId], "GuardManager::_guardsInitialized: Guards not initialized.");
+    }
 
     function _readGuards(address smartVaultId) internal view returns (Guard[] memory guards) { 
         string memory key = _addressToString(smartVaultId);
@@ -80,28 +101,42 @@ contract GuardManager is Ownable, IGuardManager {
         return Strings.toHexString(uint256(uint160(address_)), 20);
     }
 
+    function _checkResult(bool success, bytes memory returnValue, bytes memory operator, bytes memory value) internal view {
+        require(success, "GuardManager::_checkResult: Guard call failed.");
+
+        if (operator.length == bytes("==").length) {
+
+        } else {
+            require(abi.decode(returnValue, (bool)), "GuardManager::_checkResult: Guard stop.");
+        }
+    }
+
     /**
      * @notice Resolve parameter values to be used in the guard function call - based on parameter types defined in the guard object.
      */
-    function _resolveParameters(address smartVaultId, Guard memory guard) internal view returns (bytes[] memory) {
+    function _resolveParameters(address smartVaultId, Guard memory guard) internal view returns (bytes memory) {
         uint16 customValueCounter = 0;
-        bytes[] memory params = new bytes[](guard.methodParamTypes.length);
 
-        for (uint16 i = 0; i < guard.methodParamTypes.length; i++) {
+        bytes4 methodID = bytes4(keccak256(abi.encodePacked(guard.methodSignature)));
+        bytes32[] memory params = new bytes32[](guard.methodParamTypes.length);
+        bytes memory result = new bytes(0);
+
+        result = bytes.concat(result, methodID);
+
+        for (uint8 i = 0; i < guard.methodParamTypes.length; i++) {
             GuardParamType paramType = guard.methodParamTypes[i];
-
+            
             if (paramType == GuardParamType.CustomValue) {
-                params[i] = guard.methodParamValues[customValueCounter];
-                customValueCounter++;
+                result = bytes.concat(result, abi.encode(guard.methodParamValues[i]));
             } else if (paramType == GuardParamType.VaultAddress) {
-                params[i] = abi.encodePacked(smartVaultId);
+                result = bytes.concat(result, abi.encode(smartVaultId));
             } else if (paramType == GuardParamType.UserAddress) {
-                params[i] = abi.encodePacked(msg.sender);
+                result = bytes.concat(result, abi.encode(msg.sender));
             } else {
                 revert("Invalid param type");
             }
         }
 
-        return params;
+        return result;
     }
 }

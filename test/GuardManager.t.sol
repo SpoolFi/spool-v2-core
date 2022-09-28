@@ -10,6 +10,7 @@ contract GuardManagerTest is Test {
     GuardManager guardManager;
     MockGuard mockGuard;
     address smartVaultId = address(1);
+    address user = address(256);
 
     function setUp() public {
         guardManager = new GuardManager();
@@ -24,7 +25,7 @@ contract GuardManagerTest is Test {
             address(mockGuard),
             "isWhitelisted(address)",
             paramTypes,
-            new bytes[](0),
+            new bytes32[](0),
             "",
             ""
         );
@@ -45,5 +46,18 @@ contract GuardManagerTest is Test {
         assertEq(storedGuards[0].methodSignature, guards[0].methodSignature);
         assertEq(storedGuards[0].methodParamTypes.length, 1);
         assertEq(uint8(storedGuards[0].methodParamTypes[0]), uint8(GuardParamType.UserAddress));
+    }
+
+    function testRunGuards() public {
+        vm.startPrank(user);
+
+        guardManager.setGuards(smartVaultId, _createGuards());
+
+        vm.expectRevert("GuardManager::_checkResult: Guard stop.");
+        guardManager.runGuards(smartVaultId);
+
+        mockGuard.setWhitelist(user, true);
+        
+        guardManager.runGuards(smartVaultId);
     }
 }
