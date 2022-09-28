@@ -103,7 +103,11 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
         uint256[] calldata assets,
         address receiver,
         uint256[][] calldata slippages
-    ) external returns (uint256 receipt) { revert("0"); }
+    ) 
+        external
+        runGuards(msg.sender, receiver, assets, _assetGroup, true)
+        returns (uint256 receipt) 
+    { revert("0"); }
 
     /**
      * @notice Used to withdraw underlying asset.
@@ -120,7 +124,11 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
         address receiver,
         uint256[][] calldata slippages,
         address owner
-    ) external returns (uint256[] memory returnedAssets) { revert("0"); }
+    ) 
+        external
+        runGuards(owner, receiver, assets, tokens, false)
+        returns (uint256[] memory returnedAssets)
+    { revert("0"); }
 
     /**
      * @dev Returns the maximum amount of the underlying asset that can be deposited into the Vault for the receiver,
