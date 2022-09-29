@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
-enum ActionType {
-    Deposit,
-    Withdrawal
-}
+import "./RequestType.sol";
+
 
 struct ActionContext {
-    address smartVault;
     address recipient;
     address executor;
-    ActionType actionType;
+    RequestType requestType;
+    address[] tokens;
+    uint256[] amounts;
 }
 
 struct ActionBag {
@@ -24,10 +23,9 @@ interface IAction {
     function executeAction(ActionContext calldata actionCtx, ActionBag calldata executionBag) external returns (ActionBag memory);
 }
 
-
 interface IActionManager {
-    function setActions(address smartVault, IAction[] calldata actions, ActionType[] calldata actionTypes) external;
-    function executeActions(address smartVault, ActionContext calldata actionCtx) external;
+    function setActions(address smartVault, IAction[] calldata actions, RequestType[] calldata requestTypes) external;
+    function runActions(address smartVault, ActionContext calldata actionCtx) external;
 
     event ActionListed(address indexed action, bool whitelisted);
 }

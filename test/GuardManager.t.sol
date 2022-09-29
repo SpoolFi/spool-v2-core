@@ -7,7 +7,7 @@ import "../src/GuardManager.sol";
 import {MockGuard} from "../src/mocks/MockGuard.sol";
 
 contract GuardManagerTest is Test {
-    GuardManager guardManager;
+    IGuardManager guardManager;
     MockGuard mockGuard;
     address smartVaultId = address(1);
     address user = address(256);

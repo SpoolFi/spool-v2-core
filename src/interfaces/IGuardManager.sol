@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
+import "./RequestType.sol";
 
 enum GuardParamType {
     VaultAddress,
@@ -25,11 +26,6 @@ struct GuardDefinition {
     bytes2 operator;
 }
 
-enum RequestType {
-    Deposit,
-    Withdrawal
-}
-
 struct RequestContext {
     address receiver;
     address executor;
@@ -39,8 +35,9 @@ struct RequestContext {
 }
 
 interface IGuardManager {
-    function runGuards(address smartVaultId, RequestContext calldata context) external view;
-    function readGuards(address smartVaultId) external view returns (GuardDefinition[] memory);
+    function runGuards(address smartVault, RequestContext calldata context) external view;
+    function readGuards(address smartVault) external view returns (GuardDefinition[] memory);
+    function setGuards(address smartVault, GuardDefinition[] calldata guards) external;
 
     event GuardsInitialized(address indexed smartVaultId);
 }

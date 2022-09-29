@@ -8,18 +8,29 @@ contract ActionManager is IActionManager {
 
     /* ========== STATE VARIABLES ========== */
 
+    // @notice True if actions for given smart vault were already initialized
     mapping(address => bool) public actionsInitialized;
+
+    // @notice Action address whitelist
     mapping(address => bool) public actionWhitelisted;
+
+    // @notice Action registry
     mapping(address => mapping(uint256 => address[])) public actions;
 
     constructor() {}
 
     /* ========== EXTERNAL FUNCTIONS ========== */
 
+    /**
+     * @notice TODO
+     * @param smartVault TODO
+     * @param actions_ TODO
+     * @param requestTypes TODO
+     */
     function setActions(
         address smartVault,
         IAction[] calldata actions_,
-        ActionType[] calldata actionTypes
+        RequestType[] calldata requestTypes
     )
         external 
         notInitialized(smartVault)
@@ -27,17 +38,22 @@ contract ActionManager is IActionManager {
         for(uint256 i; i < actions_.length; i++) {
             IAction action = actions_[i];
             _onlyWhitelistedAction(address(action));
-            actions[smartVault][uint8(actionTypes[i])].push(address(action));
+            actions[smartVault][uint8(requestTypes[i])].push(address(action));
         }
 
         actionsInitialized[smartVault] = true;
     }
 
-    function executeActions(address smartVault, ActionContext calldata actionCtx) 
+    /**
+     * @notice TODO
+     * @param smartVault TODO
+     * @param actionCtx TODO
+     */
+    function runActions(address smartVault, ActionContext calldata actionCtx) 
         external
         areActionsInitialized(smartVault)
     {
-        address[] memory actions_ = actions[smartVault][uint8(actionCtx.actionType)];
+        address[] memory actions_ = actions[smartVault][uint8(actionCtx.requestType)];
         ActionBag memory bag;
         
         for(uint256 i; i < actions_.length; i++) {
@@ -45,6 +61,11 @@ contract ActionManager is IActionManager {
         }
     }
 
+    /**
+     * @notice TODO
+     * @param action TODO
+     * @param whitelist TODO
+     */
     function whitelistAction(address action, bool whitelist)
         external
     {
@@ -81,19 +102,22 @@ contract ActionManager is IActionManager {
         require(actionWhitelisted[action], "ActionManager::");
     }
 
- 
- 
     /* ========== MODIFIERS ========== */
 
+    /**
+     * @notice TODO
+     */
     modifier notInitialized(address smartVault) {
         _isInitialized(smartVault,false);
         _;
     }
     
+    /**
+     * @notice TODO
+     */
     modifier areActionsInitialized(address smartVault) 
     {
         _isInitialized(smartVault,true);
         _;
     }
-    
 }

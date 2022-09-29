@@ -6,21 +6,39 @@ import "../lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC1155/ERC1155.sol";
 import "./interfaces/ISmartVault.sol";
 import "./interfaces/IGuardManager.sol";
+import "./interfaces/IStrategyManager.sol";
+import "./interfaces/IAction.sol";
 
 contract SmartVault is ISmartVault, Ownable, ERC1155 {
     /* ========== STATE VARIABLES ========== */
 
     IGuardManager immutable internal guardManager;
+    IActionManager immutable internal actionManager;
+    IStrategyManager immutable internal strategyManager;
+
     address[] internal _assetGroup;
 
     /* ========== CONSTRUCTOR ========== */
 
     /**
      * @notice Initializes variables
+     * @param assets_ TODO
+     * @param guardManager_ TODO
+     * @param actionManager_ TODO
+     * @param strategyManager_ TODO
      */
-    constructor(address[] memory assets_, IGuardManager guardManager_) ERC1155("") {
+    constructor(
+        address[] memory assets_,
+        IGuardManager guardManager_,
+        IActionManager actionManager_,
+        IStrategyManager strategyManager_
+    )
+        ERC1155("")
+    {
         _assetGroup = assets_;
         guardManager = guardManager_;
+        actionManager = actionManager_;
+        strategyManager = strategyManager_;
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
@@ -90,6 +108,8 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
     ) 
         external 
         runGuards(depositor, receiver, assets, _assetGroup, RequestType.Deposit)
+        runActions(depositor, receiver, assets, _assetGroup, RequestType.Deposit)
+        
         returns (uint256 depositNFTId) { revert("0"); }
 
     /**
@@ -106,6 +126,7 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
     ) 
         external
         runGuards(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit)
+        runActions(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit)
         returns (uint256 receipt) 
     { revert("0"); }
 
@@ -127,6 +148,7 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
     ) 
         external
         runGuards(owner, receiver, assets, tokens, RequestType.Withdrawal)
+        runActions(owner, receiver, assets, tokens, RequestType.Withdrawal)
         returns (uint256[] memory returnedAssets)
     { revert("0"); }
 
@@ -368,7 +390,7 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _runGuards(
-        address depositor, 
+        address executor, 
         address receiver, 
         uint256[] memory amounts, 
         address[] memory assets, 
@@ -376,7 +398,7 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
     ) internal view {
         RequestContext memory context = RequestContext(
             receiver,
-            depositor,
+            executor,
             requestType,
             amounts,
             assets
@@ -384,17 +406,45 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
         guardManager.runGuards(address(this), context);
     }
 
+    function _runActions(
+        address executor,
+        address recipient,
+        uint256[] memory amounts,
+        address[] memory assets,
+        RequestType requestType
+    ) internal {
+        ActionContext memory context = ActionContext(
+            recipient,
+            executor,
+            requestType,
+            assets,
+            amounts
+        );
+
+        actionManager.runActions(address(this), context);
+    }
+
     /* ========== MODIFIERS ========== */
 
     modifier runGuards(
-        address depositor, 
-        address receiver, 
-        uint256[] memory amounts, 
-        address[] memory assets, 
+        address executor,
+        address receiver,
+        uint256[] memory amounts,
+        address[] memory assets,
         RequestType requestType
     ) {
-        _runGuards(depositor, receiver, amounts, assets, requestType);
+        _runGuards(executor, receiver, amounts, assets, requestType);
         _;
     }
 
+    modifier runActions(
+        address executor,
+        address recipient,
+        uint256[] memory amounts,
+        address[] memory assets,
+        RequestType requestType
+    ) {
+        _runActions(executor, recipient, amounts, assets, requestType);
+        _;
+    }
 }
