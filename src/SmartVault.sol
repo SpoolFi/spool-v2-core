@@ -89,7 +89,7 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
         address depositor
     ) 
         external 
-        runGuards(depositor, receiver, assets, _assetGroup, true)
+        runGuards(depositor, receiver, assets, _assetGroup, RequestType.Deposit)
         returns (uint256 depositNFTId) { revert("0"); }
 
     /**
@@ -105,7 +105,7 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
         uint256[][] calldata slippages
     ) 
         external
-        runGuards(msg.sender, receiver, assets, _assetGroup, true)
+        runGuards(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit)
         returns (uint256 receipt) 
     { revert("0"); }
 
@@ -126,7 +126,7 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
         address owner
     ) 
         external
-        runGuards(owner, receiver, assets, tokens, false)
+        runGuards(owner, receiver, assets, tokens, RequestType.Withdrawal)
         returns (uint256[] memory returnedAssets)
     { revert("0"); }
 
@@ -372,12 +372,12 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
         address receiver, 
         uint256[] memory amounts, 
         address[] memory assets, 
-        bool isDeposit
+        RequestType requestType
     ) internal view {
         RequestContext memory context = RequestContext(
             receiver,
             depositor,
-            isDeposit,
+            requestType,
             amounts,
             assets
         );
@@ -391,9 +391,9 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
         address receiver, 
         uint256[] memory amounts, 
         address[] memory assets, 
-        bool isDeposit
+        RequestType requestType
     ) {
-        _runGuards(depositor, receiver, amounts, assets, isDeposit);
+        _runGuards(depositor, receiver, amounts, assets, requestType);
         _;
     }
 

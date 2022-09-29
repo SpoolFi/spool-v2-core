@@ -4,7 +4,7 @@ pragma solidity ^0.8.16;
 import {console} from "forge-std/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "@0xsequence/sstore2/contracts/SSTORE2Map.sol";
+import "@0xsequence/sstore2/contracts/SSTORE2.sol";
 import "./interfaces/IGuardManager.sol";
 
 
@@ -13,6 +13,7 @@ contract GuardManager is Ownable, IGuardManager {
     /* ========== STATE VARIABLES ========== */
 
     mapping(address => bool) public guardsInitialized;
+    mapping(address => address) internal guardPointer;
 
     constructor () {}
 
@@ -31,10 +32,14 @@ contract GuardManager is Ownable, IGuardManager {
         view 
         hasGuards(smartVaultId) 
     {
-        Guard[] memory guards = _readGuards(smartVaultId);
+        GuardDefinition[] memory guards = _readGuards(smartVaultId);
 
         for(uint256 i = 0; i < guards.length; i++) {
-            Guard memory guard = guards[i];
+            GuardDefinition memory guard = guards[i];
+
+            if (guard.requestType != context.requestType) {
+                continue;
+            }
 
             bytes memory encoded = _encodeFunctionCall(smartVaultId, guard, context);
             (bool success, bytes memory data) = guard.contractAddress.staticcall(encoded);
@@ -47,7 +52,7 @@ contract GuardManager is Ownable, IGuardManager {
      * @param smartVaultId Smart Vault address
      * @return Array of guards
      */
-    function readGuards(address smartVaultId) external view returns (Guard[] memory) {
+    function readGuards(address smartVaultId) external view returns (GuardDefinition[] memory) {
         return _readGuards(smartVaultId);
     }
 
@@ -59,7 +64,7 @@ contract GuardManager is Ownable, IGuardManager {
      * @param smartVaultId Smart Vault address
      * @param guards Array of guards
      */
-    function setGuards(address smartVaultId, Guard[] calldata guards) public hasNoGuards(smartVaultId) {
+    function setGuards(address smartVaultId, GuardDefinition[] calldata guards) public hasNoGuards(smartVaultId) {
         _writeGuards(smartVaultId, guards);
         guardsInitialized[smartVaultId] = true;
 
@@ -96,15 +101,14 @@ contract GuardManager is Ownable, IGuardManager {
         require(guardsInitialized[smartVaultId], "GuardManager::_guardsInitialized: Guards not initialized.");
     }
 
-    function _readGuards(address smartVaultId) internal view returns (Guard[] memory guards) { 
-        string memory key = _addressToString(smartVaultId);
-        bytes memory value = SSTORE2Map.read(key);
-        return abi.decode(value, (Guard[]));
+    function _readGuards(address smartVaultId) internal view returns (GuardDefinition[] memory guards) { 
+        bytes memory value = SSTORE2.read(guardPointer[smartVaultId]);
+        return abi.decode(value, (GuardDefinition[]));
     }
 
-    function _writeGuards(address smartVaultId, Guard[] calldata guards) internal {
-        string memory key = _addressToString(smartVaultId);
-        SSTORE2Map.write(key, abi.encode(guards));
+    function _writeGuards(address smartVaultId, GuardDefinition[] calldata guards) internal {
+        address key = SSTORE2.write(abi.encode(guards));
+        guardPointer[smartVaultId] = key;
     }
 
     function _addressToString(address address_) internal pure returns(string memory) {
@@ -143,7 +147,7 @@ contract GuardManager is Ownable, IGuardManager {
      */
     function _encodeFunctionCall(
         address smartVaultId,
-        Guard memory guard,
+        GuardDefinition memory guard,
         RequestContext memory context
     ) 
         internal
@@ -167,8 +171,8 @@ contract GuardManager is Ownable, IGuardManager {
                 result = bytes.concat(result, abi.encode(smartVaultId));
             } else if (paramType == GuardParamType.Receiver) {
                 result = bytes.concat(result, abi.encode(context.receiver));
-            } else if (paramType == GuardParamType.Depositor) {
-                result = bytes.concat(result, abi.encode(context.depositor));
+            } else if (paramType == GuardParamType.Executor) {
+                result = bytes.concat(result, abi.encode(context.executor));
             } else if (paramType == GuardParamType.Amounts) {
                 result = bytes.concat(result, abi.encode(context.amounts));
             } else if (paramType == GuardParamType.Tokens) {
