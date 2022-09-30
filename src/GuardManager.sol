@@ -136,22 +136,22 @@ contract GuardManager is Ownable, IGuardManager {
         returns (bytes memory)
     {
         bytes4 methodID = bytes4(keccak256(abi.encodePacked(guard.methodSignature)));
-        uint256 paramLength = guard.methodParamTypes.length;
+        uint256 paramsLength = guard.methodParamTypes.length;
         bytes memory result = new bytes(0);
 
         result = bytes.concat(result, methodID);
         uint16 customValueIdx = 0;
-        uint256 argsEndLoc = paramLength * 32;
+        uint256 paramsEndLoc = paramsLength * 32;
 
         // Loop through parameters and
         // - store values for simple types
         // - store param value location for dynamic types
-        for (uint8 i = 0; i < paramLength; i++) {
+        for (uint8 i = 0; i < paramsLength; i++) {
             GuardParamType paramType = guard.methodParamTypes[i];
 
             if (paramType == GuardParamType.DynamicCustomValue) {
-                result = bytes.concat(result, abi.encode(argsEndLoc));
-                argsEndLoc += 32 + guard.methodParamValues[customValueIdx].length;
+                result = bytes.concat(result, abi.encode(paramsEndLoc));
+                paramsEndLoc += 32 + guard.methodParamValues[customValueIdx].length;
                 customValueIdx++;
             } else if (paramType == GuardParamType.CustomValue) {
                 result = bytes.concat(result, guard.methodParamValues[customValueIdx]);
@@ -163,19 +163,19 @@ contract GuardManager is Ownable, IGuardManager {
             } else if (paramType == GuardParamType.Executor) {
                 result = bytes.concat(result, abi.encode(context.executor));
             } else if (paramType == GuardParamType.Amounts) {
-                result = bytes.concat(result, abi.encode(argsEndLoc));
-                argsEndLoc += 32 + context.amounts.length;
+                result = bytes.concat(result, abi.encode(paramsEndLoc));
+                paramsEndLoc += 32 + context.amounts.length;
             } else if (paramType == GuardParamType.Tokens) {
-                result = bytes.concat(result, abi.encode(argsEndLoc));
-                argsEndLoc += 32 + context.tokens.length;
+                result = bytes.concat(result, abi.encode(paramsEndLoc));
+                paramsEndLoc += 32 + context.tokens.length;
             } else {
                 revert("Invalid param type");
             }
         }
 
-        // Loop through params again and store values for dynamic types
+        // Loop through params again and store values for dynamic types.
         customValueIdx = 0;
-        for (uint8 i = 0; i < paramLength; i++) {
+        for (uint8 i = 0; i < paramsLength; i++) {
             GuardParamType paramType = guard.methodParamTypes[i];
 
             if (paramType == GuardParamType.DynamicCustomValue) {
