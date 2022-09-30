@@ -164,10 +164,10 @@ contract GuardManager is Ownable, IGuardManager {
                 result = bytes.concat(result, abi.encode(context.executor));
             } else if (paramType == GuardParamType.Amounts) {
                 result = bytes.concat(result, abi.encode(paramsEndLoc));
-                paramsEndLoc += 32 + context.amounts.length;
+                paramsEndLoc += 32 + context.amounts.length * 32;
             } else if (paramType == GuardParamType.Tokens) {
                 result = bytes.concat(result, abi.encode(paramsEndLoc));
-                paramsEndLoc += 32 + context.tokens.length;
+                paramsEndLoc += 32 + context.tokens.length * 32;
             } else {
                 revert("Invalid param type");
             }
