@@ -11,10 +11,7 @@ contract DepositSwap is IDepositSwap {
     /**
      * @notice Initializes variables
      */
-    constructor()
-    {
-
-    }
+    constructor() {}
     /**
      * @notice TODO
      * @param vault TODO
@@ -23,13 +20,15 @@ contract DepositSwap is IDepositSwap {
      * @param outAssets TODO
      * @return depositNFTId TODO
      */
+
     function swapAndDeposit(
         address vault,
         uint256[] calldata inAssets,
         uint256[] calldata slippages,
         uint256[] calldata outAssets,
-        address receiver) external returns (uint256 depositNFTId) {
-            revert("0");
+        address receiver
+    ) external returns (uint256 depositNFTId) {
+        revert("0");
     }
 
     /* ========== MODIFIERS ========== */

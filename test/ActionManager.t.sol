@@ -5,7 +5,6 @@ import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
 import "../src/ActionManager.sol";
 
-
 contract ActionManagerTest is Test {
     IActionManager actionManager;
 

@@ -3,7 +3,6 @@ pragma solidity ^0.8.16;
 
 import "../../lib/openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
 
-
 /**
  * @dev Used for deposit assets to outer contracts.
  */
@@ -108,13 +107,9 @@ interface IWithdraw {
      * Note that some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
      * Those methods should be performed separately.
      */
-    function withdraw(
-        uint256[] calldata assets,
-        address[] calldata tokens,
-        address receiver,
-        address owner
-    ) external returns (uint256 receipt);
-
+    function withdraw(uint256[] calldata assets, address[] calldata tokens, address receiver, address owner)
+        external
+        returns (uint256 receipt);
 
     /**
      * @dev Returns the maximum amount of the underlying asset that can be withdrawn from the owner balance in the
@@ -187,31 +182,18 @@ interface IRedeem {
      * NOTE: some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
      * Those methods should be performed separately.
      */
-    function redeem(
-        uint256 shares,
-        address receiver,
-        address owner
-    ) external returns (uint256 receipt);
+    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 receipt);
 }
-
 
 /**
  * @title IVault
  * @dev Multi-collateral take on ERC4626
  */
 interface IVault is IWithdraw, IRedeem, IDeposit, IMint, IERC1155 {
-    event Deposit(
-        address indexed sender,
-        address indexed owner,
-        uint256 assets,
-        uint256 shares);
+    event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
 
     event Withdraw(
-        address indexed sender,
-        address indexed receiver,
-        address indexed owner,
-        uint256 assets,
-        uint256 shares
+        address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
     );
 
     /**

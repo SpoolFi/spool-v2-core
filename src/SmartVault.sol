@@ -12,9 +12,9 @@ import "./interfaces/IAction.sol";
 contract SmartVault is ISmartVault, Ownable, ERC1155 {
     /* ========== STATE VARIABLES ========== */
 
-    IGuardManager immutable internal guardManager;
-    IActionManager immutable internal actionManager;
-    IStrategyManager immutable internal strategyManager;
+    IGuardManager internal immutable guardManager;
+    IActionManager internal immutable actionManager;
+    IStrategyManager internal immutable strategyManager;
 
     address[] internal _assetGroup;
 
@@ -32,9 +32,7 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
         IGuardManager guardManager_,
         IActionManager actionManager_,
         IStrategyManager strategyManager_
-    )
-        ERC1155("")
-    {
+    ) ERC1155("") {
         _assetGroup = assets_;
         guardManager = guardManager_;
         actionManager = actionManager_;
@@ -46,37 +44,49 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
     /**
      * @return name Name of the vault
      */
-    function vaultName() external view returns (string memory name) { revert("0"); }
+    function vaultName() external view returns (string memory name) {
+        revert("0");
+    }
 
     /**
      * @notice TODO
      * @return riskTolerance TODO
      */
-    function riskTolerance() external view returns (int riskTolerance) { revert("0"); }
+    function riskTolerance() external view returns (int256 riskTolerance) {
+        revert("0");
+    }
 
     /**
      * @notice TODO
      * @return riskProviderAddress TODO
      */
-    function riskProvider() external view returns (address riskProviderAddress) { revert("0"); }
+    function riskProvider() external view returns (address riskProviderAddress) {
+        revert("0");
+    }
 
     /**
      * @notice TODO
      * @return strategyAddresses TODO
      */
-    function strategies() external view returns (address[] memory strategyAddresses) { revert("0"); }
+    function strategies() external view returns (address[] memory strategyAddresses) {
+        revert("0");
+    }
 
     /**
      * @notice TODO
      * @return allocations TODO
      */
-    function allocations() external view returns (uint256[] memory allocations) { revert("0"); }
+    function allocations() external view returns (uint256[] memory allocations) {
+        revert("0");
+    }
 
     /**
      * @notice TODO
      * @return isTransferable TODO
      */
-    function isShareTokenTransferable() external view returns (bool isTransferable) { revert("0"); }
+    function isShareTokenTransferable() external view returns (bool isTransferable) {
+        revert("0");
+    }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
@@ -85,14 +95,18 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * @param nftIds TODO
      * @return shares TODO
      */
-    function burnDepositNFTs(uint256[] calldata nftIds) external returns (uint256 shares) { revert("0"); }
+    function burnDepositNFTs(uint256[] calldata nftIds) external returns (uint256 shares) {
+        revert("0");
+    }
 
     /**
      * @notice TODO
      * @param nftIds TODO
      * @return assets TODO
      */
-    function burnWithdrawalNFTs(uint256[] calldata nftIds) external returns (uint256[] memory assets) { revert("0"); }
+    function burnWithdrawalNFTs(uint256[] calldata nftIds) external returns (uint256[] memory assets) {
+        revert("0");
+    }
 
     /**
      * @notice TODO
@@ -101,16 +115,14 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * @param receiver TODO
      * @return depositNFTId TODO
      */
-    function depositFor(
-        uint256[] calldata assets,
-        address receiver,
-        address depositor
-    ) 
-        external 
+    function depositFor(uint256[] calldata assets, address receiver, address depositor)
+        external
         runGuards(depositor, receiver, assets, _assetGroup, RequestType.Deposit)
         runActions(depositor, receiver, assets, _assetGroup, RequestType.Deposit)
-        
-        returns (uint256 depositNFTId) { revert("0"); }
+        returns (uint256 depositNFTId)
+    {
+        revert("0");
+    }
 
     /**
      * @notice TODO
@@ -119,16 +131,14 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * @param slippages TODO
      * @return receipt TODO
      */
-    function depositFast(
-        uint256[] calldata assets,
-        address receiver,
-        uint256[][] calldata slippages
-    ) 
+    function depositFast(uint256[] calldata assets, address receiver, uint256[][] calldata slippages)
         external
         runGuards(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit)
         runActions(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit)
-        returns (uint256 receipt) 
-    { revert("0"); }
+        returns (uint256 receipt)
+    {
+        revert("0");
+    }
 
     /**
      * @notice Used to withdraw underlying asset.
@@ -145,23 +155,27 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
         address receiver,
         uint256[][] calldata slippages,
         address owner
-    ) 
+    )
         external
         runGuards(owner, receiver, assets, tokens, RequestType.Withdrawal)
         runActions(owner, receiver, assets, tokens, RequestType.Withdrawal)
         returns (uint256[] memory returnedAssets)
-    { revert("0"); }
+    {
+        revert("0");
+    }
 
     /**
      * @dev Returns the maximum amount of the underlying asset that can be deposited into the Vault for the receiver,
      * through a deposit call.
      * @param receiver TODO
-     * 
+     *
      * - MUST return a limited value if receiver is subject to some deposit limit.
      * - MUST return 2 ** 256 - 1 if there is no limit on the maximum amount of assets that may be deposited.
      * - MUST NOT revert.
      */
-    function maxDeposit(address receiver) external view returns (uint256[] memory maxAssets) { revert("0"); }
+    function maxDeposit(address receiver) external view returns (uint256[] memory maxAssets) {
+        revert("0");
+    }
 
     /**
      * @dev Allows an on-chain or off-chain user to simulate the effects of their deposit at the current block, given
@@ -179,7 +193,9 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * NOTE: any unfavorable discrepancy between convertToShares and previewDeposit SHOULD be considered slippage in
      * share price or some other type of condition, meaning the depositor will lose assets by depositing.
      */
-    function previewDeposit(uint256[] calldata assets) external view returns (uint256 shares) { revert("0"); }
+    function previewDeposit(uint256[] calldata assets) external view returns (uint256 shares) {
+        revert("0");
+    }
 
     /**
      * @dev Mints shares Vault shares to receiver by depositing exactly amount of underlying tokens.
@@ -193,7 +209,9 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
-    function deposit(uint256[] calldata assets, address receiver) external returns (uint256 receipt) { revert("0"); }
+    function deposit(uint256[] calldata assets, address receiver) external returns (uint256 receipt) {
+        revert("0");
+    }
 
     /**
      * @dev Returns the maximum amount of the Vault shares that can be minted for the receiver, through a mint call.
@@ -202,7 +220,9 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * - MUST return 2 ** 256 - 1 if there is no limit on the maximum amount of shares that may be minted.
      * - MUST NOT revert.
      */
-    function maxMint(address receiver) external view returns (uint256 maxShares) { revert("0"); }
+    function maxMint(address receiver) external view returns (uint256 maxShares) {
+        revert("0");
+    }
 
     /**
      * @dev Allows an on-chain or off-chain user to simulate the effects of their mint at the current block, given
@@ -220,7 +240,9 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * NOTE: any unfavorable discrepancy between convertToAssets and previewMint SHOULD be considered slippage in
      * share price or some other type of condition, meaning the depositor will lose assets by minting.
      */
-    function previewMint(uint256 shares) external view returns (uint256[] memory assets) { revert("0"); }
+    function previewMint(uint256 shares) external view returns (uint256[] memory assets) {
+        revert("0");
+    }
 
     /**
      * @dev Mints exactly shares Vault shares to receiver by depositing amount of underlying tokens.
@@ -235,7 +257,9 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
-    function mint(uint256 shares, address receiver) external returns (uint256[] memory assets) { revert("0"); }
+    function mint(uint256 shares, address receiver) external returns (uint256[] memory assets) {
+        revert("0");
+    }
 
     /**
      * @dev Burns shares from owner and sends exactly assets of underlying tokens to receiver.
@@ -253,13 +277,12 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * Note that some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
      * Those methods should be performed separately.
      */
-    function withdraw(
-        uint256[] calldata assets,
-        address[] calldata tokens,
-        address receiver,
-        address owner
-    ) external returns (uint256 receipt) { revert("0"); }
-
+    function withdraw(uint256[] calldata assets, address[] calldata tokens, address receiver, address owner)
+        external
+        returns (uint256 receipt)
+    {
+        revert("0");
+    }
 
     /**
      * @dev Returns the maximum amount of the underlying asset that can be withdrawn from the owner balance in the
@@ -268,7 +291,9 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * - MUST return a limited value if owner is subject to some withdrawal limit or timelock.
      * - MUST NOT revert.
      */
-    function maxWithdraw(address owner) external view returns (uint256[] memory maxAssets) { revert("0"); }
+    function maxWithdraw(address owner) external view returns (uint256[] memory maxAssets) {
+        revert("0");
+    }
 
     /**
      * @dev Allows an on-chain or off-chain user to simulate the effects of their withdrawal at the current block,
@@ -287,7 +312,9 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * NOTE: any unfavorable discrepancy between convertToShares and previewWithdraw SHOULD be considered slippage in
      * share price or some other type of condition, meaning the depositor will lose assets by depositing.
      */
-    function previewWithdraw(uint256[] calldata assets) external view returns (uint256 shares) { revert("0"); }
+    function previewWithdraw(uint256[] calldata assets) external view returns (uint256 shares) {
+        revert("0");
+    }
 
     /**
      * @dev Returns the maximum amount of Vault shares that can be redeemed from the owner balance in the Vault,
@@ -298,7 +325,9 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * - MUST return balanceOf(owner) if owner is not subject to any withdrawal limit or timelock.
      * - MUST NOT revert.
      */
-    function maxRedeem(address owner) external view returns (uint256 maxShares) { revert("0"); }
+    function maxRedeem(address owner) external view returns (uint256 maxShares) {
+        revert("0");
+    }
 
     /**
      * @dev Allows an on-chain or off-chain user to simulate the effects of their redeemption at the current block,
@@ -316,7 +345,9 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * NOTE: any unfavorable discrepancy between convertToAssets and previewRedeem SHOULD be considered slippage in
      * share price or some other type of condition, meaning the depositor will lose assets by redeeming.
      */
-    function previewRedeem(uint256 shares) external view returns (uint256 assets) { revert("0"); }
+    function previewRedeem(uint256 shares) external view returns (uint256 assets) {
+        revert("0");
+    }
 
     /**
      * @dev Burns exactly shares from owner and sends assets of underlying tokens to receiver.
@@ -332,11 +363,9 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * NOTE: some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
      * Those methods should be performed separately.
      */
-    function redeem(
-        uint256 shares,
-        address receiver,
-        address owner
-    ) external returns (uint256 receipt) { revert("0"); }
+    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 receipt) {
+        revert("0");
+    }
 
     /**
      * @dev Returns the address of the underlying token used for the Vault for accounting, depositing, and withdrawing.
@@ -344,7 +373,9 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * - MUST be an ERC-20 token contract.
      * - MUST NOT revert.
      */
-    function asset() external view returns (address[] memory assetTokenAddresses) { revert("0"); }
+    function asset() external view returns (address[] memory assetTokenAddresses) {
+        revert("0");
+    }
 
     /**
      * @dev Returns the total amount of the underlying asset that is “managed” by Vault.
@@ -353,7 +384,9 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * - MUST be inclusive of any fees that are charged against assets in the Vault.
      * - MUST NOT revert.
      */
-    function totalAssets() external view returns (uint256[] memory totalManagedAssets) { revert("0"); }
+    function totalAssets() external view returns (uint256[] memory totalManagedAssets) {
+        revert("0");
+    }
 
     /**
      * @dev Returns the amount of shares that the Vault would exchange for the amount of assets provided, in an ideal
@@ -369,7 +402,9 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * “average-user’s” price-per-share, meaning what the average user should expect to see when exchanging to and
      * from.
      */
-    function convertToShares(uint256[] calldata assets) external view returns (uint256 shares) { revert("0"); }
+    function convertToShares(uint256[] calldata assets) external view returns (uint256 shares) {
+        revert("0");
+    }
 
     /**
      * @dev Returns the amount of assets that the Vault would exchange for the amount of shares provided, in an ideal
@@ -385,24 +420,20 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
      * “average-user’s” price-per-share, meaning what the average user should expect to see when exchanging to and
      * from.
      */
-    function convertToAssets(uint256 shares) external view returns (uint256[] memory assets) { revert("0"); }
+    function convertToAssets(uint256 shares) external view returns (uint256[] memory assets) {
+        revert("0");
+    }
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _runGuards(
-        address executor, 
-        address receiver, 
-        uint256[] memory amounts, 
-        address[] memory assets, 
+        address executor,
+        address receiver,
+        uint256[] memory amounts,
+        address[] memory assets,
         RequestType requestType
     ) internal view {
-        RequestContext memory context = RequestContext(
-            receiver,
-            executor,
-            requestType,
-            amounts,
-            assets
-        );
+        RequestContext memory context = RequestContext(receiver, executor, requestType, amounts, assets);
         guardManager.runGuards(address(this), context);
     }
 
@@ -413,13 +444,7 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
         address[] memory assets,
         RequestType requestType
     ) internal {
-        ActionContext memory context = ActionContext(
-            recipient,
-            executor,
-            requestType,
-            assets,
-            amounts
-        );
+        ActionContext memory context = ActionContext(recipient, executor, requestType, assets, amounts);
 
         actionManager.runActions(address(this), context);
     }

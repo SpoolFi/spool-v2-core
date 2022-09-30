@@ -9,7 +9,12 @@ interface ISmartVaultIncentives {
      * @param amount TODO
      * @param incentivesEnd TODO
      */
-    function addIncentives(address[] calldata vaults, address[][] calldata token, uint256[][] calldata amount, uint256[] calldata incentivesEnd) external;
+    function addIncentives(
+        address[] calldata vaults,
+        address[][] calldata token,
+        uint256[][] calldata amount,
+        uint256[] calldata incentivesEnd
+    ) external;
 
     /**
      * @notice TODO
@@ -17,7 +22,8 @@ interface ISmartVaultIncentives {
      * @param tokens TODO
      * @param incentivesEnd TODO
      */
-    function extendIncentives(address[] calldata vaults, address[][] calldata tokens, uint256[] calldata incentivesEnd) external;
+    function extendIncentives(address[] calldata vaults, address[][] calldata tokens, uint256[] calldata incentivesEnd)
+        external;
 
     /**
      * @notice TODO

@@ -3,7 +3,6 @@ pragma solidity ^0.8.16;
 
 import "./RequestType.sol";
 
-
 struct ActionContext {
     address recipient;
     address executor;
@@ -20,7 +19,9 @@ struct ActionBag {
 
 interface IAction {
     function actionType() external view;
-    function executeAction(ActionContext calldata actionCtx, ActionBag calldata executionBag) external returns (ActionBag memory);
+    function executeAction(ActionContext calldata actionCtx, ActionBag calldata executionBag)
+        external
+        returns (ActionBag memory);
 }
 
 interface IActionManager {

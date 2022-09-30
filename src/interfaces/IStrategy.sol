@@ -13,9 +13,7 @@ struct SwapData {
     bytes path; // 1st byte is action, then path
 }
 
-
 interface IStrategy is IVault {
-
     /* ========== EVENTS ========== */
 
     event Slippage(address strategy, IERC20 underlying, bool isDeposit, uint256 amountIn, uint256 amountOut);
@@ -44,7 +42,7 @@ interface IStrategy is IVault {
         address receiver,
         uint256[][] calldata slippages,
         SwapData[] calldata swapData
-    ) external returns(uint256[] memory returnedAssets);
+    ) external returns (uint256[] memory returnedAssets);
 
     /**
      * @notice TODO
@@ -53,9 +51,7 @@ interface IStrategy is IVault {
      * @param slippages TODO
      * @return receipt TODO
      */
-    function depositFast(
-        uint256[] calldata assets,
-        address receiver,
-        uint256[][] calldata slippages
-    ) external returns (uint256 receipt);
+    function depositFast(uint256[] calldata assets, address receiver, uint256[][] calldata slippages)
+        external
+        returns (uint256 receipt);
 }

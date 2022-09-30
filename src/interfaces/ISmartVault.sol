@@ -4,9 +4,7 @@ pragma solidity ^0.8.16;
 import "../../lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./IVault.sol";
 
-
 interface ISmartVault is IVault {
-
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /**
@@ -18,7 +16,7 @@ interface ISmartVault is IVault {
      * @notice TODO
      * @return riskTolerance
      */
-    function riskTolerance() external view returns (int riskTolerance);
+    function riskTolerance() external view returns (int256 riskTolerance);
 
     /**
      * @notice TODO
@@ -67,11 +65,9 @@ interface ISmartVault is IVault {
      * @param depositor TODO
      * @return depositNFTId TODO
      */
-    function depositFor(
-        uint256[] calldata assets,
-        address receiver,
-        address depositor
-    ) external returns (uint256 depositNFTId);
+    function depositFor(uint256[] calldata assets, address receiver, address depositor)
+        external
+        returns (uint256 depositNFTId);
 
     /**
      * @notice TODO
@@ -80,11 +76,9 @@ interface ISmartVault is IVault {
      * @param slippages TODO
      * @return receipt TODO
      */
-    function depositFast(
-        uint256[] calldata assets,
-        address receiver,
-        uint256[][] calldata slippages
-    ) external returns (uint256 receipt);
+    function depositFast(uint256[] calldata assets, address receiver, uint256[][] calldata slippages)
+        external
+        returns (uint256 receipt);
 
     /**
      * @notice Used to withdraw underlying asset.

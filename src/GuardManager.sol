@@ -7,15 +7,13 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@0xsequence/sstore2/contracts/SSTORE2.sol";
 import "./interfaces/IGuardManager.sol";
 
-
 contract GuardManager is Ownable, IGuardManager {
-
     /* ========== STATE VARIABLES ========== */
 
     mapping(address => bool) public guardsInitialized;
     mapping(address => address) internal guardPointer;
 
-    constructor () {}
+    constructor() {}
 
     /* ========== EXTERNAL FUNCTIONS ========== */
 
@@ -24,17 +22,10 @@ contract GuardManager is Ownable, IGuardManager {
      * @param smartVaultId Smart Vault address
      * @param context Request context
      */
-    function runGuards(
-        address smartVaultId, 
-        RequestContext calldata context
-    ) 
-        external 
-        view 
-        hasGuards(smartVaultId) 
-    {
+    function runGuards(address smartVaultId, RequestContext calldata context) external view hasGuards(smartVaultId) {
         GuardDefinition[] memory guards = _readGuards(smartVaultId);
 
-        for(uint256 i = 0; i < guards.length; i++) {
+        for (uint256 i = 0; i < guards.length; i++) {
             GuardDefinition memory guard = guards[i];
 
             if (guard.requestType != context.requestType) {
@@ -60,7 +51,7 @@ contract GuardManager is Ownable, IGuardManager {
      * @notice Persist guards for given Smart Vault
      * Requirements:
      * - smart vault should not have prior guards initialized
-     * 
+     *
      * @param smartVaultId Smart Vault address
      * @param guards Array of guards
      */
@@ -101,7 +92,7 @@ contract GuardManager is Ownable, IGuardManager {
         require(guardsInitialized[smartVaultId], "GuardManager::_guardsInitialized: Guards not initialized.");
     }
 
-    function _readGuards(address smartVaultId) internal view returns (GuardDefinition[] memory guards) { 
+    function _readGuards(address smartVaultId) internal view returns (GuardDefinition[] memory guards) {
         bytes memory value = SSTORE2.read(guardPointer[smartVaultId]);
         return abi.decode(value, (GuardDefinition[]));
     }
@@ -111,19 +102,11 @@ contract GuardManager is Ownable, IGuardManager {
         guardPointer[smartVaultId] = key;
     }
 
-    function _addressToString(address address_) internal pure returns(string memory) {
+    function _addressToString(address address_) internal pure returns (string memory) {
         return Strings.toHexString(uint256(uint160(address_)), 20);
     }
 
-    function _checkResult(
-        bool success,
-        bytes memory returnValue,
-        bytes2 operator,
-        bytes32 value
-    ) 
-        internal
-        pure
-    {
+    function _checkResult(bool success, bytes memory returnValue, bytes2 operator, bytes32 value) internal pure {
         require(success, "GuardManager::_checkResult: Guard call failed.");
         string memory errorMessage = "GuardManager::_checkResult: A-a, go back.";
 
@@ -145,11 +128,7 @@ contract GuardManager is Ownable, IGuardManager {
     /**
      * @notice Resolve parameter values to be used in the guard function call - based on parameter types defined in the guard object.
      */
-    function _encodeFunctionCall(
-        address smartVaultId,
-        GuardDefinition memory guard,
-        RequestContext memory context
-    ) 
+    function _encodeFunctionCall(address smartVaultId, GuardDefinition memory guard, RequestContext memory context)
         internal
         pure
         returns (bytes memory)
@@ -163,7 +142,7 @@ contract GuardManager is Ownable, IGuardManager {
 
         for (uint8 i = 0; i < guard.methodParamTypes.length; i++) {
             GuardParamType paramType = guard.methodParamTypes[i];
-            
+
             if (paramType == GuardParamType.CustomValue) {
                 result = bytes.concat(result, abi.encode(guard.methodParamValues[i]));
                 customValueCounter++;
@@ -177,11 +156,8 @@ contract GuardManager is Ownable, IGuardManager {
                 result = bytes.concat(result, abi.encode(context.amounts));
             } else if (paramType == GuardParamType.Tokens) {
                 result = bytes.concat(result, abi.encode(context.tokens));
-            } else if (paramType == GuardParamType.RiskModel) {
-            } else if (paramType == GuardParamType.RiskApetite) {
-            } else if (paramType == GuardParamType.TokenID) {
-            } else if (paramType == GuardParamType.AssetGroup) {
-            } else {
+            } else if (paramType == GuardParamType.RiskModel) {} else if (paramType == GuardParamType.RiskApetite) {}
+            else if (paramType == GuardParamType.TokenID) {} else if (paramType == GuardParamType.AssetGroup) {} else {
                 revert("Invalid param type");
             }
         }
