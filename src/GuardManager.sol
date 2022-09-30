@@ -126,26 +126,36 @@ contract GuardManager is Ownable, IGuardManager {
     }
 
     /**
-     * @notice Resolve parameter values to be used in the guard function call - based on parameter types defined in the guard object.
+     * @notice Resolve parameter values to be used in the guard function call and encode
+     * together with methodID.
+     * @dev As specified in https://docs.soliditylang.org/en/v0.8.17/abi-spec.html#use-of-dynamic-types
      */
     function _encodeFunctionCall(address smartVaultId, GuardDefinition memory guard, RequestContext memory context)
         internal
         pure
         returns (bytes memory)
     {
-        uint16 customValueCounter = 0;
-
         bytes4 methodID = bytes4(keccak256(abi.encodePacked(guard.methodSignature)));
+        uint256 paramLength = guard.methodParamTypes.length;
         bytes memory result = new bytes(0);
 
         result = bytes.concat(result, methodID);
+        uint16 customValueIdx = 0;
+        uint256 argsEndLoc = paramLength * 32;
 
-        for (uint8 i = 0; i < guard.methodParamTypes.length; i++) {
+        // Loop through parameters and
+        // - store values for simple types
+        // - store param value location for dynamic types
+        for (uint8 i = 0; i < paramLength; i++) {
             GuardParamType paramType = guard.methodParamTypes[i];
 
-            if (paramType == GuardParamType.CustomValue) {
-                result = bytes.concat(result, abi.encode(guard.methodParamValues[i]));
-                customValueCounter++;
+            if (paramType == GuardParamType.DynamicCustomValue) {
+                result = bytes.concat(result, abi.encode(argsEndLoc));
+                argsEndLoc += 32 + guard.methodParamValues[customValueIdx].length;
+                customValueIdx++;
+            } else if (paramType == GuardParamType.CustomValue) {
+                result = bytes.concat(result, guard.methodParamValues[customValueIdx]);
+                customValueIdx++;
             } else if (paramType == GuardParamType.VaultAddress) {
                 result = bytes.concat(result, abi.encode(smartVaultId));
             } else if (paramType == GuardParamType.Receiver) {
@@ -153,12 +163,33 @@ contract GuardManager is Ownable, IGuardManager {
             } else if (paramType == GuardParamType.Executor) {
                 result = bytes.concat(result, abi.encode(context.executor));
             } else if (paramType == GuardParamType.Amounts) {
-                result = bytes.concat(result, abi.encode(context.amounts));
+                result = bytes.concat(result, abi.encode(argsEndLoc));
+                argsEndLoc += 32 + context.amounts.length;
             } else if (paramType == GuardParamType.Tokens) {
-                result = bytes.concat(result, abi.encode(context.tokens));
-            } else if (paramType == GuardParamType.RiskModel) {} else if (paramType == GuardParamType.RiskApetite) {}
-            else if (paramType == GuardParamType.TokenID) {} else if (paramType == GuardParamType.AssetGroup) {} else {
+                result = bytes.concat(result, abi.encode(argsEndLoc));
+                argsEndLoc += 32 + context.tokens.length;
+            } else {
                 revert("Invalid param type");
+            }
+        }
+
+        // Loop through params again and store values for dynamic types
+        customValueIdx = 0;
+        for (uint8 i = 0; i < paramLength; i++) {
+            GuardParamType paramType = guard.methodParamTypes[i];
+
+            if (paramType == GuardParamType.DynamicCustomValue) {
+                result = bytes.concat(result, abi.encode(guard.methodParamValues[customValueIdx].length / 32));
+                result = bytes.concat(result, guard.methodParamValues[customValueIdx]);
+                customValueIdx++;
+            } else if (paramType == GuardParamType.CustomValue) {
+                customValueIdx++;
+            } else if (paramType == GuardParamType.Amounts) {
+                result = bytes.concat(result, abi.encode(context.amounts.length));
+                result = bytes.concat(result, abi.encodePacked(context.amounts));
+            } else if (paramType == GuardParamType.Tokens) {
+                result = bytes.concat(result, abi.encode(context.tokens.length));
+                result = bytes.concat(result, abi.encodePacked(context.tokens));
             }
         }
 

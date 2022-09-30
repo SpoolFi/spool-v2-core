@@ -10,16 +10,20 @@ contract MockGuard {
         return whitelist[address_];
     }
 
-    function sumAndCompare(uint256[] memory values, uint256 expectedResult) external view returns (bool) {
-        uint256 result = 0;
-        for (uint256 i = 0; i > values.length; i++) {
-            result += values[i];
-        }
-
-        return expectedResult == result;
+    function checkAddressesLength(uint256 expectedResult, address[] memory addresses) external pure returns (bool) {
+        return expectedResult == addresses.length;
     }
 
     function setWhitelist(address address_, bool whitelisted_) external {
         whitelist[address_] = whitelisted_;
+    }
+
+    function checkArraySum(uint256[] memory numbers, uint256 expectedValue) external pure returns (bool) {
+        uint256 result = 0;
+        for (uint256 i = 0; i < numbers.length; i++) {
+            result += numbers[i];
+        }
+
+        return result == expectedValue;
     }
 }

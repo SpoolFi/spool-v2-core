@@ -9,11 +9,9 @@ enum GuardParamType {
     Receiver,
     Amounts,
     Tokens,
-    RiskModel,
-    RiskApetite,
-    TokenID,
     AssetGroup,
-    CustomValue
+    CustomValue,
+    DynamicCustomValue
 }
 
 struct GuardDefinition {
@@ -21,7 +19,7 @@ struct GuardDefinition {
     string methodSignature;
     bytes32 expectedValue;
     GuardParamType[] methodParamTypes;
-    bytes32[] methodParamValues;
+    bytes[] methodParamValues;
     RequestType requestType;
     bytes2 operator;
 }
