@@ -4,11 +4,13 @@ pragma solidity ^0.8.13;
 import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
 import "../src/ActionManager.sol";
+import "../src/mocks/MockToken.sol";
 import {MockAction,MockActionSetAmountTo100} from "./mocks/MockAction.sol";
 
 contract ActionManagerTest is Test {
     IActionManager actionManager;
     IAction mockAction;
+    MockToken mockToken;
 
     address smartVaultId = address(1);
     address user = address(256);
@@ -16,6 +18,7 @@ contract ActionManagerTest is Test {
     function setUp() public {
         actionManager = new ActionManager();
         mockAction = new MockAction();
+        mockToken = new MockToken("MCK", "MCK");
     }
 
     function test_whitelistAction_addressIsNotWhitelisted() public {
@@ -57,12 +60,4 @@ contract ActionManagerTest is Test {
         ActionContext memory actionContext = ActionContext(address(user), address(user), RequestType.Deposit, tokens, amounts);
         actionManager.runActions(smartVaultId, actionContext);
     }
-
-    // function test_dejantest() public {
-       
-    //     bool result = arrayBla[smartVaultId];
-
-    //     assertTrue(result == false);
-        
-    // }
 }

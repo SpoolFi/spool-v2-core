@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
-import {console} from "forge-std/console.sol";
 import "@0xsequence/sstore2/contracts/SSTORE2.sol";
 import "./interfaces/IAction.sol";
 
@@ -34,7 +33,6 @@ contract ActionManager is IActionManager {
         for (uint256 i; i < actions_.length; i++) {
             IAction action = actions_[i];
             _onlyWhitelistedAction(address(action));
-            console.log(uint(requestTypes[i]));
             actions[smartVault][uint8(requestTypes[i])].push(address(action));
         }
 
@@ -51,7 +49,8 @@ contract ActionManager is IActionManager {
         areActionsInitialized(smartVault)
     {
         address[] memory actions_ = actions[smartVault][uint8(actionCtx.requestType)];
-        ActionBag memory bag;
+        ActionBag memory bag = ActionBag(actionCtx.tokens, actionCtx.amounts, "");
+
         for (uint256 i; i < actions_.length; i++) {
             bag = _executeAction(smartVault, actions_[i], actionCtx, bag);
         }

@@ -14,7 +14,8 @@ contract MockAction is IAction {
         external
         returns (ActionBag memory) 
     {
-       console.log("lala");
+       console.log("MockAction.executeAction");
+       return executionBag;
     }
 }
 
@@ -29,7 +30,7 @@ contract MockActionSetAmountTo100 is IAction {
         external
         returns (ActionBag memory) 
     {
-        console.log("lala");
+        console.log("MockActionSetAmountTo100.executeAction");
         actionBag.amounts[0]=100;
         
         return actionBag;
