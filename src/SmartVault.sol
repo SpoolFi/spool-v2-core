@@ -36,11 +36,12 @@ contract SmartVault is ERC1155Upgradeable, ISmartVault {
     // @notice Risk provider
     address internal immutable _riskProvider;
 
-    // @notice Mapping from token ID => owner address
-    mapping(uint256 => address) private _depositNftOwners;
+    uint256 internal maxDepositTokenID = 2; //TODO: uint256 / 2
+
+    uint256 internal maxWithdrawalTokenID = 2; //TODO: uint256 / 2
 
     // @notice Mapping from token ID => owner address
-    mapping(uint256 => address) private _withdrawalNftOwners;
+    mapping(uint256 => address) private _nftOwners;
 
     // @notice Mapping from address => array of token IDs
     mapping(address => uint256[]) private _depositNfts;
