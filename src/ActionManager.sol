@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
+import {console} from "forge-std/console.sol";
 import "@0xsequence/sstore2/contracts/SSTORE2.sol";
 import "./interfaces/IAction.sol";
 

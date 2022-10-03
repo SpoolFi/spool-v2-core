@@ -28,5 +28,6 @@ interface IActionManager {
     function setActions(address smartVault, IAction[] calldata actions, RequestType[] calldata requestTypes) external;
     function runActions(address smartVault, ActionContext calldata actionCtx) external;
     function whitelistAction(address action, bool whitelist) external;
+
     event ActionListed(address indexed action, bool whitelisted);
 }
