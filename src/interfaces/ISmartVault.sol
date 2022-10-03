@@ -4,6 +4,18 @@ pragma solidity ^0.8.16;
 import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "./IVault.sol";
 
+
+struct DepositMetadata {
+    address[] tokens;
+    uint256[] amounts;
+}
+
+struct WithdrawalMetadata {
+    address[] tokens;
+    uint256[] amounts;
+}
+
+
 interface ISmartVault is IVault {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 

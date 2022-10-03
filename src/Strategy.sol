@@ -12,6 +12,9 @@ contract Strategy is ERC1155Upgradeable, IStrategy {
     // @notice Name of the strategy
     string private _strategyName;
 
+    // @notice Strategy Share Token ID
+    uint256 public constant SSTokenID = 1;
+
     constructor(string memory strategyName_) {
         _strategyName = strategyName_;
     }

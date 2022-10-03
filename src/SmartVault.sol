@@ -12,27 +12,66 @@ import "./interfaces/IAction.sol";
 contract SmartVault is ERC1155Upgradeable, ISmartVault {
     /* ========== STATE VARIABLES ========== */
 
+    // @notice Guard manager
     IGuardManager internal immutable guardManager;
+
+    // @notice Action manager
     IActionManager internal immutable actionManager;
+
+    // @notice Strategy manager
     IStrategyManager internal immutable strategyManager;
 
+    // @notice SmartVault receipt token ID
+    uint256 public constant SVTokenID = 1;
+
+    // @notice Withdrawal NFT Token ID
+    uint256 public constant WithdrawalTokenID = 2;
+
+    // @notice Deposit NFT Token IDs
+    uint256 public constant DepositTokenID = 3;
+
+    // @notice Asset group address array
     address[] internal _assetGroup;
+
+    // @notice Vault name
+    string internal _vaultName;
+
+    // @notice Risk score
+    int256 internal immutable _riskTolerance;
+
+    // @notice Risk provider
+    address internal immutable _riskProvider;
+
+    // @notice User deposit metadata
+    mapping(address => DepositMetadata) internal _depositMetadata;
+
+    // @notice User withdrawal metadata
+    mapping(address => WithdrawalMetadata) internal _withdrawalMetadata;
 
     /* ========== CONSTRUCTOR ========== */
 
     /**
      * @notice Initializes variables
+     * @param vaultName_ TODO
+     * @param riskTolerance_ TODO
+     * @param riskProvider_ TODO
      * @param assets_ TODO
      * @param guardManager_ TODO
      * @param actionManager_ TODO
      * @param strategyManager_ TODO
      */
     constructor(
+        string memory vaultName_,
+        int256 riskTolerance_,
+        address riskProvider_,
         address[] memory assets_,
         IGuardManager guardManager_,
         IActionManager actionManager_,
         IStrategyManager strategyManager_
     ) {
+        _vaultName = vaultName_;
+        _riskTolerance = riskTolerance_;
+        _riskProvider = riskProvider_;
         _assetGroup = assets_;
         guardManager = guardManager_;
         actionManager = actionManager_;
@@ -48,24 +87,24 @@ contract SmartVault is ERC1155Upgradeable, ISmartVault {
     /**
      * @return name Name of the vault
      */
-    function vaultName() external view returns (string memory name) {
-        revert("0");
+    function vaultName() external view returns (string memory) {
+        return _vaultName;
     }
 
     /**
      * @notice TODO
-     * @return riskTolerance TODO
+     * @return riskTolerance
      */
-    function riskTolerance() external view returns (int256 riskTolerance) {
-        revert("0");
+    function riskTolerance() external view returns (int256) {
+        return _riskTolerance;
     }
 
     /**
      * @notice TODO
-     * @return riskProviderAddress TODO
+     * @return riskProviderAddress
      */
-    function riskProvider() external view returns (address riskProviderAddress) {
-        revert("0");
+    function riskProvider() external view returns (address) {
+        return _riskProvider;
     }
 
     /**
