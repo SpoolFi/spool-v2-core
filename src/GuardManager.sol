@@ -2,9 +2,9 @@
 pragma solidity ^0.8.16;
 
 import {console} from "forge-std/console.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@0xsequence/sstore2/contracts/SSTORE2.sol";
+import "@openzeppelin/access/Ownable.sol";
+import "@openzeppelin/utils/Strings.sol";
+import "@0xsequence/sstore2/SSTORE2.sol";
 import "./interfaces/IGuardManager.sol";
 
 contract GuardManager is Ownable, IGuardManager {

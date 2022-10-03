@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
-import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
-import "../lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import "../lib/openzeppelin-contracts/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/access/Ownable.sol";
+import "@openzeppelin/token/ERC20/ERC20.sol";
+import "@openzeppelin-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "./interfaces/ISmartVault.sol";
 import "./interfaces/IGuardManager.sol";
 import "./interfaces/IStrategyManager.sol";
 import "./interfaces/IAction.sol";
 
-contract SmartVault is ISmartVault, Ownable, ERC1155 {
+contract SmartVault is ERC1155Upgradeable, ISmartVault {
     /* ========== STATE VARIABLES ========== */
 
     IGuardManager internal immutable guardManager;
@@ -32,11 +32,15 @@ contract SmartVault is ISmartVault, Ownable, ERC1155 {
         IGuardManager guardManager_,
         IActionManager actionManager_,
         IStrategyManager strategyManager_
-    ) ERC1155("") {
+    ) {
         _assetGroup = assets_;
         guardManager = guardManager_;
         actionManager = actionManager_;
         strategyManager = strategyManager_;
+    }
+
+    function initialize() external initializer {
+        __ERC1155_init("");
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */

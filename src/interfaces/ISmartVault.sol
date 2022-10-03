@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
-import "../../lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "./IVault.sol";
 
 interface ISmartVault is IVault {

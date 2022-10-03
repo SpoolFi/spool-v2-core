@@ -1,6 +1,6 @@
 pragma solidity ^0.8.16;
 
-import "../../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/token/ERC20/IERC20.sol";
 import "./IVault.sol";
 
 /**

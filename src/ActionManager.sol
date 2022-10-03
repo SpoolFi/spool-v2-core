@@ -2,7 +2,7 @@
 pragma solidity ^0.8.16;
 
 import {console} from "forge-std/console.sol";
-import "@0xsequence/sstore2/contracts/SSTORE2.sol";
+import "@0xsequence/sstore2/SSTORE2.sol";
 import "./interfaces/IAction.sol";
 
 contract ActionManager is IActionManager {
