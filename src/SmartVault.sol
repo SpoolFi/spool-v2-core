@@ -12,6 +12,15 @@ import "./interfaces/IAction.sol";
 contract SmartVault is ERC1155Upgradeable, ISmartVault {
     /* ========== STATE VARIABLES ========== */
 
+    // @notice SmartVault receipt token ID
+    uint256 public constant SVT_TOKEN_ID = 1;
+
+    // @notice Withdrawal NFT Token ID
+    uint256 public constant WITHDRAWAL_TOKEN_ID = 2;
+
+    // @notice Deposit NFT Token IDs
+    uint256 public constant DEPOSIT_TOKEN_ID = 3;
+
     // @notice Guard manager
     IGuardManager internal immutable guardManager;
 
@@ -20,15 +29,6 @@ contract SmartVault is ERC1155Upgradeable, ISmartVault {
 
     // @notice Strategy manager
     IStrategyManager internal immutable strategyManager;
-
-    // @notice SmartVault receipt token ID
-    uint256 public constant SVTokenID = 1;
-
-    // @notice Withdrawal NFT Token ID
-    uint256 public constant WithdrawalTokenID = 2;
-
-    // @notice Deposit NFT Token IDs
-    uint256 public constant DepositTokenID = 3;
 
     // @notice Asset group address array
     address[] internal _assetGroup;

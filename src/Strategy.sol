@@ -9,11 +9,11 @@ import "./interfaces/IStrategy.sol";
 contract Strategy is ERC1155Upgradeable, IStrategy {
     /* ========== STATE VARIABLES ========== */
 
+    // @notice Strategy Share Token ID
+    uint256 public constant SST_TOKEN_ID = 1;
+
     // @notice Name of the strategy
     string private _strategyName;
-
-    // @notice Strategy Share Token ID
-    uint256 public constant SSTokenID = 1;
 
     constructor(string memory strategyName_) {
         _strategyName = strategyName_;
