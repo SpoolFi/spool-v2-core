@@ -15,8 +15,15 @@ contract Strategy is ERC1155Upgradeable, IStrategy {
     // @notice Name of the strategy
     string private _strategyName;
 
-    constructor(string memory strategyName_) {
+    // @notice Asset group addresses
+    address[] internal _assetGroup;
+
+    constructor(
+        string memory strategyName_,
+        address[] memory assetGroup_
+    ){
         _strategyName = strategyName_;
+        _assetGroup = assetGroup_;
     }
 
     function initialize() external initializer {
@@ -32,7 +39,7 @@ contract Strategy is ERC1155Upgradeable, IStrategy {
      * - MUST NOT revert.
      */
     function asset() external view returns (address[] memory assetTokenAddresses) {
-        revert("0");
+        return _assetGroup;
     }
 
     /**
