@@ -11,13 +11,17 @@ contract GuardManagerTest is Test {
     MockGuard mockGuard;
     address smartVaultId = address(1);
     address user = address(256);
+    GuardDefinition[] guards;
 
     function setUp() public {
         guardManager = new GuardManager();
         mockGuard = new MockGuard();
+
+        _createGuards();
+        guardManager.setGuards(smartVaultId, guards);
     }
 
-    function _createGuards() internal view returns (GuardDefinition[] memory) {
+    function _createGuards() internal {
         bytes[] memory emptyBytes = new bytes[](0);
         GuardParamType[] memory paramTypes = new GuardParamType[](1);
         paramTypes[0] = GuardParamType.Executor;
@@ -80,18 +84,13 @@ contract GuardManagerTest is Test {
             "=="
         );
 
-        GuardDefinition[] memory guards = new GuardDefinition[](4);
-        guards[0] = guard;
-        guards[1] = guard2;
-        guards[2] = guard3;
-        guards[3] = guard4;
-
-        return guards;
+        guards.push(guard);
+        guards.push(guard2);
+        guards.push(guard3);
+        guards.push(guard4);
     }
 
-    function testPersistGuards() public {
-        GuardDefinition[] memory guards = _createGuards();
-        guardManager.setGuards(smartVaultId, guards);
+    function test_readGuards() public {
         GuardDefinition[] memory storedGuards = guardManager.readGuards(smartVaultId);
 
         assertEq(storedGuards.length, 4);
@@ -104,13 +103,12 @@ contract GuardManagerTest is Test {
         assertEq(uint8(storedGuards[0].methodParamTypes[0]), uint8(GuardParamType.Executor));
     }
 
-    function testRunGuards() public {
-        guardManager.setGuards(smartVaultId, _createGuards());
+    function test_runGuards() public {
         address[] memory tokens = new address[](4);
-        tokens[0] = address(mockGuard);
-        tokens[1] = address(mockGuard);
-        tokens[2] = address(mockGuard);
-        tokens[3] = address(mockGuard);
+        tokens[0] = address(10);
+        tokens[1] = address(11);
+        tokens[2] = address(12);
+        tokens[3] = address(13);
 
         RequestContext memory context =
             RequestContext(address(user), address(user), RequestType.Deposit, new uint256[](0), tokens);
@@ -121,5 +119,9 @@ contract GuardManagerTest is Test {
         mockGuard.setWhitelist(user, true);
 
         guardManager.runGuards(smartVaultId, context);
+    }
+
+    function test_writeGuards() public {
+        guardManager.setGuards(address(2), guards);
     }
 }
