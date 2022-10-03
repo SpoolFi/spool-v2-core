@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
+import {console} from "forge-std/console.sol";
 import "@0xsequence/sstore2/contracts/SSTORE2.sol";
 import "./interfaces/IAction.sol";
 
@@ -33,6 +34,7 @@ contract ActionManager is IActionManager {
         for (uint256 i; i < actions_.length; i++) {
             IAction action = actions_[i];
             _onlyWhitelistedAction(address(action));
+            console.log(uint(requestTypes[i]));
             actions[smartVault][uint8(requestTypes[i])].push(address(action));
         }
 
@@ -50,7 +52,6 @@ contract ActionManager is IActionManager {
     {
         address[] memory actions_ = actions[smartVault][uint8(actionCtx.requestType)];
         ActionBag memory bag;
-
         for (uint256 i; i < actions_.length; i++) {
             bag = _executeAction(smartVault, actions_[i], actionCtx, bag);
         }
@@ -61,8 +62,10 @@ contract ActionManager is IActionManager {
      * @param action TODO
      * @param whitelist TODO
      */
-    function whitelistAction(address action, bool whitelist) external {
-        require(actionWhitelisted[action] == whitelist, "ActionManager::whitelistAction: Action status already set.");
+    function whitelistAction(address action, bool whitelist) external 
+    // TODO MISSING MODIFIER FOR ACCESS CONTROL
+    {
+        require(actionWhitelisted[action] != whitelist, "ActionManager::whitelistAction: Action status already set.");
         actionWhitelisted[action] = whitelist;
 
         emit ActionListed(action, whitelist);
@@ -74,7 +77,7 @@ contract ActionManager is IActionManager {
         private
         returns (ActionBag memory)
     {
-        return ActionBag(new address[](0), new uint256[](0), "");
+        return IAction(action_).executeAction(actionCtx, bag);
     }
 
     function _isInitialized(address smartVault, bool initialized) private view {

@@ -19,7 +19,7 @@ struct ActionBag {
 
 interface IAction {
     function actionType() external view;
-    function executeAction(ActionContext calldata actionCtx, ActionBag calldata executionBag)
+    function executeAction(ActionContext calldata actionCtx, ActionBag calldata actionBag)
         external
         returns (ActionBag memory);
 }
@@ -27,6 +27,6 @@ interface IAction {
 interface IActionManager {
     function setActions(address smartVault, IAction[] calldata actions, RequestType[] calldata requestTypes) external;
     function runActions(address smartVault, ActionContext calldata actionCtx) external;
-
+    function whitelistAction(address action, bool whitelist) external;
     event ActionListed(address indexed action, bool whitelisted);
 }
