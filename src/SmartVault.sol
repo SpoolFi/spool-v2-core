@@ -15,12 +15,6 @@ contract SmartVault is ERC1155Upgradeable, ISmartVault {
     // @notice SmartVault receipt token ID
     uint256 public constant SVT_TOKEN_ID = 1;
 
-    // @notice Withdrawal NFT Token ID
-    uint256 public constant WITHDRAWAL_TOKEN_ID = 2;
-
-    // @notice Deposit NFT Token IDs
-    uint256 public constant DEPOSIT_TOKEN_ID = 3;
-
     // @notice Guard manager
     IGuardManager internal immutable guardManager;
 
@@ -42,11 +36,23 @@ contract SmartVault is ERC1155Upgradeable, ISmartVault {
     // @notice Risk provider
     address internal immutable _riskProvider;
 
-    // @notice User deposit metadata
-    mapping(address => DepositMetadata) internal _depositMetadata;
+    // @notice Mapping from token ID => owner address
+    mapping(uint256 => address) private _depositNftOwners;
 
-    // @notice User withdrawal metadata
-    mapping(address => WithdrawalMetadata) internal _withdrawalMetadata;
+    // @notice Mapping from token ID => owner address
+    mapping(uint256 => address) private _withdrawalNftOwners;
+
+    // @notice Mapping from address => array of token IDs
+    mapping(address => uint256[]) private _depositNfts;
+
+    // @notice Mapping from address => array of token IDs
+    mapping(address => uint256[]) private _withdrawalNfts;
+
+    // @notice Deposit metadata registry
+    mapping(uint256 => DepositMetadata) private _depositMetadata;
+
+    // @notice Withdrawal metadata registry
+    mapping(uint256 => WithdrawalMetadata) private _withdrawalMetadata;
 
     /* ========== CONSTRUCTOR ========== */
 
