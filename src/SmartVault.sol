@@ -97,14 +97,15 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
-    function supportsInterface(bytes4 interfaceId) 
-        public 
-        view 
-        virtual 
-        override(AccessControlUpgradeable, ERC1155Upgradeable, IERC165Upgradeable) 
-        returns (bool) 
-    { 
-        return super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override (AccessControlUpgradeable, ERC1155Upgradeable, IERC165Upgradeable)
+        returns (bool)
+    {
+        return AccessControlUpgradeable.supportsInterface(interfaceId)
+            || ERC1155Upgradeable.supportsInterface(interfaceId);
     }
 
     /**
