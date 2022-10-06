@@ -15,6 +15,9 @@ contract StrategyManager is IStrategyManager {
     /// @notice TODO
     mapping(address => uint256) _latestIndexes;
 
+    /// @notice TODO strategy => index => token => amount
+    mapping(address => mapping(uint256 => mapping(address => uint256))) _strategyDeposits;
+
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
@@ -59,5 +62,25 @@ contract StrategyManager is IStrategyManager {
      */
     function setStrategies(address smartVault, address[] memory strategies_) external {
         _smartVaultStrategies[smartVault] = strategies_;
+    }
+
+    /**
+     * @notice TODO
+     */
+    function addStrategyDeposits(
+        address smartVault,
+        uint256[] memory allocations,
+        uint256[] memory amounts,
+        address[] memory tokens
+    ) external {
+        require(tokens.length == amounts.length, "StrategyManager::addStrategyDeposit: Invalid length");
+        // address[] memory strategies = _smartVaultStrategies[smartVault];
+        // uint256[] memory allocations = ...
+
+        // TODO:
+        // - fetch smart vault strats and allocations
+        // - loop strats and calculate deposit amounts per token and strategy
+        // - fetch last index for strat
+        // - update _strategyDeposits accordingly
     }
 }

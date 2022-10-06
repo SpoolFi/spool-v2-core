@@ -9,16 +9,14 @@ import "@openzeppelin-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "./interfaces/ISmartVault.sol";
 import "./interfaces/IGuardManager.sol";
+import "./interfaces/IRiskManager.sol";
 import "./interfaces/IStrategyManager.sol";
 import "./interfaces/IAction.sol";
 
-contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgradeable, ISmartVault {
+contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     using SafeERC20 for ERC20;
 
     /* ========== STATE VARIABLES ========== */
-
-    bytes32 public constant RISK_MANAGER_ROLE = keccak256("RISK");
-    bytes32 public constant STRATEGY_MANAGER_ROLE = keccak256("STRATEGIES");
 
     // @notice Guard manager
     IGuardManager internal immutable guardManager;
@@ -28,6 +26,9 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
 
     // @notice Strategy manager
     IStrategyManager internal immutable strategyManager;
+
+    // @notice Risk manager
+    IRiskManager internal immutable riskManager;
 
     // @notice Asset group address array
     address[] internal _assetGroup;
@@ -59,43 +60,30 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * @param guardManager_ TODO
      * @param actionManager_ TODO
      * @param strategyManager_ TODO
+     * @param riskManager_ TODO
      */
     constructor(
         string memory vaultName_,
-        int256 riskTolerance_,
-        address riskProvider_,
         address[] memory assets_,
         IGuardManager guardManager_,
         IActionManager actionManager_,
-        IStrategyManager strategyManager_
+        IStrategyManager strategyManager_,
+        IRiskManager riskManager_
     ) {
         _vaultName = vaultName_;
         _assetGroup = assets_;
         guardManager = guardManager_;
         actionManager = actionManager_;
         strategyManager = strategyManager_;
+        riskManager = riskManager_;
     }
 
-    function initialize(address riskManager) external initializer {
+    function initialize() external initializer {
         __ERC1155_init("");
         __ERC20_init("", "");
-
-        _setupRole(RISK_MANAGER_ROLE, riskManager);
-        _setupRole(STRATEGY_MANAGER_ROLE, address(strategyManager));
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
-
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override (AccessControlUpgradeable, ERC1155Upgradeable, IERC165Upgradeable)
-        returns (bool)
-    {
-        return AccessControlUpgradeable.supportsInterface(interfaceId)
-            || ERC1155Upgradeable.supportsInterface(interfaceId);
-    }
 
     /**
      * @return name Name of the vault
@@ -108,7 +96,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * @notice TODO
      * @return isTransferable TODO
      */
-    function isShareTokenTransferable() external view returns (bool isTransferable) {
+    function isShareTokenTransferable() external view returns (bool) {
         revert("0");
     }
 
@@ -121,7 +109,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * - MUST return 2 ** 256 - 1 if there is no limit on the maximum amount of assets that may be deposited.
      * - MUST NOT revert.
      */
-    function maxDeposit(address receiver) external view returns (uint256[] memory maxAssets) {
+    function maxDeposit(address receiver) external view returns (uint256[] memory) {
         revert("0");
     }
 
@@ -141,7 +129,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * NOTE: any unfavorable discrepancy between convertToShares and previewDeposit SHOULD be considered slippage in
      * share price or some other type of condition, meaning the depositor will lose assets by depositing.
      */
-    function previewDeposit(uint256[] calldata assets) external view returns (uint256 shares) {
+    function previewDeposit(uint256[] calldata assets) external view returns (uint256) {
         revert("0");
     }
 
@@ -152,7 +140,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * - MUST return 2 ** 256 - 1 if there is no limit on the maximum amount of shares that may be minted.
      * - MUST NOT revert.
      */
-    function maxMint(address receiver) external view returns (uint256 maxShares) {
+    function maxMint(address receiver) external view returns (uint256) {
         revert("0");
     }
 
@@ -172,7 +160,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * NOTE: any unfavorable discrepancy between convertToAssets and previewMint SHOULD be considered slippage in
      * share price or some other type of condition, meaning the depositor will lose assets by minting.
      */
-    function previewMint(uint256 shares) external view returns (uint256[] memory assets) {
+    function previewMint(uint256 shares) external view returns (uint256[] memory) {
         revert("0");
     }
 
@@ -183,7 +171,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * - MUST return a limited value if owner is subject to some withdrawal limit or timelock.
      * - MUST NOT revert.
      */
-    function maxWithdraw(address owner) external view returns (uint256[] memory maxAssets) {
+    function maxWithdraw(address owner) external view returns (uint256[] memory) {
         revert("0");
     }
 
@@ -204,7 +192,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * NOTE: any unfavorable discrepancy between convertToShares and previewWithdraw SHOULD be considered slippage in
      * share price or some other type of condition, meaning the depositor will lose assets by depositing.
      */
-    function previewWithdraw(uint256[] calldata assets) external view returns (uint256 shares) {
+    function previewWithdraw(uint256[] calldata assets) external view returns (uint256) {
         revert("0");
     }
 
@@ -217,7 +205,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * - MUST return balanceOf(owner) if owner is not subject to any withdrawal limit or timelock.
      * - MUST NOT revert.
      */
-    function maxRedeem(address owner) external view returns (uint256 maxShares) {
+    function maxRedeem(address owner) external view returns (uint256) {
         revert("0");
     }
 
@@ -237,7 +225,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * NOTE: any unfavorable discrepancy between convertToAssets and previewRedeem SHOULD be considered slippage in
      * share price or some other type of condition, meaning the depositor will lose assets by redeeming.
      */
-    function previewRedeem(uint256 shares) external view returns (uint256 assets) {
+    function previewRedeem(uint256 shares) external view returns (uint256) {
         revert("0");
     }
 
@@ -247,7 +235,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * - MUST be an ERC-20 token contract.
      * - MUST NOT revert.
      */
-    function asset() external view returns (address[] memory assetTokenAddresses) {
+    function asset() external view returns (address[] memory) {
         return _assetGroup;
     }
 
@@ -258,7 +246,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * - MUST be inclusive of any fees that are charged against assets in the Vault.
      * - MUST NOT revert.
      */
-    function totalAssets() external view returns (uint256[] memory totalManagedAssets) {
+    function totalAssets() external view returns (uint256[] memory) {
         revert("0");
     }
 
@@ -276,7 +264,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * “average-user’s” price-per-share, meaning what the average user should expect to see when exchanging to and
      * from.
      */
-    function convertToShares(uint256[] calldata assets) external view returns (uint256 shares) {
+    function convertToShares(uint256[] calldata assets) external view returns (uint256) {
         revert("0");
     }
 
@@ -294,7 +282,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * “average-user’s” price-per-share, meaning what the average user should expect to see when exchanging to and
      * from.
      */
-    function convertToAssets(uint256 shares) external view returns (uint256[] memory assets) {
+    function convertToAssets(uint256 shares) external view returns (uint256[] memory) {
         revert("0");
     }
 
@@ -314,7 +302,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * NOTE: some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
      * Those methods should be performed separately.
      */
-    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 receipt) {
+    function redeem(uint256 shares, address receiver, address owner) external returns (uint256) {
         revert("0");
     }
 
@@ -323,7 +311,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * @param nftIds TODO
      * @return shares TODO
      */
-    function burnDepositNFTs(uint256[] calldata nftIds) external returns (uint256 shares) {
+    function burnDepositNFTs(uint256[] calldata nftIds) external returns (uint256) {
         revert("0");
     }
 
@@ -332,7 +320,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * @param nftIds TODO
      * @return assets TODO
      */
-    function burnWithdrawalNFTs(uint256[] calldata nftIds) external returns (uint256[] memory assets) {
+    function burnWithdrawalNFTs(uint256[] calldata nftIds) external returns (uint256[] memory) {
         revert("0");
     }
 
@@ -342,10 +330,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      * @param assets TODO
      * @param receiver TODO
      */
-    function depositFor(uint256[] calldata assets, address receiver, address depositor)
-        external
-        returns (uint256 receipt)
-    {
+    function depositFor(uint256[] calldata assets, address receiver, address depositor) external returns (uint256) {
         _runGuards(depositor, receiver, assets, _assetGroup, RequestType.Deposit);
         _runActions(depositor, receiver, assets, _assetGroup, RequestType.Deposit);
         _mintDepositNFT(receiver, assets, _assetGroup);
@@ -362,7 +347,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      */
     function depositFast(uint256[] calldata assets, address receiver, uint256[][] calldata slippages)
         external
-        returns (uint256 receipt)
+        returns (uint256)
     {
         _runGuards(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit);
         // TODO: pass slippages
@@ -387,7 +372,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
         address receiver,
         uint256[][] calldata, /*slippages*/
         address owner
-    ) external returns (uint256[] memory returnedAssets) {
+    ) external returns (uint256[] memory) {
         _runGuards(owner, receiver, assets, tokens, RequestType.Withdrawal);
         // TODO: pass slippages
         _runActions(owner, receiver, assets, tokens, RequestType.Withdrawal);
@@ -408,7 +393,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
-    function mint(uint256 shares, address receiver) external returns (uint256[] memory assets) {
+    function mint(uint256 shares, address receiver) external returns (uint256[] memory) {
         revert("0");
     }
 
@@ -430,7 +415,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      */
     function withdraw(uint256[] calldata assets, address[] calldata tokens, address receiver, address owner)
         external
-        returns (uint256 receipt)
+        returns (uint256)
     {
         _runGuards(owner, receiver, assets, tokens, RequestType.Withdrawal);
         _runActions(owner, receiver, assets, tokens, RequestType.Withdrawal);
@@ -452,7 +437,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
-    function deposit(uint256[] calldata assets, address receiver) external returns (uint256 receipt) {
+    function deposit(uint256[] calldata assets, address receiver) external returns (uint256) {
         _runGuards(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit);
         _runActions(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit);
         _mintDepositNFT(receiver, assets, _assetGroup);
@@ -531,7 +516,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
         actionManager.runActions(address(this), context);
     }
 
-    function _depositAssets(address initiator, address receiver, uint256[] memory assets, address[] memory tokens)
+    function _depositAssets(address initiator, address, /* receiver */ uint256[] memory assets, address[] memory tokens)
         internal
     {
         require(assets.length == tokens.length, "SmartVault::depositFor::invalid assets length");
@@ -542,11 +527,14 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
             // - for vault: which vault, which strat, which index
             ERC20(tokens[i]).safeTransferFrom(initiator, address(strategyManager), assets[i]);
         }
+
+        uint256[] memory allocations = riskManager.allocations(address(this));
+        strategyManager.addStrategyDeposits(address(this), allocations, assets, tokens);
     }
 
     function _withdrawAssets(address from, address to, uint256[] memory assets, address[] memory tokens)
         internal
-        returns (uint256[] memory returnedAssets)
+        returns (uint256[] memory)
     {
         return new uint256[](1);
     }

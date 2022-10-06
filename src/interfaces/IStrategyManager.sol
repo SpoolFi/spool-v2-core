@@ -8,4 +8,10 @@ interface IStrategyManager {
     function getLatestIndexes(address smartVault) external view returns (uint256[] memory);
     function strategies(address smartVault) external view returns (address[] memory strategyAddresses);
     function setStrategies(address smartVault, address[] memory strategies) external;
+    function addStrategyDeposits(
+        address smartVault,
+        uint256[] memory allocations,
+        uint256[] memory amounts,
+        address[] memory tokens
+    ) external;
 }
