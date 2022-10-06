@@ -18,10 +18,7 @@ contract Strategy is ERC1155Upgradeable, IStrategy {
     // @notice Asset group addresses
     address[] internal _assetGroup;
 
-    constructor(
-        string memory strategyName_,
-        address[] memory assetGroup_
-    ){
+    constructor(string memory strategyName_, address[] memory assetGroup_) {
         _strategyName = strategyName_;
         _assetGroup = assetGroup_;
     }

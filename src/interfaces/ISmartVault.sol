@@ -2,21 +2,21 @@
 pragma solidity ^0.8.16;
 
 import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
+import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "./IVault.sol";
 
-
 struct DepositMetadata {
-    address[] tokens;
     uint256[] amounts;
+    uint256 initiated; // initiated / locked until / timelock ?
 }
 
 struct WithdrawalMetadata {
-    address[] tokens;
     uint256[] amounts;
+    uint256 initiated;
 }
 
-
-interface ISmartVault is IVault {
+interface ISmartVault is IVault, IERC1155Upgradeable, IERC20Upgradeable {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /**

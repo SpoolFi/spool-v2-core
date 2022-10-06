@@ -9,11 +9,8 @@ import "./interfaces/IGuardManager.sol";
 import "./interfaces/IStrategyManager.sol";
 import "./interfaces/IAction.sol";
 
-contract SmartVault is ERC1155Upgradeable, ISmartVault {
+contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     /* ========== STATE VARIABLES ========== */
-
-    // @notice SmartVault receipt token ID
-    uint256 public constant SVT_TOKEN_ID = 1;
 
     // @notice Guard manager
     IGuardManager internal immutable guardManager;
@@ -36,24 +33,20 @@ contract SmartVault is ERC1155Upgradeable, ISmartVault {
     // @notice Risk provider
     address internal immutable _riskProvider;
 
-    uint256 internal maxDepositTokenID = 2; //TODO: uint256 / 2
-
-    uint256 internal maxWithdrawalTokenID = 2; //TODO: uint256 / 2
-
     // @notice Mapping from token ID => owner address
     mapping(uint256 => address) private _nftOwners;
-
-    // @notice Mapping from address => array of token IDs
-    mapping(address => uint256[]) private _depositNfts;
-
-    // @notice Mapping from address => array of token IDs
-    mapping(address => uint256[]) private _withdrawalNfts;
 
     // @notice Deposit metadata registry
     mapping(uint256 => DepositMetadata) private _depositMetadata;
 
     // @notice Withdrawal metadata registry
     mapping(uint256 => WithdrawalMetadata) private _withdrawalMetadata;
+
+    // @notice Deposit NFT ID
+    uint256 private _maxDepositID = 0;
+
+    // @notice Withdrawal NFT ID
+    uint256 private _maxWithdrawalID = 2 ** 256 / 2;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -367,15 +360,15 @@ contract SmartVault is ERC1155Upgradeable, ISmartVault {
      * @param depositor TODO
      * @param assets TODO
      * @param receiver TODO
-     * @return depositNFTId TODO
      */
     function depositFor(uint256[] calldata assets, address receiver, address depositor)
         external
         runGuards(depositor, receiver, assets, _assetGroup, RequestType.Deposit)
         runActions(depositor, receiver, assets, _assetGroup, RequestType.Deposit)
-        returns (uint256 depositNFTId)
+        mintDepositNFT(receiver, assets, _assetGroup)
+        returns (uint256 receipt)
     {
-        revert("0");
+        return _maxDepositID;
     }
 
     /**
@@ -453,9 +446,10 @@ contract SmartVault is ERC1155Upgradeable, ISmartVault {
      */
     function withdraw(uint256[] calldata assets, address[] calldata tokens, address receiver, address owner)
         external
+        mintWithdrawalNFT(receiver, assets, tokens)
         returns (uint256 receipt)
     {
-        revert("0");
+        return _maxWithdrawalID - 1;
     }
 
     /**
@@ -470,56 +464,111 @@ contract SmartVault is ERC1155Upgradeable, ISmartVault {
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
-    function deposit(uint256[] calldata assets, address receiver) external returns (uint256 receipt) {
-        revert("0");
+    function deposit(uint256[] calldata assets, address receiver)
+        external
+        mintDepositNFT(receiver, assets, _assetGroup)
+        returns (uint256 receipt)
+    {
+        return _maxDepositID;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
+    function _mintWithdrawalNFT(address receiver, uint256[] memory assets, address[] memory /*tokens*/ )
+        internal
+        returns (uint256)
+    {
+        require(_maxWithdrawalID < 2 ** uint256(256), "SmartVault::_burnWithdrawalNTF::Withdrawal ID overflow.");
+
+        _maxWithdrawalID++;
+        WithdrawalMetadata memory data = WithdrawalMetadata(assets, block.timestamp);
+        _withdrawalMetadata[_maxWithdrawalID] = data;
+        _mint(receiver, _maxWithdrawalID, 1, "");
+
+        return _maxWithdrawalID;
+    }
+
+    function _mintDepositNFT(address receiver, uint256[] memory assets, address[] memory /*tokens*/ )
+        internal
+        returns (uint256)
+    {
+        _maxDepositID++;
+        require(_maxDepositID < 2 ** 256 / 2, "SmartVault::deposit::Deposit ID overflow.");
+        DepositMetadata memory data = DepositMetadata(assets, block.timestamp);
+        _mint(receiver, _maxDepositID, 1, "");
+        _depositMetadata[_maxDepositID] = data;
+
+        return _maxDepositID;
+    }
+
+    function _afterTokenTransfer(
+        address,
+        address,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory
+    ) internal virtual override {
+        for (uint256 i; i < ids.length; i++) {
+            require(amounts[i] == 1, "SmartVault::_afterTokenTransfer: Invalid NFT amount");
+            _nftOwners[ids[i]] = to;
+        }
+    }
+
     function _runGuards(
         address executor,
         address receiver,
-        uint256[] memory amounts,
-        address[] memory assets,
+        uint256[] memory assets,
+        address[] memory tokens,
         RequestType requestType
     ) internal view {
-        RequestContext memory context = RequestContext(receiver, executor, requestType, amounts, assets);
+        RequestContext memory context = RequestContext(receiver, executor, requestType, assets, tokens);
         guardManager.runGuards(address(this), context);
     }
 
     function _runActions(
         address executor,
         address recipient,
-        uint256[] memory amounts,
-        address[] memory assets,
+        uint256[] memory assets,
+        address[] memory tokens,
         RequestType requestType
     ) internal {
-        ActionContext memory context = ActionContext(recipient, executor, requestType, assets, amounts);
+        ActionContext memory context = ActionContext(recipient, executor, requestType, tokens, assets);
 
         actionManager.runActions(address(this), context);
     }
 
     /* ========== MODIFIERS ========== */
 
+    modifier mintDepositNFT(address receiver, uint256[] memory assets, address[] memory tokens) {
+        _mintDepositNFT(receiver, assets, tokens);
+        _;
+    }
+
+    modifier mintWithdrawalNFT(address receiver, uint256[] memory assets, address[] memory tokens) {
+        _mintWithdrawalNFT(receiver, assets, tokens);
+        _;
+    }
+
     modifier runGuards(
         address executor,
         address receiver,
-        uint256[] memory amounts,
-        address[] memory assets,
+        uint256[] memory assets,
+        address[] memory tokens,
         RequestType requestType
     ) {
-        _runGuards(executor, receiver, amounts, assets, requestType);
+        _runGuards(executor, receiver, assets, tokens, requestType);
         _;
     }
 
     modifier runActions(
         address executor,
         address recipient,
-        uint256[] memory amounts,
-        address[] memory assets,
+        uint256[] memory assets,
+        address[] memory tokens,
         RequestType requestType
     ) {
-        _runActions(executor, recipient, amounts, assets, requestType);
+        _runActions(executor, recipient, assets, tokens, requestType);
         _;
     }
 }

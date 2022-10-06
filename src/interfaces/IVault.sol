@@ -2,6 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "@openzeppelin-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
+import "@openzeppelin-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 /**
  * @dev Used for deposit assets to outer contracts.
@@ -189,7 +190,7 @@ interface IRedeem {
  * @title IVault
  * @dev Multi-collateral take on ERC4626
  */
-interface IVault is IWithdraw, IRedeem, IDeposit, IMint, IERC1155Upgradeable {
+interface IVault is IWithdraw, IRedeem, IDeposit, IMint {
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
 
     event Withdraw(
