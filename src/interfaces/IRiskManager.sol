@@ -7,9 +7,9 @@ interface IRiskManager {
     function setRiskScores(address riskProvider, uint256[] memory riskScores) external;
 
     function calculateAllocations(
-        address riskProvider, 
-        address[] memory strategies, 
-        uint8 riskTolerance, 
+        address riskProvider,
+        address[] memory strategies,
+        uint8 riskTolerance,
         uint256[] memory riskScores,
         uint256[] memory strategyApys
     ) external returns (uint256[][] memory);

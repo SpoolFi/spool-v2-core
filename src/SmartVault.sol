@@ -4,13 +4,15 @@ pragma solidity ^0.8.16;
 import "@openzeppelin/access/Ownable.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "./interfaces/ISmartVault.sol";
 import "./interfaces/IGuardManager.sol";
 import "./interfaces/IStrategyManager.sol";
 import "./interfaces/IAction.sol";
 
-contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
+contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgradeable, ISmartVault {
     using SafeERC20 for ERC20;
 
     /* ========== STATE VARIABLES ========== */
@@ -89,9 +91,21 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
 
     function initialize() external initializer {
         __ERC1155_init("");
+        __ERC20_init("", "");
+        __AccessControl_init();
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
+
+    function supportsInterface(bytes4 interfaceId) 
+        public 
+        view 
+        virtual 
+        override(AccessControlUpgradeable, ERC1155Upgradeable, IERC165Upgradeable) 
+        returns (bool) 
+    { 
+        return super.supportsInterface(interfaceId);
+    }
 
     /**
      * @return name Name of the vault
@@ -594,14 +608,6 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         RequestType requestType
     ) {
         _runGuards(executor, receiver, assets, tokens, requestType);
-        _;
-    }
-
-    modifier onlyRiskManager() {
-        _;
-    }
-
-    modifier onlyStrategyManager() {
         _;
     }
 }
