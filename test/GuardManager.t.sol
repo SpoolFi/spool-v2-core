@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
-import "../src/GuardManager.sol";
+import "../src/managers/GuardManager.sol";
 import {MockGuard} from "../src/mocks/MockGuard.sol";
 
 contract GuardManagerTest is Test {

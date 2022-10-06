@@ -5,7 +5,7 @@ import {console} from "forge-std/console.sol";
 import "@openzeppelin/access/Ownable.sol";
 import "@openzeppelin/utils/Strings.sol";
 import "@0xsequence/sstore2/SSTORE2.sol";
-import "./interfaces/IGuardManager.sol";
+import "../interfaces/IGuardManager.sol";
 
 contract GuardManager is Ownable, IGuardManager {
     /* ========== STATE VARIABLES ========== */

@@ -8,7 +8,6 @@ import "./IVault.sol";
 
 struct DepositMetadata {
     uint256[] assets;
-    uint256[] allocations; // TODO: why?
     uint256 initiated; // TODO: initiated / locked until / timelock ?
     uint256[] dhwIndexes;
 }
@@ -26,30 +25,6 @@ interface ISmartVault is IVault, IERC1155Upgradeable, IERC20Upgradeable {
      * @return name Name of the vault
      */
     function vaultName() external view returns (string memory name);
-
-    /**
-     * @notice TODO
-     * @return riskTolerance
-     */
-    function riskTolerance() external view returns (int256 riskTolerance);
-
-    /**
-     * @notice TODO
-     * @return riskProviderAddress
-     */
-    function riskProvider() external view returns (address riskProviderAddress);
-
-    /**
-     * @notice TODO
-     * @return strategyAddresses
-     */
-    function strategies() external view returns (address[] memory strategyAddresses);
-
-    /**
-     * @notice TODO
-     * @return allocations
-     */
-    function allocations() external view returns (uint256[] memory allocations);
 
     /**
      * @notice TODO
@@ -112,9 +87,4 @@ interface ISmartVault is IVault, IERC1155Upgradeable, IERC20Upgradeable {
         uint256[][] calldata slippages,
         address owner
     ) external returns (uint256[] memory returnedAssets);
-
-    /**
-     * @notice Set vault strategy allocations, TODO set access control.
-     */
-    function setAllocations(uint256[] memory allocations) external;
 }

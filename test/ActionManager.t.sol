@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
-import "../src/ActionManager.sol";
+import "../src/managers/ActionManager.sol";
 import "../src/mocks/MockToken.sol";
 import {MockAction, MockActionSetAmountTo100} from "./mocks/MockAction.sol";
 

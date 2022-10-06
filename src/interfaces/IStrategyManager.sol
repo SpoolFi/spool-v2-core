@@ -5,5 +5,7 @@ interface IStrategyManager {
     function isStrategy(address strategy) external view returns (bool);
     function registerStrategy(address strategy) external;
     function removeStrategy(address strategy) external;
-    function getLatestIndexes(address[] memory strategy) external view returns (uint256[] memory);
+    function getLatestIndexes(address smartVault) external view returns (uint256[] memory);
+    function strategies(address smartVault) external view returns (address[] memory strategyAddresses);
+    function setStrategies(address smartVault, address[] memory strategies) external;
 }

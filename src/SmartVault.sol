@@ -17,6 +17,9 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
 
     /* ========== STATE VARIABLES ========== */
 
+    bytes32 public constant RISK_MANAGER_ROLE = keccak256("RISK");
+    bytes32 public constant STRATEGY_MANAGER_ROLE = keccak256("STRATEGIES");
+
     // @notice Guard manager
     IGuardManager internal immutable guardManager;
 
@@ -31,12 +34,6 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
 
     // @notice Vault name
     string internal _vaultName;
-
-    // @notice Risk score
-    int256 internal immutable _riskTolerance;
-
-    // @notice Risk provider
-    address internal immutable _riskProvider;
 
     // @notice Mapping from token ID => owner address
     mapping(uint256 => address) private _nftOwners;
@@ -53,19 +50,11 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
     // @notice Withdrawal NFT ID
     uint256 private _maxWithdrawalID = 2 ** 256 / 2;
 
-    // @notice Strategies
-    address[] internal _strategies;
-
-    // @notice Allocaitons
-    uint256[] internal _allocations;
-
     /* ========== CONSTRUCTOR ========== */
 
     /**
      * @notice Initializes variables
      * @param vaultName_ TODO
-     * @param riskTolerance_ TODO
-     * @param riskProvider_ TODO
      * @param assets_ TODO
      * @param guardManager_ TODO
      * @param actionManager_ TODO
@@ -81,18 +70,18 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
         IStrategyManager strategyManager_
     ) {
         _vaultName = vaultName_;
-        _riskTolerance = riskTolerance_;
-        _riskProvider = riskProvider_;
         _assetGroup = assets_;
         guardManager = guardManager_;
         actionManager = actionManager_;
         strategyManager = strategyManager_;
     }
 
-    function initialize() external initializer {
+    function initialize(address riskManager) external initializer {
         __ERC1155_init("");
         __ERC20_init("", "");
-        __AccessControl_init();
+
+        _setupRole(RISK_MANAGER_ROLE, riskManager);
+        _setupRole(STRATEGY_MANAGER_ROLE, address(strategyManager));
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
@@ -113,38 +102,6 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
      */
     function vaultName() external view returns (string memory) {
         return _vaultName;
-    }
-
-    /**
-     * @notice TODO
-     * @return riskTolerance
-     */
-    function riskTolerance() external view returns (int256) {
-        return _riskTolerance;
-    }
-
-    /**
-     * @notice TODO
-     * @return riskProviderAddress
-     */
-    function riskProvider() external view returns (address) {
-        return _riskProvider;
-    }
-
-    /**
-     * @notice TODO
-     * @return strategyAddresses
-     */
-    function strategies() external view returns (address[] memory) {
-        return _strategies;
-    }
-
-    /**
-     * @notice TODO
-     * @return allocations TODO
-     */
-    function allocations() external view returns (uint256[] memory) {
-        return _allocations;
     }
 
     /**
@@ -343,11 +300,6 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
-    // TODO: comments & access control
-    function setAllocations(uint256[] memory allocations_) external {
-        _allocations = allocations_;
-    }
-
     /**
      * @dev Burns exactly shares from owner and sends assets of underlying tokens to receiver.
      * @param shares TODO
@@ -518,7 +470,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
         require(_maxWithdrawalID < 2 ** uint256(256), "SmartVault::_burnWithdrawalNTF::Withdrawal ID overflow.");
 
         _maxWithdrawalID++;
-        uint256[] memory latestIndexes = strategyManager.getLatestIndexes(_strategies);
+        uint256[] memory latestIndexes = strategyManager.getLatestIndexes(address(this));
 
         WithdrawalMetadata memory data = WithdrawalMetadata(assets, block.timestamp, latestIndexes);
         _withdrawalMetadata[_maxWithdrawalID] = data;
@@ -534,8 +486,8 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, AccessControlUpgrad
         _maxDepositID++;
         require(_maxDepositID < 2 ** 256 / 2, "SmartVault::deposit::Deposit ID overflow.");
 
-        uint256[] memory latestIndexes = strategyManager.getLatestIndexes(_strategies);
-        DepositMetadata memory data = DepositMetadata(assets, _allocations, block.timestamp, latestIndexes);
+        uint256[] memory latestIndexes = strategyManager.getLatestIndexes(address(this));
+        DepositMetadata memory data = DepositMetadata(assets, block.timestamp, latestIndexes);
         _mint(receiver, _maxDepositID, 1, "");
         _depositMetadata[_maxDepositID] = data;
 
