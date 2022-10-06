@@ -5,4 +5,6 @@ import "@openzeppelin/access/AccessControl.sol";
 import "./managers/StrategyManager.sol";
 import "./managers/RiskManager.sol";
 
-contract Controller is StrategyManager, RiskManager, AccessControl {}
+contract Controller is StrategyManager, RiskManager, AccessControl {
+    constructor() {}
+}
