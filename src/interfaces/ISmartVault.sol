@@ -7,13 +7,16 @@ import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "./IVault.sol";
 
 struct DepositMetadata {
-    uint256[] amounts;
-    uint256 initiated; // initiated / locked until / timelock ?
+    uint256[] assets;
+    uint256[] allocations; // TODO: why?
+    uint256 initiated; // TODO: initiated / locked until / timelock ?
+    uint256[] dhwIndexes;
 }
 
 struct WithdrawalMetadata {
-    uint256[] amounts;
+    uint256[] assets;
     uint256 initiated;
+    uint256[] dhwIndexes;
 }
 
 interface ISmartVault is IVault, IERC1155Upgradeable, IERC20Upgradeable {
@@ -109,4 +112,9 @@ interface ISmartVault is IVault, IERC1155Upgradeable, IERC20Upgradeable {
         uint256[][] calldata slippages,
         address owner
     ) external returns (uint256[] memory returnedAssets);
+
+    /**
+     * @notice Set vault strategy allocations, TODO set access control.
+     */
+    function setAllocations(uint256[] memory allocations) external;
 }

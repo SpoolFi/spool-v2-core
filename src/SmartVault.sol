@@ -3,6 +3,7 @@ pragma solidity ^0.8.16;
 
 import "@openzeppelin/access/Ownable.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
+import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "./interfaces/ISmartVault.sol";
 import "./interfaces/IGuardManager.sol";
@@ -10,6 +11,8 @@ import "./interfaces/IStrategyManager.sol";
 import "./interfaces/IAction.sol";
 
 contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
+    using SafeERC20 for ERC20;
+
     /* ========== STATE VARIABLES ========== */
 
     // @notice Guard manager
@@ -47,6 +50,12 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
 
     // @notice Withdrawal NFT ID
     uint256 private _maxWithdrawalID = 2 ** 256 / 2;
+
+    // @notice Strategies
+    address[] internal _strategies;
+
+    // @notice Allocaitons
+    uint256[] internal _allocations;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -109,18 +118,18 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
 
     /**
      * @notice TODO
-     * @return strategyAddresses TODO
+     * @return strategyAddresses
      */
-    function strategies() external view returns (address[] memory strategyAddresses) {
-        revert("0");
+    function strategies() external view returns (address[] memory) {
+        return _strategies;
     }
 
     /**
      * @notice TODO
      * @return allocations TODO
      */
-    function allocations() external view returns (uint256[] memory allocations) {
-        revert("0");
+    function allocations() external view returns (uint256[] memory) {
+        return _allocations;
     }
 
     /**
@@ -319,6 +328,11 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
+    // TODO: comments & access control
+    function setAllocations(uint256[] memory allocations_) external {
+        _allocations = allocations_;
+    }
+
     /**
      * @dev Burns exactly shares from owner and sends assets of underlying tokens to receiver.
      * @param shares TODO
@@ -363,11 +377,12 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
      */
     function depositFor(uint256[] calldata assets, address receiver, address depositor)
         external
-        runGuards(depositor, receiver, assets, _assetGroup, RequestType.Deposit)
-        runActions(depositor, receiver, assets, _assetGroup, RequestType.Deposit)
-        mintDepositNFT(receiver, assets, _assetGroup)
         returns (uint256 receipt)
     {
+        _runGuards(depositor, receiver, assets, _assetGroup, RequestType.Deposit);
+        _runActions(depositor, receiver, assets, _assetGroup, RequestType.Deposit);
+        _mintDepositNFT(receiver, assets, _assetGroup);
+        _depositAssets(depositor, receiver, assets, _assetGroup);
         return _maxDepositID;
     }
 
@@ -380,11 +395,15 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
      */
     function depositFast(uint256[] calldata assets, address receiver, uint256[][] calldata slippages)
         external
-        runGuards(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit)
-        runActions(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit)
         returns (uint256 receipt)
     {
-        revert("0");
+        _runGuards(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit);
+        // TODO: pass slippages
+        _runActions(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit);
+        _mintDepositNFT(receiver, assets, _assetGroup);
+        _depositAssets(msg.sender, receiver, assets, _assetGroup);
+
+        return _maxDepositID;
     }
 
     /**
@@ -393,22 +412,20 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
      * @param tokens TODO
      * @param receiver TODO
      * @param owner TODO
-     * @param slippages TODO
      * @return returnedAssets TODO
      */
     function withdrawFast(
         uint256[] calldata assets,
         address[] calldata tokens,
         address receiver,
-        uint256[][] calldata slippages,
+        uint256[][] calldata, /*slippages*/
         address owner
-    )
-        external
-        runGuards(owner, receiver, assets, tokens, RequestType.Withdrawal)
-        runActions(owner, receiver, assets, tokens, RequestType.Withdrawal)
-        returns (uint256[] memory returnedAssets)
-    {
-        revert("0");
+    ) external returns (uint256[] memory returnedAssets) {
+        _runGuards(owner, receiver, assets, tokens, RequestType.Withdrawal);
+        // TODO: pass slippages
+        _runActions(owner, receiver, assets, tokens, RequestType.Withdrawal);
+        _mintWithdrawalNFT(receiver, assets, tokens);
+        return _withdrawAssets(owner, receiver, assets, tokens);
     }
 
     /**
@@ -446,10 +463,14 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
      */
     function withdraw(uint256[] calldata assets, address[] calldata tokens, address receiver, address owner)
         external
-        mintWithdrawalNFT(receiver, assets, tokens)
         returns (uint256 receipt)
     {
-        return _maxWithdrawalID - 1;
+        _runGuards(owner, receiver, assets, tokens, RequestType.Withdrawal);
+        _runActions(owner, receiver, assets, tokens, RequestType.Withdrawal);
+        _mintWithdrawalNFT(receiver, assets, tokens);
+        _withdrawAssets(owner, receiver, assets, tokens);
+
+        return _maxWithdrawalID;
     }
 
     /**
@@ -464,11 +485,12 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
-    function deposit(uint256[] calldata assets, address receiver)
-        external
-        mintDepositNFT(receiver, assets, _assetGroup)
-        returns (uint256 receipt)
-    {
+    function deposit(uint256[] calldata assets, address receiver) external returns (uint256 receipt) {
+        _runGuards(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit);
+        _runActions(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit);
+        _mintDepositNFT(receiver, assets, _assetGroup);
+        _depositAssets(msg.sender, receiver, assets, _assetGroup);
+
         return _maxDepositID;
     }
 
@@ -481,7 +503,9 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         require(_maxWithdrawalID < 2 ** uint256(256), "SmartVault::_burnWithdrawalNTF::Withdrawal ID overflow.");
 
         _maxWithdrawalID++;
-        WithdrawalMetadata memory data = WithdrawalMetadata(assets, block.timestamp);
+        uint256[] memory latestIndexes = strategyManager.getLatestIndexes(_strategies);
+
+        WithdrawalMetadata memory data = WithdrawalMetadata(assets, block.timestamp, latestIndexes);
         _withdrawalMetadata[_maxWithdrawalID] = data;
         _mint(receiver, _maxWithdrawalID, 1, "");
 
@@ -494,7 +518,9 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     {
         _maxDepositID++;
         require(_maxDepositID < 2 ** 256 / 2, "SmartVault::deposit::Deposit ID overflow.");
-        DepositMetadata memory data = DepositMetadata(assets, block.timestamp);
+
+        uint256[] memory latestIndexes = strategyManager.getLatestIndexes(_strategies);
+        DepositMetadata memory data = DepositMetadata(assets, _allocations, block.timestamp, latestIndexes);
         _mint(receiver, _maxDepositID, 1, "");
         _depositMetadata[_maxDepositID] = data;
 
@@ -538,17 +564,27 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         actionManager.runActions(address(this), context);
     }
 
+    function _depositAssets(address initiator, address receiver, uint256[] memory assets, address[] memory tokens)
+        internal
+    {
+        require(assets.length == tokens.length, "SmartVault::depositFor::invalid assets length");
+
+        for (uint256 i = 0; i < assets.length; i++) {
+            // write to a registry
+            // - for DHW: how much, which strat, which index
+            // - for vault: which vault, which strat, which index
+            ERC20(tokens[i]).safeTransferFrom(initiator, address(strategyManager), assets[i]);
+        }
+    }
+
+    function _withdrawAssets(address from, address to, uint256[] memory assets, address[] memory tokens)
+        internal
+        returns (uint256[] memory returnedAssets)
+    {
+        return new uint256[](1);
+    }
+
     /* ========== MODIFIERS ========== */
-
-    modifier mintDepositNFT(address receiver, uint256[] memory assets, address[] memory tokens) {
-        _mintDepositNFT(receiver, assets, tokens);
-        _;
-    }
-
-    modifier mintWithdrawalNFT(address receiver, uint256[] memory assets, address[] memory tokens) {
-        _mintWithdrawalNFT(receiver, assets, tokens);
-        _;
-    }
 
     modifier runGuards(
         address executor,
@@ -561,14 +597,11 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         _;
     }
 
-    modifier runActions(
-        address executor,
-        address recipient,
-        uint256[] memory assets,
-        address[] memory tokens,
-        RequestType requestType
-    ) {
-        _runActions(executor, recipient, assets, tokens, requestType);
+    modifier onlyRiskManager() {
+        _;
+    }
+
+    modifier onlyStrategyManager() {
         _;
     }
 }
