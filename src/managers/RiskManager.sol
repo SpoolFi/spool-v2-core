@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
+import {console} from "forge-std/console.sol";
 import "../interfaces/IRiskManager.sol";
 
 contract RiskManager is IRiskManager {
@@ -33,8 +34,22 @@ contract RiskManager is IRiskManager {
     /**
      * @notice TODO
      */
+    function isRiskProvider(address riskProvider_) external view returns (bool) {
+        return _riskProviders[riskProvider_];
+    }
+
+    /**
+     * @notice TODO
+     */
     function riskProvider(address smartVault) external view returns (address) {
         return _smartVaultRiskProviders[smartVault];
+    }
+
+    /**
+     * @notice TODO
+     */
+    function riskScores(address riskProvider_) external view returns (uint256[] memory) {
+        return _riskScores[riskProvider_];
     }
 
     /**
@@ -49,15 +64,19 @@ contract RiskManager is IRiskManager {
     /**
      * @notice TODO
      */
-    function registerRiskProvider(address riskProvider, bool isEnabled) external {
-        _riskProviders[riskProvider] = isEnabled;
+    function registerRiskProvider(address riskProvider_, bool isEnabled) external {
+        require(_riskProviders[riskProvider_] != isEnabled, "RiskManager::registerRiskProvider: Flag already set.");
+        _riskProviders[riskProvider_] = isEnabled;
     }
 
     /**
      * @notice TODO
      */
-    function setRiskScores(address riskProvider, uint256[] memory riskScores) external {
-        _riskScores[riskProvider] = riskScores;
+    function setRiskScores(address riskProvider_, uint256[] memory riskScores)
+        external
+        validRiskProvider(riskProvider_)
+    {
+        _riskScores[riskProvider_] = riskScores;
     }
 
     /**
@@ -70,7 +89,7 @@ contract RiskManager is IRiskManager {
     /**
      * @notice TODO
      */
-    function setRiskProvider(address smartVault, address riskProvider_) external {
+    function setRiskProvider(address smartVault, address riskProvider_) external validRiskProvider(riskProvider_) {
         _smartVaultRiskProviders[smartVault] = riskProvider_;
     }
 
@@ -90,5 +109,18 @@ contract RiskManager is IRiskManager {
     /// TODO: where to put this? will pass to smart vault
     function reallocate(address smartVault) external {
         revert("0");
+    }
+
+    /* ========== INTERNAL FUNCTIONS ========== */
+
+    function _validRiskProvider(address riskProvider_) internal view {
+        require(_riskProviders[riskProvider_], "RiskManager::_validRiskProvider: Invalid risk provider");
+    }
+
+    /* ========== MODIFIERS ========== */
+
+    modifier validRiskProvider(address riskProvider_) {
+        _validRiskProvider(riskProvider_);
+        _;
     }
 }

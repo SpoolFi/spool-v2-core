@@ -47,6 +47,7 @@ contract StrategyManager is IStrategyManager {
      * @notice TODO
      */
     function registerStrategy(address strategy) external {
+        require(!_strategies[strategy], "StrategyManager::registerStrategy: Strategy already registered.");
         _strategies[strategy] = true;
     }
 
@@ -54,6 +55,7 @@ contract StrategyManager is IStrategyManager {
      * @notice TODO
      */
     function removeStrategy(address strategy) external {
+        require(_strategies[strategy], "StrategyManager::registerStrategy: Strategy not registered.");
         _strategies[strategy] = false;
     }
 
@@ -61,6 +63,13 @@ contract StrategyManager is IStrategyManager {
      * @notice TODO
      */
     function setStrategies(address smartVault, address[] memory strategies_) external {
+        require(strategies_.length > 0, "StrategyManager::setStrategies: Strategy array empty");
+        require(smartVault != address(0), "StrategyManager::setStrategies: Smart vault 0");
+
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            require(_strategies[strategies_[i]], "StrategyManager::registerStrategy: Strategy not registered.");
+        }
+
         _smartVaultStrategies[smartVault] = strategies_;
     }
 
