@@ -6,6 +6,8 @@ interface IRiskManager {
 
     function setRiskScores(address riskProvider, uint256[] memory riskScores) external;
 
+    function setRiskProvider(address smartVault, address riskProvider_) external;
+
     function calculateAllocations(
         address riskProvider,
         address[] memory strategies,
@@ -21,6 +23,11 @@ interface IRiskManager {
 
     /**
      * @notice TODO
+     */
+    function riskScores(address riskProvider) external view returns (uint256[] memory);
+
+    /**
+     * @notice TODO
      * @return riskTolerance
      */
     function riskTolerance(address smartVault) external view returns (int256 riskTolerance);
@@ -30,6 +37,11 @@ interface IRiskManager {
      * @return riskProviderAddress
      */
     function riskProvider(address smartVault) external view returns (address riskProviderAddress);
+
+    /**
+     * @notice TODO
+     */
+    function isRiskProvider(address riskProvider) external view returns (bool);
 
     /**
      * @notice TODO
