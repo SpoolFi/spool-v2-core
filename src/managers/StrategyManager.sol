@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
+import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyManager.sol";
+import "../interfaces/IUsdPriceFeedManager.sol";
 
 contract StrategyManager is IStrategyManager {
     /* ========== STATE VARIABLES ========== */
@@ -39,6 +41,22 @@ contract StrategyManager is IStrategyManager {
      */
     function strategies(address smartVault) external view returns (address[] memory strategyAddresses) {
         return _smartVaultStrategies[smartVault];
+    }
+
+    /**
+     * @notice Gets total value (in USD) of assets managed by the vault.
+     */
+    function getVaultTotalUsdValue(address smartVault) external view returns (uint256) {
+        address[] memory strategyAddresses = _smartVaultStrategies[smartVault];
+
+        uint256 totalUsdValue = 0;
+
+        for (uint256 i = 0; i < strategyAddresses.length; i++) {
+            IStrategy strategy = IStrategy(strategyAddresses[i]);
+            totalUsdValue = totalUsdValue + strategy.totalUsdValue() * strategy.balanceOf(smartVault) / strategy.totalSupply();
+        }
+
+        return totalUsdValue;
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */

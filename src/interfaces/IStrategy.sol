@@ -25,6 +25,11 @@ interface IStrategy is IVault {
      */
     function strategyName() external view returns (string memory name);
 
+    /**
+     * @return value Total value of strategy in USD.
+     */
+    function totalUsdValue() external view returns (uint256 value);
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**

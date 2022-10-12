@@ -18,6 +18,10 @@ contract Strategy is ERC20Upgradeable, IStrategy {
     // @notice Asset group addresses
     address[] internal _assetGroup;
 
+    // @notice Total value (in USD) of assets managed by the strategy.
+    // @dev Should be updated in DHW with deposits, withdrawals and yields.
+    uint256 public totalUsdValue = 0;
+
     constructor(string memory strategyName_, IStrategyManager strategyManager_) {
         _strategyName = strategyName_;
         _strategyManager = strategyManager_;
