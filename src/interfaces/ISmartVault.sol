@@ -18,7 +18,7 @@ struct WithdrawalMetadata {
     uint256[] dhwIndexes;
 }
 
-interface ISmartVault is IVault, IERC1155Upgradeable, IERC20Upgradeable {
+interface ISmartVault is IVault, IERC1155Upgradeable {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /**
