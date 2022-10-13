@@ -12,6 +12,7 @@ import "./interfaces/IGuardManager.sol";
 import "./interfaces/IRiskManager.sol";
 import "./interfaces/IStrategyRegistry.sol";
 import "./interfaces/IAction.sol";
+import "./interfaces/ISmartVaultManager.sol";
 
 contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     using SafeERC20 for ERC20;
@@ -25,10 +26,9 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     IActionManager internal immutable actionManager;
 
     // @notice Strategy manager
-    IStrategyRegistry internal immutable StrategyRegistry;
+    IStrategyRegistry internal immutable strategyRegistry;
 
-    // @notice Risk manager
-    IRiskManager internal immutable riskManager;
+    ISmartVaultManager internal immutable smartVaultManager;
 
     // @notice Asset group address array
     address[] internal _assetGroup;
@@ -59,23 +59,23 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
      * @param assets_ TODO
      * @param guardManager_ TODO
      * @param actionManager_ TODO
-     * @param StrategyRegistry_ TODO
-     * @param riskManager_ TODO
+     * @param strategyRegistry_ TODO
+     * @param smartVaultManager_ TODO
      */
     constructor(
         string memory vaultName_,
         address[] memory assets_,
         IGuardManager guardManager_,
         IActionManager actionManager_,
-        IStrategyRegistry StrategyRegistry_,
-        IRiskManager riskManager_
+        IStrategyRegistry strategyRegistry_,
+        ISmartVaultManager smartVaultManager_
     ) {
         _vaultName = vaultName_;
         _assetGroup = assets_;
         guardManager = guardManager_;
         actionManager = actionManager_;
-        StrategyRegistry = StrategyRegistry_;
-        riskManager = riskManager_;
+        strategyRegistry = strategyRegistry_;
+        smartVaultManager = smartVaultManager_;
     }
 
     function initialize() external initializer {
@@ -333,8 +333,9 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     function depositFor(uint256[] calldata assets, address receiver, address depositor) external returns (uint256) {
         _runGuards(depositor, receiver, assets, _assetGroup, RequestType.Deposit);
         _runActions(depositor, receiver, assets, _assetGroup, RequestType.Deposit);
-        _mintDepositNFT(receiver, assets, _assetGroup);
-        _depositAssets(depositor, receiver, assets, _assetGroup);
+        uint256 flushIdx = _depositAssets(depositor, receiver, assets, _assetGroup);
+        _mintDepositNFT(receiver, assets, _assetGroup, flushIdx);
+
         return _maxDepositID;
     }
 
@@ -352,8 +353,8 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         _runGuards(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit);
         // TODO: pass slippages
         _runActions(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit);
-        _mintDepositNFT(receiver, assets, _assetGroup);
-        _depositAssets(msg.sender, receiver, assets, _assetGroup);
+        uint256 flushIdx = _depositAssets(msg.sender, receiver, assets, _assetGroup);
+        _mintDepositNFT(receiver, assets, _assetGroup, flushIdx);
 
         return _maxDepositID;
     }
@@ -376,8 +377,10 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         _runGuards(owner, receiver, assets, tokens, RequestType.Withdrawal);
         // TODO: pass slippages
         _runActions(owner, receiver, assets, tokens, RequestType.Withdrawal);
-        _mintWithdrawalNFT(receiver, assets, tokens);
-        return _withdrawAssets(owner, receiver, assets, tokens);
+        uint256 flushIdx = _withdrawAssets(owner, receiver, assets, tokens);
+        _mintWithdrawalNFT(receiver, assets, tokens, flushIdx);
+
+        return new uint256[](0);
     }
 
     /**
@@ -419,8 +422,8 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     {
         _runGuards(owner, receiver, assets, tokens, RequestType.Withdrawal);
         _runActions(owner, receiver, assets, tokens, RequestType.Withdrawal);
-        _mintWithdrawalNFT(receiver, assets, tokens);
-        _withdrawAssets(owner, receiver, assets, tokens);
+        uint256 flushIdx = _withdrawAssets(owner, receiver, assets, tokens);
+        _mintWithdrawalNFT(receiver, assets, tokens, flushIdx);
 
         return _maxWithdrawalID;
     }
@@ -440,39 +443,38 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     function deposit(uint256[] calldata assets, address receiver) external returns (uint256) {
         _runGuards(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit);
         _runActions(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit);
-        _mintDepositNFT(receiver, assets, _assetGroup);
-        _depositAssets(msg.sender, receiver, assets, _assetGroup);
+        uint256 flushIdx = _depositAssets(msg.sender, receiver, assets, _assetGroup);
+        _mintDepositNFT(receiver, assets, _assetGroup, flushIdx);
 
         return _maxDepositID;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function _mintWithdrawalNFT(address receiver, uint256[] memory assets, address[] memory /*tokens*/ )
-        internal
-        returns (uint256)
-    {
+    function _mintWithdrawalNFT(
+        address receiver,
+        uint256[] memory assets,
+        address[] memory, /*tokens*/
+        uint256 flushIndex
+    ) internal returns (uint256) {
         require(_maxWithdrawalID < 2 ** uint256(256), "SmartVault::_burnWithdrawalNTF::Withdrawal ID overflow.");
 
         _maxWithdrawalID++;
-        uint256[] memory latestIndexes = StrategyRegistry.getLatestIndexes(address(this));
-
-        WithdrawalMetadata memory data = WithdrawalMetadata(assets, block.timestamp, latestIndexes);
+        WithdrawalMetadata memory data = WithdrawalMetadata(assets, block.timestamp, flushIndex);
         _withdrawalMetadata[_maxWithdrawalID] = data;
         _mint(receiver, _maxWithdrawalID, 1, "");
 
         return _maxWithdrawalID;
     }
 
-    function _mintDepositNFT(address receiver, uint256[] memory assets, address[] memory /*tokens*/ )
+    function _mintDepositNFT(address receiver, uint256[] memory assets, address[] memory, /*tokens*/ uint256 flushIndex)
         internal
         returns (uint256)
     {
         _maxDepositID++;
         require(_maxDepositID < 2 ** 256 / 2, "SmartVault::deposit::Deposit ID overflow.");
 
-        uint256[] memory latestIndexes = StrategyRegistry.getLatestIndexes(address(this));
-        DepositMetadata memory data = DepositMetadata(assets, block.timestamp, latestIndexes);
+        DepositMetadata memory data = DepositMetadata(assets, block.timestamp, flushIndex);
         _mint(receiver, _maxDepositID, 1, "");
         _depositMetadata[_maxDepositID] = data;
 
@@ -518,6 +520,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
 
     function _depositAssets(address initiator, address, /* receiver */ uint256[] memory assets, address[] memory tokens)
         internal
+        returns (uint256)
     {
         require(assets.length == tokens.length, "SmartVault::depositFor::invalid assets length");
 
@@ -525,18 +528,17 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
             // write to a registry
             // - for DHW: how much, which strat, which index
             // - for vault: which vault, which strat, which index
-            ERC20(tokens[i]).safeTransferFrom(initiator, address(StrategyRegistry), assets[i]);
+            ERC20(tokens[i]).safeTransferFrom(initiator, address(smartVaultManager), assets[i]);
         }
 
-        // uint256[] memory allocations = riskManager.allocations(address(this));
-        // StrategyRegistry.addStrategyDeposits(address(this), allocations, assets, tokens);
+        return smartVaultManager.addDeposits(address(this), assets);
     }
 
     function _withdrawAssets(address from, address to, uint256[] memory assets, address[] memory tokens)
         internal
-        returns (uint256[] memory)
+        returns (uint256)
     {
-        return new uint256[](1);
+        return 0;
     }
 
     /* ========== MODIFIERS ========== */

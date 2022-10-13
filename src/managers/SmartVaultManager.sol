@@ -6,6 +6,7 @@ import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IRiskManager.sol";
+import "../interfaces/ISmartVault.sol";
 
 contract SmartVaultRegistry is ISmartVaultRegistry {
     /// @notice TODO
@@ -41,59 +42,15 @@ contract SmartVaultRegistry is ISmartVaultRegistry {
     }
 }
 
-contract SmartVaultFlusher is SmartVaultRegistry, ISmartVaultFlusher {
-    /// @notice TODO
-    IStrategyRegistry private immutable _strategyRegistry;
-
-    /// @notice TODO
-    mapping(address => uint256) internal _flushIndexes;
-
-    /// @notice TODO smartVault => flushIndex => asset => depositAmount
-    mapping(address => mapping(uint256 => mapping(address => uint256))) _vaultDeposits;
-
-    constructor(IStrategyRegistry strategyRegistry_) {
-        _strategyRegistry = strategyRegistry_;
-    }
-
-    /**
-     * @notice TODO
-     */
-    function getLatestFlushIndex(address smartVault) external view returns (uint256) {
-        return _flushIndexes[smartVault];
-    }
-
-    /**
-     * @notice TODO
-     */
-    function smartVaultDeposits(address smartVault) external returns (uint256[] memory) {
-        revert("0");
-    }
-
-    /**
-     * @notice TODO
-     */
-    function addDeposits(
-        address smartVault,
-        uint256[] memory allocations,
-        uint256[] memory amounts,
-        address[] memory tokens
-    ) external validSmartVault(smartVault) returns (uint256) {
-        if (tokens.length != amounts.length) revert InvalidAssetLengths();
-        return 0;
-    }
-
-    /**
-     * @notice TODO
-     */
-    function flushSmartVault(address smartVault) external validSmartVault(smartVault) {}
-}
-
-contract SmartVaultManager is SmartVaultRegistry, SmartVaultFlusher, ISmartVaultManager {
+contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     /* ========== STATE VARIABLES ========== */
 
+    uint256 constant PRECISION = 100_00;
+
     /// @notice TODO
     IStrategyRegistry private immutable _strategyRegistry;
 
+    /// @notice TODO
     IRiskManager private immutable _riskManager;
 
     /// @notice TODO
@@ -108,7 +65,16 @@ contract SmartVaultManager is SmartVaultRegistry, SmartVaultFlusher, ISmartVault
     /// @notice TODO
     mapping(address => int256) internal _riskTolerances;
 
-    constructor(IStrategyRegistry strategyRegistry_, IRiskManager riskManager_) SmartVaultFlusher(strategyRegistry_) {
+    /// @notice Current flush index for given Smart Vault
+    mapping(address => uint256) internal _flushIndexes;
+
+    /// @notice DHW indexes for given Smart Vault and flush index
+    mapping(address => mapping(uint256 => uint256[])) internal _dhwIndexes;
+
+    /// @notice TODO smartVault => flushIdx => depositAmounts
+    mapping(address => mapping(uint256 => uint256[])) _vaultDeposits;
+
+    constructor(IStrategyRegistry strategyRegistry_, IRiskManager riskManager_) {
         _strategyRegistry = strategyRegistry_;
         _riskManager = riskManager_;
     }
@@ -141,6 +107,27 @@ contract SmartVaultManager is SmartVaultRegistry, SmartVaultFlusher, ISmartVault
      */
     function riskTolerance(address smartVault) external view returns (int256) {
         return _riskTolerances[smartVault];
+    }
+
+    function getLatestFlushIndex(address smartVault) external view returns (uint256) {
+        return _flushIndexes[smartVault];
+    }
+
+    /**
+     * @notice Smart vault deposits for given flush index.
+     */
+    function smartVaultDeposits(address smartVault, uint256 flushIdx)
+        external
+        returns (uint256[] memory)
+    {
+        return _vaultDeposits[smartVault][flushIdx];
+    }
+
+    /**
+     * @notice DHW indexes that were active at given flush index
+     */
+    function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint256[] memory) {
+        return _dhwIndexes[smartVault][flushIndex];
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -196,6 +183,79 @@ contract SmartVaultManager is SmartVaultRegistry, SmartVaultFlusher, ISmartVault
      * @notice TODO
      */
     function syncSmartVault(address smartVault) external {}
+
+    /**
+     * @notice Accumulate Smart Vault deposits before pushing to strategies
+     * @param smartVault Smart Vault address
+     * @param amounts Deposit amounts
+     */
+    function addDeposits(address smartVault, uint256[] memory amounts)
+        external
+        validSmartVault(smartVault)
+        returns (uint256)
+    {
+        address[] memory tokens = ISmartVault(smartVault).asset();
+        if (tokens.length != amounts.length) revert InvalidAssetLengths();
+
+        uint256 flushIdx = _flushIndexes[smartVault];
+        bool initialized = _vaultDeposits[smartVault][flushIdx].length > 0;
+
+        for (uint256 i = 0; i < amounts.length; i++) {
+            if (amounts[i] == 0) revert InvalidDepositAmount({smartVault: smartVault});
+
+            if (initialized) {
+                _vaultDeposits[smartVault][flushIdx][i] += amounts[i];
+            } else {
+                _vaultDeposits[smartVault][flushIdx].push(amounts[i]);
+            }
+        }
+
+        return _flushIndexes[smartVault];
+    }
+
+    /**
+     * @notice Transfer all pending deposits from the SmartVault to strategies
+     * @param smartVault Smart Vault address
+     */
+    function flushSmartVault(address smartVault) external validSmartVault(smartVault) {
+        uint256 flushIdx = _flushIndexes[smartVault];
+        address[] memory tokens = ISmartVault(smartVault).asset();
+        uint256[] memory amounts = _vaultDeposits[smartVault][flushIdx];
+
+        if (tokens.length != amounts.length) revert InvalidAssetLengths();
+
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
+        uint256[] memory allocations_ = _smartVaultAllocations[smartVault];
+
+        if (strategies_.length != allocations_.length) revert InvalidArrayLength();
+
+        uint256[][] memory depositAmounts = new uint256[][](strategies_.length);
+
+        for (uint256 i = 0; i < tokens.length; i++) {
+            uint256 accum = 0;
+
+            for (uint256 j = 0; j < strategies_.length; j++) {
+                uint256 amount = amounts[i] * allocations_[j] / 100;
+                accum += amount;
+
+                if (depositAmounts[j].length == 0) {
+                    depositAmounts[j] = new uint256[](tokens.length);
+                }
+
+                // Last strategy takes dust
+                if (i == strategies_.length - 1) {
+                    amount += amounts[i] - accum;
+                }
+
+                depositAmounts[j][i] = amount;
+                if (depositAmounts[j][i] == 0) revert InvalidFlushAmount({smartVault: smartVault});
+            }
+        }
+
+        uint256[] memory dhwIndexes = _strategyRegistry.addDeposits(strategies_, depositAmounts, tokens);
+        emit SmartVaultFlushed(smartVault, flushIdx);
+        _flushIndexes[smartVault] = flushIdx + 1;
+    }
 
     /**
      * @notice TODO

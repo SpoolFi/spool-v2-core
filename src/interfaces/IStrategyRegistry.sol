@@ -8,5 +8,7 @@ interface IStrategyRegistry {
     function isStrategy(address strategy) external view returns (bool);
     function registerStrategy(address strategy) external;
     function removeStrategy(address strategy) external;
-    function getLatestIndexes(address smartVault) external view returns (uint256[] memory);
+    function addDeposits(address[] memory strategies_, uint256[][] memory amounts, address[] memory tokens)
+        external
+        returns (uint256[] memory);
 }

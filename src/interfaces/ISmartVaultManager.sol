@@ -3,9 +3,12 @@ pragma solidity ^0.8.16;
 
 error SmartVaultAlreadyRegistered(address address_);
 error InvalidAssetLengths();
+error InvalidArrayLength();
 error EmptyStrategyArray();
 error InvalidSmartVault(address address_);
 error InvalidRiskProvider(address address_);
+error InvalidFlushAmount(address smartVault);
+error InvalidDepositAmount(address smartVault);
 
 interface ISmartVaultReallocator {
     function allocations(address smartVault) external view returns (uint256[] memory allocations);
@@ -26,18 +29,17 @@ interface ISmartVaultReallocator {
 }
 
 interface ISmartVaultFlusher {
+    function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint256[] memory);
+
     function getLatestFlushIndex(address smartVault) external view returns (uint256);
 
     function flushSmartVault(address smartVault) external;
 
-    function smartVaultDeposits(address smartVault) external returns (uint256[] memory);
+    function smartVaultDeposits(address smartVault, uint256 flushIdx) external returns (uint256[] memory);
 
-    function addDeposits(
-        address smartVault,
-        uint256[] memory allocations,
-        uint256[] memory amounts,
-        address[] memory tokens
-    ) external returns (uint256);
+    function addDeposits(address smartVault, uint256[] memory amounts) external returns (uint256);
+
+    event SmartVaultFlushed(address smartVault, uint256 flushIdx);
 }
 
 interface ISmartVaultSyncer {

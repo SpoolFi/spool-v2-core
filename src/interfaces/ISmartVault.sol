@@ -9,13 +9,13 @@ import "./IVault.sol";
 struct DepositMetadata {
     uint256[] assets;
     uint256 initiated; // TODO: initiated / locked until / timelock ?
-    uint256[] dhwIndexes;
+    uint256 flushIndex;
 }
 
 struct WithdrawalMetadata {
     uint256[] assets;
     uint256 initiated;
-    uint256[] dhwIndexes;
+    uint256 flushIndex;
 }
 
 interface ISmartVault is IVault, IERC1155Upgradeable {
