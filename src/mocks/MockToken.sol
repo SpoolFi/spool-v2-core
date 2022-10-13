@@ -7,4 +7,8 @@ contract MockToken is ERC20 {
     constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol) {
         _mint(msg.sender, 1_000_000_000 ether);
     }
+
+    function mint(address address_, uint256 amount) external {
+        _mint(address_, amount);
+    }
 }

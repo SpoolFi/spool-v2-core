@@ -116,10 +116,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     /**
      * @notice Smart vault deposits for given flush index.
      */
-    function smartVaultDeposits(address smartVault, uint256 flushIdx)
-        external
-        returns (uint256[] memory)
-    {
+    function smartVaultDeposits(address smartVault, uint256 flushIdx) external returns (uint256[] memory) {
         return _vaultDeposits[smartVault][flushIdx];
     }
 
@@ -168,7 +165,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     /**
      * @notice TODO
      */
-    function setAllocations(address smartVault, uint256[] memory allocations_) external {
+    function setAllocations(address smartVault, uint256[] memory allocations_) validSmartVault(smartVault) external {
         _smartVaultAllocations[smartVault] = allocations_;
     }
 
@@ -243,8 +240,8 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
                 }
 
                 // Last strategy takes dust
-                if (i == strategies_.length - 1) {
-                    amount += amounts[i] - accum;
+                if (j == strategies_.length - 1) {
+                    amount += (amounts[i] - accum);
                 }
 
                 depositAmounts[j][i] = amount;

@@ -525,9 +525,6 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         require(assets.length == tokens.length, "SmartVault::depositFor::invalid assets length");
 
         for (uint256 i = 0; i < assets.length; i++) {
-            // write to a registry
-            // - for DHW: how much, which strat, which index
-            // - for vault: which vault, which strat, which index
             ERC20(tokens[i]).safeTransferFrom(initiator, address(smartVaultManager), assets[i]);
         }
 

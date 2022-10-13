@@ -12,7 +12,7 @@ contract StrategyRegistry is IStrategyRegistry {
     mapping(address => bool) internal _strategies;
 
     /// @notice TODO
-    mapping(address => uint256) _latestIndexes;
+    mapping(address => uint256) _currentIndexes;
 
     /// @notice TODO strategy => index => tokenAmounts
     mapping(address => mapping(uint256 => uint256[])) _strategyDeposits;
@@ -24,6 +24,20 @@ contract StrategyRegistry is IStrategyRegistry {
      */
     function isStrategy(address strategy) external view returns (bool) {
         return _strategies[strategy];
+    }
+
+    /**
+     * @notice Deposits for given strategy and DHW index
+     */
+    function strategyDeposits(address strategy, uint256 index) external returns (uint256[] memory) {
+        return _strategyDeposits[strategy][index];
+    }
+
+    /**
+     * @notice Deposits for given strategy and DHW index
+     */
+    function currentIndex(address strategy) external view returns (uint256) {
+        return _currentIndexes[strategy];
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
@@ -51,14 +65,13 @@ contract StrategyRegistry is IStrategyRegistry {
         uint256[] memory indexes = new uint256[](strategies_.length);
         for (uint256 i = 0; i < strategies_.length; i++) {
             address strategy = strategies_[i];
-            uint256 latestIndex = _latestIndexes[strategy];
+            uint256 latestIndex = _currentIndexes[strategy];
             indexes[i] = latestIndex;
-
             bool initialized = _strategyDeposits[strategy][latestIndex].length > 0;
 
-            for (uint256 j = 0; j < amounts[i].length; i++) {
+            for (uint256 j = 0; j < amounts[i].length; j++) {
                 if (initialized) {
-                    _strategyDeposits[strategy][latestIndex][i] += amounts[i][j];
+                    _strategyDeposits[strategy][latestIndex][j] += amounts[i][j];
                 } else {
                     _strategyDeposits[strategy][latestIndex].push(amounts[i][j]);
                 }
