@@ -19,12 +19,7 @@ contract UsdPriceFeedManagerTest is Test {
     }
 
     function _setDaiAsset() public {
-        usdPriceFeedManager.setAsset(
-            daiAddress,
-            18,
-            daiUsdPriceAggregator,
-            true
-        );
+        usdPriceFeedManager.setAsset(daiAddress, 18, daiUsdPriceAggregator, true);
     }
 
     function test_usdDecimals_shouldReturnDecimals() public {
@@ -35,9 +30,9 @@ contract UsdPriceFeedManagerTest is Test {
         _setDaiAsset();
 
         assertEq(usdPriceFeedManager.assetDecimals(daiAddress), 18);
-        assertEq(usdPriceFeedManager.assetMultiplier(daiAddress), 10**18);
+        assertEq(usdPriceFeedManager.assetMultiplier(daiAddress), 10 ** 18);
         assertEq(address(usdPriceFeedManager.assetPriceAggregator(daiAddress)), address(daiUsdPriceAggregator));
-        assertEq(usdPriceFeedManager.assetPriceAggregatorMultiplier(daiAddress), 10**18);
+        assertEq(usdPriceFeedManager.assetPriceAggregatorMultiplier(daiAddress), 10 ** 18);
         assertEq(usdPriceFeedManager.assetValidity(daiAddress), true);
     }
 

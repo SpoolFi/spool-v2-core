@@ -40,33 +40,4 @@ contract RiskManagerTest is Test {
         riskScores = riskManager.riskScores(riskProvider);
         assertEq(riskScores.length, 2);
     }
-
-    function test_setAllocations() public {
-        uint256[] memory allocations = new uint256[](2);
-        allocations[0] = 10;
-        allocations[1] = 20;
-
-        uint256[] memory vaultAlloc = riskManager.allocations(smartVault);
-        assertEq(vaultAlloc.length, 0);
-
-        riskManager.setAllocations(smartVault, allocations);
-
-        vaultAlloc = riskManager.allocations(smartVault);
-        assertEq(vaultAlloc.length, 2);
-        assertEq(vaultAlloc[0], 10);
-    }
-
-    function test_setRiskProvider() public {
-        address riskProvider_ = riskManager.riskProvider(smartVault);
-        assertEq(riskProvider_, address(0));
-
-        vm.expectRevert("RiskManager::_validRiskProvider: Invalid risk provider");
-        riskManager.setRiskProvider(smartVault, riskProvider);
-
-        riskManager.registerRiskProvider(riskProvider, true);
-        riskManager.setRiskProvider(smartVault, riskProvider);
-
-        riskProvider_ = riskManager.riskProvider(smartVault);
-        assertEq(riskProvider_, riskProvider);
-    }
 }

@@ -36,12 +36,7 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager {
     /* ========== ADMIN FUNCTIONS ========== */
 
     // TODO: access control
-    function setAsset(
-        address asset,
-        uint256 decimals,
-        AggregatorV3Interface priceAggregator,
-        bool validity
-    ) external {
+    function setAsset(address asset, uint256 decimals, AggregatorV3Interface priceAggregator, bool validity) external {
         assetDecimals[asset] = decimals;
         assetMultiplier[asset] = 10 ** decimals;
         assetPriceAggregator[asset] = priceAggregator;
@@ -67,10 +62,7 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager {
      * @param assetAmount Amount of asset to convert (in asset decimals).
      * @return USD amount (in USD decimals).
      */
-    function assetToUsd(
-        address asset,
-        uint256 assetAmount
-    ) external view onlyValidAsset(asset) returns (uint256) {
+    function assetToUsd(address asset, uint256 assetAmount) external view onlyValidAsset(asset) returns (uint256) {
         return assetAmount * _getAssetPriceInUsd(asset) * assetPriceAggregatorMultiplier[asset] / assetMultiplier[asset];
     }
 
@@ -82,10 +74,7 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager {
      * @param usdAmount Amount of USD to convert (in USD decimals).
      * @return Asset amount (in asset decimals).
      */
-    function usdToAsset(
-        address asset,
-        uint256 usdAmount
-    ) external view onlyValidAsset(asset) returns (uint256) {
+    function usdToAsset(address asset, uint256 usdAmount) external view onlyValidAsset(asset) returns (uint256) {
         return usdAmount * assetMultiplier[asset] / assetPriceAggregatorMultiplier[asset] / _getAssetPriceInUsd(asset);
     }
 
@@ -98,17 +87,18 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager {
      */
     function _getAssetPriceInUsd(address asset) private view returns (uint256) {
         (
-            /* uint80 roundId */,
+            /* uint80 roundId */
+            ,
             int256 answer,
-            /* uint256 startedAt */,
-            /* uint256 updatedAt */,
+            /* uint256 startedAt */
+            ,
+            /* uint256 updatedAt */
+            ,
             /* uint80 answeredInRound */
         ) = assetPriceAggregator[asset].latestRoundData();
 
         if (answer <= 0) {
-            revert NonPositivePrice({
-                price: answer
-            });
+            revert NonPositivePrice({price: answer});
         }
 
         return uint256(answer);
@@ -119,9 +109,7 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager {
      */
     function _onlyValidAsset(address asset) private view {
         if (!assetValidity[asset]) {
-            revert InvalidAsset({
-                asset: asset
-            });
+            revert InvalidAsset({asset: asset});
         }
     }
 

@@ -6,29 +6,13 @@ import "../interfaces/IRiskManager.sol";
 contract RiskManager is IRiskManager {
     /* ========== STATE VARIABLES ========== */
 
-    /// @notice TODO
+    /// @notice Risk provider registry
     mapping(address => bool) internal _riskProviders;
 
-    /// @notice TODO
-    mapping(address => address) internal _smartVaultRiskProviders;
-
-    /// @notice TODO
-    mapping(address => uint256[]) internal _smartVaultAllocations;
-
-    /// @notice TODO
+    /// @notice Risk score registry
     mapping(address => uint256[]) internal _riskScores;
 
-    /// @notice TODO
-    mapping(address => int256) internal _riskTolerances;
-
     /* ========== VIEW FUNCTIONS ========== */
-
-    /**
-     * @notice TODO
-     */
-    function riskTolerance(address smartVault) external view returns (int256) {
-        return _riskTolerances[smartVault];
-    }
 
     /**
      * @notice TODO
@@ -40,22 +24,8 @@ contract RiskManager is IRiskManager {
     /**
      * @notice TODO
      */
-    function riskProvider(address smartVault) external view returns (address) {
-        return _smartVaultRiskProviders[smartVault];
-    }
-
-    /**
-     * @notice TODO
-     */
     function riskScores(address riskProvider_) external view returns (uint256[] memory) {
         return _riskScores[riskProvider_];
-    }
-
-    /**
-     * @notice TODO
-     */
-    function allocations(address smartVault) external view returns (uint256[] memory) {
-        return _smartVaultAllocations[smartVault];
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
@@ -81,20 +51,6 @@ contract RiskManager is IRiskManager {
     /**
      * @notice TODO
      */
-    function setAllocations(address smartVault, uint256[] memory allocations_) external {
-        _smartVaultAllocations[smartVault] = allocations_;
-    }
-
-    /**
-     * @notice TODO
-     */
-    function setRiskProvider(address smartVault, address riskProvider_) external validRiskProvider(riskProvider_) {
-        _smartVaultRiskProviders[smartVault] = riskProvider_;
-    }
-
-    /**
-     * @notice TODO
-     */
     function calculateAllocations(
         address riskProvider,
         address[] memory strategies,
@@ -102,11 +58,6 @@ contract RiskManager is IRiskManager {
         uint256[] memory riskScores,
         uint256[] memory strategyApys
     ) external returns (uint256[][] memory) {
-        revert("0");
-    }
-
-    /// TODO: where to put this? will pass to smart vault
-    function reallocate(address smartVault) external {
         revert("0");
     }
 

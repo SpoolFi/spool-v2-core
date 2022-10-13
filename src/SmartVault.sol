@@ -10,7 +10,7 @@ import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "./interfaces/ISmartVault.sol";
 import "./interfaces/IGuardManager.sol";
 import "./interfaces/IRiskManager.sol";
-import "./interfaces/IStrategyManager.sol";
+import "./interfaces/IStrategyRegistry.sol";
 import "./interfaces/IAction.sol";
 
 contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
@@ -25,7 +25,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     IActionManager internal immutable actionManager;
 
     // @notice Strategy manager
-    IStrategyManager internal immutable strategyManager;
+    IStrategyRegistry internal immutable StrategyRegistry;
 
     // @notice Risk manager
     IRiskManager internal immutable riskManager;
@@ -59,7 +59,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
      * @param assets_ TODO
      * @param guardManager_ TODO
      * @param actionManager_ TODO
-     * @param strategyManager_ TODO
+     * @param StrategyRegistry_ TODO
      * @param riskManager_ TODO
      */
     constructor(
@@ -67,14 +67,14 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         address[] memory assets_,
         IGuardManager guardManager_,
         IActionManager actionManager_,
-        IStrategyManager strategyManager_,
+        IStrategyRegistry StrategyRegistry_,
         IRiskManager riskManager_
     ) {
         _vaultName = vaultName_;
         _assetGroup = assets_;
         guardManager = guardManager_;
         actionManager = actionManager_;
-        strategyManager = strategyManager_;
+        StrategyRegistry = StrategyRegistry_;
         riskManager = riskManager_;
     }
 
@@ -455,7 +455,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         require(_maxWithdrawalID < 2 ** uint256(256), "SmartVault::_burnWithdrawalNTF::Withdrawal ID overflow.");
 
         _maxWithdrawalID++;
-        uint256[] memory latestIndexes = strategyManager.getLatestIndexes(address(this));
+        uint256[] memory latestIndexes = StrategyRegistry.getLatestIndexes(address(this));
 
         WithdrawalMetadata memory data = WithdrawalMetadata(assets, block.timestamp, latestIndexes);
         _withdrawalMetadata[_maxWithdrawalID] = data;
@@ -471,7 +471,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         _maxDepositID++;
         require(_maxDepositID < 2 ** 256 / 2, "SmartVault::deposit::Deposit ID overflow.");
 
-        uint256[] memory latestIndexes = strategyManager.getLatestIndexes(address(this));
+        uint256[] memory latestIndexes = StrategyRegistry.getLatestIndexes(address(this));
         DepositMetadata memory data = DepositMetadata(assets, block.timestamp, latestIndexes);
         _mint(receiver, _maxDepositID, 1, "");
         _depositMetadata[_maxDepositID] = data;
@@ -525,11 +525,11 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
             // write to a registry
             // - for DHW: how much, which strat, which index
             // - for vault: which vault, which strat, which index
-            ERC20(tokens[i]).safeTransferFrom(initiator, address(strategyManager), assets[i]);
+            ERC20(tokens[i]).safeTransferFrom(initiator, address(StrategyRegistry), assets[i]);
         }
 
-        uint256[] memory allocations = riskManager.allocations(address(this));
-        strategyManager.addStrategyDeposits(address(this), allocations, assets, tokens);
+        // uint256[] memory allocations = riskManager.allocations(address(this));
+        // StrategyRegistry.addStrategyDeposits(address(this), allocations, assets, tokens);
     }
 
     function _withdrawAssets(address from, address to, uint256[] memory assets, address[] memory tokens)

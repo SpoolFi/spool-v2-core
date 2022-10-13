@@ -3,14 +3,14 @@ pragma solidity ^0.8.16;
 
 import "@openzeppelin/access/Ownable.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
-    import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "./interfaces/IStrategy.sol";
-import "./interfaces/IStrategyManager.sol";
+import "./interfaces/IStrategyRegistry.sol";
 
 contract Strategy is ERC20Upgradeable, IStrategy {
     /* ========== STATE VARIABLES ========== */
 
-    IStrategyManager internal immutable _strategyManager;
+    IStrategyRegistry internal immutable _strategyRegistry;
 
     // @notice Name of the strategy
     string private _strategyName;
@@ -22,9 +22,9 @@ contract Strategy is ERC20Upgradeable, IStrategy {
     // @dev Should be updated in DHW with deposits, withdrawals and yields.
     uint256 public totalUsdValue = 0;
 
-    constructor(string memory strategyName_, IStrategyManager strategyManager_) {
+    constructor(string memory strategyName_, IStrategyRegistry StrategyRegistry_) {
         _strategyName = strategyName_;
-        _strategyManager = strategyManager_;
+        _strategyRegistry = StrategyRegistry_;
     }
 
     function initialize(address[] memory assetGroup_) external initializer {
@@ -126,7 +126,7 @@ contract Strategy is ERC20Upgradeable, IStrategy {
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
-    function _sharesPerAssets() internal virtual view returns (uint256) {
+    function _sharesPerAssets() internal view virtual returns (uint256) {
         return 0;
     }
 

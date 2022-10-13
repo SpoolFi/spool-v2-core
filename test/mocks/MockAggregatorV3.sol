@@ -42,13 +42,9 @@ contract MockAggregatorV3 is AggregatorV3Interface {
     /**
      * @notice Sets custom data for a round.
      */
-    function setRoundData(
-        uint80 roundId,
-        int256 answer,
-        uint256 startedAt,
-        uint256 updatedAt,
-        uint80 answeredInRound
-    ) public {
+    function setRoundData(uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
+        public
+    {
         roundAnswer[roundId] = answer;
         roundStartedAt[roundId] = startedAt;
         roundUpdatedAt[roundId] = updatedAt;
@@ -60,13 +56,8 @@ contract MockAggregatorV3 is AggregatorV3Interface {
     function getRoundData(uint80 _roundId)
         external
         view
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-    ) {
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
+    {
         return (
             _roundId,
             roundAnswer[_roundId],
@@ -79,13 +70,8 @@ contract MockAggregatorV3 is AggregatorV3Interface {
     function latestRoundData()
         external
         view
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-    ) {
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
+    {
         return (
             latestRound,
             roundAnswer[latestRound],
