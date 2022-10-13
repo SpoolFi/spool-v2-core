@@ -113,7 +113,7 @@ contract GuardManagerTest is Test {
         RequestContext memory context =
             RequestContext(address(user), address(user), RequestType.Deposit, new uint256[](0), tokens);
 
-        vm.expectRevert("GuardManager::_checkResult: A-a, go back.");
+        vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector));
         guardManager.runGuards(smartVaultId, context);
 
         mockGuard.setWhitelist(user, true);

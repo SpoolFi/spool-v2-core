@@ -3,6 +3,12 @@ pragma solidity ^0.8.16;
 
 import "./RequestType.sol";
 
+error GuardsAlreadyInitialized();
+error GuardsNotInitialized();
+error GuardError();
+error GuardFailed();
+error InvalidGuardParamType(uint256 paramType);
+
 enum GuardParamType {
     VaultAddress,
     Executor,

@@ -23,7 +23,7 @@ contract ActionManagerTest is Test {
 
     function test_whitelistAction_addressIsNotWhitelisted() public {
         actionManager.whitelistAction(address(mockAction), true);
-        vm.expectRevert("ActionManager::whitelistAction: Action status already set.");
+        vm.expectRevert(abi.encodeWithSelector(ActionStatusAlreadySet.selector));
         actionManager.whitelistAction(address(mockAction), true);
     }
 
@@ -32,9 +32,8 @@ contract ActionManagerTest is Test {
         actions[0] = mockAction;
         RequestType[] memory requestTypes = new RequestType[](1);
         requestTypes[0] = RequestType.Deposit;
-        // actionManager.whitelistAction(address(mockAction), false);
 
-        vm.expectRevert("ActionManager::");
+        vm.expectRevert(abi.encodeWithSelector(InvalidAction.selector, address(mockAction)));
         actionManager.setActions(smartVaultId, actions, requestTypes);
     }
 

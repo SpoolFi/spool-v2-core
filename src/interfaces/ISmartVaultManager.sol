@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
+error SmartVaultAlreadyRegistered(address address_);
+error InvalidAssetLengths();
+error EmptyStrategyArray();
+error InvalidSmartVault(address address_);
+error InvalidRiskProvider(address address_);
+
 interface ISmartVaultReallocator {
     function allocations(address smartVault) external view returns (uint256[] memory allocations);
 
@@ -23,6 +29,15 @@ interface ISmartVaultFlusher {
     function getLatestFlushIndex(address smartVault) external view returns (uint256);
 
     function flushSmartVault(address smartVault) external;
+
+    function smartVaultDeposits(address smartVault) external returns (uint256[] memory);
+
+    function addDeposits(
+        address smartVault,
+        uint256[] memory allocations,
+        uint256[] memory amounts,
+        address[] memory tokens
+    ) external returns (uint256);
 }
 
 interface ISmartVaultSyncer {
@@ -35,13 +50,6 @@ interface ISmartVaultRegistry {
     function registerSmartVault(address address_) external;
 
     function removeSmartVault(address smartVault) external;
-
-    function addDeposits(
-        address smartVault,
-        uint256[] memory allocations,
-        uint256[] memory amounts,
-        address[] memory tokens
-    ) external returns (uint256);
 }
 
 interface ISmartVaultManager is ISmartVaultRegistry, ISmartVaultReallocator, ISmartVaultFlusher, ISmartVaultSyncer {}

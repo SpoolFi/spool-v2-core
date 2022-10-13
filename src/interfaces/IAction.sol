@@ -3,6 +3,11 @@ pragma solidity ^0.8.16;
 
 import "./RequestType.sol";
 
+error InvalidAction(address address_);
+error ActionStatusAlreadySet();
+error ActionsInitialized(address smartVault);
+error ActionsNotInitialized(address smartVault);
+
 struct ActionContext {
     address recipient;
     address executor;

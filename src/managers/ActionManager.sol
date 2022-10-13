@@ -65,7 +65,7 @@ contract ActionManager is IActionManager {
     function whitelistAction(address action, bool whitelist) external 
     // TODO MISSING MODIFIER FOR ACCESS CONTROL
     {
-        require(actionWhitelisted[action] != whitelist, "ActionManager::whitelistAction: Action status already set.");
+        if (actionWhitelisted[action] == whitelist) revert ActionStatusAlreadySet();
         actionWhitelisted[action] = whitelist;
 
         emit ActionListed(action, whitelist);
@@ -81,16 +81,18 @@ contract ActionManager is IActionManager {
     }
 
     function _isInitialized(address smartVault, bool initialized) private view {
-        require(
-            actionsInitialized[smartVault] == initialized,
-            initialized
-                ? "ActionManager::notInitialized: Smart Vaults has actions initialized."
-                : "ActionManager::notInitialized: Smart Vaults has no actions initialized."
-        );
+        if (initialized && actionsInitialized[smartVault] != initialized) {
+            revert ActionsInitialized({smartVault: smartVault});
+        }
+        if (!initialized && actionsInitialized[smartVault] != initialized) {
+            revert ActionsNotInitialized({smartVault: smartVault});
+        }
     }
 
     function _onlyWhitelistedAction(address action) private view {
-        require(actionWhitelisted[action], "ActionManager::");
+        if (!actionWhitelisted[action]) {
+            revert InvalidAction({address_: action});
+        }
     }
 
     /* ========== MODIFIERS ========== */

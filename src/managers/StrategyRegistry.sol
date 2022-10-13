@@ -5,6 +5,7 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 
+
 contract StrategyRegistry is IStrategyRegistry {
     /* ========== STATE VARIABLES ========== */
 
@@ -39,7 +40,7 @@ contract StrategyRegistry is IStrategyRegistry {
      * @notice TODO
      */
     function registerStrategy(address strategy) external {
-        require(!_strategies[strategy], "StrategyRegistry::registerStrategy: Strategy already registered.");
+        if(_strategies[strategy]) revert StrategyAlreadyRegistered({address_: strategy});
         _strategies[strategy] = true;
     }
 
@@ -47,7 +48,7 @@ contract StrategyRegistry is IStrategyRegistry {
      * @notice TODO
      */
     function removeStrategy(address strategy) external {
-        require(_strategies[strategy], "StrategyRegistry::registerStrategy: Strategy not registered.");
+        if(!_strategies[strategy]) revert InvalidStrategy({address_: strategy});
         _strategies[strategy] = false;
     }
 }

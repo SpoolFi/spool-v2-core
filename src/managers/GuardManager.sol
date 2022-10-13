@@ -85,11 +85,11 @@ contract GuardManager is Ownable, IGuardManager {
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _guardsNotInitialized(address smartVaultId) internal view {
-        require(!guardsInitialized[smartVaultId], "GuardManager::_guardsNotInitialized: Guards already initialized.");
+        if (guardsInitialized[smartVaultId]) revert GuardsAlreadyInitialized();
     }
 
     function _guardsInitialized(address smartVaultId) internal view {
-        require(guardsInitialized[smartVaultId], "GuardManager::_guardsInitialized: Guards not initialized.");
+        if (!guardsInitialized[smartVaultId]) revert GuardsNotInitialized();
     }
 
     function _readGuards(address smartVaultId) internal view returns (GuardDefinition[] memory guards) {
@@ -107,22 +107,25 @@ contract GuardManager is Ownable, IGuardManager {
     }
 
     function _checkResult(bool success, bytes memory returnValue, bytes2 operator, bytes32 value) internal pure {
-        require(success, "GuardManager::_checkResult: Guard call failed.");
-        string memory errorMessage = "GuardManager::_checkResult: A-a, go back.";
+        if (!success) revert GuardError();
+
+        bool result = true;
 
         if (operator == bytes2("==")) {
-            require(abi.decode(returnValue, (bytes32)) == value, errorMessage);
+            result = abi.decode(returnValue, (bytes32)) == value;
         } else if (operator == bytes2("<=")) {
-            require(abi.decode(returnValue, (bytes32)) <= value, errorMessage);
+            result = abi.decode(returnValue, (bytes32)) <= value;
         } else if (operator == bytes2(">=")) {
-            require(abi.decode(returnValue, (bytes32)) >= value, errorMessage);
+            result = abi.decode(returnValue, (bytes32)) >= value;
         } else if (operator == bytes2("<")) {
-            require(abi.decode(returnValue, (bytes32)) < value, errorMessage);
+            result = abi.decode(returnValue, (bytes32)) < value;
         } else if (operator == bytes2(">")) {
-            require(abi.decode(returnValue, (bytes32)) > value, errorMessage);
+            result = abi.decode(returnValue, (bytes32)) > value;
         } else {
-            require(abi.decode(returnValue, (bool)), errorMessage);
+            result = abi.decode(returnValue, (bool));
         }
+
+        if (!result) revert GuardFailed();
     }
 
     /**
@@ -169,7 +172,7 @@ contract GuardManager is Ownable, IGuardManager {
                 result = bytes.concat(result, abi.encode(paramsEndLoc));
                 paramsEndLoc += 32 + context.tokens.length * 32;
             } else {
-                revert("Invalid param type");
+                revert InvalidGuardParamType(uint256(paramType));
             }
         }
 

@@ -20,14 +20,14 @@ contract StrategyRegistryTest is Test {
         strategyRegistry.registerStrategy(strategy);
         assertTrue(strategyRegistry.isStrategy(strategy));
 
-        vm.expectRevert("StrategyRegistry::registerStrategy: Strategy already registered.");
+        vm.expectRevert(abi.encodeWithSelector(StrategyAlreadyRegistered.selector, strategy));
         strategyRegistry.registerStrategy(strategy);
     }
 
     function test_removeStrategy() public {
         address strategy = address(1);
 
-        vm.expectRevert("StrategyRegistry::registerStrategy: Strategy not registered.");
+        vm.expectRevert(abi.encodeWithSelector(InvalidStrategy.selector, strategy));
         strategyRegistry.removeStrategy(strategy);
 
         strategyRegistry.registerStrategy(strategy);

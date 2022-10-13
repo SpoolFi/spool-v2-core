@@ -17,8 +17,8 @@ contract SmartVaultManagerTest is Test {
 
     function setUp() public {
         strategyRegistry = new StrategyRegistry();
-        smartVaultManager = new SmartVaultManager(strategyRegistry);
         riskManager = new RiskManager();
+        smartVaultManager = new SmartVaultManager(strategyRegistry, riskManager);
         smartVaultManager.registerSmartVault(smartVault);
     }
 
@@ -56,13 +56,13 @@ contract SmartVaultManagerTest is Test {
         address smartVault = address(20);
         smartVaultManager.registerSmartVault(smartVault);
 
-        vm.expectRevert("SmartVaultManager::validSmartVault: Address not Smart Vault.");
+        vm.expectRevert(abi.encodeWithSelector(InvalidSmartVault.selector, address(0)));
         smartVaultManager.setStrategies(address(0), strategies);
 
-        vm.expectRevert("SmartVaultManager::setStrategies: Strategy array empty");
+        vm.expectRevert(abi.encodeWithSelector(EmptyStrategyArray.selector));
         smartVaultManager.setStrategies(smartVault, new address[](0));
 
-        vm.expectRevert("SmartVaultManager::registerStrategy: Strategy not registered.");
+        vm.expectRevert(abi.encodeWithSelector(InvalidStrategy.selector, address(10)));
         smartVaultManager.setStrategies(smartVault, strategies);
 
         address[] memory vaultStrategies = smartVaultManager.strategies(smartVault);

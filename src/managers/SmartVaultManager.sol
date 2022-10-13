@@ -5,39 +5,11 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/ISmartVaultManager.sol";
+import "../interfaces/IRiskManager.sol";
 
-contract SmartVaultManager is ISmartVaultManager {
-    /* ========== STATE VARIABLES ========== */
-
-    /// @notice TODO
-    IStrategyRegistry internal immutable _strategyRegistry;
-
-    /// @notice TODO
-    mapping(address => address[]) internal _smartVaultStrategies;
-
+contract SmartVaultRegistry is ISmartVaultRegistry {
     /// @notice TODO
     mapping(address => bool) internal _smartVaults;
-
-    /// @notice TODO
-    mapping(address => uint256) internal _flushIndexes;
-
-    /// @notice TODO
-    mapping(address => address) internal _smartVaultRiskProviders;
-
-    /// @notice TODO
-    mapping(address => uint256[]) internal _smartVaultAllocations;
-
-    /// @notice TODO
-    mapping(address => int256) internal _riskTolerances;
-
-    /// @notice TODO smartVault => flushIndex => asset => depositAmount
-    mapping(address => mapping(uint256 => mapping(address => uint256))) _vaultDeposits;
-
-    constructor(IStrategyRegistry StrategyRegistry_) {
-        _strategyRegistry = StrategyRegistry_;
-    }
-
-    /* ========== VIEW FUNCTIONS ========== */
 
     /**
      * @notice TODO
@@ -49,9 +21,99 @@ contract SmartVaultManager is ISmartVaultManager {
     /**
      * @notice TODO
      */
+    function registerSmartVault(address smartVault) external {
+        if (_smartVaults[smartVault]) revert SmartVaultAlreadyRegistered({address_: smartVault});
+        _smartVaults[smartVault] = true;
+    }
+
+    /**
+     * @notice TODO
+     */
+    function removeSmartVault(address smartVault) external validSmartVault(smartVault) {
+        _smartVaults[smartVault] = false;
+    }
+
+    /* ========== MODIFIERS ========== */
+
+    modifier validSmartVault(address address_) {
+        if (!_smartVaults[address_]) revert InvalidSmartVault({address_: address_});
+        _;
+    }
+}
+
+contract SmartVaultFlusher is SmartVaultRegistry, ISmartVaultFlusher {
+    /// @notice TODO
+    IStrategyRegistry private immutable _strategyRegistry;
+
+    /// @notice TODO
+    mapping(address => uint256) internal _flushIndexes;
+
+    /// @notice TODO smartVault => flushIndex => asset => depositAmount
+    mapping(address => mapping(uint256 => mapping(address => uint256))) _vaultDeposits;
+
+    constructor(IStrategyRegistry strategyRegistry_) {
+        _strategyRegistry = strategyRegistry_;
+    }
+
+    /**
+     * @notice TODO
+     */
     function getLatestFlushIndex(address smartVault) external view returns (uint256) {
         return _flushIndexes[smartVault];
     }
+
+    /**
+     * @notice TODO
+     */
+    function smartVaultDeposits(address smartVault) external returns (uint256[] memory) {
+        revert("0");
+    }
+
+    /**
+     * @notice TODO
+     */
+    function addDeposits(
+        address smartVault,
+        uint256[] memory allocations,
+        uint256[] memory amounts,
+        address[] memory tokens
+    ) external validSmartVault(smartVault) returns (uint256) {
+        if (tokens.length != amounts.length) revert InvalidAssetLengths();
+        return 0;
+    }
+
+    /**
+     * @notice TODO
+     */
+    function flushSmartVault(address smartVault) external validSmartVault(smartVault) {}
+}
+
+contract SmartVaultManager is SmartVaultRegistry, SmartVaultFlusher, ISmartVaultManager {
+    /* ========== STATE VARIABLES ========== */
+
+    /// @notice TODO
+    IStrategyRegistry private immutable _strategyRegistry;
+
+    IRiskManager private immutable _riskManager;
+
+    /// @notice TODO
+    mapping(address => address[]) internal _smartVaultStrategies;
+
+    /// @notice TODO
+    mapping(address => address) internal _smartVaultRiskProviders;
+
+    /// @notice TODO
+    mapping(address => uint256[]) internal _smartVaultAllocations;
+
+    /// @notice TODO
+    mapping(address => int256) internal _riskTolerances;
+
+    constructor(IStrategyRegistry strategyRegistry_, IRiskManager riskManager_) SmartVaultFlusher(strategyRegistry_) {
+        _strategyRegistry = strategyRegistry_;
+        _riskManager = riskManager_;
+    }
+
+    /* ========== VIEW FUNCTIONS ========== */
 
     /**
      * @notice TODO
@@ -105,45 +167,15 @@ contract SmartVaultManager is ISmartVaultManager {
     /**
      * @notice TODO
      */
-    function registerSmartVault(address smartVault) external {
-        require(!_smartVaults[smartVault], "SmartVaultManager::registerSmartVault: Address already registered.");
-        _smartVaults[smartVault] = true;
-    }
-
-    /**
-     * @notice TODO
-     */
-    function removeSmartVault(address smartVault) external validSmartVault(smartVault) {
-        _smartVaults[smartVault] = false;
-    }
-
-    /**
-     * @notice TODO
-     */
     function setStrategies(address smartVault, address[] memory strategies_) external validSmartVault(smartVault) {
-        require(strategies_.length > 0, "SmartVaultManager::setStrategies: Strategy array empty");
+        if (strategies_.length == 0) revert EmptyStrategyArray();
 
         for (uint256 i = 0; i < strategies_.length; i++) {
             address strategy = strategies_[i];
-            require(
-                _strategyRegistry.isStrategy(strategy), "SmartVaultManager::registerStrategy: Strategy not registered."
-            );
+            if (!_strategyRegistry.isStrategy(strategy)) revert InvalidStrategy({address_: strategy});
         }
 
         _smartVaultStrategies[smartVault] = strategies_;
-    }
-
-    /**
-     * @notice TODO
-     */
-    function addDeposits(
-        address smartVault,
-        uint256[] memory allocations,
-        uint256[] memory amounts,
-        address[] memory tokens
-    ) external validSmartVault(smartVault) returns (uint256) {
-        require(tokens.length == amounts.length, "SmartVaultManager::addDeposits: Invalid length");
-        return 0;
     }
 
     /**
@@ -168,28 +200,14 @@ contract SmartVaultManager is ISmartVaultManager {
     /**
      * @notice TODO
      */
-    function flushSmartVault(address smartVault) external {}
-
-    /**
-     * @notice TODO
-     */
     function reallocate() external {}
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
-    function _validRiskProvider(address riskProvider_) internal view {
-        // TODO: check if valid risk provider
-    }
-
     /* ========== MODIFIERS ========== */
 
-    modifier validRiskProvider(address riskProvider_) {
-        _validRiskProvider(riskProvider_);
-        _;
-    }
-
-    modifier validSmartVault(address address_) {
-        require(_smartVaults[address_], "SmartVaultManager::validSmartVault: Address not Smart Vault.");
+    modifier validRiskProvider(address address_) {
+        if (!_riskManager.isRiskProvider(address_)) revert InvalidRiskProvider({address_: address_});
         _;
     }
 }
