@@ -225,7 +225,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
      * @notice Calculate current Smart Vault asset deposit ratio
      * @dev As described in /notes/multi-asset-vault-deposit-ratios.md
      */
-    function getDepositRatio(address smartVault) external validSmartVault(smartVault) returns (uint256[] memory) {
+    function getDepositRatio(address smartVault) external view validSmartVault(smartVault) returns (uint256[] memory) {
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
         uint256[] memory allocations_ = _smartVaultAllocations[smartVault];
         address[] memory tokens = ISmartVault(smartVault).asset();
@@ -252,8 +252,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
             }
 
             for (uint256 j = 0; j < tokens.length; j++) {
-                outRatios[j] += allocations_[i] * strategyRatios[i][j] * 10 ** usdDecimals
-                    * RATIO_PRECISION / ratioNorm;
+                outRatios[j] += allocations_[i] * strategyRatios[i][j] * 10 ** usdDecimals * RATIO_PRECISION / ratioNorm;
             }
         }
 
@@ -309,7 +308,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         _flushIndexes[smartVault] = flushIdx + 1;
     }
 
-    function _getExchangeRates(address[] memory tokens) internal returns (uint256[] memory) {
+    function _getExchangeRates(address[] memory tokens) internal view returns (uint256[] memory) {
         uint256[] memory exchangeRates = new uint256[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {
             exchangeRates[i] = _priceFeedManager.assetToUsd(tokens[i], 10 ** ERC20(tokens[i]).decimals());
@@ -318,7 +317,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         return exchangeRates;
     }
 
-    function _getStrategyRatios(address[] memory strategies_) internal returns (uint256[][] memory) {
+    function _getStrategyRatios(address[] memory strategies_) internal view returns (uint256[][] memory) {
         uint256[][] memory ratios = new uint256[][](strategies_.length);
         for (uint256 i = 0; i < strategies_.length; i++) {
             ratios[i] = IStrategy(strategies_[i]).assetRatio();
