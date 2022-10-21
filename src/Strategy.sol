@@ -7,7 +7,7 @@ import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "./interfaces/IStrategy.sol";
 import "./interfaces/IStrategyRegistry.sol";
 
-contract Strategy is ERC20Upgradeable, IStrategy {
+abstract contract Strategy is ERC20Upgradeable, IStrategy {
     /* ========== STATE VARIABLES ========== */
 
     IStrategyRegistry internal immutable _strategyRegistry;
@@ -22,12 +22,12 @@ contract Strategy is ERC20Upgradeable, IStrategy {
     // @dev Should be updated in DHW with deposits, withdrawals and yields.
     uint256 public totalUsdValue = 0;
 
-    constructor(string memory strategyName_, IStrategyRegistry StrategyRegistry_) {
+    constructor(string memory strategyName_, IStrategyRegistry strategyRegistry_) {
         _strategyName = strategyName_;
-        _strategyRegistry = StrategyRegistry_;
+        _strategyRegistry = strategyRegistry_;
     }
 
-    function initialize(address[] memory assetGroup_) external initializer {
+    function initialize(address[] memory assetGroup_) public virtual initializer {
         __ERC20_init("Strategy Share Token", "SST");
         _assetGroup = assetGroup_;
     }
@@ -37,6 +37,8 @@ contract Strategy is ERC20Upgradeable, IStrategy {
     function asset() external view returns (address[] memory assetTokenAddresses) {
         return _assetGroup;
     }
+
+    function assetRatio() external view virtual returns (uint256[] memory);
 
     function totalAssets() external view returns (uint256[] memory totalManagedAssets) {
         revert("0");

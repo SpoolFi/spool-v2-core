@@ -39,6 +39,10 @@ interface ISmartVaultFlusher {
 
     function addDeposits(address smartVault, uint256[] memory amounts) external returns (uint256);
 
+    function getDepositRatio(address smartVault) external returns (uint256[] memory);
+
+    function ratioPrecision() external view returns (uint256);
+
     event SmartVaultFlushed(address smartVault, uint256 flushIdx);
 }
 

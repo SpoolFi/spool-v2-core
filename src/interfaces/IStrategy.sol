@@ -30,6 +30,11 @@ interface IStrategy is IVault {
      */
     function totalUsdValue() external view returns (uint256 value);
 
+    /**
+     * @notice
+     */
+    function assetRatio() external view returns (uint256[] memory);
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**

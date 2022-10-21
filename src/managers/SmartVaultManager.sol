@@ -7,6 +7,7 @@ import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IRiskManager.sol";
 import "../interfaces/ISmartVault.sol";
+import "@openzeppelin/token/ERC20/ERC20.sol";
 
 contract SmartVaultRegistry is ISmartVaultRegistry {
     /// @notice TODO
@@ -45,13 +46,16 @@ contract SmartVaultRegistry is ISmartVaultRegistry {
 contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     /* ========== STATE VARIABLES ========== */
 
-    uint256 constant PRECISION = 100_00;
+    uint256 constant RATIO_PRECISION = 10 ** 20;
 
     /// @notice TODO
     IStrategyRegistry private immutable _strategyRegistry;
 
     /// @notice TODO
     IRiskManager private immutable _riskManager;
+
+    /// @notice TODO
+    IUsdPriceFeedManager private immutable _priceFeedManager;
 
     /// @notice TODO
     mapping(address => address[]) internal _smartVaultStrategies;
@@ -74,9 +78,14 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     /// @notice TODO smartVault => flushIdx => depositAmounts
     mapping(address => mapping(uint256 => uint256[])) _vaultDeposits;
 
-    constructor(IStrategyRegistry strategyRegistry_, IRiskManager riskManager_) {
+    constructor(
+        IStrategyRegistry strategyRegistry_,
+        IRiskManager riskManager_,
+        IUsdPriceFeedManager priceFeedManager_
+    ) {
         _strategyRegistry = strategyRegistry_;
         _riskManager = riskManager_;
+        _priceFeedManager = priceFeedManager_;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -127,7 +136,9 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         return _dhwIndexes[smartVault][flushIndex];
     }
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
+    function ratioPrecision() external view returns (uint256) {
+        return RATIO_PRECISION;
+    }
 
     /**
      * @notice Gets total value (in USD) of assets managed by the vault.
@@ -165,7 +176,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     /**
      * @notice TODO
      */
-    function setAllocations(address smartVault, uint256[] memory allocations_) validSmartVault(smartVault) external {
+    function setAllocations(address smartVault, uint256[] memory allocations_) external validSmartVault(smartVault) {
         _smartVaultAllocations[smartVault] = allocations_;
     }
 
@@ -211,47 +222,109 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     }
 
     /**
+     * @notice Calculate current Smart Vault asset deposit ratio
+     * @dev As described in /notes/multi-asset-vault-deposit-ratios.md
+     */
+    function getDepositRatio(address smartVault) external validSmartVault(smartVault) returns (uint256[] memory) {
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
+        uint256[] memory allocations_ = _smartVaultAllocations[smartVault];
+        address[] memory tokens = ISmartVault(smartVault).asset();
+
+        if (strategies_.length != allocations_.length) revert InvalidArrayLength();
+
+        uint256[] memory outRatios = new uint256[](tokens.length);
+
+        if (tokens.length == 1) {
+            outRatios[0] = 1;
+            return outRatios;
+        }
+
+        uint256[] memory exchangeRates = _getExchangeRates(tokens);
+        uint256[][] memory strategyRatios = _getStrategyRatios(strategies_);
+
+        uint256 usdDecimals = _priceFeedManager.usdDecimals();
+
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            uint256 ratioNorm = 0;
+
+            for (uint256 j = 0; j < tokens.length; j++) {
+                ratioNorm += exchangeRates[j] * strategyRatios[i][j];
+            }
+
+            for (uint256 j = 0; j < tokens.length; j++) {
+                outRatios[j] += allocations_[i] * strategyRatios[i][j] * 10 ** usdDecimals
+                    * RATIO_PRECISION / ratioNorm;
+            }
+        }
+
+        for (uint256 j = tokens.length; j > 0; j--) {
+            outRatios[j - 1] = outRatios[j - 1] * RATIO_PRECISION / outRatios[0];
+        }
+
+        return outRatios;
+    }
+
+    /**
      * @notice Transfer all pending deposits from the SmartVault to strategies
+     * @dev Distribute as described in /notes/multi-asset-vault-deposit-ratios.md
      * @param smartVault Smart Vault address
      */
     function flushSmartVault(address smartVault) external validSmartVault(smartVault) {
         uint256 flushIdx = _flushIndexes[smartVault];
         address[] memory tokens = ISmartVault(smartVault).asset();
-        uint256[] memory amounts = _vaultDeposits[smartVault][flushIdx];
+        uint256[] memory deposits = _vaultDeposits[smartVault][flushIdx];
 
-        if (tokens.length != amounts.length) revert InvalidAssetLengths();
+        if (tokens.length != deposits.length) revert InvalidAssetLengths();
 
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
         uint256[] memory allocations_ = _smartVaultAllocations[smartVault];
 
         if (strategies_.length != allocations_.length) revert InvalidArrayLength();
 
-        uint256[][] memory depositAmounts = new uint256[][](strategies_.length);
+        uint256 depositNorm = 0;
+        uint256[][] memory strategyDeposits = new uint256[][](strategies_.length);
+        uint256[][] memory strategyRatios = _getStrategyRatios(strategies_);
+        uint256[] memory exchangeRates = _getExchangeRates(tokens);
 
-        for (uint256 i = 0; i < tokens.length; i++) {
-            uint256 accum = 0;
+        for (uint256 j = 0; j < tokens.length; j++) {
+            depositNorm += exchangeRates[j] * deposits[j];
+        }
 
-            for (uint256 j = 0; j < strategies_.length; j++) {
-                uint256 amount = amounts[i] * allocations_[j] / 100;
-                accum += amount;
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            strategyDeposits[i] = new uint256[](tokens.length);
+            uint256 ratioNorm = 0;
 
-                if (depositAmounts[j].length == 0) {
-                    depositAmounts[j] = new uint256[](tokens.length);
-                }
+            for (uint256 j = 0; j < tokens.length; j++) {
+                ratioNorm += exchangeRates[j] * strategyRatios[i][j];
+            }
 
-                // Last strategy takes dust
-                if (j == strategies_.length - 1) {
-                    amount += (amounts[i] - accum);
-                }
-
-                depositAmounts[j][i] = amount;
-                if (depositAmounts[j][i] == 0) revert InvalidFlushAmount({smartVault: smartVault});
+            for (uint256 j = 0; j < tokens.length; j++) {
+                strategyDeposits[i][j] = depositNorm * allocations_[i] * strategyRatios[i][j] / ratioNorm / 100;
             }
         }
 
-        uint256[] memory dhwIndexes = _strategyRegistry.addDeposits(strategies_, depositAmounts, tokens);
+        uint256[] memory dhwIndexes = _strategyRegistry.addDeposits(strategies_, strategyDeposits, tokens);
         emit SmartVaultFlushed(smartVault, flushIdx);
+
         _flushIndexes[smartVault] = flushIdx + 1;
+    }
+
+    function _getExchangeRates(address[] memory tokens) internal returns (uint256[] memory) {
+        uint256[] memory exchangeRates = new uint256[](tokens.length);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            exchangeRates[i] = _priceFeedManager.assetToUsd(tokens[i], 10 ** ERC20(tokens[i]).decimals());
+        }
+
+        return exchangeRates;
+    }
+
+    function _getStrategyRatios(address[] memory strategies_) internal returns (uint256[][] memory) {
+        uint256[][] memory ratios = new uint256[][](strategies_.length);
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            ratios[i] = IStrategy(strategies_[i]).assetRatio();
+        }
+
+        return ratios;
     }
 
     /**
