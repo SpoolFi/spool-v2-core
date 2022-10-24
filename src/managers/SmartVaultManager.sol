@@ -223,11 +223,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
      */
     function getDepositRatio(address smartVault) external view validSmartVault(smartVault) returns (uint256[] memory) {
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
-        uint256[] memory allocations_ = _smartVaultAllocations[smartVault];
         address[] memory tokens = ISmartVault(smartVault).asset();
-
-        if (strategies_.length != allocations_.length) revert InvalidArrayLength();
-
         uint256[] memory outRatios = new uint256[](tokens.length);
 
         if (tokens.length == 1) {
@@ -236,7 +232,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         }
 
         uint256[] memory exchangeRates = _getExchangeRates(tokens);
-        uint256[][] memory ratios = _getDepositRatios(strategies_, allocations_, tokens, exchangeRates);
+        uint256[][] memory ratios = _getDepositRatios(smartVault, strategies_, tokens, exchangeRates);
         for (uint256 i = 0; i < strategies_.length; i++) {
             for (uint256 j = 0; j < tokens.length; j++) {
                 outRatios[j] += ratios[i][j];
@@ -263,36 +259,29 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         if (tokens.length != deposits.length) revert InvalidAssetLengths();
 
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
-        uint256[] memory allocations_ = _smartVaultAllocations[smartVault];
-
-        if (strategies_.length != allocations_.length) revert InvalidArrayLength();
-
         uint256[] memory exchangeRates = _getExchangeRates(tokens);
-        uint256[][] memory depositRatios = _getDepositRatios(strategies_, allocations_, tokens, exchangeRates);
+        uint256[][] memory depositRatios = _getDepositRatios(smartVault, strategies_, tokens, exchangeRates);
         // TODO: swap to match ratio
 
+        uint256 depositNorm = 0;
+        uint256 usdPrecision = 10 ** _priceFeedManager.usdDecimals();
+        uint256[] memory depositAccum = new uint256[](tokens.length);
         uint256[][] memory strategyDeposits = new uint256[][](strategies_.length);
 
-        {
-            uint256 depositNorm = 0;
-            uint256 usdPrecision = 10 ** _priceFeedManager.usdDecimals();
-            uint256[] memory depositAccum = new uint256[](tokens.length);
+        for (uint256 j = 0; j < tokens.length; j++) {
+            depositNorm += exchangeRates[j] * deposits[j];
+        }
+
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            strategyDeposits[i] = new uint256[](tokens.length);
 
             for (uint256 j = 0; j < tokens.length; j++) {
-                depositNorm += exchangeRates[j] * deposits[j];
-            }
+                strategyDeposits[i][j] = depositNorm * depositRatios[i][j] / RATIO_PRECISION / usdPrecision;
+                depositAccum[j] += strategyDeposits[i][j];
 
-            for (uint256 i = 0; i < strategies_.length; i++) {
-                strategyDeposits[i] = new uint256[](tokens.length);
-
-                for (uint256 j = 0; j < tokens.length; j++) {
-                    strategyDeposits[i][j] = depositNorm * depositRatios[i][j] / RATIO_PRECISION / usdPrecision;
-                    depositAccum[j] += strategyDeposits[i][j];
-
-                    // Dust
-                    if (i == strategies_.length - 1) {
-                        strategyDeposits[i][j] += deposits[j] - depositAccum[j];
-                    }
+                // Dust
+                if (i == strategies_.length - 1) {
+                    strategyDeposits[i][j] += deposits[j] - depositAccum[j];
                 }
             }
         }
@@ -304,14 +293,16 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     }
 
     function _getDepositRatios(
+        address smartVault,
         address[] memory strategies_,
-        uint256[] memory allocations_,
         address[] memory tokens,
         uint256[] memory exchangeRates
     ) internal view returns (uint256[][] memory) {
         uint256[][] memory outRatios = new uint256[][](strategies_.length);
-        uint256[][] memory strategyRatios = _getStrategyRatios(strategies_);
+        uint256[] memory allocations_ = _smartVaultAllocations[smartVault];
+        if (strategies_.length != allocations_.length) revert InvalidArrayLength();
 
+        uint256[][] memory strategyRatios = _getStrategyRatios(strategies_);
         uint256 usdPrecision = 10 ** _priceFeedManager.usdDecimals();
 
         for (uint256 i = 0; i < strategies_.length; i++) {
