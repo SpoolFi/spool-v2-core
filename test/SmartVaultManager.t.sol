@@ -159,11 +159,10 @@ contract SmartVaultManagerTest is Test {
         ISmartVault smartVault_ = _createVault();
         _initializePriceFeeds();
 
-        uint256 ratioPrecision = smartVaultManager.ratioPrecision();
         uint256[] memory ratio = smartVaultManager.getDepositRatio(address(smartVault_));
 
-        assertEq(ratio[0], 1 * ratioPrecision);
-        assertEq(ratio[1], 6779734526152375133);
+        assertEq(ratio[0] / ratio[0], 1);
+        assertEq(ratio[1], 677973452615237513354);
     }
 
     function test_addDepositsAndFlush() public {
@@ -220,7 +219,7 @@ contract SmartVaultManagerTest is Test {
         assertEq(deposits3[0] / r * r, 9.9120506353293 ether);
         assertEq(deposits3[1] / r * r, 0.6839314938377 ether);
 
-        // TODO: assertEq(deposits1[0] + deposits2[0] + deposits3[0], 100 ether);
-        assertEq((deposits1[1] + deposits2[1] + deposits3[1]) / 1000, deposits[1] / 1000);
+        assertEq(deposits1[0] + deposits2[0] + deposits3[0], 100 ether);
+        assertEq(deposits1[1] + deposits2[1] + deposits3[1], deposits[1]);
     }
 }

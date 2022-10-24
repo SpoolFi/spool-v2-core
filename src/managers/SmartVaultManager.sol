@@ -46,7 +46,7 @@ contract SmartVaultRegistry is ISmartVaultRegistry {
 contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     /* ========== STATE VARIABLES ========== */
 
-    uint256 constant RATIO_PRECISION = 10 ** 20;
+    uint256 constant RATIO_PRECISION = 10 ** 22;
 
     /// @notice TODO
     IStrategyRegistry private immutable _strategyRegistry;
@@ -134,10 +134,6 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
      */
     function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint256[] memory) {
         return _dhwIndexes[smartVault][flushIndex];
-    }
-
-    function ratioPrecision() external view returns (uint256) {
-        return RATIO_PRECISION;
     }
 
     /**
@@ -240,19 +236,10 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         }
 
         uint256[] memory exchangeRates = _getExchangeRates(tokens);
-        uint256[][] memory strategyRatios = _getStrategyRatios(strategies_);
-
-        uint256 usdDecimals = _priceFeedManager.usdDecimals();
-
+        uint256[][] memory ratios = _getDepositRatios(strategies_, allocations_, tokens, exchangeRates);
         for (uint256 i = 0; i < strategies_.length; i++) {
-            uint256 ratioNorm = 0;
-
             for (uint256 j = 0; j < tokens.length; j++) {
-                ratioNorm += exchangeRates[j] * strategyRatios[i][j];
-            }
-
-            for (uint256 j = 0; j < tokens.length; j++) {
-                outRatios[j] += allocations_[i] * strategyRatios[i][j] * 10 ** usdDecimals * RATIO_PRECISION / ratioNorm;
+                outRatios[j] += ratios[i][j];
             }
         }
 
@@ -280,25 +267,33 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
 
         if (strategies_.length != allocations_.length) revert InvalidArrayLength();
 
-        uint256 depositNorm = 0;
-        uint256[][] memory strategyDeposits = new uint256[][](strategies_.length);
-        uint256[][] memory strategyRatios = _getStrategyRatios(strategies_);
         uint256[] memory exchangeRates = _getExchangeRates(tokens);
+        uint256[][] memory depositRatios = _getDepositRatios(strategies_, allocations_, tokens, exchangeRates);
+        // TODO: swap to match ratio
 
-        for (uint256 j = 0; j < tokens.length; j++) {
-            depositNorm += exchangeRates[j] * deposits[j];
-        }
+        uint256[][] memory strategyDeposits = new uint256[][](strategies_.length);
 
-        for (uint256 i = 0; i < strategies_.length; i++) {
-            strategyDeposits[i] = new uint256[](tokens.length);
-            uint256 ratioNorm = 0;
+        {
+            uint256 depositNorm = 0;
+            uint256 usdPrecision = 10 ** _priceFeedManager.usdDecimals();
+            uint256[] memory depositAccum = new uint256[](tokens.length);
 
             for (uint256 j = 0; j < tokens.length; j++) {
-                ratioNorm += exchangeRates[j] * strategyRatios[i][j];
+                depositNorm += exchangeRates[j] * deposits[j];
             }
 
-            for (uint256 j = 0; j < tokens.length; j++) {
-                strategyDeposits[i][j] = depositNorm * allocations_[i] * strategyRatios[i][j] / ratioNorm / 100;
+            for (uint256 i = 0; i < strategies_.length; i++) {
+                strategyDeposits[i] = new uint256[](tokens.length);
+
+                for (uint256 j = 0; j < tokens.length; j++) {
+                    strategyDeposits[i][j] = depositNorm * depositRatios[i][j] / RATIO_PRECISION / usdPrecision;
+                    depositAccum[j] += strategyDeposits[i][j];
+
+                    // Dust
+                    if (i == strategies_.length - 1) {
+                        strategyDeposits[i][j] += deposits[j] - depositAccum[j];
+                    }
+                }
             }
         }
 
@@ -306,6 +301,34 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         emit SmartVaultFlushed(smartVault, flushIdx);
 
         _flushIndexes[smartVault] = flushIdx + 1;
+    }
+
+    function _getDepositRatios(
+        address[] memory strategies_,
+        uint256[] memory allocations_,
+        address[] memory tokens,
+        uint256[] memory exchangeRates
+    ) internal view returns (uint256[][] memory) {
+        uint256[][] memory outRatios = new uint256[][](strategies_.length);
+        uint256[][] memory strategyRatios = _getStrategyRatios(strategies_);
+
+        uint256 usdPrecision = 10 ** _priceFeedManager.usdDecimals();
+
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            outRatios[i] = new uint256[](tokens.length);
+            uint256 ratioNorm = 0;
+
+            for (uint256 j = 0; j < tokens.length; j++) {
+                ratioNorm += exchangeRates[j] * strategyRatios[i][j];
+            }
+
+            for (uint256 j = 0; j < tokens.length; j++) {
+                outRatios[i][j] +=
+                    allocations_[i] * strategyRatios[i][j] * usdPrecision * RATIO_PRECISION / ratioNorm / 100;
+            }
+        }
+
+        return outRatios;
     }
 
     function _getExchangeRates(address[] memory tokens) internal view returns (uint256[] memory) {
