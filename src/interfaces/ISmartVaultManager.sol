@@ -9,6 +9,40 @@ error InvalidSmartVault(address address_);
 error InvalidRiskProvider(address address_);
 error InvalidFlushAmount(address smartVault);
 error InvalidDepositAmount(address smartVault);
+error SwapTolerance();
+
+struct SwapInfo {
+    address spender;
+    address swapTarget;
+    uint256 sellAmount;
+    bytes swapCallData;
+}
+
+struct DepositBag {
+    address[] tokens;
+    address[] strategies;
+    uint256[] depositsIn;
+    uint256[] tokenDecimals;
+    uint256[] exchangeRates;
+    uint256[][] depositRatios;
+    uint256 depositUSD;
+    uint256 usdDecimals;
+}
+
+struct VaultFlushBag {
+    address smartVault;
+    address[] tokens;
+    address[] strategies;
+    uint256[] depositsIn;
+    uint256[] allocations;
+}
+
+struct DepositRatioQueryBag {
+    address smartVault;
+    address[] tokens;
+    address[] strategies;
+    uint256[] allocations;
+}
 
 interface ISmartVaultReallocator {
     function allocations(address smartVault) external view returns (uint256[] memory allocations);
@@ -28,20 +62,10 @@ interface ISmartVaultReallocator {
     function reallocate() external;
 }
 
-interface ISmartVaultFlusher {
-    function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint256[] memory);
+interface ISmartVaultDeposits {
+    function getDepositRatio(DepositRatioQueryBag calldata bag) external view returns (uint256[] memory);
 
-    function getLatestFlushIndex(address smartVault) external view returns (uint256);
-
-    function flushSmartVault(address smartVault) external;
-
-    function smartVaultDeposits(address smartVault, uint256 flushIdx) external returns (uint256[] memory);
-
-    function addDeposits(address smartVault, uint256[] memory amounts) external returns (uint256);
-
-    function getDepositRatio(address smartVault) external view returns (uint256[] memory);
-
-    event SmartVaultFlushed(address smartVault, uint256 flushIdx);
+    function flushSmartVault(VaultFlushBag calldata bag, SwapInfo[] calldata swapInfo) external returns (uint256[] memory);
 }
 
 interface ISmartVaultSyncer {
@@ -56,4 +80,18 @@ interface ISmartVaultRegistry {
     function removeSmartVault(address smartVault) external;
 }
 
-interface ISmartVaultManager is ISmartVaultRegistry, ISmartVaultReallocator, ISmartVaultFlusher, ISmartVaultSyncer {}
+interface ISmartVaultManager is ISmartVaultRegistry, ISmartVaultReallocator, ISmartVaultSyncer {
+    function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint256[] memory);
+
+    function getLatestFlushIndex(address smartVault) external view returns (uint256);
+
+    function flushSmartVault(address smartVault, SwapInfo[] calldata swapInfo) external;
+
+    function smartVaultDeposits(address smartVault, uint256 flushIdx) external returns (uint256[] memory);
+
+    function addDeposits(address smartVault, uint256[] memory amounts) external returns (uint256);
+
+    function getDepositRatio(address smartVault) external view returns (uint256[] memory);
+
+    event SmartVaultFlushed(address smartVault, uint256 flushIdx);
+}

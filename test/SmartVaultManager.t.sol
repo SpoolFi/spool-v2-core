@@ -16,6 +16,7 @@ import "../src/interfaces/RequestType.sol";
 import "../src/managers/UsdPriceFeedManager.sol";
 import "./mocks/MockStrategy.sol";
 import "./mocks/MockPriceFeedManager.sol";
+import "../src/interfaces/ISmartVaultManager.sol";
 
 contract SmartVaultManagerTest is Test {
     ISmartVaultManager smartVaultManager;
@@ -31,7 +32,8 @@ contract SmartVaultManagerTest is Test {
         strategyRegistry = new StrategyRegistry();
         riskManager = new RiskManager();
         priceFeedManager = new MockPriceFeedManager();
-        smartVaultManager = new SmartVaultManager(strategyRegistry, riskManager, priceFeedManager);
+        ISmartVaultDeposits deposits = new SmartVaultDeposits(priceFeedManager, strategyRegistry);
+        smartVaultManager = new SmartVaultManager(strategyRegistry, riskManager, deposits);
         smartVaultManager.registerSmartVault(smartVault);
 
         token1 = new MockToken("Token1", "T1");
@@ -194,7 +196,8 @@ contract SmartVaultManagerTest is Test {
         assertEq(deposits[0], 100 ether);
         assertEq(deposits[1], 6.779734526152375133 ether);
 
-        smartVaultManager.flushSmartVault(address(smartVault_));
+        SwapInfo[] memory swapInfo = new SwapInfo[](2);
+        smartVaultManager.flushSmartVault(address(smartVault_), swapInfo);
 
         flushIdx = smartVaultManager.getLatestFlushIndex(address(smartVault_));
         assertEq(flushIdx, 1);
