@@ -46,12 +46,18 @@ contract SmartVaultRegistry is ISmartVaultRegistry {
 }
 
 contract SmartVaultDeposits is ISmartVaultDeposits {
+    /// @notice Deposit ratio precision
     uint256 constant RATIO_PRECISION = 10 ** 22;
 
+    uint256 constant ALLOC_PRECISION = 1000;
+
+    /// @notice Difference between desired and actual amounts in WEI after swapping
     uint256 constant SWAP_TOLERANCE = 500;
 
+    /// @notice Price Feed Manager
     IUsdPriceFeedManager private immutable _priceFeedManager;
 
+    /// @notice Strategy registry
     IStrategyRegistry private immutable _strategyRegistry;
 
     constructor(IUsdPriceFeedManager priceFeedManager_, IStrategyRegistry strategyRegistry_) {
@@ -87,29 +93,36 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
         return outRatios;
     }
 
-    function flushSmartVault(VaultFlushBag memory bag, SwapInfo[] calldata swapInfo)
+    /**
+     * @notice Calculate Smart Vault deposit distributions for underlying strategies based on their
+     * internal ratio.
+     * @param bag Deposit specific parameters
+     * @param swapInfo Information needed to perform asset swaps
+     * @return Token deposit amounts per strategy
+     */
+    function distributeVaultDeposits(DepositDistributorBag memory bag, SwapInfo[] calldata swapInfo)
         external
-        returns (uint256[] memory)
+        returns (uint256[][] memory)
     {
         if (bag.tokens.length != bag.depositsIn.length) revert InvalidAssetLengths();
 
         uint256[] memory exchangeRates = _getExchangeRates(bag.tokens);
-        uint256[] memory tokenDecimals = new uint256[](bag.tokens.length);
+        uint256[] memory decimals = new uint256[](bag.tokens.length);
         uint256[][] memory depositRatios;
         uint256 depositUSD = 0;
 
         depositRatios = _getDepositRatios(bag.smartVault, bag.strategies, bag.tokens, exchangeRates, bag.allocations);
 
         for (uint256 j = 0; j < bag.tokens.length; j++) {
-            tokenDecimals[j] = ERC20(bag.tokens[j]).decimals();
-            depositUSD += exchangeRates[j] * bag.depositsIn[j] / 10 ** tokenDecimals[j];
+            decimals[j] = ERC20(bag.tokens[j]).decimals();
+            depositUSD += exchangeRates[j] * bag.depositsIn[j] / 10 ** decimals[j];
         }
 
         DepositBag memory depositBag = DepositBag(
             bag.tokens,
             bag.strategies,
             bag.depositsIn,
-            tokenDecimals,
+            decimals,
             exchangeRates,
             depositRatios,
             depositUSD,
@@ -117,8 +130,7 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
         );
 
         depositBag.depositsIn = _swapToRatio(depositBag, swapInfo);
-        uint256[][] memory strategyDeposits = _distributeAcrossStrategies(depositBag);
-        return _strategyRegistry.addDeposits(bag.strategies, strategyDeposits, bag.tokens);
+        return _distributeAcrossStrategies(depositBag);
     }
 
     function _swapToRatio(DepositBag memory bag, SwapInfo[] memory swapInfo) internal returns (uint256[] memory) {
@@ -136,6 +148,7 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
                 ratio += bag.depositRatios[j][i];
             }
 
+            // Add/Subtract swapped amounts
             if (newBalances[i] >= oldBalances[i]) {
                 depositsOut[i] = bag.depositsIn[i] + (newBalances[i] - oldBalances[i]);
             } else {
@@ -143,8 +156,7 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
             }
 
             // Desired token deposit amount
-            uint256 desired =
-                ratio * bag.depositUSD * 10 ** bag.tokenDecimals[i] / 10 ** bag.usdDecimals / RATIO_PRECISION;
+            uint256 desired = ratio * bag.depositUSD * 10 ** bag.decimals[i] / 10 ** bag.usdDecimals / RATIO_PRECISION;
 
             // Check discrepancies
             bool isOk = desired == depositsOut[i]
@@ -162,12 +174,15 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
     function _distributeAcrossStrategies(DepositBag memory bag) internal returns (uint256[][] memory) {
         uint256[] memory depositAccum = new uint256[](bag.tokens.length);
         uint256[][] memory strategyDeposits = new uint256[][](bag.strategies.length);
+        uint256 usdPrecision = 10 ** bag.usdDecimals;
+
         for (uint256 i = 0; i < bag.strategies.length; i++) {
             strategyDeposits[i] = new uint256[](bag.tokens.length);
 
             for (uint256 j = 0; j < bag.tokens.length; j++) {
-                strategyDeposits[i][j] = bag.depositUSD * bag.depositRatios[i][j] * 10 ** bag.tokenDecimals[j]
-                    / RATIO_PRECISION / 10 ** bag.usdDecimals;
+                uint256 tokenPrecision = 10 ** bag.decimals[j];
+                strategyDeposits[i][j] =
+                    bag.depositUSD * bag.depositRatios[i][j] * tokenPrecision / RATIO_PRECISION / usdPrecision;
                 depositAccum[j] += strategyDeposits[i][j];
 
                 // Dust
@@ -202,8 +217,8 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
             }
 
             for (uint256 j = 0; j < tokens.length; j++) {
-                outRatios[i][j] +=
-                    allocations_[i] * strategyRatios[i][j] * usdPrecision * RATIO_PRECISION / ratioNorm / 100;
+                outRatios[i][j] += allocations_[i] * strategyRatios[i][j] * usdPrecision * RATIO_PRECISION / ratioNorm
+                    / ALLOC_PRECISION;
             }
         }
 
@@ -266,25 +281,25 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
 contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     /* ========== STATE VARIABLES ========== */
 
-    /// @notice TODO
+    /// @notice Strategy registry
     IStrategyRegistry private immutable _strategyRegistry;
 
-    /// @notice TODO
+    /// @notice Risk manager
     IRiskManager private immutable _riskManager;
 
-    /// @notice TODO
+    /// @notice Vault deposits logic
     ISmartVaultDeposits private immutable _vaultDepositsManager;
 
-    /// @notice TODO
+    /// @notice Smart Vault strategy registry
     mapping(address => address[]) internal _smartVaultStrategies;
 
-    /// @notice TODO
+    /// @notice Smart Vault risk provider registry
     mapping(address => address) internal _smartVaultRiskProviders;
 
-    /// @notice TODO
+    /// @notice Smart Vault strategy allocations
     mapping(address => uint256[]) internal _smartVaultAllocations;
 
-    /// @notice TODO
+    /// @notice Smart Vault tolerance registry
     mapping(address => int256) internal _riskTolerances;
 
     /// @notice Current flush index for given Smart Vault
@@ -296,8 +311,11 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     /// @notice TODO smartVault => flushIdx => depositAmounts
     mapping(address => mapping(uint256 => uint256[])) _vaultDeposits;
 
-    constructor(IStrategyRegistry strategyRegistry_, IRiskManager riskManager_, ISmartVaultDeposits vaultDepositsManager_)
-    {
+    constructor(
+        IStrategyRegistry strategyRegistry_,
+        IRiskManager riskManager_,
+        ISmartVaultDeposits vaultDepositsManager_
+    ) {
         _strategyRegistry = strategyRegistry_;
         _riskManager = riskManager_;
         _vaultDepositsManager = vaultDepositsManager_;
@@ -407,7 +425,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     function syncSmartVault(address smartVault) external {}
 
     /**
-     * @notice Accumulate Smart Vault deposits before pushing to strategies
+     * @notice Accumulate and persist Smart Vault deposits before pushing to strategies
      * @param smartVault Smart Vault address
      * @param amounts Deposit amounts
      */
@@ -460,7 +478,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     function flushSmartVault(address smartVault, SwapInfo[] calldata swapInfo) external validSmartVault(smartVault) {
         uint256 flushIdx = _flushIndexes[smartVault];
 
-        VaultFlushBag memory bag = VaultFlushBag(
+        DepositDistributorBag memory bag = DepositDistributorBag(
             smartVault,
             ISmartVault(smartVault).asset(),
             _smartVaultStrategies[smartVault],
@@ -468,7 +486,10 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
             _smartVaultAllocations[smartVault]
         );
 
-        _dhwIndexes[smartVault][flushIdx] = _vaultDepositsManager.flushSmartVault(bag, swapInfo);
+        uint256[][] memory distribution = _vaultDepositsManager.distributeVaultDeposits(bag, swapInfo);
+        uint256[] memory dhwIndexes = _strategyRegistry.addDeposits(bag.strategies, distribution, bag.tokens);
+
+        _dhwIndexes[smartVault][flushIdx] = dhwIndexes;
         _flushIndexes[smartVault] = flushIdx + 1;
 
         emit SmartVaultFlushed(smartVault, flushIdx);

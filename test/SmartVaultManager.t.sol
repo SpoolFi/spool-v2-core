@@ -141,9 +141,9 @@ contract SmartVaultManagerTest is Test {
         actionManager.setActions(address(smartVault_), new IAction[](0), new RequestType[](0));
 
         uint256[] memory allocations = new uint256[](3);
-        allocations[0] = 60; // A
-        allocations[1] = 30; // B
-        allocations[2] = 10; // C
+        allocations[0] = 600; // A
+        allocations[1] = 300; // B
+        allocations[2] = 100; // C
 
         smartVaultManager.registerSmartVault(address(smartVault_));
         smartVaultManager.setStrategies(address(smartVault_), strategies);
@@ -196,7 +196,7 @@ contract SmartVaultManagerTest is Test {
         assertEq(deposits[0], 100 ether);
         assertEq(deposits[1], 6.779734526152375133 ether);
 
-        SwapInfo[] memory swapInfo = new SwapInfo[](2);
+        SwapInfo[] memory swapInfo = new SwapInfo[](0);
         smartVaultManager.flushSmartVault(address(smartVault_), swapInfo);
 
         flushIdx = smartVaultManager.getLatestFlushIndex(address(smartVault_));
