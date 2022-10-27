@@ -54,16 +54,7 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
     /// @notice Difference between desired and actual amounts in WEI after swapping
     uint256 constant SWAP_TOLERANCE = 500;
 
-    /// @notice Price Feed Manager
-    IUsdPriceFeedManager private immutable _priceFeedManager;
-
-    /// @notice Strategy registry
-    IStrategyRegistry private immutable _strategyRegistry;
-
-    constructor(IUsdPriceFeedManager priceFeedManager_, IStrategyRegistry strategyRegistry_) {
-        _priceFeedManager = priceFeedManager_;
-        _strategyRegistry = strategyRegistry_;
-    }
+    constructor() {}
 
     /**
      * @notice Calculate current Smart Vault asset deposit ratio
@@ -77,9 +68,7 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
             return outRatios;
         }
 
-        uint256[] memory exchangeRates = _getExchangeRates(bag.tokens);
-        uint256[][] memory ratios =
-            _getDepositRatios(bag.smartVault, bag.strategies, bag.tokens, exchangeRates, bag.allocations);
+        uint256[][] memory ratios = _getDepositRatios(bag);
         for (uint256 i = 0; i < bag.strategies.length; i++) {
             for (uint256 j = 0; j < bag.tokens.length; j++) {
                 outRatios[j] += ratios[i][j];
@@ -100,33 +89,33 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
      * @param swapInfo Information needed to perform asset swaps
      * @return Token deposit amounts per strategy
      */
-    function distributeVaultDeposits(DepositDistributorBag memory bag, SwapInfo[] calldata swapInfo)
-        external
-        returns (uint256[][] memory)
-    {
-        if (bag.tokens.length != bag.depositsIn.length) revert InvalidAssetLengths();
+    function distributeVaultDeposits(
+        DepositRatioQueryBag memory bag,
+        uint256[] memory depositsIn,
+        SwapInfo[] calldata swapInfo
+    ) external returns (uint256[][] memory) {
+        if (bag.tokens.length != depositsIn.length) revert InvalidAssetLengths();
 
-        uint256[] memory exchangeRates = _getExchangeRates(bag.tokens);
         uint256[] memory decimals = new uint256[](bag.tokens.length);
         uint256[][] memory depositRatios;
         uint256 depositUSD = 0;
 
-        depositRatios = _getDepositRatios(bag.smartVault, bag.strategies, bag.tokens, exchangeRates, bag.allocations);
+        depositRatios = _getDepositRatios(bag);
 
         for (uint256 j = 0; j < bag.tokens.length; j++) {
             decimals[j] = ERC20(bag.tokens[j]).decimals();
-            depositUSD += exchangeRates[j] * bag.depositsIn[j] / 10 ** decimals[j];
+            depositUSD += bag.exchangeRates[j] * depositsIn[j] / 10 ** decimals[j];
         }
 
         DepositBag memory depositBag = DepositBag(
             bag.tokens,
             bag.strategies,
-            bag.depositsIn,
+            depositsIn,
             decimals,
-            exchangeRates,
+            bag.exchangeRates,
             depositRatios,
             depositUSD,
-            _priceFeedManager.usdDecimals()
+            bag.usdDecimals
         );
 
         depositBag.depositsIn = _swapToRatio(depositBag, swapInfo);
@@ -195,52 +184,31 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
         return strategyDeposits;
     }
 
-    function _getDepositRatios(
-        address smartVault,
-        address[] memory strategies_,
-        address[] memory tokens,
-        uint256[] memory exchangeRates,
-        uint256[] memory allocations_
-    ) internal view returns (uint256[][] memory) {
-        uint256[][] memory outRatios = new uint256[][](strategies_.length);
-        if (strategies_.length != allocations_.length) revert InvalidArrayLength();
+    function _getDepositRatios(DepositRatioQueryBag memory bag)
+        internal
+        view
+        returns (uint256[][] memory)
+    {
+        uint256[][] memory outRatios = new uint256[][](bag.strategies.length);
+        if (bag.strategies.length != bag.allocations.length) revert InvalidArrayLength();
 
-        uint256[][] memory strategyRatios = _getStrategyRatios(strategies_);
-        uint256 usdPrecision = 10 ** _priceFeedManager.usdDecimals();
+        uint256 usdPrecision = 10 ** bag.usdDecimals;
 
-        for (uint256 i = 0; i < strategies_.length; i++) {
-            outRatios[i] = new uint256[](tokens.length);
+        for (uint256 i = 0; i < bag.strategies.length; i++) {
+            outRatios[i] = new uint256[](bag.tokens.length);
             uint256 ratioNorm = 0;
 
-            for (uint256 j = 0; j < tokens.length; j++) {
-                ratioNorm += exchangeRates[j] * strategyRatios[i][j];
+            for (uint256 j = 0; j < bag.tokens.length; j++) {
+                ratioNorm += bag.exchangeRates[j] * bag.strategyRatios[i][j];
             }
 
-            for (uint256 j = 0; j < tokens.length; j++) {
-                outRatios[i][j] += allocations_[i] * strategyRatios[i][j] * usdPrecision * RATIO_PRECISION / ratioNorm
-                    / ALLOC_PRECISION;
+            for (uint256 j = 0; j < bag.tokens.length; j++) {
+                outRatios[i][j] += bag.allocations[i] * bag.strategyRatios[i][j] * usdPrecision * RATIO_PRECISION
+                    / ratioNorm / ALLOC_PRECISION;
             }
         }
 
         return outRatios;
-    }
-
-    function _getExchangeRates(address[] memory tokens) internal view returns (uint256[] memory) {
-        uint256[] memory exchangeRates = new uint256[](tokens.length);
-        for (uint256 i = 0; i < tokens.length; i++) {
-            exchangeRates[i] = _priceFeedManager.assetToUsd(tokens[i], 10 ** ERC20(tokens[i]).decimals());
-        }
-
-        return exchangeRates;
-    }
-
-    function _getStrategyRatios(address[] memory strategies_) internal view returns (uint256[][] memory) {
-        uint256[][] memory ratios = new uint256[][](strategies_.length);
-        for (uint256 i = 0; i < strategies_.length; i++) {
-            ratios[i] = IStrategy(strategies_[i]).assetRatio();
-        }
-
-        return ratios;
     }
 
     function _getBalances(address[] memory tokens) private returns (uint256[] memory) {
@@ -284,6 +252,9 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     /// @notice Strategy registry
     IStrategyRegistry private immutable _strategyRegistry;
 
+    /// @notice Price Feed Manager
+    IUsdPriceFeedManager private immutable _priceFeedManager;
+
     /// @notice Risk manager
     IRiskManager private immutable _riskManager;
 
@@ -314,11 +285,13 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     constructor(
         IStrategyRegistry strategyRegistry_,
         IRiskManager riskManager_,
-        ISmartVaultDeposits vaultDepositsManager_
+        ISmartVaultDeposits vaultDepositsManager_,
+        IUsdPriceFeedManager priceFeedManager_
     ) {
         _strategyRegistry = strategyRegistry_;
         _riskManager = riskManager_;
         _vaultDepositsManager = vaultDepositsManager_;
+        _priceFeedManager = priceFeedManager_;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -458,11 +431,16 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
      * @dev As described in /notes/multi-asset-vault-deposit-ratios.md
      */
     function getDepositRatio(address smartVault) external view validSmartVault(smartVault) returns (uint256[] memory) {
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
+        address[] memory tokens = ISmartVault(smartVault).asset();
         DepositRatioQueryBag memory bag = DepositRatioQueryBag(
             smartVault,
-            ISmartVault(smartVault).asset(),
-            _smartVaultStrategies[smartVault],
-            _smartVaultAllocations[smartVault]
+            tokens,
+            strategies_,
+            _smartVaultAllocations[smartVault],
+            _getExchangeRates(tokens),
+            _getStrategyRatios(strategies_),
+            _priceFeedManager.usdDecimals()
         );
 
         return _vaultDepositsManager.getDepositRatio(bag);
@@ -477,16 +455,21 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
      */
     function flushSmartVault(address smartVault, SwapInfo[] calldata swapInfo) external validSmartVault(smartVault) {
         uint256 flushIdx = _flushIndexes[smartVault];
+        address[] memory tokens = ISmartVault(smartVault).asset();
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
 
-        DepositDistributorBag memory bag = DepositDistributorBag(
+        DepositRatioQueryBag memory bag = DepositRatioQueryBag(
             smartVault,
-            ISmartVault(smartVault).asset(),
-            _smartVaultStrategies[smartVault],
-            _vaultDeposits[smartVault][flushIdx],
-            _smartVaultAllocations[smartVault]
+            tokens,
+            strategies_,
+            _smartVaultAllocations[smartVault],
+            _getExchangeRates(tokens),
+            _getStrategyRatios(strategies_),
+            _priceFeedManager.usdDecimals()
         );
 
-        uint256[][] memory distribution = _vaultDepositsManager.distributeVaultDeposits(bag, swapInfo);
+        uint256[][] memory distribution =
+            _vaultDepositsManager.distributeVaultDeposits(bag, _vaultDeposits[smartVault][flushIdx], swapInfo);
         uint256[] memory dhwIndexes = _strategyRegistry.addDeposits(bag.strategies, distribution, bag.tokens);
 
         _dhwIndexes[smartVault][flushIdx] = dhwIndexes;
@@ -501,6 +484,24 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     function reallocate() external {}
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
+
+    function _getStrategyRatios(address[] memory strategies_) internal view returns (uint256[][] memory) {
+        uint256[][] memory ratios = new uint256[][](strategies_.length);
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            ratios[i] = IStrategy(strategies_[i]).assetRatio();
+        }
+
+        return ratios;
+    }
+
+    function _getExchangeRates(address[] memory tokens) internal view returns (uint256[] memory) {
+        uint256[] memory exchangeRates = new uint256[](tokens.length);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            exchangeRates[i] = _priceFeedManager.assetToUsd(tokens[i], 10 ** ERC20(tokens[i]).decimals());
+        }
+
+        return exchangeRates;
+    }
 
     /* ========== MODIFIERS ========== */
 

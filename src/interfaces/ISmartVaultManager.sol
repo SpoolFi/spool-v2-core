@@ -12,9 +12,7 @@ error InvalidDepositAmount(address smartVault);
 error SwapTolerance();
 
 struct SwapInfo {
-    address spender;
     address swapTarget;
-    uint256 sellAmount;
     bytes swapCallData;
 }
 
@@ -29,19 +27,14 @@ struct DepositBag {
     uint256 usdDecimals;
 }
 
-struct DepositDistributorBag {
-    address smartVault;
-    address[] tokens;
-    address[] strategies;
-    uint256[] depositsIn;
-    uint256[] allocations;
-}
-
 struct DepositRatioQueryBag {
     address smartVault;
     address[] tokens;
     address[] strategies;
     uint256[] allocations;
+    uint256[] exchangeRates;
+    uint256[][] strategyRatios;
+    uint256 usdDecimals;
 }
 
 interface ISmartVaultReallocator {
@@ -65,9 +58,11 @@ interface ISmartVaultReallocator {
 interface ISmartVaultDeposits {
     function getDepositRatio(DepositRatioQueryBag calldata bag) external view returns (uint256[] memory);
 
-    function distributeVaultDeposits(DepositDistributorBag calldata bag, SwapInfo[] calldata swapInfo)
-        external
-        returns (uint256[][] memory);
+    function distributeVaultDeposits(
+        DepositRatioQueryBag memory bag,
+        uint256[] memory depositsIn,
+        SwapInfo[] calldata swapInfo
+    ) external returns (uint256[][] memory);
 }
 
 interface ISmartVaultSyncer {
