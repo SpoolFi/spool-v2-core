@@ -276,11 +276,23 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     /// @notice Current flush index for given Smart Vault
     mapping(address => uint256) internal _flushIndexes;
 
+    /// @notice First flush index that still needs to by synces for given Smart Vault.
+    mapping(address => uint256) internal _flushIndexesToSync;
+
     /// @notice DHW indexes for given Smart Vault and flush index
     mapping(address => mapping(uint256 => uint256[])) internal _dhwIndexes;
 
-    /// @notice TODO smartVault => flushIdx => depositAmounts
+    /// @notice TODO smart vault => flush index => assets deposited
     mapping(address => mapping(uint256 => uint256[])) _vaultDeposits;
+
+    /// @notice TODO smart vault => flush index => vault shares withdrawn
+    mapping(address => mapping(uint256 => uint256)) _withdrawnVaultShares;
+
+    /// @notice TODO smart vault => flush index => strategy shares withdrawn
+    mapping(address => mapping(uint256 => uint256[])) _withdrawnStrategyShares;
+
+    /// @notice TODO smart vault => flush index => assets withdrawn
+    mapping(address => mapping(uint256 => uint256[])) _withdrawnAssets;
 
     constructor(
         IStrategyRegistry strategyRegistry_,
@@ -334,7 +346,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     /**
      * @notice Smart vault deposits for given flush index.
      */
-    function smartVaultDeposits(address smartVault, uint256 flushIdx) external returns (uint256[] memory) {
+    function smartVaultDeposits(address smartVault, uint256 flushIdx) external view returns (uint256[] memory) {
         return _vaultDeposits[smartVault][flushIdx];
     }
 
@@ -372,7 +384,9 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
 
         for (uint256 i = 0; i < strategies_.length; i++) {
             address strategy = strategies_[i];
-            if (!_strategyRegistry.isStrategy(strategy)) revert InvalidStrategy({address_: strategy});
+            if (!_strategyRegistry.isStrategy(strategy)) {
+                revert InvalidStrategy(strategy);
+            }
         }
 
         _smartVaultStrategies[smartVault] = strategies_;
@@ -391,11 +405,6 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     function setRiskProvider(address smartVault, address riskProvider_) external validRiskProvider(riskProvider_) {
         _smartVaultRiskProviders[smartVault] = riskProvider_;
     }
-
-    /**
-     * @notice TODO
-     */
-    function syncSmartVault(address smartVault) external {}
 
     /**
      * @notice Accumulate and persist Smart Vault deposits before pushing to strategies
@@ -424,6 +433,44 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         }
 
         return _flushIndexes[smartVault];
+    }
+
+    function requestWithdrawal(uint256 vaultShares)
+        external
+        validSmartVault(msg.sender)
+        returns (uint256)
+    {
+        uint256 flushIndex = _flushIndexes[msg.sender];
+
+        _withdrawnVaultShares[msg.sender][flushIndex] += vaultShares;
+
+        return flushIndex;
+    }
+
+    function calculateWithdrawal(uint256 withdrawalNftId)
+        external view
+        validSmartVault(msg.sender)
+        returns (uint256[] memory)
+    {
+        uint256[] memory withdrawnAssets = new uint256[](ISmartVault(msg.sender).asset().length);
+
+        WithdrawalMetadata memory data = ISmartVault(msg.sender).getWithdrawalMetadata(withdrawalNftId);
+
+        // loop over all assets
+        for (uint256 i = 0; i < withdrawnAssets.length; i++) {
+            withdrawnAssets[i] = _withdrawnAssets[msg.sender][data.flushIndex][i] * data.vaultShares / _withdrawnVaultShares[msg.sender][data.flushIndex];
+        }
+
+        return withdrawnAssets;
+    }
+
+    function transferWithdrawal(uint256[] memory withdrawnAssets, address[] memory tokens, address receiver)
+        external
+        validSmartVault(msg.sender)
+    {
+        for (uint256 i = 0; i < tokens.length; i++) {
+            IERC20(tokens[i]).transfer(receiver, withdrawnAssets[i]);
+        }
     }
 
     /**
@@ -455,27 +502,64 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
      */
     function flushSmartVault(address smartVault, SwapInfo[] calldata swapInfo) external validSmartVault(smartVault) {
         uint256 flushIdx = _flushIndexes[smartVault];
-        address[] memory tokens = ISmartVault(smartVault).asset();
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
 
-        DepositRatioQueryBag memory bag = DepositRatioQueryBag(
-            smartVault,
-            tokens,
-            strategies_,
-            _smartVaultAllocations[smartVault],
-            _getExchangeRates(tokens),
-            _getStrategyRatios(strategies_),
-            _priceFeedManager.usdDecimals()
-        );
+        uint256[] memory deposits = _vaultDeposits[smartVault][flushIdx];
+        uint256 withdrawals = _withdrawnVaultShares[smartVault][flushIdx];
 
-        uint256[][] memory distribution =
-            _vaultDepositsManager.distributeVaultDeposits(bag, _vaultDeposits[smartVault][flushIdx], swapInfo);
-        uint256[] memory dhwIndexes = _strategyRegistry.addDeposits(bag.strategies, distribution, bag.tokens);
+        uint256[] memory flushDhwIndexes;
 
-        _dhwIndexes[smartVault][flushIdx] = dhwIndexes;
+        if (deposits.length > 0) {
+            // handle deposits
+            address[] memory tokens = ISmartVault(smartVault).asset();
+
+            DepositRatioQueryBag memory bag = DepositRatioQueryBag(
+                smartVault,
+                tokens,
+                strategies_,
+                _smartVaultAllocations[smartVault],
+                _getExchangeRates(tokens),
+                _getStrategyRatios(strategies_),
+                _priceFeedManager.usdDecimals()
+            );
+
+            uint256[][] memory distribution =
+                _vaultDepositsManager.distributeVaultDeposits(bag, deposits, swapInfo);
+            flushDhwIndexes = _strategyRegistry.addDeposits(bag.strategies, distribution, bag.tokens);
+        }
+
+        if (withdrawals > 0) {
+            // handle withdrawals
+            uint256[] memory strategyWithdrawals = new uint256[](strategies_.length);
+
+            for (uint256 i = 0; i < strategies_.length; i++) {
+                uint256 strategyShares = IStrategy(strategies_[i]).balanceOf(smartVault);
+                uint256 totalVaultShares = ISmartVault(smartVault).totalSupply();
+
+                strategyWithdrawals[i] = strategyShares * withdrawals / totalVaultShares;
+            }
+
+            ISmartVault(smartVault).handleWithdrawalFlush(withdrawals, strategyWithdrawals, strategies_);
+            flushDhwIndexes = _strategyRegistry.addWithdrawals(strategies_, strategyWithdrawals);
+
+            _withdrawnStrategyShares[smartVault][flushIdx] = strategyWithdrawals;
+        }
+
+        if (flushDhwIndexes.length == 0) revert NothingToFlush();
+
+        _dhwIndexes[smartVault][flushIdx] = flushDhwIndexes;
         _flushIndexes[smartVault] = flushIdx + 1;
 
         emit SmartVaultFlushed(smartVault, flushIdx);
+    }
+
+    function syncSmartVault(address smartVault) external {
+        // TODO: sync yields
+        // TODO: sync deposits
+
+        while (_flushIndexesToSync[smartVault] < _flushIndexes[smartVault]) {
+            _syncWithdrawals(smartVault, _flushIndexesToSync[smartVault]);
+        }
     }
 
     /**
@@ -501,6 +585,20 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         }
 
         return exchangeRates;
+    }
+
+    function _syncWithdrawals(address smartVault, uint256 flushIndex) private {
+        uint256 withdrawnShares = _withdrawnVaultShares[smartVault][flushIndex];
+
+        if (withdrawnShares == 0) {
+            return;
+        }
+
+        _withdrawnAssets[smartVault][flushIndex] = _strategyRegistry.claimWithdrawals(
+            _smartVaultStrategies[smartVault],
+            _dhwIndexes[smartVault][flushIndex],
+            _withdrawnStrategyShares[smartVault][flushIndex]
+        );
     }
 
     /* ========== MODIFIERS ========== */

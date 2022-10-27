@@ -17,6 +17,12 @@ contract StrategyRegistry is IStrategyRegistry {
     /// @notice TODO strategy => index => tokenAmounts
     mapping(address => mapping(uint256 => uint256[])) _strategyDeposits;
 
+    /// @notice TODO strategy => index => sstAmount
+    mapping(address => mapping(uint256 => uint256)) _withdrawnShares;
+
+    /// @notice TODO strategy => index => tokenAmounts
+    mapping(address => mapping(uint256 => uint256[])) _withdrawnAssets;
+
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
@@ -29,7 +35,7 @@ contract StrategyRegistry is IStrategyRegistry {
     /**
      * @notice Deposits for given strategy and DHW index
      */
-    function strategyDeposits(address strategy, uint256 index) external returns (uint256[] memory) {
+    function strategyDeposits(address strategy, uint256 index) external view returns (uint256[] memory) {
         return _strategyDeposits[strategy][index];
     }
 
@@ -79,5 +85,45 @@ contract StrategyRegistry is IStrategyRegistry {
         }
 
         return indexes;
+    }
+
+    function addWithdrawals(address[] memory strategies_, uint256[] memory strategyShares)
+        external
+        returns (uint256[] memory)
+    {
+        uint256[] memory indexes = new uint256[](strategies_.length);
+
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            address strategy = strategies_[i];
+            uint256 latestIndex = _currentIndexes[strategy];
+
+            indexes[i] = latestIndex;
+            _withdrawnShares[strategy][latestIndex] += strategyShares[i];
+        }
+
+        return indexes;
+    }
+
+    function claimWithdrawals(address[] memory strategies_, uint256[] memory dhwIndexes, uint256[] memory strategyShares)
+        external view
+        returns (uint256[] memory)
+    {
+        uint256[] memory totalWithdrawnAssets = new uint256[](IStrategy(strategies_[0]).asset().length);
+
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            address strategy = strategies_[i];
+            uint256 dhwIndex = dhwIndexes[i];
+
+            if (dhwIndex == _currentIndexes[strategy]) {
+                revert DhwNotRunYetForIndex(strategy, dhwIndex);
+            }
+
+            for (uint256 j = 0; j < totalWithdrawnAssets.length; j++) {
+                totalWithdrawnAssets[j] += _withdrawnAssets[strategy][dhwIndex][j] * strategyShares[i] / _withdrawnShares[strategy][dhwIndex];
+                // there will be dust left after all vaults sync
+            }
+        }
+
+        return totalWithdrawnAssets;
     }
 }

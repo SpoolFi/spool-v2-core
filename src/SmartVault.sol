@@ -13,6 +13,7 @@ import "./interfaces/IRiskManager.sol";
 import "./interfaces/IStrategyRegistry.sol";
 import "./interfaces/IAction.sol";
 import "./interfaces/ISmartVaultManager.sol";
+import "./interfaces/IStrategy.sol";
 
 contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     using SafeERC20 for ERC20;
@@ -31,6 +32,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     ISmartVaultManager internal immutable smartVaultManager;
 
     // @notice Asset group address array
+    // TODO: Q: shouldn't this be an ID of asset group, with actual assets stored somewhere else?
     address[] internal _assetGroup;
 
     // @notice Vault name
@@ -47,9 +49,13 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
 
     // @notice Deposit NFT ID
     uint256 private _maxDepositID = 0;
+    // @notice Maximal value of deposit NFT ID.
+    uint256 private _maximalDepositId = 2 ** 255 - 1;
 
     // @notice Withdrawal NFT ID
-    uint256 private _maxWithdrawalID = 2 ** 256 / 2;
+    uint256 private _maxWithdrawalID = 2 ** 255;
+    // @notice Maximal value of withdrawal NFT ID.
+    uint256 private _maximalWithdrawalId = 2 ** 256 - 1;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -98,6 +104,10 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
      */
     function isShareTokenTransferable() external view returns (bool) {
         revert("0");
+    }
+
+    function getWithdrawalMetadata(uint256 withdrawalNftId) external view returns (WithdrawalMetadata memory) {
+        return _withdrawalMetadata[withdrawalNftId];
     }
 
     /**
@@ -400,6 +410,64 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         revert("0");
     }
 
+    function requestWithdrawal(uint256 vaultShares, address receiver, address owner) external returns (uint256) {
+        // TODO: check if owner allowed withdrawal or something
+        if (balanceOf(owner) < vaultShares) {
+            revert InsufficientBalance(balanceOf(owner), vaultShares);
+        }
+
+        uint256[] memory assets = new uint256[](1);
+        assets[0] = vaultShares;
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(this);
+        _runGuards(owner, receiver, assets, tokens, RequestType.Withdrawal);
+
+        uint256 flushIndex = smartVaultManager.requestWithdrawal(vaultShares);
+
+        transferFrom(owner, address(this), vaultShares);
+
+        if (_maxWithdrawalID >= _maximalWithdrawalId - 1) {
+            revert WithdrawalIdOverflow();
+        }
+        _maxWithdrawalID++;
+        _mint(receiver, _maxWithdrawalID, 1, "");
+        _withdrawalMetadata[_maxWithdrawalID] = WithdrawalMetadata(vaultShares, flushIndex);
+    }
+
+    function handleWithdrawalFlush(uint256 withdrawnVaultShares, uint256[] memory withdrawnStrategyShares, address[] memory strategies)
+        external
+        onlySmartVaultManager()
+    {
+        // burn withdrawn vault shares
+        _burn(address(this), withdrawnVaultShares);
+
+        // transfer withdrawn strategy shares back to strategies
+        for (uint256 i = 0; i < strategies.length; i++) {
+            IStrategy(strategies[i]).transfer(strategies[i], withdrawnStrategyShares[i]);
+        }
+    }
+
+    function claimWithdrawal(uint256 withdrawalNftId, address receiver)
+        external
+        returns (uint256[] memory, address[] memory)
+    {
+        // check validity and ownership of the NFT
+        if (withdrawalNftId <= _maxDepositID) {
+            revert InvalidWithdrawalNftId(withdrawalNftId);
+        }
+        if (balanceOf(msg.sender, withdrawalNftId) != 1) {
+            revert InvalidNftBalance(balanceOf(msg.sender, withdrawalNftId));
+        }
+
+        uint256[] memory withdrawnAssets = smartVaultManager.calculateWithdrawal(withdrawalNftId);
+
+        _runActions(msg.sender, receiver, withdrawnAssets, _assetGroup, RequestType.Withdrawal);
+        _burn(msg.sender, withdrawalNftId, 1);
+        smartVaultManager.transferWithdrawal(withdrawnAssets, _assetGroup, receiver);
+
+        return (withdrawnAssets, _assetGroup);
+    }
+
     /**
      * @dev Burns shares from owner and sends exactly assets of underlying tokens to receiver.
      * @param assets TODO
@@ -460,8 +528,8 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         require(_maxWithdrawalID < 2 ** uint256(256), "SmartVault::_burnWithdrawalNTF::Withdrawal ID overflow.");
 
         _maxWithdrawalID++;
-        WithdrawalMetadata memory data = WithdrawalMetadata(assets, block.timestamp, flushIndex);
-        _withdrawalMetadata[_maxWithdrawalID] = data;
+        // WithdrawalMetadata memory data = WithdrawalMetadata(assets, block.timestamp, flushIndex);
+        // _withdrawalMetadata[_maxWithdrawalID] = data;
         _mint(receiver, _maxWithdrawalID, 1, "");
 
         return _maxWithdrawalID;
@@ -538,6 +606,12 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         return 0;
     }
 
+    function _onlySmartVaultManager() internal view {
+        if (msg.sender != address(smartVaultManager)) {
+            revert NotSmartVaultManager(msg.sender);
+        }
+    }
+
     /* ========== MODIFIERS ========== */
 
     modifier runGuards(
@@ -548,6 +622,11 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         RequestType requestType
     ) {
         _runGuards(executor, receiver, assets, tokens, requestType);
+        _;
+    }
+
+    modifier onlySmartVaultManager() {
+        _onlySmartVaultManager();
         _;
     }
 }
