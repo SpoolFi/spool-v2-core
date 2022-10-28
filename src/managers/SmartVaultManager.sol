@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
-import {console} from "forge-std/console.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
@@ -12,18 +11,18 @@ import "@openzeppelin/token/ERC20/ERC20.sol";
 import "../interfaces/ISmartVaultManager.sol";
 
 contract SmartVaultRegistry is ISmartVaultRegistry {
-    /// @notice TODO
+    /// @notice Smart vault address registry
     mapping(address => bool) internal _smartVaults;
 
     /**
-     * @notice TODO
+     * @notice Checks whether an address is a registered Smart Vault
      */
     function isSmartVault(address address_) external view returns (bool) {
         return _smartVaults[address_];
     }
 
     /**
-     * @notice TODO
+     * @notice Add a Smart Vault to the registry
      */
     function registerSmartVault(address smartVault) external {
         if (_smartVaults[smartVault]) revert SmartVaultAlreadyRegistered({address_: smartVault});
@@ -31,7 +30,7 @@ contract SmartVaultRegistry is ISmartVaultRegistry {
     }
 
     /**
-     * @notice TODO
+     * @notice Remove a Smart Vault
      */
     function removeSmartVault(address smartVault) external validSmartVault(smartVault) {
         _smartVaults[smartVault] = false;
@@ -49,18 +48,24 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
     /// @notice Deposit ratio precision
     uint256 constant RATIO_PRECISION = 10 ** 22;
 
+    /// @notice Vault-strategy allocation precision
     uint256 constant ALLOC_PRECISION = 1000;
 
     /// @notice Difference between desired and actual amounts in WEI after swapping
     uint256 constant SWAP_TOLERANCE = 500;
 
-    constructor() {}
+    /// @notice Address that holds funds before they're processed by DHW or claimed by user.
+    address immutable private _masterWallet;
+
+    constructor(address masterWallet_) {
+        _masterWallet = masterWallet_;
+    }
 
     /**
      * @notice Calculate current Smart Vault asset deposit ratio
      * @dev As described in /notes/multi-asset-vault-deposit-ratios.md
      */
-    function getDepositRatio(DepositRatioQueryBag memory bag) external view returns (uint256[] memory) {
+    function getDepositRatio(DepositRatioQueryBag memory bag) external pure returns (uint256[] memory) {
         uint256[] memory outRatios = new uint256[](bag.tokens.length);
 
         if (bag.tokens.length == 1) {
@@ -122,6 +127,11 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
         return _distributeAcrossStrategies(depositBag);
     }
 
+    /**
+     * @notice Swap to match required ratio
+     * TODO: take slippage into consideration
+     * TODO: check if "swap" feature is exploitable
+     */
     function _swapToRatio(DepositBag memory bag, SwapInfo[] memory swapInfo) internal returns (uint256[] memory) {
         uint256[] memory oldBalances = _getBalances(bag.tokens);
         for (uint256 i; i < swapInfo.length; i++) {
@@ -153,14 +163,14 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
                 || desired < depositsOut[i] && (depositsOut[i] - desired) < SWAP_TOLERANCE;
 
             if (!isOk) {
-                revert SwapTolerance();
+                revert IncorrectDepositRatio();
             }
         }
 
         return depositsOut;
     }
 
-    function _distributeAcrossStrategies(DepositBag memory bag) internal returns (uint256[][] memory) {
+    function _distributeAcrossStrategies(DepositBag memory bag) internal pure returns (uint256[][] memory) {
         uint256[] memory depositAccum = new uint256[](bag.tokens.length);
         uint256[][] memory strategyDeposits = new uint256[][](bag.strategies.length);
         uint256 usdPrecision = 10 ** bag.usdDecimals;
@@ -184,11 +194,7 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
         return strategyDeposits;
     }
 
-    function _getDepositRatios(DepositRatioQueryBag memory bag)
-        internal
-        view
-        returns (uint256[][] memory)
-    {
+    function _getDepositRatios(DepositRatioQueryBag memory bag) internal pure returns (uint256[][] memory) {
         uint256[][] memory outRatios = new uint256[][](bag.strategies.length);
         if (bag.strategies.length != bag.allocations.length) revert InvalidArrayLength();
 
@@ -211,10 +217,10 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
         return outRatios;
     }
 
-    function _getBalances(address[] memory tokens) private returns (uint256[] memory) {
+    function _getBalances(address[] memory tokens) private view returns (uint256[] memory) {
         uint256[] memory balances = new uint256[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {
-            balances[i] = ERC20(tokens[i]).balanceOf(address(this));
+            balances[i] = ERC20(tokens[i]).balanceOf(_masterWallet);
         }
 
         return balances;
@@ -435,11 +441,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         return _flushIndexes[smartVault];
     }
 
-    function requestWithdrawal(uint256 vaultShares)
-        external
-        validSmartVault(msg.sender)
-        returns (uint256)
-    {
+    function requestWithdrawal(uint256 vaultShares) external validSmartVault(msg.sender) returns (uint256) {
         uint256 flushIndex = _flushIndexes[msg.sender];
 
         _withdrawnVaultShares[msg.sender][flushIndex] += vaultShares;
@@ -448,7 +450,8 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     }
 
     function calculateWithdrawal(uint256 withdrawalNftId)
-        external view
+        external
+        view
         validSmartVault(msg.sender)
         returns (uint256[] memory)
     {
@@ -458,7 +461,8 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
 
         // loop over all assets
         for (uint256 i = 0; i < withdrawnAssets.length; i++) {
-            withdrawnAssets[i] = _withdrawnAssets[msg.sender][data.flushIndex][i] * data.vaultShares / _withdrawnVaultShares[msg.sender][data.flushIndex];
+            withdrawnAssets[i] = _withdrawnAssets[msg.sender][data.flushIndex][i] * data.vaultShares
+                / _withdrawnVaultShares[msg.sender][data.flushIndex];
         }
 
         return withdrawnAssets;
@@ -523,9 +527,8 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
                 _priceFeedManager.usdDecimals()
             );
 
-            uint256[][] memory distribution =
-                _vaultDepositsManager.distributeVaultDeposits(bag, deposits, swapInfo);
-            flushDhwIndexes = _strategyRegistry.addDeposits(bag.strategies, distribution, bag.tokens);
+            uint256[][] memory distribution = _vaultDepositsManager.distributeVaultDeposits(bag, deposits, swapInfo);
+            flushDhwIndexes = _strategyRegistry.addDeposits(bag.strategies, distribution);
         }
 
         if (withdrawals > 0) {

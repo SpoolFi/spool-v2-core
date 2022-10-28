@@ -24,9 +24,9 @@ contract SmartVaultManagerTest is Test {
     IStrategyRegistry strategyRegistry;
     IRiskManager riskManager;
     MockPriceFeedManager priceFeedManager;
-    ISmartVaultDeposits deposits;
     address riskProvider = address(10);
     address smartVault = address(100);
+    address masterWallet = address(10000);
     MockToken token1;
     MockToken token2;
 
@@ -34,8 +34,8 @@ contract SmartVaultManagerTest is Test {
         strategyRegistry = new StrategyRegistry();
         riskManager = new RiskManager();
         priceFeedManager = new MockPriceFeedManager();
-        deposits = new SmartVaultDeposits();
-        smartVaultManager = new SmartVaultManager(strategyRegistry, riskManager, deposits, priceFeedManager);
+        ISmartVaultDeposits depositManager = new SmartVaultDeposits(masterWallet);
+        smartVaultManager = new SmartVaultManager(strategyRegistry, riskManager, depositManager, priceFeedManager);
         smartVaultManager.registerSmartVault(smartVault);
 
         token1 = new MockToken("Token1", "T1");
@@ -164,71 +164,6 @@ contract SmartVaultManagerTest is Test {
 
         assertEq(deposits1[0] + deposits2[0] + deposits3[0], 100 ether);
         assertEq(deposits1[1] + deposits2[1] + deposits3[1], deposits[1]);
-    }
-
-    function test_depositStrategyDistributions() public {
-        (address[] memory strategies, address[] memory assetGroup) = _createStrategies();
-        ISmartVault smartVault_ = _createVault(strategies, assetGroup);
-        _initializePriceFeeds();
-
-        address user = address(123);
-        token1.mint(user, 200 ether);
-        token2.mint(user, 200 ether);
-
-        uint256[] memory assets = new uint256[](2);
-        assets[0] = 100 ether;
-        assets[1] = 6.779734526152375133 ether;
-
-        vm.prank(user);
-        token1.approve(address(smartVault_), 100 ether);
-
-        vm.prank(user);
-        token2.approve(address(smartVault_), 100 ether);
-
-        vm.prank(user);
-        smartVault_.deposit(assets, user);
-
-        uint256 flushIdx = smartVaultManager.getLatestFlushIndex(address(smartVault_));
-        assertEq(flushIdx, 0);
-
-        uint256[] memory deposits = smartVaultManager.smartVaultDeposits(address(smartVault_), flushIdx);
-        assertEq(deposits.length, 2);
-        assertEq(deposits[0], 100 ether);
-        assertEq(deposits[1], 6.779734526152375133 ether);
-
-        SwapInfo[] memory swapInfo = new SwapInfo[](0);
-        smartVaultManager.flushSmartVault(address(smartVault_), swapInfo);
-
-        flushIdx = smartVaultManager.getLatestFlushIndex(address(smartVault_));
-        assertEq(flushIdx, 1);
-
-        uint256 dhwIndex = strategyRegistry.currentIndex(strategies[0]);
-        uint256 r = 10 ** 5;
-
-        uint256[] memory deposits1 = strategyRegistry.strategyDeposits(strategies[0], dhwIndex);
-        assertEq(deposits1.length, 2);
-        assertEq(deposits1[0] / r * r, 59.9104248817164 ether);
-        assertEq(deposits1[1] / r * r, 4.0739088919567 ether);
-
-        uint256[] memory deposits2 = strategyRegistry.strategyDeposits(strategies[1], dhwIndex);
-        assertEq(deposits2.length, 2);
-        assertEq(deposits2[0] / r * r, 30.1775244829541 ether);
-        assertEq(deposits2[1] / r * r, 2.0218941403579 ether);
-
-        uint256[] memory deposits3 = strategyRegistry.strategyDeposits(strategies[2], dhwIndex);
-        assertEq(deposits3.length, 2);
-        assertEq(deposits3[0] / r * r, 9.9120506353293 ether);
-        assertEq(deposits3[1] / r * r, 0.6839314938377 ether);
-
-        assertEq(deposits1[0] + deposits2[0] + deposits3[0], 100 ether);
-        assertEq(deposits1[1] + deposits2[1] + deposits3[1], deposits[1]);
-    }
-
-    function _createSwapper() private returns (MockSwapper) {
-        MockSwapper swap = new MockSwapper(token1, token2, 0.25 ether);
-        token1.mint(address(swap), 1000 ether);
-        token2.mint(address(swap), 1000 ether);
-        return swap;
     }
 
     function _createStrategies() private returns (address[] memory, address[] memory) {

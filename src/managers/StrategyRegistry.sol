@@ -64,7 +64,7 @@ contract StrategyRegistry is IStrategyRegistry {
         _strategies[strategy] = false;
     }
 
-    function addDeposits(address[] memory strategies_, uint256[][] memory amounts, address[] memory tokens)
+    function addDeposits(address[] memory strategies_, uint256[][] memory amounts)
         external
         returns (uint256[] memory)
     {
@@ -104,10 +104,11 @@ contract StrategyRegistry is IStrategyRegistry {
         return indexes;
     }
 
-    function claimWithdrawals(address[] memory strategies_, uint256[] memory dhwIndexes, uint256[] memory strategyShares)
-        external view
-        returns (uint256[] memory)
-    {
+    function claimWithdrawals(
+        address[] memory strategies_,
+        uint256[] memory dhwIndexes,
+        uint256[] memory strategyShares
+    ) external view returns (uint256[] memory) {
         uint256[] memory totalWithdrawnAssets = new uint256[](IStrategy(strategies_[0]).asset().length);
 
         for (uint256 i = 0; i < strategies_.length; i++) {
@@ -119,7 +120,8 @@ contract StrategyRegistry is IStrategyRegistry {
             }
 
             for (uint256 j = 0; j < totalWithdrawnAssets.length; j++) {
-                totalWithdrawnAssets[j] += _withdrawnAssets[strategy][dhwIndex][j] * strategyShares[i] / _withdrawnShares[strategy][dhwIndex];
+                totalWithdrawnAssets[j] +=
+                    _withdrawnAssets[strategy][dhwIndex][j] * strategyShares[i] / _withdrawnShares[strategy][dhwIndex];
                 // there will be dust left after all vaults sync
             }
         }

@@ -6,7 +6,6 @@ import "@openzeppelin-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "./IVault.sol";
 
-
 /* ========== ERRORS ========== */
 
 /**
@@ -40,7 +39,6 @@ error InvalidNftBalance(uint256 balance);
  */
 error NotSmartVaultManager(address caller);
 
-
 /* ========== STRUCTS ========== */
 
 struct DepositMetadata {
@@ -58,7 +56,6 @@ struct WithdrawalMetadata {
     uint256 vaultShares;
     uint256 flushIndex;
 }
-
 
 /* ========== INTERFACES ========== */
 
@@ -160,7 +157,11 @@ interface ISmartVault is IVault, IERC1155Upgradeable {
      * @param withdrawnStrategyShares Amount of strategies' shares withdrawn in this flush.
      * @param strategies Strategies from where withdrawals are made.
      */
-    function handleWithdrawalFlush(uint256 withdrawnVaultShares, uint256[] memory withdrawnStrategyShares, address[] memory strategies) external;
+    function handleWithdrawalFlush(
+        uint256 withdrawnVaultShares,
+        uint256[] memory withdrawnStrategyShares,
+        address[] memory strategies
+    ) external;
 
     /**
      * @notice Claims withdrawal of assets by burning withdrawal NFT.

@@ -13,7 +13,6 @@ error StrategyAlreadyRegistered(address address_);
  */
 error DhwNotRunYetForIndex(address strategy, uint256 strategyIndex);
 
-
 /* ========== INTERFACES ========== */
 
 interface IStrategyRegistry {
@@ -27,7 +26,7 @@ interface IStrategyRegistry {
 
     function registerStrategy(address strategy) external;
     function removeStrategy(address strategy) external;
-    function addDeposits(address[] memory strategies_, uint256[][] memory amounts, address[] memory tokens)
+    function addDeposits(address[] memory strategies_, uint256[][] memory amounts)
         external
         returns (uint256[] memory);
 
@@ -53,7 +52,9 @@ interface IStrategyRegistry {
      * @param strategyShares Amount of strategy shares that was withdrawn.
      * @return Amount of assets withdrawn from strategies.
      */
-    function claimWithdrawals(address[] memory strategies_, uint256[] memory dhwIndexes, uint256[] memory strategyShares)
-        external
-        returns (uint256[] memory);
+    function claimWithdrawals(
+        address[] memory strategies_,
+        uint256[] memory dhwIndexes,
+        uint256[] memory strategyShares
+    ) external returns (uint256[] memory);
 }

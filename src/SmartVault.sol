@@ -434,10 +434,11 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         _withdrawalMetadata[_maxWithdrawalID] = WithdrawalMetadata(vaultShares, flushIndex);
     }
 
-    function handleWithdrawalFlush(uint256 withdrawnVaultShares, uint256[] memory withdrawnStrategyShares, address[] memory strategies)
-        external
-        onlySmartVaultManager()
-    {
+    function handleWithdrawalFlush(
+        uint256 withdrawnVaultShares,
+        uint256[] memory withdrawnStrategyShares,
+        address[] memory strategies
+    ) external onlySmartVaultManager {
         // burn withdrawn vault shares
         _burn(address(this), withdrawnVaultShares);
 

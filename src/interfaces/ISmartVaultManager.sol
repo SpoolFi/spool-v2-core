@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
-
 /* ========== ERRORS ========== */
 
 error SmartVaultAlreadyRegistered(address address_);
@@ -11,13 +10,12 @@ error EmptyStrategyArray();
 error InvalidSmartVault(address address_);
 error InvalidRiskProvider(address address_);
 error InvalidDepositAmount(address smartVault);
-error SwapTolerance();
+error IncorrectDepositRatio();
 
 /**
  * @notice Used when there is nothing to flush.
  */
 error NothingToFlush();
-
 
 /* ========== STRUCTS ========== */
 
@@ -46,7 +44,6 @@ struct DepositRatioQueryBag {
     uint256[][] strategyRatios;
     uint256 usdDecimals;
 }
-
 
 /* ========== INTERFACES ========== */
 
@@ -110,9 +107,7 @@ interface ISmartVaultManager is ISmartVaultRegistry, ISmartVaultReallocator, ISm
      * @param withdrawalNftId ID of the withdrawal NFT.
      * @return Amount of assets to be withdrawn.
      */
-    function calculateWithdrawal(uint256 withdrawalNftId)
-        external view
-        returns (uint256[] memory);
+    function calculateWithdrawal(uint256 withdrawalNftId) external view returns (uint256[] memory);
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 

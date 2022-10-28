@@ -9,7 +9,7 @@ contract MockPriceFeedManager is IUsdPriceFeedManager {
 
     constructor() {}
 
-    function usdDecimals() external view returns (uint256 usdDecimals) {
+    function usdDecimals() external pure returns (uint256) {
         return USD_DECIMALS;
     }
 
@@ -17,11 +17,11 @@ contract MockPriceFeedManager is IUsdPriceFeedManager {
         exchangeRates[asset] = rate;
     }
 
-    function assetToUsd(address asset, uint256 assetAmount) external view returns (uint256 usdAmount) {
+    function assetToUsd(address asset, uint256 assetAmount) external view returns (uint256) {
         return exchangeRates[asset] * assetAmount / 10 ** ERC20(asset).decimals();
     }
 
-    function usdToAsset(address asset, uint256 usdAmount) external view returns (uint256 assetAmount) {
+    function usdToAsset(address asset, uint256 usdAmount) external view returns (uint256) {
         return usdAmount * 10 ** ERC20(asset).decimals() / exchangeRates[asset];
     }
 }
