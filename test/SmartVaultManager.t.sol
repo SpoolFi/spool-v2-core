@@ -8,7 +8,7 @@ import "../src/interfaces/IRiskManager.sol";
 import "../src/managers/RiskManager.sol";
 import "../src/managers/StrategyRegistry.sol";
 import "../src/SmartVault.sol";
-import "../src/mocks/MockToken.sol";
+import "./mocks/MockToken.sol";
 import "../src/managers/GuardManager.sol";
 import "../src/managers/ActionManager.sol";
 import "../src/interfaces/IGuardManager.sol";

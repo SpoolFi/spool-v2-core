@@ -55,7 +55,7 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
     uint256 constant SWAP_TOLERANCE = 500;
 
     /// @notice Address that holds funds before they're processed by DHW or claimed by user.
-    address immutable private _masterWallet;
+    address private immutable _masterWallet;
 
     constructor(address masterWallet_) {
         _masterWallet = masterWallet_;
