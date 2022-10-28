@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
+import "forge-std/console.sol";
 import "@openzeppelin/access/Ownable.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
@@ -14,6 +15,7 @@ import "./interfaces/IStrategyRegistry.sol";
 import "./interfaces/IAction.sol";
 import "./interfaces/ISmartVaultManager.sol";
 import "./interfaces/IStrategy.sol";
+import "./interfaces/CommonErrors.sol";
 
 contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     using SafeERC20 for ERC20;
@@ -410,28 +412,33 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         revert("0");
     }
 
-    function requestWithdrawal(uint256 vaultShares, address receiver, address owner) external returns (uint256) {
-        // TODO: check if owner allowed withdrawal or something
-        if (balanceOf(owner) < vaultShares) {
-            revert InsufficientBalance(balanceOf(owner), vaultShares);
+    function requestWithdrawal(uint256 vaultShares) external returns (uint256) {
+        if (balanceOf(msg.sender) < vaultShares) {
+            revert InsufficientBalance(balanceOf(msg.sender), vaultShares);
         }
 
+        // run guards
         uint256[] memory assets = new uint256[](1);
         assets[0] = vaultShares;
         address[] memory tokens = new address[](1);
         tokens[0] = address(this);
-        _runGuards(owner, receiver, assets, tokens, RequestType.Withdrawal);
+        _runGuards(msg.sender, msg.sender, assets, tokens, RequestType.Withdrawal);
 
-        uint256 flushIndex = smartVaultManager.requestWithdrawal(vaultShares);
+        // add withdrawal to be flushed
+        uint256 flushIndex = smartVaultManager.addWithdrawal(vaultShares);
 
-        transferFrom(owner, address(this), vaultShares);
+        // transfer vault shares back to smart vault
+        transfer(address(this), vaultShares);
 
+        // mint withdrawal NFT
         if (_maxWithdrawalID >= _maximalWithdrawalId - 1) {
             revert WithdrawalIdOverflow();
         }
         _maxWithdrawalID++;
-        _mint(receiver, _maxWithdrawalID, 1, "");
         _withdrawalMetadata[_maxWithdrawalID] = WithdrawalMetadata(vaultShares, flushIndex);
+        _mint(msg.sender, _maxWithdrawalID, 1, "");
+
+        return _maxWithdrawalID;
     }
 
     function handleWithdrawalFlush(
@@ -464,7 +471,11 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
 
         _runActions(msg.sender, receiver, withdrawnAssets, _assetGroup, RequestType.Withdrawal);
         _burn(msg.sender, withdrawalNftId, 1);
-        smartVaultManager.transferWithdrawal(withdrawnAssets, _assetGroup, receiver);
+
+        for (uint256 i = 0; i < _assetGroup.length; i++) {
+            // TODO-Q: should this be done by an action, since there might be a swap?
+            IERC20(_assetGroup[i]).transfer(receiver, withdrawnAssets[i]);
+        }
 
         return (withdrawnAssets, _assetGroup);
     }

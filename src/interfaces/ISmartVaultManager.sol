@@ -118,23 +118,13 @@ interface ISmartVaultManager is ISmartVaultRegistry, ISmartVaultReallocator, ISm
     function addDeposits(address smartVault, uint256[] memory amounts) external returns (uint256);
 
     /**
-     * @notice Requests withdrawal from a smart vault.
+     * @notice Adds withdrawal to be flushed.
      * @dev Requirements:
      * - must be called by the smart vault requesting the withdrawal
      * @param vaultShares Amount of vault shares to withdraw.
      * @return Current flush index of the smart vault.
      */
-    function requestWithdrawal(uint256 vaultShares) external returns (uint256);
-
-    /**
-     * @notice Transfers assets to receiver of the withdrawal.
-     * @dev Requirements:
-     * - must be called by the smart vault claiming the withdrawal
-     * @param withdrawnAssets Amount of assets withdrawn.
-     * @param tokens Addresses of assets withdrawn.
-     * @param receiver Receiver of withdrawn assets.
-     */
-    function transferWithdrawal(uint256[] memory withdrawnAssets, address[] memory tokens, address receiver) external;
+    function addWithdrawal(uint256 vaultShares) external returns (uint256);
 
     event SmartVaultFlushed(address smartVault, uint256 flushIdx);
 }

@@ -74,6 +74,10 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
+    function dhw(uint256 withdrawnShares) external virtual returns (uint256[] memory) {
+        revert("0");
+    }
+
     function withdrawFast(
         uint256[] calldata assets,
         address[] calldata tokens,

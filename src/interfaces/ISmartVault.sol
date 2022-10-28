@@ -33,12 +33,6 @@ error InvalidWithdrawalNftId(uint256 withdrawalNftId);
  */
 error InvalidNftBalance(uint256 balance);
 
-/**
- * @notice Used when function that can only be called by SmartVaultManagerd is called by some other account.
- * @param caller Actual caller of the function.
- */
-error NotSmartVaultManager(address caller);
-
 /* ========== STRUCTS ========== */
 
 struct DepositMetadata {
@@ -139,14 +133,11 @@ interface ISmartVault is IVault, IERC1155Upgradeable {
     /**
      * @notice Requests withdrawal of assets by burning vault shares.
      * @dev Requirements:
-     * - owner must have enough shares
-     * - caller must be authorized to request withdrawal by owner
+     * - caller must have enough shares
      * @param vaultShares Amount of vault shares to burn.
-     * @param receiver Receiver of the withdrawal NFT.
-     * @param owner Owner of shares.
      * @return ID of the withdrawal NFT.
      */
-    function requestWithdrawal(uint256 vaultShares, address receiver, address owner) external returns (uint256);
+    function requestWithdrawal(uint256 vaultShares) external returns (uint256);
 
     /**
      * @notice Handles withdrawals when flushing vault.

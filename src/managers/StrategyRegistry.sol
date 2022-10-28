@@ -4,9 +4,12 @@ pragma solidity ^0.8.16;
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
+import "../interfaces/CommonErrors.sol";
 
 contract StrategyRegistry is IStrategyRegistry {
     /* ========== STATE VARIABLES ========== */
+
+    address internal _smartVaultManager;
 
     /// @notice TODO
     mapping(address => bool) internal _strategies;
@@ -48,6 +51,10 @@ contract StrategyRegistry is IStrategyRegistry {
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
+    function setSmartVaultManger(address smartVaultManager_) external {
+        _smartVaultManager = smartVaultManager_;
+    }
+
     /**
      * @notice TODO
      */
@@ -62,6 +69,20 @@ contract StrategyRegistry is IStrategyRegistry {
     function removeStrategy(address strategy) external {
         if (!_strategies[strategy]) revert InvalidStrategy({address_: strategy});
         _strategies[strategy] = false;
+    }
+
+    /**
+     * @notice TODO: just a quick mockup so we can test withdrawals
+     */
+    function dhw(address[] memory strategies_) external {
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            uint256[] memory withdrawnAssets_ =
+                IStrategy(strategies_[i]).dhw(_withdrawnShares[strategies_[i]][_currentIndexes[strategies_[i]]]);
+
+            _withdrawnAssets[strategies_[i]][_currentIndexes[strategies_[i]]] = withdrawnAssets_;
+            // TODO: transfer assets to smart vault manager
+            _currentIndexes[strategies_[i]]++;
+        }
     }
 
     function addDeposits(address[] memory strategies_, uint256[][] memory amounts)
@@ -107,9 +128,11 @@ contract StrategyRegistry is IStrategyRegistry {
     function claimWithdrawals(
         address[] memory strategies_,
         uint256[] memory dhwIndexes,
-        uint256[] memory strategyShares
-    ) external view returns (uint256[] memory) {
-        uint256[] memory totalWithdrawnAssets = new uint256[](IStrategy(strategies_[0]).asset().length);
+        uint256[] memory strategyShares,
+        address smartVault
+    ) external onlySmartVaultManager returns (uint256[] memory) {
+        address[] memory tokens = IStrategy(strategies_[0]).asset();
+        uint256[] memory totalWithdrawnAssets = new uint256[](tokens.length);
 
         for (uint256 i = 0; i < strategies_.length; i++) {
             address strategy = strategies_[i];
@@ -126,6 +149,25 @@ contract StrategyRegistry is IStrategyRegistry {
             }
         }
 
+        for (uint256 i = 0; i < tokens.length; i++) {
+            IERC20(tokens[i]).transfer(smartVault, totalWithdrawnAssets[i]);
+        }
+
         return totalWithdrawnAssets;
+    }
+
+    /* ========== INTERNAL FUNCTIONS ========== */
+
+    function _onlySmartVaultManager() internal view {
+        if (msg.sender != _smartVaultManager) {
+            revert NotSmartVaultManager(msg.sender);
+        }
+    }
+
+    /* ========== MODIFIERS ========== */
+
+    modifier onlySmartVaultManager() {
+        _onlySmartVaultManager();
+        _;
     }
 }

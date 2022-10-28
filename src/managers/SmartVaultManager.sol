@@ -441,7 +441,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         return _flushIndexes[smartVault];
     }
 
-    function requestWithdrawal(uint256 vaultShares) external validSmartVault(msg.sender) returns (uint256) {
+    function addWithdrawal(uint256 vaultShares) external validSmartVault(msg.sender) returns (uint256) {
         uint256 flushIndex = _flushIndexes[msg.sender];
 
         _withdrawnVaultShares[msg.sender][flushIndex] += vaultShares;
@@ -466,15 +466,6 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         }
 
         return withdrawnAssets;
-    }
-
-    function transferWithdrawal(uint256[] memory withdrawnAssets, address[] memory tokens, address receiver)
-        external
-        validSmartVault(msg.sender)
-    {
-        for (uint256 i = 0; i < tokens.length; i++) {
-            IERC20(tokens[i]).transfer(receiver, withdrawnAssets[i]);
-        }
     }
 
     /**
@@ -562,6 +553,8 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
 
         while (_flushIndexesToSync[smartVault] < _flushIndexes[smartVault]) {
             _syncWithdrawals(smartVault, _flushIndexesToSync[smartVault]);
+
+            _flushIndexesToSync[smartVault]++;
         }
     }
 
@@ -600,7 +593,8 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         _withdrawnAssets[smartVault][flushIndex] = _strategyRegistry.claimWithdrawals(
             _smartVaultStrategies[smartVault],
             _dhwIndexes[smartVault][flushIndex],
-            _withdrawnStrategyShares[smartVault][flushIndex]
+            _withdrawnStrategyShares[smartVault][flushIndex],
+            smartVault
         );
     }
 

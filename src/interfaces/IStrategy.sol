@@ -38,6 +38,13 @@ interface IStrategy is IVault {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
+     * TODO: just a temporary
+     * @param withdrawnShares Amount of shares withdrawn.
+     * @return Amount of withdrawn assets.
+     */
+    function dhw(uint256 withdrawnShares) external returns (uint256[] memory);
+
+    /**
      * @notice Fast withdraw
      * @param assets TODO
      * @param tokens TODO
