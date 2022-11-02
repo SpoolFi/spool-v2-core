@@ -164,7 +164,6 @@ contract SmartVaultFlushTest is Test {
             abi.encodeWithSelector(swapper.swap.selector, address(token1), 1 ether, address(masterWallet))
         );
 
-
         DepositRatioQueryBag memory bag = DepositRatioQueryBag(
             address(0), assetGroup, strategies, allocations, exchangeRates, ratios, priceFeedManager.usdDecimals()
         );

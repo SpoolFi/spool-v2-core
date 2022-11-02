@@ -16,6 +16,7 @@ import "./interfaces/IAction.sol";
 import "./interfaces/ISmartVaultManager.sol";
 import "./interfaces/IStrategy.sol";
 import "./interfaces/CommonErrors.sol";
+import "./interfaces/IMasterWallet.sol";
 
 contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     using SafeERC20 for ERC20;
@@ -31,7 +32,11 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     // @notice Strategy manager
     IStrategyRegistry internal immutable strategyRegistry;
 
+    // @notice Smart Vault manager
     ISmartVaultManager internal immutable smartVaultManager;
+
+    // @notice Master Wallet
+    IMasterWallet immutable masterWallet;
 
     // @notice Asset group address array
     // TODO: Q: shouldn't this be an ID of asset group, with actual assets stored somewhere else?
@@ -64,7 +69,6 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     /**
      * @notice Initializes variables
      * @param vaultName_ TODO
-     * @param assets_ TODO
      * @param guardManager_ TODO
      * @param actionManager_ TODO
      * @param strategyRegistry_ TODO
@@ -72,21 +76,22 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
      */
     constructor(
         string memory vaultName_,
-        address[] memory assets_,
         IGuardManager guardManager_,
         IActionManager actionManager_,
         IStrategyRegistry strategyRegistry_,
-        ISmartVaultManager smartVaultManager_
+        ISmartVaultManager smartVaultManager_,
+        IMasterWallet masterWallet_
     ) {
         _vaultName = vaultName_;
-        _assetGroup = assets_;
         guardManager = guardManager_;
         actionManager = actionManager_;
         strategyRegistry = strategyRegistry_;
         smartVaultManager = smartVaultManager_;
+        masterWallet = masterWallet_;
     }
 
-    function initialize() external initializer {
+    function initialize(address[] memory assets_) external initializer {
+        _assetGroup = assets_;
         __ERC1155_init("");
         __ERC20_init("", "");
     }
@@ -605,7 +610,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         require(assets.length == tokens.length, "SmartVault::depositFor::invalid assets length");
 
         for (uint256 i = 0; i < assets.length; i++) {
-            ERC20(tokens[i]).safeTransferFrom(initiator, address(smartVaultManager), assets[i]);
+            ERC20(tokens[i]).safeTransferFrom(initiator, address(masterWallet), assets[i]);
         }
 
         return smartVaultManager.addDeposits(address(this), assets);

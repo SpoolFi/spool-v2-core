@@ -26,10 +26,13 @@ contract WithdrawalIntegrationTest is Test {
     SmartVault private mySmartVault;
     SmartVaultManager private smartVaultManager;
     StrategyRegistry private strategyRegistry;
+    MasterWallet private masterWallet;
 
     function setUp() public {
         tokenA = new MockToken("Token A", "TA");
         tokenB = new MockToken("Token B", "TB");
+
+        masterWallet = new MasterWallet();
 
         address[] memory assetGroup = new address[](2);
         assetGroup[0] = address(tokenA);
@@ -70,13 +73,13 @@ contract WithdrawalIntegrationTest is Test {
 
         mySmartVault = new SmartVault(
             "MySmartVault",
-            assetGroup,
             guardManager,
             actionManager,
             strategyRegistry,
-            smartVaultManager
+            smartVaultManager,
+            masterWallet
         );
-        mySmartVault.initialize();
+        mySmartVault.initialize(assetGroup);
         smartVaultManager.registerSmartVault(address(mySmartVault));
         guardManager.setGuards(address(mySmartVault), emptyGuards);
         actionManager.setActions(address(mySmartVault), emptyActions, emptyActionsRequestTypes);

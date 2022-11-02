@@ -204,14 +204,16 @@ contract SmartVaultManagerTest is Test {
     function _createVault(address[] memory strategies, address[] memory assetGroup) private returns (ISmartVault) {
         IGuardManager guardManager = new GuardManager();
         IActionManager actionManager = new ActionManager();
-        ISmartVault smartVault_ = new SmartVault(
+        SmartVault smartVault_ = new SmartVault(
             "TestVault",
-            assetGroup,
             guardManager,
             actionManager,
             strategyRegistry,
-            smartVaultManager
+            smartVaultManager,
+            masterWallet
         );
+
+        smartVault_.initialize(assetGroup);
 
         guardManager.setGuards(address(smartVault_), new GuardDefinition[](0));
         actionManager.setActions(address(smartVault_), new IAction[](0), new RequestType[](0));
