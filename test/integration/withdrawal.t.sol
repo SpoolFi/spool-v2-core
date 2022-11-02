@@ -10,6 +10,7 @@ import "../../src/managers/RiskManager.sol";
 import "../../src/managers/UsdPriceFeedManager.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
+import "../../src/MasterWallet.sol";
 
 contract WithdrawalIntegrationTest is Test {
     address private alice = address(0xa);
@@ -43,7 +44,7 @@ contract WithdrawalIntegrationTest is Test {
         ActionManager actionManager = new ActionManager();
         RiskManager riskManager = new RiskManager();
         UsdPriceFeedManager priceFeedManager = new UsdPriceFeedManager();
-        SmartVaultDeposits vaultDepositManager = new SmartVaultDeposits(address(0x123123123123));
+        SmartVaultDeposits vaultDepositManager = new SmartVaultDeposits(new MasterWallet());
 
         smartVaultManager = new SmartVaultManager(
             strategyRegistry,

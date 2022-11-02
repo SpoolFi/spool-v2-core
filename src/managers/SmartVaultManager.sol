@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
+import {console} from "forge-std/console.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
@@ -9,6 +10,7 @@ import "../interfaces/IRiskManager.sol";
 import "../interfaces/ISmartVault.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "../interfaces/ISmartVaultManager.sol";
+import "../interfaces/IMasterWallet.sol";
 
 contract SmartVaultRegistry is ISmartVaultRegistry {
     /// @notice Smart vault address registry
@@ -55,9 +57,9 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
     uint256 constant SWAP_TOLERANCE = 500;
 
     /// @notice Address that holds funds before they're processed by DHW or claimed by user.
-    address private immutable _masterWallet;
+    IMasterWallet private immutable _masterWallet;
 
-    constructor(address masterWallet_) {
+    constructor(IMasterWallet masterWallet_) {
         _masterWallet = masterWallet_;
     }
 
@@ -220,15 +222,18 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
     function _getBalances(address[] memory tokens) private view returns (uint256[] memory) {
         uint256[] memory balances = new uint256[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {
-            balances[i] = ERC20(tokens[i]).balanceOf(_masterWallet);
+            balances[i] = ERC20(tokens[i]).balanceOf(address(_masterWallet));
         }
 
         return balances;
     }
 
     function _swap(SwapInfo memory _swapInfo) private {
+        _masterWallet.approve(IERC20(_swapInfo.token), _swapInfo.swapTarget, _swapInfo.amountIn);
         (bool success, bytes memory data) = _swapInfo.swapTarget.call(_swapInfo.swapCallData);
         if (!success) revert(_getRevertMsg(data));
+
+        _masterWallet.resetApprove(IERC20(_swapInfo.token), _swapInfo.swapTarget);
     }
 
     /**

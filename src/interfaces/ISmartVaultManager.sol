@@ -21,6 +21,8 @@ error NothingToFlush();
 
 struct SwapInfo {
     address swapTarget;
+    address token;
+    uint256 amountIn;
     bytes swapCallData;
 }
 

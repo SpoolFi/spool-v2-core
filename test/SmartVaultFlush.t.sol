@@ -18,6 +18,7 @@ import "./mocks/MockPriceFeedManager.sol";
 import "../src/interfaces/ISmartVaultManager.sol";
 import "./mocks/MockSwapper.sol";
 import "../src/interfaces/ISmartVaultManager.sol";
+import "../src/MasterWallet.sol";
 
 contract SmartVaultFlushTest is Test {
     IStrategyRegistry strategyRegistry;
@@ -25,12 +26,13 @@ contract SmartVaultFlushTest is Test {
     ISmartVaultDeposits depositManager;
     MockToken token1;
     MockToken token2;
-    address depositCache = address(10000);
+    IMasterWallet masterWallet;
 
     function setUp() public {
         strategyRegistry = new StrategyRegistry();
         priceFeedManager = new MockPriceFeedManager();
-        depositManager = new SmartVaultDeposits(depositCache);
+        masterWallet = new MasterWallet();
+        depositManager = new SmartVaultDeposits(masterWallet);
         token1 = new MockToken("Token1", "T1");
         token2 = new MockToken("Token2", "T2");
     }
@@ -149,21 +151,24 @@ contract SmartVaultFlushTest is Test {
         depositsIn[0] = 100 ether + 1 ether;
         depositsIn[1] = 6.779734526152375133 ether - swapFor;
 
-        token1.mint(depositCache, depositsIn[0]);
-        token2.mint(depositCache, depositsIn[1]);
+        token1.mint(address(masterWallet), depositsIn[0]);
+        token2.mint(address(masterWallet), depositsIn[1]);
 
         MockSwapper swapper = _createSwapper();
+        masterWallet.setSpenderWhitelist(address(swapper), true);
         SwapInfo[] memory swapInfo = new SwapInfo[](1);
         swapInfo[0] = SwapInfo(
-            address(swapper), abi.encodeWithSelector(swapper.swap.selector, address(token1), 1 ether, depositCache)
+            address(swapper),
+            address(token1),
+            1000 ether,
+            abi.encodeWithSelector(swapper.swap.selector, address(token1), 1 ether, address(masterWallet))
         );
+
 
         DepositRatioQueryBag memory bag = DepositRatioQueryBag(
             address(0), assetGroup, strategies, allocations, exchangeRates, ratios, priceFeedManager.usdDecimals()
         );
 
-        vm.prank(depositCache);
-        token1.approve(address(swapper), 1000 ether);
         uint256[][] memory distribution = depositManager.distributeVaultDeposits(bag, depositsIn, swapInfo);
 
         uint256 r = 10 ** 5;

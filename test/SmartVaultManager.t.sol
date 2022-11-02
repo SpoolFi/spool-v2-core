@@ -18,6 +18,7 @@ import "./mocks/MockStrategy.sol";
 import "./mocks/MockPriceFeedManager.sol";
 import "../src/interfaces/ISmartVaultManager.sol";
 import "./mocks/MockSwapper.sol";
+import "../src/MasterWallet.sol";
 
 contract SmartVaultManagerTest is Test {
     ISmartVaultManager smartVaultManager;
@@ -26,13 +27,14 @@ contract SmartVaultManagerTest is Test {
     MockPriceFeedManager priceFeedManager;
     address riskProvider = address(10);
     address smartVault = address(100);
-    address masterWallet = address(10000);
+    IMasterWallet masterWallet;
     MockToken token1;
     MockToken token2;
 
     function setUp() public {
         strategyRegistry = new StrategyRegistry();
         riskManager = new RiskManager();
+        masterWallet = new MasterWallet();
         priceFeedManager = new MockPriceFeedManager();
         ISmartVaultDeposits depositManager = new SmartVaultDeposits(masterWallet);
         smartVaultManager = new SmartVaultManager(strategyRegistry, riskManager, depositManager, priceFeedManager);
