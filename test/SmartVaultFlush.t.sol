@@ -155,7 +155,7 @@ contract SmartVaultFlushTest is Test {
         token2.mint(address(masterWallet), depositsIn[1]);
 
         MockSwapper swapper = _createSwapper();
-        masterWallet.setSpenderWhitelist(address(swapper), true);
+        masterWallet.setWalletManager(address(depositManager), true);
         SwapInfo[] memory swapInfo = new SwapInfo[](1);
         swapInfo[0] = SwapInfo(
             address(swapper),

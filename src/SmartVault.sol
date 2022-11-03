@@ -479,8 +479,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
 
         for (uint256 i = 0; i < _assetGroup.length; i++) {
             // TODO-Q: should this be done by an action, since there might be a swap?
-            masterWallet.approve(IERC20(_assetGroup[i]), address(this), withdrawnAssets[i]);
-            IERC20(_assetGroup[i]).transferFrom(address(masterWallet), receiver, withdrawnAssets[i]);
+            masterWallet.transfer(IERC20(_assetGroup[i]), receiver, withdrawnAssets[i]);
         }
 
         return (withdrawnAssets, _assetGroup);

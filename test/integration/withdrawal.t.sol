@@ -87,7 +87,7 @@ contract WithdrawalIntegrationTest is Test {
         mySmartVaultStrategies[0] = address(strategyA);
         mySmartVaultStrategies[1] = address(strategyB);
         smartVaultManager.setStrategies(address(mySmartVault), mySmartVaultStrategies);
-        masterWallet.setSpenderWhitelist(address(mySmartVault), true);
+        masterWallet.setWalletManager(address(mySmartVault), true);
     }
 
     function test_shouldBeAbleToWithdraw() public {

@@ -5,32 +5,36 @@ import "@openzeppelin/access/Ownable.sol";
 
 // TODO: Access control
 contract MasterWallet is IMasterWallet {
-    mapping(address => bool) private _spenderWhitelist;
+    mapping(address => bool) private _managerAllowlist;
 
-    function approve(IERC20 token, address spender, uint256 amount) external spenderWhitelisted(spender) {
+    function approve(IERC20 token, address spender, uint256 amount) external isManager {
         token.approve(spender, amount);
     }
 
-    function resetApprove(IERC20 token, address spender) external spenderWhitelisted(spender) {
+    function resetApprove(IERC20 token, address spender) external isManager {
         token.approve(spender, 0);
     }
 
-    function setSpenderWhitelist(address spender, bool canApprove) external {
-        if (_spenderWhitelist[spender] == canApprove) {
-            revert SpenderAlreadySet(spender);
-        }
-
-        _spenderWhitelist[spender] = canApprove;
+    function transfer(IERC20 token, address recipient, uint256 amount) external isManager {
+        token.transfer(recipient, amount);
     }
 
-    function _checkSpenderWhitelist(address spender) private {
-        if (!_spenderWhitelist[spender]) {
-            revert SpenderNotAllowed(spender);
+    function setWalletManager(address manager, bool set) external {
+        if (_managerAllowlist[manager] == set) {
+            revert ManagerAlreadySet(manager);
+        }
+
+        _managerAllowlist[manager] = set;
+    }
+
+    function _checkManager() private view {
+        if (!_managerAllowlist[msg.sender]) {
+            revert ManagerNotAllowed(msg.sender);
         }
     }
 
-    modifier spenderWhitelisted(address spender) {
-        _checkSpenderWhitelist(spender);
+    modifier isManager() {
+        _checkManager();
         _;
     }
 }
