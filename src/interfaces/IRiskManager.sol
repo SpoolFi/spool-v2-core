@@ -16,4 +16,10 @@ interface IRiskManager {
      * @notice TODO
      */
     function riskScores(address riskProvider) external view returns (uint256[] memory);
+
+    /**
+     * @notice TODO
+     * @return riskScore
+     */
+    function getRiskScores(address riskProvider, address[] memory strategy) external view returns (uint256[] memory);
 }

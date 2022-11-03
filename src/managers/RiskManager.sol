@@ -21,6 +21,13 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
         return _riskScores[riskProvider_];
     }
 
+    /**
+     * @notice TODO
+     */
+    function getRiskScores(address riskProvider, address[] memory strategy) external view returns (uint256[] memory) {
+        revert("0");
+    }
+
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     /**
