@@ -6,6 +6,7 @@ import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "./interfaces/IStrategy.sol";
 import "./interfaces/IStrategyRegistry.sol";
+import "./interfaces/IMasterWallet.sol";
 
 abstract contract Strategy is ERC20Upgradeable, IStrategy {
     /* ========== STATE VARIABLES ========== */
@@ -22,9 +23,13 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
     // @dev Should be updated in DHW with deposits, withdrawals and yields.
     uint256 public totalUsdValue = 0;
 
-    constructor(string memory strategyName_, IStrategyRegistry strategyRegistry_) {
+    /// @notice Master wallet
+    IMasterWallet immutable masterWallet;
+
+    constructor(string memory strategyName_, IStrategyRegistry strategyRegistry_, IMasterWallet masterWallet_) {
         _strategyName = strategyName_;
         _strategyRegistry = strategyRegistry_;
+        masterWallet = masterWallet_;
     }
 
     function initialize(address[] memory assetGroup_) public virtual initializer {

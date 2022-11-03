@@ -128,9 +128,8 @@ contract StrategyRegistry is IStrategyRegistry {
     function claimWithdrawals(
         address[] memory strategies_,
         uint256[] memory dhwIndexes,
-        uint256[] memory strategyShares,
-        address smartVault
-    ) external onlySmartVaultManager returns (uint256[] memory) {
+        uint256[] memory strategyShares
+    ) external view onlySmartVaultManager returns (uint256[] memory) {
         address[] memory tokens = IStrategy(strategies_[0]).asset();
         uint256[] memory totalWithdrawnAssets = new uint256[](tokens.length);
 
@@ -147,10 +146,6 @@ contract StrategyRegistry is IStrategyRegistry {
                     _withdrawnAssets[strategy][dhwIndex][j] * strategyShares[i] / _withdrawnShares[strategy][dhwIndex];
                 // there will be dust left after all vaults sync
             }
-        }
-
-        for (uint256 i = 0; i < tokens.length; i++) {
-            IERC20(tokens[i]).transfer(smartVault, totalWithdrawnAssets[i]);
         }
 
         return totalWithdrawnAssets;

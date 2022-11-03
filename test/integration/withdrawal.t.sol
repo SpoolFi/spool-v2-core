@@ -57,14 +57,14 @@ contract WithdrawalIntegrationTest is Test {
         );
         strategyRegistry.setSmartVaultManger(address(smartVaultManager));
 
-        strategyA = new MockStrategy("StratA", strategyRegistry);
+        strategyA = new MockStrategy("StratA", strategyRegistry, masterWallet);
         uint256[] memory strategyARatios = new uint256[](2);
         strategyARatios[0] = 1_000;
         strategyARatios[1] = 68;
         strategyA.initialize(assetGroup, strategyARatios);
         strategyRegistry.registerStrategy(address(strategyA));
 
-        strategyB = new MockStrategy("StratB", strategyRegistry);
+        strategyB = new MockStrategy("StratB", strategyRegistry, masterWallet);
         uint256[] memory strategyBRatios = new uint256[](2);
         strategyBRatios[0] = 1_000;
         strategyBRatios[1] = 67;
@@ -87,6 +87,7 @@ contract WithdrawalIntegrationTest is Test {
         mySmartVaultStrategies[0] = address(strategyA);
         mySmartVaultStrategies[1] = address(strategyB);
         smartVaultManager.setStrategies(address(mySmartVault), mySmartVaultStrategies);
+        masterWallet.setSpenderWhitelist(address(mySmartVault), true);
     }
 
     function test_shouldBeAbleToWithdraw() public {
@@ -148,9 +149,9 @@ contract WithdrawalIntegrationTest is Test {
         // - strategy tokens are burned
         assertEq(strategyA.balanceOf(address(strategyA)), 0);
         assertEq(strategyB.balanceOf(address(strategyB)), 0);
-        // - assets are withdrawn from protocol to strategy registry
-        assertEq(tokenA.balanceOf(address(strategyRegistry)), 32 ether);
-        assertEq(tokenB.balanceOf(address(strategyRegistry)), 2.1696 ether);
+        // - assets are withdrawn from protocol master wallet
+        assertEq(tokenA.balanceOf(address(masterWallet)), 32 ether);
+        assertEq(tokenB.balanceOf(address(masterWallet)), 2.1696 ether);
         assertEq(tokenA.balanceOf(address(strategyA)), 0);
         assertEq(tokenB.balanceOf(address(strategyA)), 0);
         assertEq(tokenA.balanceOf(address(strategyB)), 0);
@@ -160,11 +161,7 @@ contract WithdrawalIntegrationTest is Test {
         smartVaultManager.syncSmartVault(address(mySmartVault));
 
         // check state
-        // - assets are transfered to smart vautl
-        assertEq(tokenA.balanceOf(address(mySmartVault)), 32 ether);
-        assertEq(tokenB.balanceOf(address(mySmartVault)), 2.1696 ether);
-        assertEq(tokenA.balanceOf(address(strategyRegistry)), 0);
-        assertEq(tokenB.balanceOf(address(strategyRegistry)), 0);
+        // nothing to check
 
         // claim withdrawal
         vm.prank(alice);
@@ -179,8 +176,8 @@ contract WithdrawalIntegrationTest is Test {
         assertEq(tokenB.balanceOf(alice), 2.034 ether);
         assertEq(tokenA.balanceOf(bob), 2 ether);
         assertEq(tokenB.balanceOf(bob), 0.1356 ether);
-        assertEq(tokenA.balanceOf(address(mySmartVault)), 0);
-        assertEq(tokenB.balanceOf(address(mySmartVault)), 0);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenB.balanceOf(address(masterWallet)), 0);
         // - withdrawal NFTs are burned
         assertEq(mySmartVault.balanceOf(alice, aliceWithdrawalNftId), 0);
         assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 0);

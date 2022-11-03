@@ -597,8 +597,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         _withdrawnAssets[smartVault][flushIndex] = _strategyRegistry.claimWithdrawals(
             _smartVaultStrategies[smartVault],
             _dhwIndexes[smartVault][flushIndex],
-            _withdrawnStrategyShares[smartVault][flushIndex],
-            smartVault
+            _withdrawnStrategyShares[smartVault][flushIndex]
         );
     }
 

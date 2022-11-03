@@ -8,7 +8,9 @@ contract MockStrategy is Strategy {
     uint256[] public __withdrawnAssets;
     bool public __withdrawnAssetsSet;
 
-    constructor(string memory name_, IStrategyRegistry strategyRegistry_) Strategy(name_, strategyRegistry_) {}
+    constructor(string memory name_, IStrategyRegistry strategyRegistry_, IMasterWallet masterWallet_)
+        Strategy(name_, strategyRegistry_, masterWallet_)
+    {}
 
     function initialize(address[] memory assetGroup_, uint256[] memory ratios_) public virtual {
         super.initialize(assetGroup_);
@@ -24,7 +26,7 @@ contract MockStrategy is Strategy {
 
         // withdraw from protocol
         for (uint256 i = 0; i < _assetGroup.length; i++) {
-            IERC20(_assetGroup[i]).transfer(address(_strategyRegistry), __withdrawnAssets[i]);
+            IERC20(_assetGroup[i]).transfer(address(masterWallet), __withdrawnAssets[i]);
         }
 
         // burn SSTs for withdrawal

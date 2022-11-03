@@ -196,9 +196,9 @@ contract SmartVaultFlushTest is Test {
     }
 
     function _createStrategies() private returns (address[] memory, address[] memory, uint256[][] memory) {
-        MockStrategy strategy1 = new MockStrategy("A", strategyRegistry);
-        MockStrategy strategy2 = new MockStrategy("B", strategyRegistry);
-        MockStrategy strategy3 = new MockStrategy("C", strategyRegistry);
+        MockStrategy strategy1 = new MockStrategy("A", strategyRegistry, masterWallet);
+        MockStrategy strategy2 = new MockStrategy("B", strategyRegistry, masterWallet);
+        MockStrategy strategy3 = new MockStrategy("C", strategyRegistry, masterWallet);
 
         address[] memory assetGroup = new address[](2);
         assetGroup[0] = address(token1);

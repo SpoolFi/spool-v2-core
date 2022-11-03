@@ -51,13 +51,11 @@ interface IStrategyRegistry {
      * @param strategies_ Addresses if strategies from which to claim withdrawal.
      * @param dhwIndexes Indexes of strategies when withdrawal was made.
      * @param strategyShares Amount of strategy shares that was withdrawn.
-     * @param smartVault Address of smart vault doing the claiming.
      * @return Amount of assets withdrawn from strategies.
      */
     function claimWithdrawals(
         address[] memory strategies_,
         uint256[] memory dhwIndexes,
-        uint256[] memory strategyShares,
-        address smartVault
-    ) external returns (uint256[] memory);
+        uint256[] memory strategyShares
+    ) external view returns (uint256[] memory);
 }
