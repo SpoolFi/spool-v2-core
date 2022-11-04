@@ -116,20 +116,6 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
 
     /**
      * @notice TODO
-     * @param nftIds TODO
-     * @return shares TODO
-     */
-    function burnDepositNFTs(uint256[] calldata nftIds) external returns (uint256 shares);
-
-    /**
-     * @notice TODO
-     * @param nftIds TODO
-     * @return assets TODO
-     */
-    function burnWithdrawalNFTs(uint256[] calldata nftIds) external returns (uint256[] memory assets);
-
-    /**
-     * @notice TODO
      * @param assets TODO
      * @param receiver TODO
      * @param depositor TODO

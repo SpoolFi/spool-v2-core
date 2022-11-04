@@ -192,24 +192,6 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
 
     /**
      * @notice TODO
-     * @param nftIds TODO
-     * @return shares TODO
-     */
-    function burnDepositNFTs(uint256[] calldata nftIds) external returns (uint256) {
-        revert("0");
-    }
-
-    /**
-     * @notice TODO
-     * @param nftIds TODO
-     * @return assets TODO
-     */
-    function burnWithdrawalNFTs(uint256[] calldata nftIds) external returns (uint256[] memory) {
-        revert("0");
-    }
-
-    /**
-     * @notice TODO
      * @param depositor TODO
      * @param assets TODO
      * @param receiver TODO
