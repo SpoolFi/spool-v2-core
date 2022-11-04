@@ -379,7 +379,6 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         address[] memory tokens = new address[](1);
         tokens[0] = address(this);
         _runGuards(msg.sender, receiver, assets, tokens, RequestType.Withdrawal);
-        _runActions(msg.sender, receiver, assets, tokens, RequestType.Withdrawal);
 
         // add withdrawal to be flushed
         uint256 flushIndex = smartVaultManager.addWithdrawal(vaultShares);
@@ -405,17 +404,6 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     }
 
     /* ========== MODIFIERS ========== */
-
-    modifier runGuards(
-        address executor,
-        address receiver,
-        uint256[] memory assets,
-        address[] memory tokens,
-        RequestType requestType
-    ) {
-        _runGuards(executor, receiver, assets, tokens, requestType);
-        _;
-    }
 
     modifier onlySmartVaultManager() {
         _onlySmartVaultManager();
