@@ -400,7 +400,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
 
     function _onlySmartVaultManager() internal view {
         if (msg.sender != address(smartVaultManager)) {
-            revert NotClaimer(msg.sender);
+            revert NotSmartVaultManager(msg.sender);
         }
     }
 

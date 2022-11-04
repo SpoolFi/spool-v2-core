@@ -52,8 +52,7 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     function redeemFast(
-        uint256[] calldata assets,
-        address[] calldata tokens,
+        uint256 shares,
         address receiver,
         uint256[][] calldata slippages,
         SwapData[] calldata swapData

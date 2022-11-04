@@ -78,16 +78,14 @@ interface IStrategy is IERC20Upgradeable {
 
     /**
      * @notice Fast withdraw
-     * @param assets TODO
-     * @param tokens TODO
+     * @param shares TODO
      * @param receiver TODO
      * @param slippages TODO
      * @param swapData TODO
      * @return returnedAssets Withdrawn amount withdrawn
      */
     function redeemFast(
-        uint256[] calldata assets,
-        address[] calldata tokens,
+        uint256 shares,
         address receiver,
         uint256[][] calldata slippages,
         SwapData[] calldata swapData
