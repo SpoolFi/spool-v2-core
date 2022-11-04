@@ -85,8 +85,7 @@ contract WithdrawalIntegrationTest is Test {
 
         mySmartVault = new SmartVault(
             "MySmartVault",
-            smartVaultManager,
-            masterWallet
+            smartVaultManager
         );
         mySmartVault.initialize(assetGroupId, assetGroupRegistry);
         smartVaultManager.registerSmartVault(address(mySmartVault));

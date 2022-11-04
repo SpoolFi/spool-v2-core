@@ -223,8 +223,7 @@ contract SmartVaultManagerTest is Test {
         IActionManager actionManager = new ActionManager();
         SmartVault smartVault_ = new SmartVault(
             "TestVault",
-            smartVaultManager,
-            masterWallet
+            smartVaultManager
         );
 
         smartVault_.initialize(assetGroupId, assetGroupRegistry);

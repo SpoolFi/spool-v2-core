@@ -9,15 +9,10 @@ import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IRiskManager.sol";
 import "../interfaces/ISmartVault.sol";
-import "@openzeppelin/token/ERC20/ERC20.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/IGuardManager.sol";
 import "../interfaces/IAction.sol";
 import "../interfaces/RequestType.sol";
-import "../interfaces/IAction.sol";
-import "../interfaces/IGuardManager.sol";
-import "../interfaces/ISmartVault.sol";
-import "../interfaces/ISmartVault.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
 
 contract SmartVaultRegistry is ISmartVaultRegistry {

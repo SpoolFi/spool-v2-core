@@ -1,22 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
-import "@openzeppelin/access/Ownable.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "./interfaces/CommonErrors.sol";
-import "./interfaces/IAction.sol";
 import "./interfaces/IAssetGroupRegistry.sol";
-import "./interfaces/IGuardManager.sol";
-import "./interfaces/IMasterWallet.sol";
-import "./interfaces/IRiskManager.sol";
-import "./interfaces/ISmartVault.sol";
 import "./interfaces/ISmartVaultManager.sol";
-import "./interfaces/IStrategy.sol";
-import "./interfaces/IStrategyRegistry.sol";
 import "./interfaces/ISmartVault.sol";
 import "./interfaces/RequestType.sol";
 
@@ -27,9 +19,6 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
 
     // @notice Smart Vault manager
     ISmartVaultManager internal immutable smartVaultManager;
-
-    // @notice Master Wallet
-    IMasterWallet immutable masterWallet;
 
     /**
      * @notice ID of the asset group used by the smart vault.
@@ -65,10 +54,9 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
      * @param vaultName_ TODO
      * @param smartVaultManager_ TODO
      */
-    constructor(string memory vaultName_, ISmartVaultManager smartVaultManager_, IMasterWallet masterWallet_) {
+    constructor(string memory vaultName_, ISmartVaultManager smartVaultManager_) {
         _vaultName = vaultName_;
         smartVaultManager = smartVaultManager_;
-        masterWallet = masterWallet_;
     }
 
     function initialize(uint256 assetGroupId_, IAssetGroupRegistry assetGroupRegistry_) external initializer {
