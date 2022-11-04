@@ -60,7 +60,11 @@ contract WithdrawalIntegrationTest is Test {
             strategyRegistry,
             riskManager,
             vaultDepositManager,
-            priceFeedManager
+            priceFeedManager,
+            assetGroupRegistry,
+            masterWallet,
+            new ActionManager(),
+            new GuardManager()
         );
 
         strategyRegistry.grantRole(strategyRegistry.CLAIMER_ROLE(), address(smartVaultManager));
@@ -81,8 +85,6 @@ contract WithdrawalIntegrationTest is Test {
 
         mySmartVault = new SmartVault(
             "MySmartVault",
-            guardManager,
-            actionManager,
             smartVaultManager,
             masterWallet
         );
@@ -94,7 +96,7 @@ contract WithdrawalIntegrationTest is Test {
         mySmartVaultStrategies[0] = address(strategyA);
         mySmartVaultStrategies[1] = address(strategyB);
         smartVaultManager.setStrategies(address(mySmartVault), mySmartVaultStrategies);
-        masterWallet.setWalletManager(address(mySmartVault), true);
+        masterWallet.setWalletManager(address(smartVaultManager), true);
     }
 
     function test_shouldBeAbleToWithdraw() public {
@@ -106,10 +108,12 @@ contract WithdrawalIntegrationTest is Test {
 
         // request withdrawal
         vm.prank(alice);
-        uint256 aliceWithdrawalNftId = mySmartVault.redeem(3_000_000, alice, alice);
+        mySmartVault.approve(address(smartVaultManager), 4_000_000 ether);
+        uint256 aliceWithdrawalNftId = smartVaultManager.redeem(address(mySmartVault), 3_000_000, alice, alice);
 
         vm.prank(bob);
-        uint256 bobWithdrawalNftId = mySmartVault.redeem(200_000, bob, bob);
+        mySmartVault.approve(address(smartVaultManager), 1_000_000 ether);
+        uint256 bobWithdrawalNftId = smartVaultManager.redeem(address(mySmartVault), 200_000, bob, bob);
 
         // check state
         // - vault tokens are returned to vault
@@ -172,10 +176,10 @@ contract WithdrawalIntegrationTest is Test {
 
         // claim withdrawal
         vm.prank(alice);
-        mySmartVault.claimWithdrawal(aliceWithdrawalNftId, alice);
+        smartVaultManager.claimWithdrawal(address(mySmartVault), aliceWithdrawalNftId, alice);
 
         vm.prank(bob);
-        mySmartVault.claimWithdrawal(bobWithdrawalNftId, bob);
+        smartVaultManager.claimWithdrawal(address(mySmartVault), bobWithdrawalNftId, bob);
 
         // check state
         // - assets are transfered to withdrawers

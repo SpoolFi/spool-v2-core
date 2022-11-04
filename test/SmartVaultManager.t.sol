@@ -41,7 +41,19 @@ contract SmartVaultManagerTest is Test {
         riskManager = new RiskManager();
         priceFeedManager = new MockPriceFeedManager();
         ISmartVaultDeposits depositManager = new SmartVaultDeposits(masterWallet);
-        smartVaultManager = new SmartVaultManager(strategyRegistry, riskManager, depositManager, priceFeedManager);
+        IGuardManager guardManager = new GuardManager();
+        IActionManager actionManager = new ActionManager();
+
+        smartVaultManager = new SmartVaultManager(
+            strategyRegistry,
+            riskManager,
+            depositManager,
+            priceFeedManager,
+            assetGroupRegistry,
+            masterWallet,
+            actionManager,
+            guardManager
+        );
         smartVaultManager.registerSmartVault(smartVault);
 
         token1 = new MockToken("Token1", "T1");
@@ -128,13 +140,13 @@ contract SmartVaultManagerTest is Test {
         assets[1] = 6.779734526152375133 ether;
 
         vm.prank(user);
-        token1.approve(address(smartVault_), 100 ether);
+        token1.approve(address(smartVaultManager), 100 ether);
 
         vm.prank(user);
-        token2.approve(address(smartVault_), 100 ether);
+        token2.approve(address(smartVaultManager), 100 ether);
 
         vm.prank(user);
-        smartVault_.deposit(assets, user);
+        smartVaultManager.deposit(address(smartVault_), assets, user);
 
         uint256 flushIdx = smartVaultManager.getLatestFlushIndex(address(smartVault_));
         assertEq(flushIdx, 0);
@@ -211,8 +223,6 @@ contract SmartVaultManagerTest is Test {
         IActionManager actionManager = new ActionManager();
         SmartVault smartVault_ = new SmartVault(
             "TestVault",
-            guardManager,
-            actionManager,
             smartVaultManager,
             masterWallet
         );

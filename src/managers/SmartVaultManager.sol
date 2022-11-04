@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
+import "@openzeppelin/token/ERC20/ERC20.sol";
+import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
@@ -8,8 +10,15 @@ import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IRiskManager.sol";
 import "../interfaces/ISmartVault.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
-import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IMasterWallet.sol";
+import "../interfaces/IGuardManager.sol";
+import "../interfaces/IAction.sol";
+import "../interfaces/RequestType.sol";
+import "../interfaces/IAction.sol";
+import "../interfaces/IGuardManager.sol";
+import "../interfaces/ISmartVault.sol";
+import "../interfaces/ISmartVault.sol";
+import "../interfaces/IAssetGroupRegistry.sol";
 
 contract SmartVaultRegistry is ISmartVaultRegistry {
     /// @notice Smart vault address registry
@@ -257,7 +266,15 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
 }
 
 contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
+    using SafeERC20 for ERC20;
+
     /* ========== STATE VARIABLES ========== */
+
+    // @notice Guard manager
+    IGuardManager internal immutable _guardManager;
+
+    // @notice Action manager
+    IActionManager internal immutable _actionManager;
 
     /// @notice Strategy registry
     IStrategyRegistry private immutable _strategyRegistry;
@@ -270,6 +287,13 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
 
     /// @notice Vault deposits logic
     ISmartVaultDeposits private immutable _vaultDepositsManager;
+
+    IAssetGroupRegistry private immutable _assetGroupRegistry;
+
+    /// @notice TODO
+    IMasterWallet private immutable _masterWallet;
+
+    mapping(address => uint256) internal _assetGroups;
 
     /// @notice Smart Vault strategy registry
     mapping(address => address[]) internal _smartVaultStrategies;
@@ -308,12 +332,20 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         IStrategyRegistry strategyRegistry_,
         IRiskManager riskManager_,
         ISmartVaultDeposits vaultDepositsManager_,
-        IUsdPriceFeedManager priceFeedManager_
+        IUsdPriceFeedManager priceFeedManager_,
+        IAssetGroupRegistry assetGroupRegistry_,
+        IMasterWallet masterWallet_,
+        IActionManager actionManager_,
+        IGuardManager guardManager_
     ) {
         _strategyRegistry = strategyRegistry_;
         _riskManager = riskManager_;
         _vaultDepositsManager = vaultDepositsManager_;
         _priceFeedManager = priceFeedManager_;
+        _assetGroupRegistry = assetGroupRegistry_;
+        _masterWallet = masterWallet_;
+        _actionManager = actionManager_;
+        _guardManager = guardManager_;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -384,7 +416,157 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         return totalUsdValue;
     }
 
+    /**
+     * @notice Calculate current Smart Vault asset deposit ratio
+     * @dev As described in /notes/multi-asset-vault-deposit-ratios.md
+     */
+    function getDepositRatio(address smartVault) external view validSmartVault(smartVault) returns (uint256[] memory) {
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVault]);
+        DepositRatioQueryBag memory bag = DepositRatioQueryBag(
+            smartVault,
+            tokens,
+            strategies_,
+            _smartVaultAllocations[smartVault],
+            _getExchangeRates(tokens),
+            _getStrategyRatios(strategies_),
+            _priceFeedManager.usdDecimals()
+        );
+
+        return _vaultDepositsManager.getDepositRatio(bag);
+    }
+
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
+
+    /* ========== DEPOSIT/WITHDRAW ========== */
+
+    /**
+     * @dev Burns exactly shares from owner and sends assets of underlying tokens to receiver.
+     * @param shares TODO
+     * @param receiver TODO
+     * @param owner TODO
+     * - MUST emit the Withdraw event.
+     * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the
+     *   redeem execution, and are accounted for during redeem.
+     * - MUST revert if all of shares cannot be redeemed (due to withdrawal limit being reached, slippage, the owner
+     *   not having enough shares, etc).
+     *
+     * NOTE: some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
+     * Those methods should be performed separately.
+     */
+    function redeem(address smartVault, uint256 shares, address receiver, address owner) external validSmartVault(smartVault) returns (uint256) {
+        return _redeemShares(smartVault, shares, receiver, owner);
+    }
+
+    /**
+     * @notice Used to withdraw underlying asset.
+     * @param shares TODO
+     * @param receiver TODO
+     * @param owner TODO
+     * @return returnedAssets TODO
+     */
+    function redeemFast(
+        address smartVault,
+        uint256 shares,
+        address receiver,
+        uint256[][] calldata, /*slippages*/
+        address owner
+    ) external validSmartVault(smartVault) returns (uint256[] memory) {
+        revert("0");
+    }
+
+    /**
+     * @notice TODO
+     * @param smartVault TODO
+     * @param depositor TODO
+     * @param assets TODO
+     * @param receiver TODO
+     */
+    function depositFor(address smartVault, uint256[] calldata assets, address receiver, address depositor)
+        external
+        validSmartVault(smartVault)
+        returns (uint256)
+    {
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVault]);
+        _runGuards(depositor, receiver, assets, assetGroup, RequestType.Deposit);
+        _runActions(depositor, receiver, assets, assetGroup, RequestType.Deposit);
+        uint256 flushIdx = _depositAssets(smartVault, depositor, receiver, assets, assetGroup);
+
+        DepositMetadata memory metadata = DepositMetadata(assets, block.timestamp, flushIdx);
+        return ISmartVault(smartVault).mintDepositNFT(receiver, metadata);
+    }
+
+    /**
+     * @notice TODO
+     * TODO: pass slippages
+     * @param smartVault TODO
+     * @param assets TODO
+     * @param receiver TODO
+     * @param slippages TODO
+     * @return receipt TODO
+     */
+    function depositFast(
+        address smartVault,
+        uint256[] calldata assets,
+        address receiver,
+        uint256[][] calldata slippages
+    ) external validSmartVault(smartVault) returns (uint256) {
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVault]);
+        _runGuards(msg.sender, receiver, assets, assetGroup, RequestType.Deposit);
+        _runActions(msg.sender, receiver, assets, assetGroup, RequestType.Deposit);
+        uint256 flushIdx = _depositAssets(smartVault, msg.sender, receiver, assets, assetGroup);
+
+        DepositMetadata memory metadata = DepositMetadata(assets, block.timestamp, flushIdx);
+        return ISmartVault(smartVault).mintDepositNFT(receiver, metadata);
+    }
+
+    /**
+     * @dev Mints shares Vault shares to receiver by depositing exactly amount of underlying tokens.
+     * @param assets TODO
+     *
+     * - MUST emit the Deposit event.
+     * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the
+     *   deposit execution, and are accounted for during deposit.
+     * - MUST revert if all of assets cannot be deposited (due to deposit limit being reached, slippage, the user not
+     *   approving enough underlying tokens to the Vault contract, etc).
+     *
+     * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
+     */
+    function deposit(address smartVault, uint256[] calldata assets, address receiver) external validSmartVault(smartVault) returns (uint256) {
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVault]);
+        _runActions(msg.sender, receiver, assets, assetGroup, RequestType.Deposit);
+        _runGuards(msg.sender, receiver, assets, assetGroup, RequestType.Deposit);
+        uint256 flushIdx = _depositAssets(smartVault, msg.sender, receiver, assets, assetGroup);
+
+        DepositMetadata memory metadata = DepositMetadata(assets, block.timestamp, flushIdx);
+        return ISmartVault(smartVault).mintDepositNFT(receiver, metadata);
+    }
+
+    function claimWithdrawal(address smartVaultAddress, uint256 withdrawalNftId, address receiver)
+        external
+    validSmartVault(smartVaultAddress)
+        returns (uint256[] memory, uint256)
+    {
+        ISmartVault smartVault = ISmartVault(smartVaultAddress);
+        WithdrawalMetadata memory data = smartVault.getWithdrawalMetadata(withdrawalNftId);
+        smartVault.burnNFT(msg.sender, withdrawalNftId, RequestType.Withdrawal);
+
+        uint256 assetGroupID = _assetGroups[smartVaultAddress];
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupID);
+        uint256[] memory withdrawnAssets =
+            _calculateWithdrawal(smartVaultAddress, withdrawalNftId, data, assetGroup.length);
+
+        _runActions(msg.sender, receiver, withdrawnAssets, assetGroup, RequestType.Withdrawal);
+
+        for (uint256 i = 0; i < assetGroup.length; i++) {
+            // TODO-Q: should this be done by an action, since there might be a swap?
+            _masterWallet.transfer(IERC20(assetGroup[i]), receiver, withdrawnAssets[i]);
+        }
+
+        return (withdrawnAssets, assetGroupID);
+    }
+
+    /* ========== REGISTRY ========== */
 
     /**
      * @notice TODO
@@ -416,81 +598,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         _smartVaultRiskProviders[smartVault] = riskProvider_;
     }
 
-    /**
-     * @notice Accumulate and persist Smart Vault deposits before pushing to strategies
-     * @param smartVault Smart Vault address
-     * @param amounts Deposit amounts
-     */
-    function addDeposits(address smartVault, uint256[] memory amounts)
-        external
-        validSmartVault(smartVault)
-        returns (uint256)
-    {
-        address[] memory tokens = ISmartVault(smartVault).assets();
-        if (tokens.length != amounts.length) revert InvalidAssetLengths();
-
-        uint256 flushIdx = _flushIndexes[smartVault];
-        bool initialized = _vaultDeposits[smartVault][flushIdx].length > 0;
-
-        for (uint256 i = 0; i < amounts.length; i++) {
-            if (amounts[i] == 0) revert InvalidDepositAmount({smartVault: smartVault});
-
-            if (initialized) {
-                _vaultDeposits[smartVault][flushIdx][i] += amounts[i];
-            } else {
-                _vaultDeposits[smartVault][flushIdx].push(amounts[i]);
-            }
-        }
-
-        return _flushIndexes[smartVault];
-    }
-
-    function addWithdrawal(uint256 vaultShares) external validSmartVault(msg.sender) returns (uint256) {
-        uint256 flushIndex = _flushIndexes[msg.sender];
-
-        _withdrawnVaultShares[msg.sender][flushIndex] += vaultShares;
-
-        return flushIndex;
-    }
-
-    function calculateWithdrawal(uint256 withdrawalNftId)
-        external
-        view
-        validSmartVault(msg.sender)
-        returns (uint256[] memory)
-    {
-        uint256[] memory withdrawnAssets = new uint256[](ISmartVault(msg.sender).assets().length);
-
-        WithdrawalMetadata memory data = ISmartVault(msg.sender).getWithdrawalMetadata(withdrawalNftId);
-
-        // loop over all assets
-        for (uint256 i = 0; i < withdrawnAssets.length; i++) {
-            withdrawnAssets[i] = _withdrawnAssets[msg.sender][data.flushIndex][i] * data.vaultShares
-                / _withdrawnVaultShares[msg.sender][data.flushIndex];
-        }
-
-        return withdrawnAssets;
-    }
-
-    /**
-     * @notice Calculate current Smart Vault asset deposit ratio
-     * @dev As described in /notes/multi-asset-vault-deposit-ratios.md
-     */
-    function getDepositRatio(address smartVault) external view validSmartVault(smartVault) returns (uint256[] memory) {
-        address[] memory strategies_ = _smartVaultStrategies[smartVault];
-        address[] memory tokens = ISmartVault(smartVault).assets();
-        DepositRatioQueryBag memory bag = DepositRatioQueryBag(
-            smartVault,
-            tokens,
-            strategies_,
-            _smartVaultAllocations[smartVault],
-            _getExchangeRates(tokens),
-            _getStrategyRatios(strategies_),
-            _priceFeedManager.usdDecimals()
-        );
-
-        return _vaultDepositsManager.getDepositRatio(bag);
-    }
+    /* ========== BOOKKEEPING ========== */
 
     /**
      * @notice Transfer all pending deposits from the SmartVault to strategies
@@ -510,7 +618,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
 
         if (deposits.length > 0) {
             // handle deposits
-            address[] memory tokens = ISmartVault(smartVault).assets();
+            address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVault]);
 
             DepositRatioQueryBag memory bag = DepositRatioQueryBag(
                 smartVault,
@@ -537,7 +645,9 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
                 strategyWithdrawals[i] = strategyShares * withdrawals / totalVaultShares;
             }
 
-            ISmartVault(smartVault).handleWithdrawalFlush(withdrawals, strategyWithdrawals, strategies_);
+            ISmartVault(smartVault).burn(smartVault, withdrawals);
+            ISmartVault(smartVault).releaseStrategyShares(strategies_, strategyWithdrawals);
+
             flushDhwIndexes = _strategyRegistry.addWithdrawals(strategies_, strategyWithdrawals);
 
             _withdrawnStrategyShares[smartVault][flushIdx] = strategyWithdrawals;
@@ -569,6 +679,76 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
+    function _depositAssets(address smartVault, address owner, address, /* receiver */ uint256[] memory assets, address[] memory tokens)
+        internal
+        returns (uint256)
+    {
+        require(assets.length == tokens.length, "SmartVault::depositFor::invalid assets length");
+
+        for (uint256 i = 0; i < assets.length; i++) {
+            ERC20(tokens[i]).safeTransferFrom(owner, address(_masterWallet), assets[i]);
+        }
+
+        if (tokens.length != assets.length) revert InvalidAssetLengths();
+
+        uint256 flushIdx = _flushIndexes[smartVault];
+        bool initialized = _vaultDeposits[smartVault][flushIdx].length > 0;
+
+        for (uint256 i = 0; i < assets.length; i++) {
+            if (assets[i] == 0) revert InvalidDepositAmount({smartVault: smartVault});
+
+            if (initialized) {
+                _vaultDeposits[smartVault][flushIdx][i] += assets[i];
+            } else {
+                _vaultDeposits[smartVault][flushIdx].push(assets[i]);
+            }
+        }
+
+        return _flushIndexes[smartVault];
+    }
+
+    function _redeemShares(address smartVaultAddress, uint256 vaultShares, address receiver, address owner)
+        internal
+        returns (uint256)
+    {
+        ISmartVault smartVault = ISmartVault(smartVaultAddress);
+        if (smartVault.balanceOf(owner) < vaultShares) {
+            revert InsufficientBalance(smartVault.balanceOf(msg.sender), vaultShares);
+        }
+
+        // run guards
+        uint256[] memory assets = new uint256[](1);
+        assets[0] = vaultShares;
+        address[] memory tokens = new address[](1);
+        tokens[0] = smartVaultAddress;
+        _runGuards(msg.sender, receiver, assets, tokens, RequestType.Withdrawal);
+
+        // add withdrawal to be flushed
+        uint256 flushIndex = _flushIndexes[smartVaultAddress];
+        _withdrawnVaultShares[smartVaultAddress][flushIndex] += vaultShares;
+
+        // transfer vault shares back to smart vault
+        smartVault.transferFrom(owner, smartVaultAddress, vaultShares);
+        return smartVault.mintWithdrawalNFT(receiver, WithdrawalMetadata(vaultShares, flushIndex));
+    }
+
+    function _calculateWithdrawal(
+        address smartVault,
+        uint256 withdrawalNftId,
+        WithdrawalMetadata memory data,
+        uint256 assetGroupLength
+    ) internal view returns (uint256[] memory) {
+        uint256[] memory withdrawnAssets = new uint256[](assetGroupLength);
+
+        // loop over all assets
+        for (uint256 i = 0; i < withdrawnAssets.length; i++) {
+            withdrawnAssets[i] = _withdrawnAssets[smartVault][data.flushIndex][i] * data.vaultShares
+                / _withdrawnVaultShares[smartVault][data.flushIndex];
+        }
+
+        return withdrawnAssets;
+    }
+
     function _getStrategyRatios(address[] memory strategies_) internal view returns (uint256[][] memory) {
         uint256[][] memory ratios = new uint256[][](strategies_.length);
         for (uint256 i = 0; i < strategies_.length; i++) {
@@ -599,6 +779,28 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
             _dhwIndexes[smartVault][flushIndex],
             _withdrawnStrategyShares[smartVault][flushIndex]
         );
+    }
+
+    function _runGuards(
+        address executor,
+        address receiver,
+        uint256[] memory assets,
+        address[] memory assetGroup,
+        RequestType requestType
+    ) internal view {
+        RequestContext memory context = RequestContext(receiver, executor, requestType, assets, assetGroup);
+        _guardManager.runGuards(address(this), context);
+    }
+
+    function _runActions(
+        address executor,
+        address recipient,
+        uint256[] memory assets,
+        address[] memory assetGroup,
+        RequestType requestType
+    ) internal {
+        ActionContext memory context = ActionContext(recipient, executor, requestType, assetGroup, assets);
+        _actionManager.runActions(address(this), context);
     }
 
     /* ========== MODIFIERS ========== */

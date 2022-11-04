@@ -47,8 +47,11 @@ contract ActionManager is IActionManager {
      */
     function runActions(address smartVault, ActionContext calldata actionCtx)
         external
-        areActionsInitialized(smartVault)
     {
+        if (!actionsInitialized[smartVault]) {
+            return;
+        }
+
         address[] memory actions_ = actions[smartVault][uint8(actionCtx.requestType)];
         ActionBag memory bag = ActionBag(actionCtx.tokens, actionCtx.amounts, "");
 
