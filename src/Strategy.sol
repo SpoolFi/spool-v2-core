@@ -23,13 +23,9 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
     // @dev Should be updated in DHW with deposits, withdrawals and yields.
     uint256 public totalUsdValue = 0;
 
-    /// @notice Master wallet
-    IMasterWallet immutable masterWallet;
-
-    constructor(string memory strategyName_, IStrategyRegistry strategyRegistry_, IMasterWallet masterWallet_) {
+    constructor(string memory strategyName_, IStrategyRegistry strategyRegistry_) {
         _strategyName = strategyName_;
         _strategyRegistry = strategyRegistry_;
-        masterWallet = masterWallet_;
     }
 
     function initialize(address[] memory assetGroup_) public virtual initializer {
@@ -39,7 +35,7 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
-    function asset() external view returns (address[] memory assetTokenAddresses) {
+    function assets() external view returns (address[] memory assetTokenAddresses) {
         return _assetGroup;
     }
 
@@ -49,41 +45,13 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
         revert("0");
     }
 
-    function previewDeposit(uint256[] calldata assets) external view returns (uint256 shares) {
-        revert("0");
-    }
-
-    function maxMint(address receiver) external view returns (uint256 maxShares) {
-        revert("0");
-    }
-
-    function previewMint(uint256 shares) external view returns (uint256[] memory assets) {
-        revert("0");
-    }
-
-    function previewWithdraw(uint256[] calldata assets) external view returns (uint256 shares) {
-        revert("0");
-    }
-
-    function maxRedeem(address owner) external view returns (uint256 maxShares) {
-        revert("0");
-    }
-
-    function previewRedeem(uint256 shares) external view returns (uint256 assets) {
-        revert("0");
-    }
-
     function strategyName() external view returns (string memory) {
         return _strategyName;
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
-    function dhw(uint256 withdrawnShares) external virtual returns (uint256[] memory) {
-        revert("0");
-    }
-
-    function withdrawFast(
+    function redeemFast(
         uint256[] calldata assets,
         address[] calldata tokens,
         address receiver,
@@ -100,15 +68,7 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
         revert("0");
     }
 
-    function convertToShares(uint256[] calldata assets) external view returns (uint256 shares) {
-        revert("0");
-    }
-
     function convertToAssets(uint256 shares) external view returns (uint256[] memory assets) {
-        revert("0");
-    }
-
-    function maxDeposit(address receiver) external view returns (uint256[] memory maxAssets) {
         revert("0");
     }
 
@@ -116,22 +76,7 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
         revert("0");
     }
 
-    function mint(uint256 shares, address receiver) external returns (uint256[] memory assets) {
-        revert("0");
-    }
-
-    function withdraw(uint256[] calldata assets, address[] calldata tokens, address receiver, address owner)
-        external
-        returns (uint256 receipt)
-    {
-        revert("0");
-    }
-
-    function maxWithdraw(address owner) external view returns (uint256[] memory maxAssets) {
-        revert("0");
-    }
-
-    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 receipt) {
+    function redeem(uint256 shares, address receiver, address owner) external virtual returns (uint256[] memory) {
         revert("0");
     }
 

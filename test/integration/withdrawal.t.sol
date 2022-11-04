@@ -42,7 +42,8 @@ contract WithdrawalIntegrationTest is Test {
         IAction[] memory emptyActions = new IAction[](0);
         RequestType[] memory emptyActionsRequestTypes = new RequestType[](0);
 
-        strategyRegistry = new StrategyRegistry();
+        strategyRegistry = new StrategyRegistry(masterWallet);
+        strategyRegistry.initialize();
         GuardManager guardManager = new GuardManager();
         ActionManager actionManager = new ActionManager();
         RiskManager riskManager = new RiskManager();
@@ -55,16 +56,17 @@ contract WithdrawalIntegrationTest is Test {
             vaultDepositManager,
             priceFeedManager
         );
-        strategyRegistry.setSmartVaultManger(address(smartVaultManager));
 
-        strategyA = new MockStrategy("StratA", strategyRegistry, masterWallet);
+        strategyRegistry.grantRole(strategyRegistry.CLAIMER_ROLE(), address(smartVaultManager));
+
+        strategyA = new MockStrategy("StratA", strategyRegistry);
         uint256[] memory strategyARatios = new uint256[](2);
         strategyARatios[0] = 1_000;
         strategyARatios[1] = 68;
         strategyA.initialize(assetGroup, strategyARatios);
         strategyRegistry.registerStrategy(address(strategyA));
 
-        strategyB = new MockStrategy("StratB", strategyRegistry, masterWallet);
+        strategyB = new MockStrategy("StratB", strategyRegistry);
         uint256[] memory strategyBRatios = new uint256[](2);
         strategyBRatios[0] = 1_000;
         strategyBRatios[1] = 67;
@@ -99,10 +101,10 @@ contract WithdrawalIntegrationTest is Test {
 
         // request withdrawal
         vm.prank(alice);
-        uint256 aliceWithdrawalNftId = mySmartVault.requestWithdrawal(3_000_000);
+        uint256 aliceWithdrawalNftId = mySmartVault.redeem(3_000_000, alice, alice);
 
         vm.prank(bob);
-        uint256 bobWithdrawalNftId = mySmartVault.requestWithdrawal(200_000);
+        uint256 bobWithdrawalNftId = mySmartVault.redeem(200_000, bob, bob);
 
         // check state
         // - vault tokens are returned to vault
@@ -143,7 +145,7 @@ contract WithdrawalIntegrationTest is Test {
         tokenA.mint(address(strategyB), 6.4 ether);
         tokenB.mint(address(strategyB), 0.4288 ether);
 
-        strategyRegistry.dhw(mySmartVaultStrategies);
+        strategyRegistry.doHardWork(mySmartVaultStrategies);
 
         // check state
         // - strategy tokens are burned

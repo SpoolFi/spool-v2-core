@@ -5,12 +5,14 @@ import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
 import "../src/interfaces/IStrategyRegistry.sol";
 import "../src/managers/StrategyRegistry.sol";
+import "../src/MasterWallet.sol";
 
 contract StrategyRegistryTest is Test {
     IStrategyRegistry strategyRegistry;
 
     function setUp() public {
-        strategyRegistry = new StrategyRegistry();
+        strategyRegistry = new StrategyRegistry(new MasterWallet());
+        strategyRegistry.initialize();
     }
 
     function test_registerStrategy() public {

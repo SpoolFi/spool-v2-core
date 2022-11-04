@@ -29,9 +29,11 @@ contract SmartVaultFlushTest is Test {
     IMasterWallet masterWallet;
 
     function setUp() public {
-        strategyRegistry = new StrategyRegistry();
-        priceFeedManager = new MockPriceFeedManager();
         masterWallet = new MasterWallet();
+        strategyRegistry = new StrategyRegistry(masterWallet);
+        strategyRegistry.initialize();
+
+        priceFeedManager = new MockPriceFeedManager();
         depositManager = new SmartVaultDeposits(masterWallet);
         token1 = new MockToken("Token1", "T1");
         token2 = new MockToken("Token2", "T2");
@@ -196,9 +198,9 @@ contract SmartVaultFlushTest is Test {
     }
 
     function _createStrategies() private returns (address[] memory, address[] memory, uint256[][] memory) {
-        MockStrategy strategy1 = new MockStrategy("A", strategyRegistry, masterWallet);
-        MockStrategy strategy2 = new MockStrategy("B", strategyRegistry, masterWallet);
-        MockStrategy strategy3 = new MockStrategy("C", strategyRegistry, masterWallet);
+        MockStrategy strategy1 = new MockStrategy("A", strategyRegistry);
+        MockStrategy strategy2 = new MockStrategy("B", strategyRegistry);
+        MockStrategy strategy3 = new MockStrategy("C", strategyRegistry);
 
         address[] memory assetGroup = new address[](2);
         assetGroup[0] = address(token1);

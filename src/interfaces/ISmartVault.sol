@@ -4,7 +4,6 @@ pragma solidity ^0.8.16;
 import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "./IVault.sol";
 
 /* ========== ERRORS ========== */
 
@@ -53,7 +52,14 @@ struct WithdrawalMetadata {
 
 /* ========== INTERFACES ========== */
 
-interface ISmartVault is IVault, IERC1155Upgradeable {
+interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
+
+    event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
+
+    event Withdraw(
+        address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
+    );
+
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /**
@@ -73,6 +79,38 @@ interface ISmartVault is IVault, IERC1155Upgradeable {
      * @return Metadata of the withdrawal NFT.
      */
     function getWithdrawalMetadata(uint256 withdrawalNftId) external view returns (WithdrawalMetadata memory);
+
+    /**
+     * @dev Returns the address of the underlying token used for the Vault for accounting, depositing, and withdrawing.
+     *
+     * - MUST be an ERC-20 token contract.
+     * - MUST NOT revert.
+     */
+    function assets() external view returns (address[] memory assetTokenAddresses);
+
+    /**
+     * @dev Returns the total amount of the underlying asset that is “managed” by Vault.
+     *
+     * - SHOULD include any compounding that occurs from yield.
+     * - MUST be inclusive of any fees that are charged against assets in the Vault.
+     * - MUST NOT revert.
+     */
+    function totalAssets() external view returns (uint256[] memory totalManagedAssets);
+
+    /**
+     * @dev Returns the amount of assets that the Vault would exchange for the amount of shares provided, in an ideal
+     * scenario where all the conditions are met.
+     *
+     * - MUST NOT be inclusive of any fees that are charged against assets in the Vault.
+     * - MUST NOT show any variations depending on the caller.
+     * - MUST NOT reflect slippage or other on-chain conditions, when performing the actual exchange.
+     * - MUST NOT revert.
+     *
+     * NOTE: This calculation MAY NOT reflect the “per-user” price-per-share, and instead should reflect the
+     * “average-user’s” price-per-share, meaning what the average user should expect to see when exchanging to and
+     * from.
+     */
+    function convertToAssets(uint256 shares) external view returns (uint256[] memory assets);
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
@@ -114,30 +152,16 @@ interface ISmartVault is IVault, IERC1155Upgradeable {
 
     /**
      * @notice Used to withdraw underlying asset.
-     * @param assets TODO
-     * @param tokens TODO
+     * @param shares TODO
      * @param receiver TODO
      * @param owner TODO
      * @param slippages TODO
      * @param owner TODO
      * @return returnedAssets  TODO
      */
-    function withdrawFast(
-        uint256[] calldata assets,
-        address[] calldata tokens,
-        address receiver,
-        uint256[][] calldata slippages,
-        address owner
-    ) external returns (uint256[] memory returnedAssets);
-
-    /**
-     * @notice Requests withdrawal of assets by burning vault shares.
-     * @dev Requirements:
-     * - caller must have enough shares
-     * @param vaultShares Amount of vault shares to burn.
-     * @return ID of the withdrawal NFT.
-     */
-    function requestWithdrawal(uint256 vaultShares) external returns (uint256);
+    function redeemFast(uint256 shares, address receiver, uint256[][] calldata slippages, address owner)
+        external
+        returns (uint256[] memory returnedAssets);
 
     /**
      * @notice Handles withdrawals when flushing vault.
@@ -166,4 +190,31 @@ interface ISmartVault is IVault, IERC1155Upgradeable {
     function claimWithdrawal(uint256 withdrawalNftId, address receiver)
         external
         returns (uint256[] memory, address[] memory);
+
+    /**
+     * @dev Burns exactly shares from owner and sends assets of underlying tokens to receiver.
+     *
+     * - MUST emit the Withdraw event.
+     * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the
+     *   redeem execution, and are accounted for during redeem.
+     * - MUST revert if all of shares cannot be redeemed (due to withdrawal limit being reached, slippage, the owner
+     *   not having enough shares, etc).
+     *
+     * NOTE: some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
+     * Those methods should be performed separately.
+     */
+    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 receipt);
+
+    /**
+     * @dev Mints shares Vault shares to receiver by depositing exactly amount of underlying tokens.
+     *
+     * - MUST emit the Deposit event.
+     * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the
+     *   deposit execution, and are accounted for during deposit.
+     * - MUST revert if all of assets cannot be deposited (due to deposit limit being reached, slippage, the user not
+     *   approving enough underlying tokens to the Vault contract, etc).
+     *
+     * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
+     */
+    function deposit(uint256[] calldata assets, address receiver) external returns (uint256 receipt);
 }

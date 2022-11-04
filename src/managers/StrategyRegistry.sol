@@ -5,11 +5,16 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/CommonErrors.sol";
+import "../interfaces/ISmartVaultManager.sol";
+import "../interfaces/IMasterWallet.sol";
+import "@openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
 
-contract StrategyRegistry is IStrategyRegistry {
+contract StrategyRegistry is IStrategyRegistry, AccessControlUpgradeable {
     /* ========== STATE VARIABLES ========== */
 
-    address internal _smartVaultManager;
+    bytes32 public constant CLAIMER_ROLE = keccak256("CLAIMER");
+
+    IMasterWallet immutable _masterWallet;
 
     /// @notice TODO
     mapping(address => bool) internal _strategies;
@@ -25,6 +30,14 @@ contract StrategyRegistry is IStrategyRegistry {
 
     /// @notice TODO strategy => index => tokenAmounts
     mapping(address => mapping(uint256 => uint256[])) _withdrawnAssets;
+
+    constructor(IMasterWallet masterWallet_) {
+        _masterWallet = masterWallet_;
+    }
+
+    function initialize() external initializer {
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    }
 
     /* ========== VIEW FUNCTIONS ========== */
 
@@ -51,10 +64,6 @@ contract StrategyRegistry is IStrategyRegistry {
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
-    function setSmartVaultManger(address smartVaultManager_) external {
-        _smartVaultManager = smartVaultManager_;
-    }
-
     /**
      * @notice TODO
      */
@@ -74,14 +83,17 @@ contract StrategyRegistry is IStrategyRegistry {
     /**
      * @notice TODO: just a quick mockup so we can test withdrawals
      */
-    function dhw(address[] memory strategies_) external {
+    function doHardWork(address[] memory strategies_) external {
         for (uint256 i = 0; i < strategies_.length; i++) {
-            uint256[] memory withdrawnAssets_ =
-                IStrategy(strategies_[i]).dhw(_withdrawnShares[strategies_[i]][_currentIndexes[strategies_[i]]]);
+            address strategy = strategies_[i];
+            uint256 dhwIndex = _currentIndexes[strategy];
+            uint256[] memory withdrawnAssets_ = IStrategy(strategy).redeem(
+                _withdrawnShares[strategy][dhwIndex], address(_masterWallet), address(_masterWallet)
+            );
 
-            _withdrawnAssets[strategies_[i]][_currentIndexes[strategies_[i]]] = withdrawnAssets_;
+            _withdrawnAssets[strategy][dhwIndex] = withdrawnAssets_;
             // TODO: transfer assets to smart vault manager
-            _currentIndexes[strategies_[i]]++;
+            _currentIndexes[strategy]++;
         }
     }
 
@@ -129,8 +141,8 @@ contract StrategyRegistry is IStrategyRegistry {
         address[] memory strategies_,
         uint256[] memory dhwIndexes,
         uint256[] memory strategyShares
-    ) external view onlySmartVaultManager returns (uint256[] memory) {
-        address[] memory tokens = IStrategy(strategies_[0]).asset();
+    ) external view onlyRole(CLAIMER_ROLE) returns (uint256[] memory) {
+        address[] memory tokens = IStrategy(strategies_[0]).assets();
         uint256[] memory totalWithdrawnAssets = new uint256[](tokens.length);
 
         for (uint256 i = 0; i < strategies_.length; i++) {
@@ -149,20 +161,5 @@ contract StrategyRegistry is IStrategyRegistry {
         }
 
         return totalWithdrawnAssets;
-    }
-
-    /* ========== INTERNAL FUNCTIONS ========== */
-
-    function _onlySmartVaultManager() internal view {
-        if (msg.sender != _smartVaultManager) {
-            revert NotSmartVaultManager(msg.sender);
-        }
-    }
-
-    /* ========== MODIFIERS ========== */
-
-    modifier onlySmartVaultManager() {
-        _onlySmartVaultManager();
-        _;
     }
 }

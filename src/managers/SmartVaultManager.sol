@@ -426,7 +426,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         validSmartVault(smartVault)
         returns (uint256)
     {
-        address[] memory tokens = ISmartVault(smartVault).asset();
+        address[] memory tokens = ISmartVault(smartVault).assets();
         if (tokens.length != amounts.length) revert InvalidAssetLengths();
 
         uint256 flushIdx = _flushIndexes[smartVault];
@@ -459,7 +459,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         validSmartVault(msg.sender)
         returns (uint256[] memory)
     {
-        uint256[] memory withdrawnAssets = new uint256[](ISmartVault(msg.sender).asset().length);
+        uint256[] memory withdrawnAssets = new uint256[](ISmartVault(msg.sender).assets().length);
 
         WithdrawalMetadata memory data = ISmartVault(msg.sender).getWithdrawalMetadata(withdrawalNftId);
 
@@ -478,7 +478,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
      */
     function getDepositRatio(address smartVault) external view validSmartVault(smartVault) returns (uint256[] memory) {
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
-        address[] memory tokens = ISmartVault(smartVault).asset();
+        address[] memory tokens = ISmartVault(smartVault).assets();
         DepositRatioQueryBag memory bag = DepositRatioQueryBag(
             smartVault,
             tokens,
@@ -510,7 +510,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
 
         if (deposits.length > 0) {
             // handle deposits
-            address[] memory tokens = ISmartVault(smartVault).asset();
+            address[] memory tokens = ISmartVault(smartVault).assets();
 
             DepositRatioQueryBag memory bag = DepositRatioQueryBag(
                 smartVault,

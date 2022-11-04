@@ -32,9 +32,11 @@ contract SmartVaultManagerTest is Test {
     MockToken token2;
 
     function setUp() public {
-        strategyRegistry = new StrategyRegistry();
-        riskManager = new RiskManager();
         masterWallet = new MasterWallet();
+        strategyRegistry = new StrategyRegistry(masterWallet);
+        strategyRegistry.initialize();
+
+        riskManager = new RiskManager();
         priceFeedManager = new MockPriceFeedManager();
         ISmartVaultDeposits depositManager = new SmartVaultDeposits(masterWallet);
         smartVaultManager = new SmartVaultManager(strategyRegistry, riskManager, depositManager, priceFeedManager);
@@ -169,9 +171,9 @@ contract SmartVaultManagerTest is Test {
     }
 
     function _createStrategies() private returns (address[] memory, address[] memory) {
-        MockStrategy strategy1 = new MockStrategy("A", strategyRegistry, masterWallet);
-        MockStrategy strategy2 = new MockStrategy("B", strategyRegistry, masterWallet);
-        MockStrategy strategy3 = new MockStrategy("C", strategyRegistry, masterWallet);
+        MockStrategy strategy1 = new MockStrategy("A", strategyRegistry);
+        MockStrategy strategy2 = new MockStrategy("B", strategyRegistry);
+        MockStrategy strategy3 = new MockStrategy("C", strategyRegistry);
 
         address[] memory assetGroup = new address[](2);
         assetGroup[0] = address(token1);
