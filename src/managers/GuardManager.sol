@@ -22,7 +22,11 @@ contract GuardManager is Ownable, IGuardManager {
      * @param smartVaultId Smart Vault address
      * @param context Request context
      */
-    function runGuards(address smartVaultId, RequestContext calldata context) external view hasGuards(smartVaultId) {
+    function runGuards(address smartVaultId, RequestContext calldata context) external view {
+        if (!guardsInitialized[smartVaultId]) {
+            return;
+        }
+
         GuardDefinition[] memory guards = _readGuards(smartVaultId);
 
         for (uint256 i = 0; i < guards.length; i++) {
@@ -71,25 +75,12 @@ contract GuardManager is Ownable, IGuardManager {
         _guardsNotInitialized(smartVaultId);
         _;
     }
-
-    /**
-     * @notice Reverts if smart vault doesn't have guards initialized
-     */
-    modifier hasGuards(address smartVaultId) {
-        _guardsInitialized(smartVaultId);
-        _;
-    }
-
     /* ========== PUBLIC FUNCTIONS ========== */
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _guardsNotInitialized(address smartVaultId) internal view {
         if (guardsInitialized[smartVaultId]) revert GuardsAlreadyInitialized();
-    }
-
-    function _guardsInitialized(address smartVaultId) internal view {
-        if (!guardsInitialized[smartVaultId]) revert GuardsNotInitialized();
     }
 
     function _readGuards(address smartVaultId) internal view returns (GuardDefinition[] memory guards) {

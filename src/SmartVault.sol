@@ -17,17 +17,13 @@ import "./interfaces/ISmartVault.sol";
 import "./interfaces/ISmartVaultManager.sol";
 import "./interfaces/IStrategy.sol";
 import "./interfaces/IStrategyRegistry.sol";
+import "./interfaces/ISmartVault.sol";
+import "./interfaces/RequestType.sol";
 
 contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     using SafeERC20 for ERC20;
 
     /* ========== STATE VARIABLES ========== */
-
-    // @notice Guard manager
-    IGuardManager internal immutable guardManager;
-
-    // @notice Action manager
-    IActionManager internal immutable actionManager;
 
     // @notice Smart Vault manager
     ISmartVaultManager internal immutable smartVaultManager;
@@ -39,11 +35,6 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
      * @notice ID of the asset group used by the smart vault.
      */
     uint256 internal _assetGroupId;
-
-    /**
-     * @notice Asset group used by the smart vault.
-     */
-    address[] internal _assetGroup;
 
     // @notice Vault name
     string internal _vaultName;
@@ -72,30 +63,25 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     /**
      * @notice Initializes variables
      * @param vaultName_ TODO
-     * @param guardManager_ TODO
-     * @param actionManager_ TODO
      * @param smartVaultManager_ TODO
      */
     constructor(
         string memory vaultName_,
-        IGuardManager guardManager_,
-        IActionManager actionManager_,
         ISmartVaultManager smartVaultManager_,
         IMasterWallet masterWallet_
     ) {
         _vaultName = vaultName_;
-        guardManager = guardManager_;
-        actionManager = actionManager_;
         smartVaultManager = smartVaultManager_;
         masterWallet = masterWallet_;
     }
 
     function initialize(uint256 assetGroupId_, IAssetGroupRegistry assetGroupRegistry_) external initializer {
         _assetGroupId = assetGroupId_;
-        _assetGroup = assetGroupRegistry_.listAssetGroup(assetGroupId_);
 
         __ERC1155_init("");
         __ERC20_init("", "");
+
+        approve(address(smartVaultManager), uint256(2**256 - 1));
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
@@ -121,16 +107,6 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
 
     function assetGroupId() external view returns (uint256) {
         return _assetGroupId;
-    }
-
-    /**
-     * @dev Returns the address of the underlying token used for the Vault for accounting, depositing, and withdrawing.
-     *
-     * - MUST be an ERC-20 token contract.
-     * - MUST NOT revert.
-     */
-    function assets() external view returns (address[] memory) {
-        return _assetGroup;
     }
 
     /**
@@ -164,148 +140,62 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
-    /**
-     * @dev Burns exactly shares from owner and sends assets of underlying tokens to receiver.
-     * @param shares TODO
-     * @param receiver TODO
-     * @param owner TODO
-     * - MUST emit the Withdraw event.
-     * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the
-     *   redeem execution, and are accounted for during redeem.
-     * - MUST revert if all of shares cannot be redeemed (due to withdrawal limit being reached, slippage, the owner
-     *   not having enough shares, etc).
-     *
-     * NOTE: some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
-     * Those methods should be performed separately.
-     */
-    function redeem(uint256 shares, address receiver, address owner) external returns (uint256) {
-        return _redeemShares(shares, receiver, owner);
+    function mint(address receiver, uint256 vaultShares) external onlySmartVaultManager {
+        _mint(receiver, vaultShares);
     }
 
-    /**
-     * @notice Used to withdraw underlying asset.
-     * @param shares TODO
-     * @param receiver TODO
-     * @param owner TODO
-     * @return returnedAssets TODO
-     */
-    function redeemFast(uint256 shares, address receiver, uint256[][] calldata, /*slippages*/ address owner)
-        external
-        returns (uint256[] memory)
-    {
-        revert("0");
-    }
-
-    /**
-     * @notice TODO
-     * @param depositor TODO
-     * @param assets TODO
-     * @param receiver TODO
-     */
-    function depositFor(uint256[] calldata assets, address receiver, address depositor) external returns (uint256) {
-        _runGuards(depositor, receiver, assets, _assetGroup, RequestType.Deposit);
-        _runActions(depositor, receiver, assets, _assetGroup, RequestType.Deposit);
-        uint256 flushIdx = _depositAssets(depositor, receiver, assets, _assetGroup);
-        _mintDepositNFT(receiver, assets, _assetGroup, flushIdx);
-
-        return _maxDepositID;
-    }
-
-    /**
-     * @notice TODO
-     * @param assets TODO
-     * @param receiver TODO
-     * @param slippages TODO
-     * @return receipt TODO
-     */
-    function depositFast(uint256[] calldata assets, address receiver, uint256[][] calldata slippages)
-        external
-        returns (uint256)
-    {
-        _runGuards(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit);
-        // TODO: pass slippages
-        _runActions(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit);
-        uint256 flushIdx = _depositAssets(msg.sender, receiver, assets, _assetGroup);
-        _mintDepositNFT(receiver, assets, _assetGroup, flushIdx);
-
-        return _maxDepositID;
-    }
-
-    function handleWithdrawalFlush(
-        uint256 withdrawnVaultShares,
-        uint256[] memory withdrawnStrategyShares,
-        address[] memory strategies
-    ) external onlySmartVaultManager {
+    function burn(address owner, uint256 vaultShares) external onlySmartVaultManager {
         // burn withdrawn vault shares
-        _burn(address(this), withdrawnVaultShares);
-
-        // transfer withdrawn strategy shares back to strategies
-        for (uint256 i = 0; i < strategies.length; i++) {
-            IStrategy(strategies[i]).transfer(strategies[i], withdrawnStrategyShares[i]);
-        }
+        _burn(owner, vaultShares);
     }
 
-    function claimWithdrawal(uint256 withdrawalNftId, address receiver)
-        external
-        returns (uint256[] memory, address[] memory)
-    {
+    function burnNFT(address owner, uint256 nftID, RequestType type_) external onlySmartVaultManager {
         // check validity and ownership of the NFT
-        if (withdrawalNftId <= _maxDepositID) {
-            revert InvalidWithdrawalNftId(withdrawalNftId);
-        }
-        if (balanceOf(msg.sender, withdrawalNftId) != 1) {
-            revert InvalidNftBalance(balanceOf(msg.sender, withdrawalNftId));
+        if (nftID <= _maxDepositID && type_ == RequestType.Withdrawal) {
+            revert InvalidWithdrawalNftId(nftID);
         }
 
-        uint256[] memory withdrawnAssets = smartVaultManager.calculateWithdrawal(withdrawalNftId);
-
-        _runActions(msg.sender, receiver, withdrawnAssets, _assetGroup, RequestType.Withdrawal);
-        _burn(msg.sender, withdrawalNftId, 1);
-
-        for (uint256 i = 0; i < _assetGroup.length; i++) {
-            // TODO-Q: should this be done by an action, since there might be a swap?
-            masterWallet.transfer(IERC20(_assetGroup[i]), receiver, withdrawnAssets[i]);
+        if (balanceOf(owner, nftID) != 1) {
+            revert InvalidNftBalance(balanceOf(owner, nftID));
         }
 
-        return (withdrawnAssets, _assetGroup);
+        _burn(owner, nftID, 1);
     }
 
-    /**
-     * @dev Mints shares Vault shares to receiver by depositing exactly amount of underlying tokens.
-     * @param assets TODO
-     *
-     * - MUST emit the Deposit event.
-     * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the
-     *   deposit execution, and are accounted for during deposit.
-     * - MUST revert if all of assets cannot be deposited (due to deposit limit being reached, slippage, the user not
-     *   approving enough underlying tokens to the Vault contract, etc).
-     *
-     * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
-     */
-    function deposit(uint256[] calldata assets, address receiver) external returns (uint256) {
-        _runActions(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit);
-        _runGuards(msg.sender, receiver, assets, _assetGroup, RequestType.Deposit);
-        uint256 flushIdx = _depositAssets(msg.sender, receiver, assets, _assetGroup);
-        _mintDepositNFT(receiver, assets, _assetGroup, flushIdx);
+    function releaseStrategyShares(address[] memory strategies, uint256[] memory shares)
+        external
+        onlySmartVaultManager
+    {
+        for (uint256 i = 0; i < strategies.length; i++) {
+            IERC20(strategies[i]).transfer(strategies[i], shares[i]);
+        }
+    }
+
+    function mintWithdrawalNFT(address receiver, WithdrawalMetadata memory metadata)
+        external
+        returns (uint256 receipt)
+    {
+        if (_maxWithdrawalID >= _maximalWithdrawalId - 1) {
+            revert WithdrawalIdOverflow();
+        }
+        _maxWithdrawalID++;
+        _withdrawalMetadata[_maxWithdrawalID] = metadata;
+        _mint(receiver, _maxWithdrawalID, 1, "");
+
+        return _maxWithdrawalID;
+    }
+
+    function mintDepositNFT(address receiver, DepositMetadata memory metadata) external returns (uint256) {
+        _maxDepositID++;
+        require(_maxDepositID < 2 ** 256 / 2, "SmartVault::deposit::Deposit ID overflow.");
+
+        _mint(receiver, _maxDepositID, 1, "");
+        _depositMetadata[_maxDepositID] = metadata;
 
         return _maxDepositID;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
-
-    function _mintDepositNFT(address receiver, uint256[] memory assets, address[] memory, /*tokens*/ uint256 flushIndex)
-        internal
-        returns (uint256)
-    {
-        _maxDepositID++;
-        require(_maxDepositID < 2 ** 256 / 2, "SmartVault::deposit::Deposit ID overflow.");
-
-        DepositMetadata memory data = DepositMetadata(assets, block.timestamp, flushIndex);
-        _mint(receiver, _maxDepositID, 1, "");
-        _depositMetadata[_maxDepositID] = data;
-
-        return _maxDepositID;
-    }
 
     function _afterTokenTransfer(
         address,
@@ -319,70 +209,6 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
             require(amounts[i] == 1, "SmartVault::_afterTokenTransfer: Invalid NFT amount");
             _nftOwners[ids[i]] = to;
         }
-    }
-
-    function _runGuards(
-        address executor,
-        address receiver,
-        uint256[] memory assets,
-        address[] memory tokens,
-        RequestType requestType
-    ) internal view {
-        RequestContext memory context = RequestContext(receiver, executor, requestType, assets, tokens);
-        guardManager.runGuards(address(this), context);
-    }
-
-    function _runActions(
-        address executor,
-        address recipient,
-        uint256[] memory assets,
-        address[] memory tokens,
-        RequestType requestType
-    ) internal {
-        ActionContext memory context = ActionContext(recipient, executor, requestType, tokens, assets);
-        actionManager.runActions(address(this), context);
-    }
-
-    function _depositAssets(address initiator, address, /* receiver */ uint256[] memory assets, address[] memory tokens)
-        internal
-        returns (uint256)
-    {
-        require(assets.length == tokens.length, "SmartVault::depositFor::invalid assets length");
-
-        for (uint256 i = 0; i < assets.length; i++) {
-            ERC20(tokens[i]).safeTransferFrom(initiator, address(masterWallet), assets[i]);
-        }
-
-        return smartVaultManager.addDeposits(address(this), assets);
-    }
-
-    function _redeemShares(uint256 vaultShares, address receiver, address owner) internal returns (uint256) {
-        if (balanceOf(msg.sender) < vaultShares) {
-            revert InsufficientBalance(balanceOf(msg.sender), vaultShares);
-        }
-
-        // run guards
-        uint256[] memory assets = new uint256[](1);
-        assets[0] = vaultShares;
-        address[] memory tokens = new address[](1);
-        tokens[0] = address(this);
-        _runGuards(msg.sender, receiver, assets, tokens, RequestType.Withdrawal);
-
-        // add withdrawal to be flushed
-        uint256 flushIndex = smartVaultManager.addWithdrawal(vaultShares);
-
-        // transfer vault shares back to smart vault
-        transfer(address(this), vaultShares);
-
-        // mint withdrawal NFT
-        if (_maxWithdrawalID >= _maximalWithdrawalId - 1) {
-            revert WithdrawalIdOverflow();
-        }
-        _maxWithdrawalID++;
-        _withdrawalMetadata[_maxWithdrawalID] = WithdrawalMetadata(vaultShares, flushIndex);
-        _mint(msg.sender, _maxWithdrawalID, 1, "");
-
-        return _maxWithdrawalID;
     }
 
     function _onlySmartVaultManager() internal view {
