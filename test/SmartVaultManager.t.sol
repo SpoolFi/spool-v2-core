@@ -3,36 +3,38 @@ pragma solidity ^0.8.13;
 
 import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
-import "../src/managers/SmartVaultManager.sol";
-import "../src/interfaces/IRiskManager.sol";
-import "../src/managers/RiskManager.sol";
-import "../src/managers/StrategyRegistry.sol";
-import "../src/SmartVault.sol";
-import "./mocks/MockToken.sol";
-import "../src/managers/GuardManager.sol";
-import "../src/managers/ActionManager.sol";
-import "../src/interfaces/IGuardManager.sol";
 import "../src/interfaces/RequestType.sol";
+import "../src/managers/ActionManager.sol";
+import "../src/managers/AssetGroupRegistry.sol";
+import "../src/managers/GuardManager.sol";
+import "../src/managers/RiskManager.sol";
+import "../src/managers/SmartVaultManager.sol";
+import "../src/managers/StrategyRegistry.sol";
 import "../src/managers/UsdPriceFeedManager.sol";
-import "./mocks/MockStrategy.sol";
-import "./mocks/MockPriceFeedManager.sol";
-import "../src/interfaces/ISmartVaultManager.sol";
-import "./mocks/MockSwapper.sol";
 import "../src/MasterWallet.sol";
+import "../src/SmartVault.sol";
+import "./mocks/MockPriceFeedManager.sol";
+import "./mocks/MockStrategy.sol";
+import "./mocks/MockSwapper.sol";
+import "./mocks/MockToken.sol";
 
 contract SmartVaultManagerTest is Test {
     ISmartVaultManager smartVaultManager;
     IStrategyRegistry strategyRegistry;
     IRiskManager riskManager;
     MockPriceFeedManager priceFeedManager;
+    IAssetGroupRegistry assetGroupRegistry;
+
     address riskProvider = address(10);
     address smartVault = address(100);
+
     IMasterWallet masterWallet;
     MockToken token1;
     MockToken token2;
 
     function setUp() public {
         masterWallet = new MasterWallet();
+        assetGroupRegistry = new AssetGroupRegistry();
         strategyRegistry = new StrategyRegistry(masterWallet);
         strategyRegistry.initialize();
 
@@ -102,8 +104,8 @@ contract SmartVaultManagerTest is Test {
     }
 
     function test_getDepositRatio() public {
-        (address[] memory strategies, address[] memory assetGroup) = _createStrategies();
-        ISmartVault smartVault_ = _createVault(strategies, assetGroup);
+        (address[] memory strategies, uint256 assetGroupId) = _createStrategies();
+        ISmartVault smartVault_ = _createVault(strategies, assetGroupId);
         _initializePriceFeeds();
 
         uint256[] memory ratio = smartVaultManager.getDepositRatio(address(smartVault_));
@@ -113,8 +115,8 @@ contract SmartVaultManagerTest is Test {
     }
 
     function test_addDepositsAndFlush() public {
-        (address[] memory strategies, address[] memory assetGroup) = _createStrategies();
-        ISmartVault smartVault_ = _createVault(strategies, assetGroup);
+        (address[] memory strategies, uint256 assetGroupId) = _createStrategies();
+        ISmartVault smartVault_ = _createVault(strategies, assetGroupId);
         _initializePriceFeeds();
 
         address user = address(123);
@@ -170,7 +172,7 @@ contract SmartVaultManagerTest is Test {
         assertEq(deposits1[1] + deposits2[1] + deposits3[1], deposits[1]);
     }
 
-    function _createStrategies() private returns (address[] memory, address[] memory) {
+    function _createStrategies() private returns (address[] memory, uint256) {
         MockStrategy strategy1 = new MockStrategy("A", strategyRegistry);
         MockStrategy strategy2 = new MockStrategy("B", strategyRegistry);
         MockStrategy strategy3 = new MockStrategy("C", strategyRegistry);
@@ -178,18 +180,19 @@ contract SmartVaultManagerTest is Test {
         address[] memory assetGroup = new address[](2);
         assetGroup[0] = address(token1);
         assetGroup[1] = address(token2);
+        uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
         uint256[] memory ratios = new uint256[](2);
         ratios[0] = 1000;
 
         ratios[1] = 68;
-        strategy1.initialize(assetGroup, ratios);
+        strategy1.initialize(assetGroupId, assetGroupRegistry, ratios);
 
         ratios[1] = 67;
-        strategy2.initialize(assetGroup, ratios);
+        strategy2.initialize(assetGroupId, assetGroupRegistry, ratios);
 
         ratios[1] = 69;
-        strategy3.initialize(assetGroup, ratios);
+        strategy3.initialize(assetGroupId, assetGroupRegistry, ratios);
 
         address[] memory strategies = new address[](3);
         strategies[0] = address(strategy1);
@@ -200,22 +203,21 @@ contract SmartVaultManagerTest is Test {
         strategyRegistry.registerStrategy(address(strategy2));
         strategyRegistry.registerStrategy(address(strategy3));
 
-        return (strategies, assetGroup);
+        return (strategies, assetGroupId);
     }
 
-    function _createVault(address[] memory strategies, address[] memory assetGroup) private returns (ISmartVault) {
+    function _createVault(address[] memory strategies, uint256 assetGroupId) private returns (ISmartVault) {
         IGuardManager guardManager = new GuardManager();
         IActionManager actionManager = new ActionManager();
         SmartVault smartVault_ = new SmartVault(
             "TestVault",
             guardManager,
             actionManager,
-            strategyRegistry,
             smartVaultManager,
             masterWallet
         );
 
-        smartVault_.initialize(assetGroup);
+        smartVault_.initialize(assetGroupId, assetGroupRegistry);
 
         guardManager.setGuards(address(smartVault_), new GuardDefinition[](0));
         actionManager.setActions(address(smartVault_), new IAction[](0), new RequestType[](0));

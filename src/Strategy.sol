@@ -4,9 +4,10 @@ pragma solidity ^0.8.16;
 import "@openzeppelin/access/Ownable.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "./interfaces/IAssetGroupRegistry.sol";
+import "./interfaces/IMasterWallet.sol";
 import "./interfaces/IStrategy.sol";
 import "./interfaces/IStrategyRegistry.sol";
-import "./interfaces/IMasterWallet.sol";
 
 abstract contract Strategy is ERC20Upgradeable, IStrategy {
     /* ========== STATE VARIABLES ========== */
@@ -16,7 +17,14 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
     // @notice Name of the strategy
     string private _strategyName;
 
-    // @notice Asset group addresses
+    /**
+     * @notice ID of the asset group used by the strategy.
+     */
+    uint256 internal _assetGroupId;
+
+    /**
+     * @notice Asset group used by the strategy.
+     */
     address[] internal _assetGroup;
 
     // @notice Total value (in USD) of assets managed by the strategy.
@@ -28,12 +36,18 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
         _strategyRegistry = strategyRegistry_;
     }
 
-    function initialize(address[] memory assetGroup_) public virtual initializer {
+    function initialize(uint256 assetGroupId_, IAssetGroupRegistry assetGroupRegistry_) public virtual initializer {
+        _assetGroupId = assetGroupId_;
+        _assetGroup = assetGroupRegistry_.listAssetGroup(assetGroupId_);
+
         __ERC20_init("Strategy Share Token", "SST");
-        _assetGroup = assetGroup_;
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
+
+    function assetGroupId() external view returns (uint256) {
+        return _assetGroupId;
+    }
 
     function assets() external view returns (address[] memory assetTokenAddresses) {
         return _assetGroup;
@@ -51,12 +65,10 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
-    function redeemFast(
-        uint256 shares,
-        address receiver,
-        uint256[][] calldata slippages,
-        SwapData[] calldata swapData
-    ) external returns (uint256[] memory returnedAssets) {
+    function redeemFast(uint256 shares, address receiver, uint256[][] calldata slippages, SwapData[] calldata swapData)
+        external
+        returns (uint256[] memory returnedAssets)
+    {
         revert("0");
     }
 

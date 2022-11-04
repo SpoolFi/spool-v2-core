@@ -10,8 +10,12 @@ contract MockStrategy is Strategy {
 
     constructor(string memory name_, IStrategyRegistry strategyRegistry_) Strategy(name_, strategyRegistry_) {}
 
-    function initialize(address[] memory assetGroup_, uint256[] memory ratios_) public virtual {
-        super.initialize(assetGroup_);
+    function initialize(uint256 assetGroupId_, IAssetGroupRegistry assetGroupRegistry_, uint256[] memory ratios_)
+        public
+        virtual
+    {
+        super.initialize(assetGroupId_, assetGroupRegistry_);
+
         ratios = ratios_;
     }
 

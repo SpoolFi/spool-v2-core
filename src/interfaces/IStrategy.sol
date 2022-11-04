@@ -42,6 +42,12 @@ interface IStrategy is IERC20Upgradeable {
     function assetRatio() external view returns (uint256[] memory);
 
     /**
+     * @notice Gets asset group used by the strategy.
+     * @return ID of the asset group.
+     */
+    function assetGroupId() external view returns (uint256);
+
+    /**
      * @dev Returns the address of the underlying token used for the Vault for accounting, depositing, and withdrawing.
      *
      * - MUST be an ERC-20 token contract.
@@ -73,7 +79,6 @@ interface IStrategy is IERC20Upgradeable {
      */
     function convertToAssets(uint256 shares) external view returns (uint256[] memory assets);
 
-
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
@@ -84,12 +89,9 @@ interface IStrategy is IERC20Upgradeable {
      * @param swapData TODO
      * @return returnedAssets Withdrawn amount withdrawn
      */
-    function redeemFast(
-        uint256 shares,
-        address receiver,
-        uint256[][] calldata slippages,
-        SwapData[] calldata swapData
-    ) external returns (uint256[] memory returnedAssets);
+    function redeemFast(uint256 shares, address receiver, uint256[][] calldata slippages, SwapData[] calldata swapData)
+        external
+        returns (uint256[] memory returnedAssets);
 
     /**
      * @notice TODO

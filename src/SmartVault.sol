@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
-import "forge-std/console.sol";
 import "@openzeppelin/access/Ownable.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "./interfaces/ISmartVault.sol";
-import "./interfaces/IGuardManager.sol";
-import "./interfaces/IRiskManager.sol";
-import "./interfaces/IStrategyRegistry.sol";
+import "@openzeppelin-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import "./interfaces/CommonErrors.sol";
 import "./interfaces/IAction.sol";
+import "./interfaces/IAssetGroupRegistry.sol";
+import "./interfaces/IGuardManager.sol";
+import "./interfaces/IMasterWallet.sol";
+import "./interfaces/IRiskManager.sol";
+import "./interfaces/ISmartVault.sol";
 import "./interfaces/ISmartVaultManager.sol";
 import "./interfaces/IStrategy.sol";
-import "./interfaces/CommonErrors.sol";
-import "./interfaces/IMasterWallet.sol";
+import "./interfaces/IStrategyRegistry.sol";
 
 contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     using SafeERC20 for ERC20;
@@ -29,17 +29,20 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
     // @notice Action manager
     IActionManager internal immutable actionManager;
 
-    // @notice Strategy manager
-    IStrategyRegistry internal immutable strategyRegistry;
-
     // @notice Smart Vault manager
     ISmartVaultManager internal immutable smartVaultManager;
 
     // @notice Master Wallet
     IMasterWallet immutable masterWallet;
 
-    // @notice Asset group address array
-    // TODO: Q: shouldn't this be an ID of asset group, with actual assets stored somewhere else?
+    /**
+     * @notice ID of the asset group used by the smart vault.
+     */
+    uint256 internal _assetGroupId;
+
+    /**
+     * @notice Asset group used by the smart vault.
+     */
     address[] internal _assetGroup;
 
     // @notice Vault name
@@ -71,27 +74,26 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
      * @param vaultName_ TODO
      * @param guardManager_ TODO
      * @param actionManager_ TODO
-     * @param strategyRegistry_ TODO
      * @param smartVaultManager_ TODO
      */
     constructor(
         string memory vaultName_,
         IGuardManager guardManager_,
         IActionManager actionManager_,
-        IStrategyRegistry strategyRegistry_,
         ISmartVaultManager smartVaultManager_,
         IMasterWallet masterWallet_
     ) {
         _vaultName = vaultName_;
         guardManager = guardManager_;
         actionManager = actionManager_;
-        strategyRegistry = strategyRegistry_;
         smartVaultManager = smartVaultManager_;
         masterWallet = masterWallet_;
     }
 
-    function initialize(address[] memory assets_) external initializer {
-        _assetGroup = assets_;
+    function initialize(uint256 assetGroupId_, IAssetGroupRegistry assetGroupRegistry_) external initializer {
+        _assetGroupId = assetGroupId_;
+        _assetGroup = assetGroupRegistry_.listAssetGroup(assetGroupId_);
+
         __ERC1155_init("");
         __ERC20_init("", "");
     }
@@ -115,6 +117,10 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
 
     function getWithdrawalMetadata(uint256 withdrawalNftId) external view returns (WithdrawalMetadata memory) {
         return _withdrawalMetadata[withdrawalNftId];
+    }
+
+    function assetGroupId() external view returns (uint256) {
+        return _assetGroupId;
     }
 
     /**

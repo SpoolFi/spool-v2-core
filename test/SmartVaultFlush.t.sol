@@ -2,23 +2,20 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "../src/managers/SmartVaultManager.sol";
-import "../src/interfaces/IRiskManager.sol";
-import "../src/managers/RiskManager.sol";
-import "../src/managers/StrategyRegistry.sol";
-import "../src/SmartVault.sol";
-import "./mocks/MockToken.sol";
-import "../src/managers/GuardManager.sol";
-import "../src/managers/ActionManager.sol";
-import "../src/interfaces/IGuardManager.sol";
 import "../src/interfaces/RequestType.sol";
+import "../src/managers/ActionManager.sol";
+import "../src/managers/AssetGroupRegistry.sol";
+import "../src/managers/GuardManager.sol";
+import "../src/managers/RiskManager.sol";
+import "../src/managers/SmartVaultManager.sol";
+import "../src/managers/StrategyRegistry.sol";
 import "../src/managers/UsdPriceFeedManager.sol";
-import "./mocks/MockStrategy.sol";
-import "./mocks/MockPriceFeedManager.sol";
-import "../src/interfaces/ISmartVaultManager.sol";
-import "./mocks/MockSwapper.sol";
-import "../src/interfaces/ISmartVaultManager.sol";
 import "../src/MasterWallet.sol";
+import "../src/SmartVault.sol";
+import "./mocks/MockPriceFeedManager.sol";
+import "./mocks/MockStrategy.sol";
+import "./mocks/MockSwapper.sol";
+import "./mocks/MockToken.sol";
 
 contract SmartVaultFlushTest is Test {
     IStrategyRegistry strategyRegistry;
@@ -205,22 +202,24 @@ contract SmartVaultFlushTest is Test {
         address[] memory assetGroup = new address[](2);
         assetGroup[0] = address(token1);
         assetGroup[1] = address(token2);
+        IAssetGroupRegistry assetGroupRegistry = new AssetGroupRegistry();
+        uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
         uint256[][] memory ratios = new uint256[][](3);
         ratios[0] = new uint256[](2);
         ratios[0][0] = 1000;
         ratios[0][1] = 68;
-        strategy1.initialize(assetGroup, ratios[0]);
+        strategy1.initialize(assetGroupId, assetGroupRegistry, ratios[0]);
 
         ratios[1] = new uint256[](2);
         ratios[1][0] = 1000;
         ratios[1][1] = 67;
-        strategy2.initialize(assetGroup, ratios[1]);
+        strategy2.initialize(assetGroupId, assetGroupRegistry, ratios[1]);
 
         ratios[2] = new uint256[](2);
         ratios[2][0] = 1000;
         ratios[2][1] = 69;
-        strategy3.initialize(assetGroup, ratios[2]);
+        strategy3.initialize(assetGroupId, assetGroupRegistry, ratios[2]);
 
         address[] memory strategies = new address[](3);
         strategies[0] = address(strategy1);

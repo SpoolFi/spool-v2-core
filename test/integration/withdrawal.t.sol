@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.16;
+
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
-import "../../src/SmartVault.sol";
-import "../../src/managers/GuardManager.sol";
 import "../../src/managers/ActionManager.sol";
-import "../../src/managers/StrategyRegistry.sol";
-import "../../src/managers/SmartVaultManager.sol";
+import "../../src/managers/AssetGroupRegistry.sol";
+import "../../src/managers/GuardManager.sol";
 import "../../src/managers/RiskManager.sol";
+import "../../src/managers/SmartVaultManager.sol";
+import "../../src/managers/StrategyRegistry.sol";
 import "../../src/managers/UsdPriceFeedManager.sol";
+import "../../src/MasterWallet.sol";
+import "../../src/SmartVault.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
-import "../../src/MasterWallet.sol";
 
 contract WithdrawalIntegrationTest is Test {
     address private alice = address(0xa);
@@ -27,6 +30,7 @@ contract WithdrawalIntegrationTest is Test {
     SmartVaultManager private smartVaultManager;
     StrategyRegistry private strategyRegistry;
     MasterWallet private masterWallet;
+    AssetGroupRegistry private assetGroupRegistry;
 
     function setUp() public {
         tokenA = new MockToken("Token A", "TA");
@@ -37,6 +41,8 @@ contract WithdrawalIntegrationTest is Test {
         address[] memory assetGroup = new address[](2);
         assetGroup[0] = address(tokenA);
         assetGroup[1] = address(tokenB);
+        assetGroupRegistry = new AssetGroupRegistry();
+        uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
         GuardDefinition[] memory emptyGuards = new GuardDefinition[](0);
         IAction[] memory emptyActions = new IAction[](0);
@@ -63,25 +69,24 @@ contract WithdrawalIntegrationTest is Test {
         uint256[] memory strategyARatios = new uint256[](2);
         strategyARatios[0] = 1_000;
         strategyARatios[1] = 68;
-        strategyA.initialize(assetGroup, strategyARatios);
+        strategyA.initialize(assetGroupId, assetGroupRegistry, strategyARatios);
         strategyRegistry.registerStrategy(address(strategyA));
 
         strategyB = new MockStrategy("StratB", strategyRegistry);
         uint256[] memory strategyBRatios = new uint256[](2);
         strategyBRatios[0] = 1_000;
         strategyBRatios[1] = 67;
-        strategyB.initialize(assetGroup, strategyBRatios);
+        strategyB.initialize(assetGroupId, assetGroupRegistry, strategyBRatios);
         strategyRegistry.registerStrategy(address(strategyB));
 
         mySmartVault = new SmartVault(
             "MySmartVault",
             guardManager,
             actionManager,
-            strategyRegistry,
             smartVaultManager,
             masterWallet
         );
-        mySmartVault.initialize(assetGroup);
+        mySmartVault.initialize(assetGroupId, assetGroupRegistry);
         smartVaultManager.registerSmartVault(address(mySmartVault));
         guardManager.setGuards(address(mySmartVault), emptyGuards);
         actionManager.setActions(address(mySmartVault), emptyActions, emptyActionsRequestTypes);

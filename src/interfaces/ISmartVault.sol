@@ -53,7 +53,6 @@ struct WithdrawalMetadata {
 /* ========== INTERFACES ========== */
 
 interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
-
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
 
     event Withdraw(
@@ -79,6 +78,12 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
      * @return Metadata of the withdrawal NFT.
      */
     function getWithdrawalMetadata(uint256 withdrawalNftId) external view returns (WithdrawalMetadata memory);
+
+    /**
+     * @notice Gets asset group used by the smart vault.
+     * @return ID of the asset group.
+     */
+    function assetGroupId() external view returns (uint256);
 
     /**
      * @dev Returns the address of the underlying token used for the Vault for accounting, depositing, and withdrawing.
