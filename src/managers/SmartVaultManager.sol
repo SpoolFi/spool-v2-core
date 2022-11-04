@@ -454,7 +454,11 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
      * NOTE: some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
      * Those methods should be performed separately.
      */
-    function redeem(address smartVault, uint256 shares, address receiver, address owner) external validSmartVault(smartVault) returns (uint256) {
+    function redeem(address smartVault, uint256 shares, address receiver, address owner)
+        external
+        validSmartVault(smartVault)
+        returns (uint256)
+    {
         return _redeemShares(smartVault, shares, receiver, owner);
     }
 
@@ -532,7 +536,11 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
-    function deposit(address smartVault, uint256[] calldata assets, address receiver) external validSmartVault(smartVault) returns (uint256) {
+    function deposit(address smartVault, uint256[] calldata assets, address receiver)
+        external
+        validSmartVault(smartVault)
+        returns (uint256)
+    {
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVault]);
         _runActions(msg.sender, receiver, assets, assetGroup, RequestType.Deposit);
         _runGuards(msg.sender, receiver, assets, assetGroup, RequestType.Deposit);
@@ -544,7 +552,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
 
     function claimWithdrawal(address smartVaultAddress, uint256 withdrawalNftId, address receiver)
         external
-    validSmartVault(smartVaultAddress)
+        validSmartVault(smartVaultAddress)
         returns (uint256[] memory, uint256)
     {
         ISmartVault smartVault = ISmartVault(smartVaultAddress);
@@ -679,10 +687,13 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
-    function _depositAssets(address smartVault, address owner, address, /* receiver */ uint256[] memory assets, address[] memory tokens)
-        internal
-        returns (uint256)
-    {
+    function _depositAssets(
+        address smartVault,
+        address owner,
+        address, /* receiver */
+        uint256[] memory assets,
+        address[] memory tokens
+    ) internal returns (uint256) {
         require(assets.length == tokens.length, "SmartVault::depositFor::invalid assets length");
 
         for (uint256 i = 0; i < assets.length; i++) {

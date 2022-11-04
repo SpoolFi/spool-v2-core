@@ -45,9 +45,7 @@ contract ActionManager is IActionManager {
      * @param smartVault TODO
      * @param actionCtx TODO
      */
-    function runActions(address smartVault, ActionContext calldata actionCtx)
-        external
-    {
+    function runActions(address smartVault, ActionContext calldata actionCtx) external {
         if (!actionsInitialized[smartVault]) {
             return;
         }

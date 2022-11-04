@@ -65,11 +65,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
      * @param vaultName_ TODO
      * @param smartVaultManager_ TODO
      */
-    constructor(
-        string memory vaultName_,
-        ISmartVaultManager smartVaultManager_,
-        IMasterWallet masterWallet_
-    ) {
+    constructor(string memory vaultName_, ISmartVaultManager smartVaultManager_, IMasterWallet masterWallet_) {
         _vaultName = vaultName_;
         smartVaultManager = smartVaultManager_;
         masterWallet = masterWallet_;
@@ -81,7 +77,7 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         __ERC1155_init("");
         __ERC20_init("", "");
 
-        approve(address(smartVaultManager), uint256(2**256 - 1));
+        approve(address(smartVaultManager), uint256(2 ** 256 - 1));
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
