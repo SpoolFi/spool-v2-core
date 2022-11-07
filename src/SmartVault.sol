@@ -12,7 +12,7 @@ import "./interfaces/ISmartVaultManager.sol";
 import "./interfaces/ISmartVault.sol";
 import "./interfaces/RequestType.sol";
 
-contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
+contract SmartVault is AccessControlUpgradeable, ERC20Upgradeable, ERC1155Upgradeable, ISmartVault {
     using SafeERC20 for ERC20;
 
     /* ========== STATE VARIABLES ========== */
@@ -65,10 +65,25 @@ contract SmartVault is ERC1155Upgradeable, ERC20Upgradeable, ISmartVault {
         __ERC1155_init("");
         __ERC20_init("", "");
 
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+
         approve(address(smartVaultManager), uint256(2 ** 256 - 1));
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override (AccessControlUpgradeable, ERC1155Upgradeable, IERC165Upgradeable)
+        returns (bool)
+    {
+        return interfaceId == type(IAccessControlUpgradeable).interfaceId
+            || interfaceId == type(IERC1155Upgradeable).interfaceId
+            || interfaceId == type(IERC1155MetadataURIUpgradeable).interfaceId
+            || interfaceId == type(IERC165Upgradeable).interfaceId;
+    }
 
     /**
      * @return name Name of the vault

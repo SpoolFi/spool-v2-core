@@ -545,7 +545,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         uint256[] memory withdrawnAssets =
             _calculateWithdrawal(smartVaultAddress, withdrawalNftId, data, assetGroup.length);
 
-        _runActions(msg.sender, receiver, withdrawnAssets, assetGroup, RequestType.Withdrawal);
+        _runActions(smartVaultAddress, msg.sender, receiver, withdrawnAssets, assetGroup, RequestType.Withdrawal);
 
         for (uint256 i = 0; i < assetGroup.length; i++) {
             // TODO-Q: should this be done by an action, since there might be a swap?
@@ -673,8 +673,8 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         returns (uint256)
     {
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVault]);
-        _runGuards(owner, receiver, assets, tokens, RequestType.Deposit);
-        _runActions(owner, receiver, assets, tokens, RequestType.Deposit);
+        _runGuards(smartVault, owner, receiver, assets, tokens, RequestType.Deposit);
+        _runActions(smartVault, owner, receiver, assets, tokens, RequestType.Deposit);
 
         for (uint256 i = 0; i < assets.length; i++) {
             ERC20(tokens[i]).safeTransferFrom(owner, address(_masterWallet), assets[i]);
@@ -706,7 +706,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         assets[0] = vaultShares;
         address[] memory tokens = new address[](1);
         tokens[0] = smartVaultAddress;
-        _runGuards(msg.sender, receiver, assets, tokens, RequestType.Withdrawal);
+        _runGuards(smartVaultAddress, msg.sender, receiver, assets, tokens, RequestType.Withdrawal);
 
         // add withdrawal to be flushed
         uint256 flushIndex = _flushIndexes[smartVaultAddress];
@@ -770,6 +770,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     }
 
     function _runGuards(
+        address smartVault,
         address executor,
         address receiver,
         uint256[] memory assets,
@@ -777,10 +778,11 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         RequestType requestType
     ) internal view {
         RequestContext memory context = RequestContext(receiver, executor, requestType, assets, assetGroup);
-        _guardManager.runGuards(address(this), context);
+        _guardManager.runGuards(smartVault, context);
     }
 
     function _runActions(
+        address smartVault,
         address executor,
         address recipient,
         uint256[] memory assets,
@@ -788,7 +790,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         RequestType requestType
     ) internal {
         ActionContext memory context = ActionContext(recipient, executor, requestType, assetGroup, assets);
-        _actionManager.runActions(address(this), context);
+        _actionManager.runActions(smartVault, context);
     }
 
     /* ========== MODIFIERS ========== */

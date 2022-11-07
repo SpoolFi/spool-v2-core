@@ -2,6 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin-upgradeable/access/IAccessControlUpgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "./RequestType.sol";
@@ -53,7 +54,7 @@ struct WithdrawalMetadata {
 
 /* ========== INTERFACES ========== */
 
-interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
+interface ISmartVault is IAccessControlUpgradeable, IERC20Upgradeable, IERC1155Upgradeable {
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
 
     event Withdraw(

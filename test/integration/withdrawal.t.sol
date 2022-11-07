@@ -16,8 +16,8 @@ import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
 
 contract WithdrawalIntegrationTest is Test {
-    address private alice = address(0xa);
-    address private bob = address(0xb);
+    address private alice;
+    address private bob;
 
     MockToken tokenA;
     MockToken tokenB;
@@ -33,6 +33,9 @@ contract WithdrawalIntegrationTest is Test {
     AssetGroupRegistry private assetGroupRegistry;
 
     function setUp() public {
+        alice = address(0xa);
+        bob = address(0xb);
+
         tokenA = new MockToken("Token A", "TA");
         tokenB = new MockToken("Token B", "TB");
 
@@ -54,7 +57,7 @@ contract WithdrawalIntegrationTest is Test {
         ActionManager actionManager = new ActionManager();
         RiskManager riskManager = new RiskManager();
         UsdPriceFeedManager priceFeedManager = new UsdPriceFeedManager();
-        SmartVaultDeposits vaultDepositManager = new SmartVaultDeposits(new MasterWallet());
+        SmartVaultDeposits vaultDepositManager = new SmartVaultDeposits(masterWallet);
 
         smartVaultManager = new SmartVaultManager(
             strategyRegistry,
@@ -63,8 +66,8 @@ contract WithdrawalIntegrationTest is Test {
             priceFeedManager,
             assetGroupRegistry,
             masterWallet,
-            new ActionManager(),
-            new GuardManager()
+            actionManager,
+            guardManager
         );
 
         strategyRegistry.grantRole(strategyRegistry.CLAIMER_ROLE(), address(smartVaultManager));
