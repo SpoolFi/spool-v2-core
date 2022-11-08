@@ -195,31 +195,31 @@ contract SmartVaultFlushTest is Test {
     }
 
     function _createStrategies() private returns (address[] memory, address[] memory, uint256[][] memory) {
-        MockStrategy strategy1 = new MockStrategy("A", strategyRegistry);
-        MockStrategy strategy2 = new MockStrategy("B", strategyRegistry);
-        MockStrategy strategy3 = new MockStrategy("C", strategyRegistry);
+        IAssetGroupRegistry assetGroupRegistry = new AssetGroupRegistry();
+        MockStrategy strategy1 = new MockStrategy("A", strategyRegistry, assetGroupRegistry);
+        MockStrategy strategy2 = new MockStrategy("B", strategyRegistry, assetGroupRegistry);
+        MockStrategy strategy3 = new MockStrategy("C", strategyRegistry, assetGroupRegistry);
 
         address[] memory assetGroup = new address[](2);
         assetGroup[0] = address(token1);
         assetGroup[1] = address(token2);
-        IAssetGroupRegistry assetGroupRegistry = new AssetGroupRegistry();
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
         uint256[][] memory ratios = new uint256[][](3);
         ratios[0] = new uint256[](2);
         ratios[0][0] = 1000;
         ratios[0][1] = 68;
-        strategy1.initialize(assetGroupId, assetGroupRegistry, ratios[0]);
+        strategy1.initialize(assetGroupId, ratios[0]);
 
         ratios[1] = new uint256[](2);
         ratios[1][0] = 1000;
         ratios[1][1] = 67;
-        strategy2.initialize(assetGroupId, assetGroupRegistry, ratios[1]);
+        strategy2.initialize(assetGroupId, ratios[1]);
 
         ratios[2] = new uint256[](2);
         ratios[2][0] = 1000;
         ratios[2][1] = 69;
-        strategy3.initialize(assetGroupId, assetGroupRegistry, ratios[2]);
+        strategy3.initialize(assetGroupId, ratios[2]);
 
         address[] memory strategies = new address[](3);
         strategies[0] = address(strategy1);

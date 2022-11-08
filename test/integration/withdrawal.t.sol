@@ -69,18 +69,18 @@ contract WithdrawalIntegrationTest is Test {
 
         strategyRegistry.grantRole(strategyRegistry.CLAIMER_ROLE(), address(smartVaultManager));
 
-        strategyA = new MockStrategy("StratA", strategyRegistry);
+        strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry);
         uint256[] memory strategyARatios = new uint256[](2);
         strategyARatios[0] = 1_000;
         strategyARatios[1] = 68;
-        strategyA.initialize(assetGroupId, assetGroupRegistry, strategyARatios);
+        strategyA.initialize(assetGroupId, strategyARatios);
         strategyRegistry.registerStrategy(address(strategyA));
 
-        strategyB = new MockStrategy("StratB", strategyRegistry);
+        strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry);
         uint256[] memory strategyBRatios = new uint256[](2);
         strategyBRatios[0] = 1_000;
         strategyBRatios[1] = 67;
-        strategyB.initialize(assetGroupId, assetGroupRegistry, strategyBRatios);
+        strategyB.initialize(assetGroupId, strategyBRatios);
         strategyRegistry.registerStrategy(address(strategyB));
 
         mySmartVault = new SmartVault(

@@ -14,6 +14,8 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
 
     IStrategyRegistry internal immutable _strategyRegistry;
 
+    IAssetGroupRegistry internal immutable _assetGroupRegistry;
+
     // @notice Name of the strategy
     string private _strategyName;
 
@@ -22,23 +24,22 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
      */
     uint256 internal _assetGroupId;
 
-    /**
-     * @notice Asset group used by the strategy.
-     */
-    address[] internal _assetGroup;
-
     // @notice Total value (in USD) of assets managed by the strategy.
     // @dev Should be updated in DHW with deposits, withdrawals and yields.
     uint256 public totalUsdValue = 0;
 
-    constructor(string memory strategyName_, IStrategyRegistry strategyRegistry_) {
+    constructor(
+        string memory strategyName_,
+        IStrategyRegistry strategyRegistry_,
+        IAssetGroupRegistry assetGroupRegistry_
+    ) {
         _strategyName = strategyName_;
         _strategyRegistry = strategyRegistry_;
+        _assetGroupRegistry = assetGroupRegistry_;
     }
 
-    function initialize(uint256 assetGroupId_, IAssetGroupRegistry assetGroupRegistry_) public virtual initializer {
+    function initialize(uint256 assetGroupId_) public virtual initializer {
         _assetGroupId = assetGroupId_;
-        _assetGroup = assetGroupRegistry_.listAssetGroup(assetGroupId_);
 
         __ERC20_init("Strategy Share Token", "SST");
     }
@@ -49,8 +50,8 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
         return _assetGroupId;
     }
 
-    function assets() external view returns (address[] memory assetTokenAddresses) {
-        return _assetGroup;
+    function assets() external view returns (address[] memory) {
+        return _assetGroupRegistry.listAssetGroup(_assetGroupId);
     }
 
     function assetRatio() external view virtual returns (uint256[] memory);

@@ -65,9 +65,16 @@ contract SmartVaultManagerTest is Test {
         allocations[0] = 10;
         allocations[1] = 20;
 
+        address[] memory strategies = new address[](2);
+        strategies[0] = address(10);
+        strategies[1] = address(11);
+
         uint256[] memory vaultAlloc = smartVaultManager.allocations(smartVault);
         assertEq(vaultAlloc.length, 0);
 
+        strategyRegistry.registerStrategy(address(10));
+        strategyRegistry.registerStrategy(address(11));
+        smartVaultManager.setStrategies(smartVault, strategies);
         smartVaultManager.setAllocations(smartVault, allocations);
 
         vaultAlloc = smartVaultManager.allocations(smartVault);
@@ -185,9 +192,9 @@ contract SmartVaultManagerTest is Test {
     }
 
     function _createStrategies() private returns (address[] memory, uint256) {
-        MockStrategy strategy1 = new MockStrategy("A", strategyRegistry);
-        MockStrategy strategy2 = new MockStrategy("B", strategyRegistry);
-        MockStrategy strategy3 = new MockStrategy("C", strategyRegistry);
+        MockStrategy strategy1 = new MockStrategy("A", strategyRegistry, assetGroupRegistry);
+        MockStrategy strategy2 = new MockStrategy("B", strategyRegistry, assetGroupRegistry);
+        MockStrategy strategy3 = new MockStrategy("C", strategyRegistry, assetGroupRegistry);
 
         address[] memory assetGroup = new address[](2);
         assetGroup[0] = address(token1);
@@ -198,13 +205,13 @@ contract SmartVaultManagerTest is Test {
         ratios[0] = 1000;
 
         ratios[1] = 68;
-        strategy1.initialize(assetGroupId, assetGroupRegistry, ratios);
+        strategy1.initialize(assetGroupId, ratios);
 
         ratios[1] = 67;
-        strategy2.initialize(assetGroupId, assetGroupRegistry, ratios);
+        strategy2.initialize(assetGroupId, ratios);
 
         ratios[1] = 69;
-        strategy3.initialize(assetGroupId, assetGroupRegistry, ratios);
+        strategy3.initialize(assetGroupId, ratios);
 
         address[] memory strategies = new address[](3);
         strategies[0] = address(strategy1);

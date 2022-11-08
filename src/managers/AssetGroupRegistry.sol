@@ -35,6 +35,10 @@ contract AssetGroupRegistry is IAssetGroupRegistry {
         return _assetGroups[assetGroupId];
     }
 
+    function assetGroupLength(uint256 assetGroupId) external view validAssetGroup(assetGroupId) returns (uint256) {
+        return _assetGroups[assetGroupId].length;
+    }
+
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     function registerAssetGroup(address[] calldata assets) external returns (uint256) {

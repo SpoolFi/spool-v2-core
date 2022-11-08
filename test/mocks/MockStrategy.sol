@@ -8,13 +8,12 @@ contract MockStrategy is Strategy {
     uint256[] public __withdrawnAssets;
     bool public __withdrawnAssetsSet;
 
-    constructor(string memory name_, IStrategyRegistry strategyRegistry_) Strategy(name_, strategyRegistry_) {}
+    constructor(string memory name_, IStrategyRegistry strategyRegistry_, IAssetGroupRegistry assetGroupRegistry_)
+        Strategy(name_, strategyRegistry_, assetGroupRegistry_)
+    {}
 
-    function initialize(uint256 assetGroupId_, IAssetGroupRegistry assetGroupRegistry_, uint256[] memory ratios_)
-        public
-        virtual
-    {
-        super.initialize(assetGroupId_, assetGroupRegistry_);
+    function initialize(uint256 assetGroupId_, uint256[] memory ratios_) public virtual {
+        super.initialize(assetGroupId_);
 
         ratios = ratios_;
     }
@@ -25,6 +24,8 @@ contract MockStrategy is Strategy {
 
     function redeem(uint256 shares, address receiver, address owner) external override returns (uint256[] memory) {
         require(__withdrawnAssetsSet, "MockStrategy::dhw: Withdrawn assets not set.");
+
+        address[] memory _assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
 
         // withdraw from protocol
         for (uint256 i = 0; i < _assetGroup.length; i++) {
@@ -39,6 +40,7 @@ contract MockStrategy is Strategy {
     }
 
     function _setWithdrawnAssets(uint256[] memory withdrawnAssets_) external {
+        address[] memory _assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
         require(withdrawnAssets_.length == _assetGroup.length, "MockStrategy::_setWithdrawnAssets: Not correct length.");
 
         __withdrawnAssets = withdrawnAssets_;
