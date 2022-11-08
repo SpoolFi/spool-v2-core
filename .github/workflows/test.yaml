@@ -29,13 +29,24 @@ jobs:
         with:
           version: nightly
 
-      - name: Run Forge build
+      - name: Run Forge build and coverage
         run: |
           forge --version
-          forge build --sizes
+          forge build --sizes > sizes_output.txt
+          forge coverage > coverage_output.txt
+
         id: build
 
       - name: Run Forge tests
         run: |
           forge test -vvv
+          forge test > test_output.txt
         id: test
+
+      - name: Install ts-node
+        run: |
+          npm i ts-node -g
+          npm i --save-dev @types/node
+      
+      - name: OUTPUT
+        run: ts-node ./outputparser.ts
