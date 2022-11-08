@@ -14,6 +14,7 @@ import "../interfaces/IGuardManager.sol";
 import "../interfaces/IAction.sol";
 import "../interfaces/RequestType.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
+import "../libraries/ArrayMapping.sol";
 
 contract SmartVaultRegistry is ISmartVaultRegistry {
     /// @notice Smart vault address registry
@@ -262,6 +263,7 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
 
 contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     using SafeERC20 for ERC20;
+    using ArrayMapping for mapping(uint256 => uint256);
 
     /* ========== STATE VARIABLES ========== */
 
@@ -297,7 +299,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     mapping(address => address) internal _smartVaultRiskProviders;
 
     /// @notice Smart Vault strategy allocations
-    mapping(address => uint256[]) internal _smartVaultAllocations;
+    mapping(address => mapping(uint256 => uint256)) internal _smartVaultAllocations;
 
     /// @notice Smart Vault tolerance registry
     mapping(address => int256) internal _riskTolerances;
@@ -305,23 +307,23 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     /// @notice Current flush index for given Smart Vault
     mapping(address => uint256) internal _flushIndexes;
 
-    /// @notice First flush index that still needs to by synces for given Smart Vault.
+    /// @notice First flush index that still needs to be synced for given Smart Vault.
     mapping(address => uint256) internal _flushIndexesToSync;
 
     /// @notice DHW indexes for given Smart Vault and flush index
-    mapping(address => mapping(uint256 => uint256[])) internal _dhwIndexes;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _dhwIndexes;
 
     /// @notice TODO smart vault => flush index => assets deposited
-    mapping(address => mapping(uint256 => uint256[])) _vaultDeposits;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) _vaultDeposits;
 
     /// @notice TODO smart vault => flush index => vault shares withdrawn
     mapping(address => mapping(uint256 => uint256)) _withdrawnVaultShares;
 
     /// @notice TODO smart vault => flush index => strategy shares withdrawn
-    mapping(address => mapping(uint256 => uint256[])) _withdrawnStrategyShares;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) _withdrawnStrategyShares;
 
     /// @notice TODO smart vault => flush index => assets withdrawn
-    mapping(address => mapping(uint256 => uint256[])) _withdrawnAssets;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) _withdrawnAssets;
 
     constructor(
         IStrategyRegistry strategyRegistry_,
@@ -356,7 +358,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
      * @notice TODO
      */
     function allocations(address smartVault) external view returns (uint256[] memory) {
-        return _smartVaultAllocations[smartVault];
+        return _smartVaultAllocations[smartVault].toArray(_smartVaultStrategies[smartVault].length);
     }
 
     /**
@@ -384,14 +386,16 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
      * @notice Smart vault deposits for given flush index.
      */
     function smartVaultDeposits(address smartVault, uint256 flushIdx) external view returns (uint256[] memory) {
-        return _vaultDeposits[smartVault][flushIdx];
+        uint256 assetGroupLength = _assetGroupRegistry.assetGroupLength(_assetGroups[smartVault]);
+        return _vaultDeposits[smartVault][flushIdx].toArray(assetGroupLength);
     }
 
     /**
      * @notice DHW indexes that were active at given flush index
      */
     function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint256[] memory) {
-        return _dhwIndexes[smartVault][flushIndex];
+        uint256 strategyCount = _smartVaultStrategies[smartVault].length;
+        return _dhwIndexes[smartVault][flushIndex].toArray(strategyCount);
     }
 
     /**
@@ -422,7 +426,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
             smartVault,
             tokens,
             strategies_,
-            _smartVaultAllocations[smartVault],
+            _smartVaultAllocations[smartVault].toArray(strategies_.length),
             _getExchangeRates(tokens),
             _getStrategyRatios(strategies_),
             _priceFeedManager.usdDecimals()
@@ -591,7 +595,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
      * @notice TODO
      */
     function setAllocations(address smartVault, uint256[] memory allocations_) external validSmartVault(smartVault) {
-        _smartVaultAllocations[smartVault] = allocations_;
+        _smartVaultAllocations[smartVault].setValues(allocations_);
     }
 
     /**
@@ -614,12 +618,11 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         uint256 flushIdx = _flushIndexes[smartVault];
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
 
-        uint256[] memory deposits = _vaultDeposits[smartVault][flushIdx];
         uint256 withdrawals = _withdrawnVaultShares[smartVault][flushIdx];
 
         uint256[] memory flushDhwIndexes;
 
-        if (deposits.length > 0) {
+        if (_vaultDeposits[smartVault][flushIdx][0] > 0) {
             // handle deposits
             address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVault]);
 
@@ -627,12 +630,13 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
                 smartVault,
                 tokens,
                 strategies_,
-                _smartVaultAllocations[smartVault],
+                _smartVaultAllocations[smartVault].toArray(strategies_.length),
                 _getExchangeRates(tokens),
                 _getStrategyRatios(strategies_),
                 _priceFeedManager.usdDecimals()
             );
 
+            uint256[] memory deposits = _vaultDeposits[smartVault][flushIdx].toArray(tokens.length);
             uint256[][] memory distribution = _vaultDepositsManager.distributeVaultDeposits(bag, deposits, swapInfo);
             flushDhwIndexes = _strategyRegistry.addDeposits(bag.strategies, distribution);
         }
@@ -653,12 +657,12 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
 
             flushDhwIndexes = _strategyRegistry.addWithdrawals(strategies_, strategyWithdrawals);
 
-            _withdrawnStrategyShares[smartVault][flushIdx] = strategyWithdrawals;
+            _withdrawnStrategyShares[smartVault][flushIdx].setValues(strategyWithdrawals);
         }
 
         if (flushDhwIndexes.length == 0) revert NothingToFlush();
 
-        _dhwIndexes[smartVault][flushIdx] = flushDhwIndexes;
+        _dhwIndexes[smartVault][flushIdx].setValues(flushDhwIndexes);
         _flushIndexes[smartVault] = flushIdx + 1;
 
         emit SmartVaultFlushed(smartVault, flushIdx);
@@ -698,16 +702,10 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         if (tokens.length != assets.length) revert InvalidAssetLengths();
 
         uint256 flushIdx = _flushIndexes[smartVault];
-        bool initialized = _vaultDeposits[smartVault][flushIdx].length > 0;
 
         for (uint256 i = 0; i < assets.length; i++) {
             if (assets[i] == 0) revert InvalidDepositAmount({smartVault: smartVault});
-
-            if (initialized) {
-                _vaultDeposits[smartVault][flushIdx][i] += assets[i];
-            } else {
-                _vaultDeposits[smartVault][flushIdx].push(assets[i]);
-            }
+            _vaultDeposits[smartVault][flushIdx][i] += assets[i];
         }
 
         return _flushIndexes[smartVault];
@@ -780,11 +778,14 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
             return;
         }
 
-        _withdrawnAssets[smartVault][flushIndex] = _strategyRegistry.claimWithdrawals(
-            _smartVaultStrategies[smartVault],
-            _dhwIndexes[smartVault][flushIndex],
-            _withdrawnStrategyShares[smartVault][flushIndex]
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
+        uint256[] memory withdrawnAssets_ = _strategyRegistry.claimWithdrawals(
+            strategies_,
+            _dhwIndexes[smartVault][flushIndex].toArray(strategies_.length),
+            _withdrawnStrategyShares[smartVault][flushIndex].toArray(strategies_.length)
         );
+
+        _withdrawnAssets[smartVault][flushIndex].setValues(withdrawnAssets_);
     }
 
     function _runGuards(

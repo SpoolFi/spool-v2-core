@@ -140,7 +140,7 @@ contract GuardManager is Ownable, IGuardManager {
         // Loop through parameters and
         // - store values for simple types
         // - store param value location for dynamic types
-        for (uint8 i = 0; i < paramsLength; i++) {
+        for (uint256 i = 0; i < paramsLength; i++) {
             GuardParamType paramType = guard.methodParamTypes[i];
 
             if (paramType == GuardParamType.DynamicCustomValue) {
@@ -169,7 +169,7 @@ contract GuardManager is Ownable, IGuardManager {
 
         // Loop through params again and store values for dynamic types.
         customValueIdx = 0;
-        for (uint8 i = 0; i < paramsLength; i++) {
+        for (uint256 i = 0; i < paramsLength; i++) {
             GuardParamType paramType = guard.methodParamTypes[i];
 
             if (paramType == GuardParamType.DynamicCustomValue) {

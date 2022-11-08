@@ -35,6 +35,13 @@ interface IAssetGroupRegistry {
      */
     function listAssetGroup(uint256 assetGroupId) external view returns (address[] memory);
 
+    /**
+     * @notice Gets asset group length.
+     * @dev Requirements:
+     * - must provide a valid ID for the asset group
+     */
+    function assetGroupLength(uint256 assetGroupId) external view returns (uint256);
+
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     /**

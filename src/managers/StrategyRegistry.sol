@@ -8,8 +8,11 @@ import "../interfaces/CommonErrors.sol";
 import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IMasterWallet.sol";
 import "@openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
+import "../libraries/ArrayMapping.sol";
 
 contract StrategyRegistry is IStrategyRegistry, AccessControlUpgradeable {
+    using ArrayMapping for mapping(uint256 => uint256);
+
     /* ========== STATE VARIABLES ========== */
 
     bytes32 public constant CLAIMER_ROLE = keccak256("CLAIMER");
@@ -23,13 +26,13 @@ contract StrategyRegistry is IStrategyRegistry, AccessControlUpgradeable {
     mapping(address => uint256) _currentIndexes;
 
     /// @notice TODO strategy => index => tokenAmounts
-    mapping(address => mapping(uint256 => uint256[])) _strategyDeposits;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) _strategyDeposits;
 
     /// @notice TODO strategy => index => sstAmount
     mapping(address => mapping(uint256 => uint256)) _withdrawnShares;
 
     /// @notice TODO strategy => index => tokenAmounts
-    mapping(address => mapping(uint256 => uint256[])) _withdrawnAssets;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) _withdrawnAssets;
 
     constructor(IMasterWallet masterWallet_) {
         _masterWallet = masterWallet_;
@@ -52,7 +55,8 @@ contract StrategyRegistry is IStrategyRegistry, AccessControlUpgradeable {
      * @notice Deposits for given strategy and DHW index
      */
     function strategyDeposits(address strategy, uint256 index) external view returns (uint256[] memory) {
-        return _strategyDeposits[strategy][index];
+        uint256 assetGroupLength = IStrategy(strategy).assets().length;
+        return _strategyDeposits[strategy][index].toArray(assetGroupLength);
     }
 
     /**
@@ -91,7 +95,7 @@ contract StrategyRegistry is IStrategyRegistry, AccessControlUpgradeable {
                 _withdrawnShares[strategy][dhwIndex], address(_masterWallet), address(_masterWallet)
             );
 
-            _withdrawnAssets[strategy][dhwIndex] = withdrawnAssets_;
+            _withdrawnAssets[strategy][dhwIndex].setValues(withdrawnAssets_);
             // TODO: transfer assets to smart vault manager
             _currentIndexes[strategy]++;
         }
@@ -106,14 +110,9 @@ contract StrategyRegistry is IStrategyRegistry, AccessControlUpgradeable {
             address strategy = strategies_[i];
             uint256 latestIndex = _currentIndexes[strategy];
             indexes[i] = latestIndex;
-            bool initialized = _strategyDeposits[strategy][latestIndex].length > 0;
 
             for (uint256 j = 0; j < amounts[i].length; j++) {
-                if (initialized) {
-                    _strategyDeposits[strategy][latestIndex][j] += amounts[i][j];
-                } else {
-                    _strategyDeposits[strategy][latestIndex].push(amounts[i][j]);
-                }
+                _strategyDeposits[strategy][latestIndex][j] += amounts[i][j];
             }
         }
 
