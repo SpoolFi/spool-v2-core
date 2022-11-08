@@ -307,7 +307,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
     /// @notice Current flush index for given Smart Vault
     mapping(address => uint256) internal _flushIndexes;
 
-    /// @notice First flush index that still needs to by syncs for given Smart Vault.
+    /// @notice First flush index that still needs to be synced for given Smart Vault.
     mapping(address => uint256) internal _flushIndexesToSync;
 
     /// @notice DHW indexes for given Smart Vault and flush index
