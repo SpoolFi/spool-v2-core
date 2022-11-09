@@ -43,13 +43,18 @@ jobs:
           forge test --json > test_output.txt
         id: test
 
-      - name: Install ts-node
-        run: |
-          npm i ts-node -g
-          npm i --save-dev @types/node
   OUTPUT:
     runs-on: ubuntu-latest
     needs: check
     steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install ts-node
+        run: |
+          npm i ts-node -g
+          npm i --save-dev @types/node
+
       - name: generate output
         run: ts-node ./outputparser.ts
