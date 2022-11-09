@@ -285,7 +285,7 @@ contract  RewardManager is IRewardManager, ReentrancyGuard {
         /* onlyOwner TODO ACL */
     {
         //tokenBlacklist.token] = true; add list + smartVault
-
+        tokenBlacklist[smartVault][token] = true;
         _removeReward(smartVault, token);
 
         delete rewardConfiguration[smartVault][token];

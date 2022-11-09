@@ -20,21 +20,21 @@ contract RewardManagerTest is Test {
         address smartVault = address(1);
         address user = address(100);
 
-        MockToken mockToken = new MockToken("REWARD", "REWARD");
+        MockToken rewardToken = new MockToken("REWARD", "REWARD");
 
-        deal(address(mockToken), user, rewardAmount, true);
+        deal(address(rewardToken), user, rewardAmount, true);
         vm.startPrank(user);
-        mockToken.approve(address(rewardManager), rewardAmount);
-        rewardManager.addToken(smartVault, mockToken, rewardDuration, rewardAmount);
+        rewardToken.approve(address(rewardManager), rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
         vm.stopPrank();
 
         assertEq(1, rewardManager.rewardTokensCount(smartVault));
-        assertEq(address(mockToken), address(rewardManager.rewardTokens(smartVault, 0)));
+        assertEq(address(rewardToken), address(rewardManager.rewardTokens(smartVault, 0)));
         (uint32 configurationRewardsDuration,
         uint32 configurationPeriodFinish,
         uint192 configurationRewardRate, // rewards per second multiplied by accuracy
         uint32 configurationLastUpdateTime,
-        uint224 configurationRewardPerTokenStored)  = rewardManager.rewardConfiguration(smartVault, IERC20(mockToken));
+        uint224 configurationRewardPerTokenStored)  = rewardManager.rewardConfiguration(smartVault, IERC20(rewardToken));
 
 
         assertEq(rewardDuration, configurationRewardsDuration);
@@ -43,7 +43,7 @@ contract RewardManagerTest is Test {
         assertEq(rate, configurationRewardRate);
     }
 
-    function test_Adding_Two_Tokens() public {
+    function test_Adding_Two_Reward_Tokens() public {
         RewardManager rewardManager = new RewardManager();
 
         uint256 rewardAmount = 100000 ether;
@@ -79,5 +79,50 @@ contract RewardManagerTest is Test {
 
         assertEq(rToken.balanceOf(address(rewardManager)), rewardAmount);
         assertEq(r2Token.balanceOf(address(rewardManager)), rewardAmount);
+    }
+
+    function test_Force_Removed_Tokens_Are_Not_Added() public {
+        RewardManager rewardManager = new RewardManager();
+
+
+        uint256 rewardAmount = 100000 ether;
+        uint32 rewardDuration = SECONDS_IN_DAY * 10;
+
+        address smartVault = address(1);
+        address user = address(100);
+        address spoolDao = address(200);
+
+        MockToken rToken = new MockToken("R", "R");
+
+        deal(address(rToken), user, rewardAmount, true);
+
+        vm.startPrank(user);
+        rToken.approve(address(rewardManager), rewardAmount);
+        rewardManager.addToken(smartVault, rToken, rewardDuration, rewardAmount);
+        vm.stopPrank();
+
+        vm.startPrank(spoolDao);
+        rewardManager.forceRemoveReward(smartVault, rToken); // TODO ACL this should fail once we add acl
+        vm.stopPrank();
+
+        vm.startPrank(user);
+        vm.expectRevert(bytes ("TOBL"));
+        rewardManager.addToken(smartVault, rToken, rewardDuration, rewardAmount);
+        vm.stopPrank();
+
+        assertEq(true, rewardManager.tokenBlacklisted(smartVault, rToken));
+
+        (uint32 configurationRewardsDuration,
+        uint32 configurationPeriodFinish,
+        uint192 configurationRewardRate, // rewards per second multiplied by accuracy
+        uint32 configurationLastUpdateTime,
+        uint224 configurationRewardPerTokenStored)  = rewardManager.rewardConfiguration(smartVault, IERC20(rToken));
+
+
+        assertEq(0, configurationRewardsDuration);
+        assertEq(0, configurationPeriodFinish);
+        assertEq(0, configurationRewardRate);
+        assertEq(0, configurationLastUpdateTime);
+        assertEq(0, configurationRewardPerTokenStored);
     }
 }
