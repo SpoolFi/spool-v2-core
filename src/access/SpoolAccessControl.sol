@@ -16,7 +16,7 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl {
      * @notice Check whether account was granted given role for given smart vault
      */
     function hasSmartVaultRole(address smartVault, bytes32 role, address account) external view returns (bool) {
-        bytes32 role_ = keccak256(abi.encodePacked(smartVault, role));
+        bytes32 role_ = keccak256(abi.encode(smartVault, role));
         return hasRole(role_, account);
     }
 
@@ -24,7 +24,7 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl {
      * @notice Grant role to account for given smart vault
      */
     function grantSmartVaultRole(address smartVault, bytes32 role, address account) external {
-        bytes32 role_ = keccak256(abi.encodePacked(smartVault, role));
+        bytes32 role_ = keccak256(abi.encode(smartVault, role));
         grantRole(role_, account);
     }
 }
