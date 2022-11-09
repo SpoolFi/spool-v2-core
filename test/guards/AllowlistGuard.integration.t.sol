@@ -164,7 +164,8 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         guardManager.setGuards(address(smartVault), guards);
 
         // allow Alice to update allowlists for the smart vault
-        smartVault.grantRole(allowlistGuard.ALLOWLIST_MANAGER_ROLE(), alice);
+        accessControl.grantSmartVaultRole(address(smartVault), ROLE_GUARD_ALLOWLIST_MANAGER, alice);
+
         address[] memory addressesToAdd = new address[](1);
         // Bob can execute the deposit
         addressesToAdd[0] = bob;
