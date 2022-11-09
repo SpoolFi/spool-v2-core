@@ -48,5 +48,8 @@ jobs:
           npm i ts-node -g
           npm i --save-dev @types/node
       
-      - name: OUTPUT
-        run: ts-node ./outputparser.ts
+    name: OUTPUT
+    runs-on: ubuntu-latest
+        steps:
+          - name: generate output
+            run: ts-node ./outputparser.ts
