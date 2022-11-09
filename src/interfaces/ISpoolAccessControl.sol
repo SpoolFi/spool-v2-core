@@ -9,4 +9,8 @@ interface ISpoolAccessControl is IAccessControlUpgradeable {
     function hasSmartVaultRole(address smartVault, bytes32 role, address account) external view returns (bool);
 
     function grantSmartVaultRole(address smartVault, bytes32 role, address account) external;
+
+    function revokeSmartVaultRole(address smartVault, bytes32 role, address account) external;
+
+    function renounceSmartVaultRole(address smartVault, bytes32 role) external;
 }

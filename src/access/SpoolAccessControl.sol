@@ -4,10 +4,17 @@ pragma solidity ^0.8.17;
 import "@openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
 import "../interfaces/ISpoolAccessControl.sol";
 
+contract SpoolAccessRoles {
+    bytes32 public constant ROLE_SMART_VAULT = keccak256("SMART_VAULT");
+    bytes32 public constant ROLE_SMART_VAULT_ADMIN = keccak256("SMART_VAULT_ADMIN");
+    bytes32 public constant ROLE_GUARD_ALLOWLIST_MANAGER = keccak256("GUARD_ALLOWLIST_MANAGER");
+    bytes32 public constant ROLE_STRATEGY_CLAIMER = keccak256("STRATEGY_CLAIMER");
+}
+
 /**
  * @notice Spool access control management
  */
-contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl {
+contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl, SpoolAccessRoles {
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
@@ -23,16 +30,47 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl {
     /**
      * @notice Grant role to account for given smart vault
      */
-    function grantSmartVaultRole(address smartVault, bytes32 role, address account) external {
+    function grantSmartVaultRole(address smartVault, bytes32 role, address account)
+        external
+        onlyAdminOrVaultAdmin(smartVault, msg.sender)
+    {
         bytes32 role_ = keccak256(abi.encode(smartVault, role));
         grantRole(role_, account);
     }
-}
 
-contract SpoolAccessRoles {
-    bytes32 public constant ROLE_SMART_VAULT = keccak256("SMART_VAULT");
-    bytes32 public constant ROLE_GUARD_ALLOWLIST_MANAGER = keccak256("GUARD_ALLOWLIST_MANAGER");
-    bytes32 public constant ROLE_STRATEGY_CLAIMER = keccak256("STRATEGY_CLAIMER");
+    /**
+     * @notice Revoke specific role for given smart vault
+     */
+    function revokeSmartVaultRole(address smartVault, bytes32 role, address account)
+        external
+        onlyAdminOrVaultAdmin(smartVault, msg.sender)
+    {
+        bytes32 role_ = keccak256(abi.encode(smartVault, role));
+        revokeRole(role_, account);
+    }
+
+    /**
+     * @notice Renounce specific role for given smart vault
+     */
+    function renounceSmartVaultRole(address smartVault, bytes32 role) external {
+        bytes32 role_ = keccak256(abi.encode(smartVault, role));
+        renounceRole(role_, msg.sender);
+    }
+
+    function _onlyAdminOrVaultAdmin(address smartVault, address account) private {
+        bytes32 vaultAdminRole = keccak256(abi.encode(smartVault, ROLE_SMART_VAULT_ADMIN));
+        if (!hasRole(DEFAULT_ADMIN_ROLE, account) && !hasRole(vaultAdminRole, account)) {
+            revert MissingRole(vaultAdminRole, account);
+        }
+    }
+
+    /**
+     * @notice Reverts if account not admin or smart vault admin
+     */
+    modifier onlyAdminOrVaultAdmin(address smartVault, address account) {
+        _onlyAdminOrVaultAdmin(smartVault, account);
+        _;
+    }
 }
 
 /**
