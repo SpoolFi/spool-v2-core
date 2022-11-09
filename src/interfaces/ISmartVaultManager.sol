@@ -85,15 +85,7 @@ interface ISmartVaultSyncer {
     function syncSmartVault(address smartVault) external;
 }
 
-interface ISmartVaultRegistry {
-    function isSmartVault(address address_) external view returns (bool);
-
-    function registerSmartVault(address address_) external;
-
-    function removeSmartVault(address smartVault) external;
-}
-
-interface ISmartVaultManager is ISmartVaultRegistry, ISmartVaultReallocator, ISmartVaultSyncer {
+interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint256[] memory);

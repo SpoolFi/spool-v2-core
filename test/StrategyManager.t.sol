@@ -11,8 +11,7 @@ contract StrategyRegistryTest is Test {
     IStrategyRegistry strategyRegistry;
 
     function setUp() public {
-        strategyRegistry = new StrategyRegistry(new MasterWallet());
-        strategyRegistry.initialize();
+        strategyRegistry = new StrategyRegistry(new MasterWallet(), new SpoolAccessControl());
     }
 
     function test_registerStrategy() public {

@@ -16,7 +16,7 @@ import "../../src/SmartVault.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
 
-contract AllowlistGuardIntergrationTest is Test {
+contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
     address private alice;
     address private bob;
     address private charlie;
@@ -29,6 +29,7 @@ contract AllowlistGuardIntergrationTest is Test {
     GuardManager private guardManager;
     SmartVault private smartVault;
     SmartVaultManager private smartVaultManager;
+    ISpoolAccessControl private accessControl;
 
     function setUp() public {
         alice = address(0xa);
@@ -38,6 +39,7 @@ contract AllowlistGuardIntergrationTest is Test {
         eve = address(0xe);
 
         token = new MockToken("Token", "T");
+        accessControl = new SpoolAccessControl();
 
         ActionManager actionManager = new ActionManager();
         AssetGroupRegistry assetGroupRegistry = new AssetGroupRegistry();
@@ -46,8 +48,9 @@ contract AllowlistGuardIntergrationTest is Test {
         UsdPriceFeedManager priceFeedManager = new UsdPriceFeedManager();
         RiskManager riskManager = new RiskManager();
         SmartVaultDeposits vaultDepositManager = new SmartVaultDeposits(masterWallet);
-        StrategyRegistry strategyRegistry = new StrategyRegistry(masterWallet);
+        StrategyRegistry strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
         smartVaultManager = new SmartVaultManager(
+            accessControl,
             strategyRegistry,
             riskManager,
             vaultDepositManager,
@@ -58,11 +61,9 @@ contract AllowlistGuardIntergrationTest is Test {
             guardManager
         );
 
-        strategyRegistry.initialize();
-
         masterWallet.setWalletManager(address(smartVaultManager), true);
 
-        allowlistGuard = new AllowlistGuard();
+        allowlistGuard = new AllowlistGuard(accessControl);
 
         address[] memory assetGroup = new address[](1);
         assetGroup[0] = address(token);
@@ -76,7 +77,7 @@ contract AllowlistGuardIntergrationTest is Test {
 
         smartVault = new SmartVault("SmartVault", smartVaultManager);
         smartVault.initialize(assetGroupId, assetGroupRegistry);
-        smartVaultManager.registerSmartVault(address(smartVault));
+        accessControl.grantRole(ROLE_SMART_VAULT, address(smartVault));
         IAction[] memory actions = new IAction[](0);
         RequestType[] memory actionsRequestTypes = new RequestType[](0);
         actionManager.setActions(address(smartVault), actions, actionsRequestTypes);
@@ -163,10 +164,13 @@ contract AllowlistGuardIntergrationTest is Test {
         guardManager.setGuards(address(smartVault), guards);
 
         // allow Alice to update allowlists for the smart vault
-        smartVault.grantRole(allowlistGuard.ALLOWLIST_MANAGER_ROLE(), alice);
+        accessControl.grantSmartVaultRole(address(smartVault), ROLE_GUARD_ALLOWLIST_MANAGER, alice);
+
+        // add Bob to the allowlist
         address[] memory addressesToAdd = new address[](1);
         // Bob can execute the deposit
         addressesToAdd[0] = bob;
+
         vm.prank(alice);
         allowlistGuard.addToAllowlist(address(smartVault), 0, addressesToAdd);
         // Charlie can own the assets

@@ -2,12 +2,11 @@
 pragma solidity ^0.8.16;
 
 import {console} from "forge-std/console.sol";
-import "@openzeppelin/access/Ownable.sol";
 import "@openzeppelin/utils/Strings.sol";
 import "@0xsequence/sstore2/SSTORE2.sol";
 import "../interfaces/IGuardManager.sol";
 
-contract GuardManager is Ownable, IGuardManager {
+contract GuardManager is IGuardManager {
     /* ========== STATE VARIABLES ========== */
 
     mapping(address => bool) public guardsInitialized;

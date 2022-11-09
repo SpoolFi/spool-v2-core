@@ -18,8 +18,9 @@ import "./mocks/MockStrategy.sol";
 import "./mocks/MockSwapper.sol";
 import "./mocks/MockToken.sol";
 
-contract SmartVaultManagerTest is Test {
+contract SmartVaultManagerTest is Test, SpoolAccessRoles {
     ISmartVaultManager smartVaultManager;
+    ISpoolAccessControl accessControl;
     IStrategyRegistry strategyRegistry;
     IRiskManager riskManager;
     MockPriceFeedManager priceFeedManager;
@@ -33,11 +34,10 @@ contract SmartVaultManagerTest is Test {
     MockToken token2;
 
     function setUp() public {
+        accessControl = new SpoolAccessControl();
         masterWallet = new MasterWallet();
         assetGroupRegistry = new AssetGroupRegistry();
-        strategyRegistry = new StrategyRegistry(masterWallet);
-        strategyRegistry.initialize();
-
+        strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
         riskManager = new RiskManager();
         priceFeedManager = new MockPriceFeedManager();
         ISmartVaultDeposits depositManager = new SmartVaultDeposits(masterWallet);
@@ -45,6 +45,7 @@ contract SmartVaultManagerTest is Test {
         IActionManager actionManager = new ActionManager();
 
         smartVaultManager = new SmartVaultManager(
+            accessControl,
             strategyRegistry,
             riskManager,
             depositManager,
@@ -54,7 +55,7 @@ contract SmartVaultManagerTest is Test {
             actionManager,
             guardManager
         );
-        smartVaultManager.registerSmartVault(smartVault);
+        accessControl.grantRole(ROLE_SMART_VAULT, smartVault);
 
         token1 = new MockToken("Token1", "T1");
         token2 = new MockToken("Token2", "T2");
@@ -99,9 +100,9 @@ contract SmartVaultManagerTest is Test {
         strategies[1] = address(11);
 
         address smartVault_ = address(20);
-        smartVaultManager.registerSmartVault(smartVault_);
+        accessControl.grantRole(ROLE_SMART_VAULT, smartVault_);
 
-        vm.expectRevert(abi.encodeWithSelector(InvalidSmartVault.selector, address(0)));
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SMART_VAULT, address(0)));
         smartVaultManager.setStrategies(address(0), strategies);
 
         vm.expectRevert(abi.encodeWithSelector(EmptyStrategyArray.selector));
@@ -243,7 +244,7 @@ contract SmartVaultManagerTest is Test {
         allocations[1] = 300; // B
         allocations[2] = 100; // C
 
-        smartVaultManager.registerSmartVault(address(smartVault_));
+        accessControl.grantRole(ROLE_SMART_VAULT, address(smartVault_));
         smartVaultManager.setStrategies(address(smartVault_), strategies);
         smartVaultManager.setAllocations(address(smartVault_), allocations);
 

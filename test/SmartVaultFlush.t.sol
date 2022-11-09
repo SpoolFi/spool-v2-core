@@ -27,9 +27,7 @@ contract SmartVaultFlushTest is Test {
 
     function setUp() public {
         masterWallet = new MasterWallet();
-        strategyRegistry = new StrategyRegistry(masterWallet);
-        strategyRegistry.initialize();
-
+        strategyRegistry = new StrategyRegistry(masterWallet, new SpoolAccessControl());
         priceFeedManager = new MockPriceFeedManager();
         depositManager = new SmartVaultDeposits(masterWallet);
         token1 = new MockToken("Token1", "T1");

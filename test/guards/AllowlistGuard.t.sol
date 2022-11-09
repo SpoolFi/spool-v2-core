@@ -13,7 +13,7 @@ contract SmartVaultFake is AccessControl {
     }
 }
 
-contract AllowlistGuardTest is Test {
+contract AllowlistGuardTest is Test, SpoolAccessRoles {
     event AddedToAllowlist(address indexed smartVault, uint256 indexed allowlistId, address[] addresses);
     event RemovedFromAllowlist(address indexed smartVault, uint256 indexed allowlistId, address[] addresses);
 
@@ -26,19 +26,21 @@ contract AllowlistGuardTest is Test {
     address charlie;
 
     function setUp() public {
-        allowlistGuard = new AllowlistGuard();
+        ISpoolAccessControl accessControl = new SpoolAccessControl();
+        allowlistGuard = new AllowlistGuard(accessControl);
 
         alice = address(0xa);
         bob = address(0xb);
         charlie = address(0xc);
 
         SmartVaultFake smartVaultFake1 = new SmartVaultFake();
-        smartVaultFake1.grantRole(allowlistGuard.ALLOWLIST_MANAGER_ROLE(), alice);
         SmartVaultFake smartVaultFake2 = new SmartVaultFake();
-        smartVaultFake2.grantRole(allowlistGuard.ALLOWLIST_MANAGER_ROLE(), alice);
 
         smartVault1 = address(smartVaultFake1);
         smartVault2 = address(smartVaultFake2);
+
+        accessControl.grantSmartVaultRole(smartVault1, ROLE_GUARD_ALLOWLIST_MANAGER, alice);
+        accessControl.grantSmartVaultRole(smartVault2, ROLE_GUARD_ALLOWLIST_MANAGER, alice);
     }
 
     function test_addToAllowlist_shouldAddToAllowlist() public {
@@ -57,7 +59,7 @@ contract AllowlistGuardTest is Test {
         address[] memory addressesToAdd = new address[](0);
 
         vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(CallerNotAllowlistManager.selector, bob, smartVault1));
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_GUARD_ALLOWLIST_MANAGER, bob));
         allowlistGuard.addToAllowlist(smartVault1, 0, addressesToAdd);
     }
 
@@ -94,7 +96,7 @@ contract AllowlistGuardTest is Test {
         address[] memory addressesToRemove = new address[](0);
 
         vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(CallerNotAllowlistManager.selector, bob, smartVault1));
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_GUARD_ALLOWLIST_MANAGER, bob));
         allowlistGuard.removeFromAllowlist(smartVault1, 0, addressesToRemove);
     }
 

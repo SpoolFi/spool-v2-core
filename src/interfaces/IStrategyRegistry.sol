@@ -24,7 +24,6 @@ interface IStrategyRegistry {
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
-    function initialize() external;
     function registerStrategy(address strategy) external;
     function removeStrategy(address strategy) external;
     function doHardWork(address[] memory strategies_) external;

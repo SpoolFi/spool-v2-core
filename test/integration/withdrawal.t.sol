@@ -15,7 +15,7 @@ import "../../src/SmartVault.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
 
-contract WithdrawalIntegrationTest is Test {
+contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
     address private alice;
     address private bob;
 
@@ -31,6 +31,7 @@ contract WithdrawalIntegrationTest is Test {
     StrategyRegistry private strategyRegistry;
     MasterWallet private masterWallet;
     AssetGroupRegistry private assetGroupRegistry;
+    ISpoolAccessControl accessControl;
 
     function setUp() public {
         alice = address(0xa);
@@ -51,8 +52,8 @@ contract WithdrawalIntegrationTest is Test {
         IAction[] memory emptyActions = new IAction[](0);
         RequestType[] memory emptyActionsRequestTypes = new RequestType[](0);
 
-        strategyRegistry = new StrategyRegistry(masterWallet);
-        strategyRegistry.initialize();
+        accessControl = new SpoolAccessControl();
+        strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
         GuardManager guardManager = new GuardManager();
         ActionManager actionManager = new ActionManager();
         RiskManager riskManager = new RiskManager();
@@ -60,6 +61,7 @@ contract WithdrawalIntegrationTest is Test {
         SmartVaultDeposits vaultDepositManager = new SmartVaultDeposits(masterWallet);
 
         smartVaultManager = new SmartVaultManager(
+            accessControl,
             strategyRegistry,
             riskManager,
             vaultDepositManager,
@@ -70,7 +72,7 @@ contract WithdrawalIntegrationTest is Test {
             guardManager
         );
 
-        strategyRegistry.grantRole(strategyRegistry.CLAIMER_ROLE(), address(smartVaultManager));
+        accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
 
         strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry);
         uint256[] memory strategyARatios = new uint256[](2);
@@ -91,7 +93,8 @@ contract WithdrawalIntegrationTest is Test {
             smartVaultManager
         );
         mySmartVault.initialize(assetGroupId, assetGroupRegistry);
-        smartVaultManager.registerSmartVault(address(mySmartVault));
+        accessControl.grantRole(ROLE_SMART_VAULT, address(mySmartVault));
+
         guardManager.setGuards(address(mySmartVault), emptyGuards);
         actionManager.setActions(address(mySmartVault), emptyActions, emptyActionsRequestTypes);
         mySmartVaultStrategies = new address[](2);

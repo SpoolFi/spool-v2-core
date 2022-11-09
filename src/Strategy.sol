@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.16;
 
-import "@openzeppelin/access/Ownable.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "./interfaces/IAssetGroupRegistry.sol";

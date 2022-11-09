@@ -2,6 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "../interfaces/ISmartVault.sol";
+import "../access/SpoolAccessControl.sol";
 
 /* ========== ERRORS ========== */
 
@@ -14,7 +15,7 @@ error CallerNotAllowlistManager(address caller, address smartVault);
 
 /* ========== CONTRACTS ========== */
 
-contract AllowlistGuard {
+contract AllowlistGuard is SpoolAccessControllable {
     /* ========== EVENTS ========== */
 
     /**
@@ -36,19 +37,12 @@ contract AllowlistGuard {
     /* ========== STATE VARIABLES ========== */
 
     /**
-     * @notice ID of the role that is allowed to manage the allowlist for a smart vault.
-     */
-    bytes32 public constant ALLOWLIST_MANAGER_ROLE = keccak256("ALLOWLIST_MANAGER_ROLE");
-
-    /**
      * @notice Allowlists for a smart vault.
      * Each smart vault can have multiple allowlists, differentiated by an ID.
      */
     mapping(address => mapping(uint256 => mapping(address => bool))) private allowlists;
 
-    /* ========== CONSTRUCTOR ========== */
-
-    constructor() {}
+    constructor(ISpoolAccessControl accessControl_) SpoolAccessControllable(accessControl_) {}
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
@@ -75,7 +69,7 @@ contract AllowlistGuard {
      */
     function addToAllowlist(address smartVault, uint256 allowlistId, address[] calldata addresses)
         external
-        onlyAllowlistManager(smartVault)
+        onlySmartVaultRole(smartVault, ROLE_GUARD_ALLOWLIST_MANAGER, msg.sender)
     {
         for (uint256 i = 0; i < addresses.length; i++) {
             allowlists[smartVault][allowlistId][addresses[i]] = true;
@@ -94,27 +88,12 @@ contract AllowlistGuard {
      */
     function removeFromAllowlist(address smartVault, uint256 allowlistId, address[] calldata addresses)
         external
-        onlyAllowlistManager(smartVault)
+        onlySmartVaultRole(smartVault, ROLE_GUARD_ALLOWLIST_MANAGER, msg.sender)
     {
         for (uint256 i = 0; i < addresses.length; i++) {
             allowlists[smartVault][allowlistId][addresses[i]] = false;
         }
 
         emit RemovedFromAllowlist(smartVault, allowlistId, addresses);
-    }
-
-    /* ========== INTERNAL FUNCTIONS ========== */
-
-    function _onlyAllowlistManager(address smartVault) private view {
-        if (!ISmartVault(smartVault).hasRole(ALLOWLIST_MANAGER_ROLE, msg.sender)) {
-            revert CallerNotAllowlistManager(msg.sender, smartVault);
-        }
-    }
-
-    /* ========== MODIFIERS ========== */
-
-    modifier onlyAllowlistManager(address smartVault) {
-        _onlyAllowlistManager(smartVault);
-        _;
     }
 }

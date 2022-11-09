@@ -1,7 +1,6 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IMasterWallet.sol";
-import "@openzeppelin/access/Ownable.sol";
 
 // TODO: Access control
 contract MasterWallet is IMasterWallet {

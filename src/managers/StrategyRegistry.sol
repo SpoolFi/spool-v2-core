@@ -7,15 +7,13 @@ import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/CommonErrors.sol";
 import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IMasterWallet.sol";
-import "@openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
 import "../libraries/ArrayMapping.sol";
+import "../access/SpoolAccessControl.sol";
 
-contract StrategyRegistry is IStrategyRegistry, AccessControlUpgradeable {
+contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     using ArrayMapping for mapping(uint256 => uint256);
 
     /* ========== STATE VARIABLES ========== */
-
-    bytes32 public constant CLAIMER_ROLE = keccak256("CLAIMER");
 
     IMasterWallet immutable _masterWallet;
 
@@ -34,12 +32,10 @@ contract StrategyRegistry is IStrategyRegistry, AccessControlUpgradeable {
     /// @notice TODO strategy => index => tokenAmounts
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) _withdrawnAssets;
 
-    constructor(IMasterWallet masterWallet_) {
+    constructor(IMasterWallet masterWallet_, ISpoolAccessControl accessControl_)
+        SpoolAccessControllable(accessControl_)
+    {
         _masterWallet = masterWallet_;
-    }
-
-    function initialize() external initializer {
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -140,7 +136,7 @@ contract StrategyRegistry is IStrategyRegistry, AccessControlUpgradeable {
         address[] memory strategies_,
         uint256[] memory dhwIndexes,
         uint256[] memory strategyShares
-    ) external view onlyRole(CLAIMER_ROLE) returns (uint256[] memory) {
+    ) external view onlyRole(ROLE_STRATEGY_CLAIMER, msg.sender) returns (uint256[] memory) {
         address[] memory tokens = IStrategy(strategies_[0]).assets();
         uint256[] memory totalWithdrawnAssets = new uint256[](tokens.length);
 
