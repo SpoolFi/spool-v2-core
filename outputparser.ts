@@ -3,6 +3,8 @@ const fs = require("fs")
 
 function coverage(){
 
+    console.log("\nCOVERAGE")
+    console.log("______________________________________________________________________________________________________________________________")
     const rgx = /src\/.*.sol *\| \d{1,3}.\d{1,3}% \((\d+\/\d+)\) *\| \d{1,3}.\d{1,3}% \((\d+\/\d+)\) *\| \d{1,3}.\d{1,3}% \((\d+\/\d+)\) *\| \d{1,3}.\d{1,3}% \((\d+\/\d+)\)/gi;
     const findNull = /\0/g;
     const filename = "coverage_output.txt"
@@ -58,10 +60,12 @@ function coverage(){
     function addCoverage(covArray: any, newCov: any) {
         return [covArray[0] + newCov[0], covArray[1] + newCov[1]]
     }
+    console.log("______________________________________________________________________________________________________________________________")
 }
 
 function sizes() {
-
+    console.log("\nSIZES")
+    console.log("______________________________________________________________________________________________________________________________")
     const re = /([a-zA-Z0-9.() ])+/g;
     const findNull = /\0/g;
     const findSpace = / /g;
@@ -84,7 +88,7 @@ function sizes() {
 
     var table = [];
     for(var i = 0; i < arr.length; i++){
-        var a = arr[i].search(/�/)
+        var a = arr[i].search(/[╭│]/)
         if( a != -1){
             var withoutNulls = arr[i].replace(findNull, "");
             var withoutSpaces = withoutNulls.replace(findSpace, "");
@@ -101,10 +105,15 @@ function sizes() {
     }
 
     console.table(table);
+    console.log("______________________________________________________________________________________________________________________________")
+
 }
 
 
 function test() {
+    console.log("\nTESTS");
+    console.log("______________________________________________________________________________________________________________________________")
+
     const filename = "test_output.txt";
     const findNull = /\0/g;
     var text = fs.readFileSync(filename, 'utf-8');
@@ -120,6 +129,8 @@ function test() {
         }
         console.log();
     }
+    console.log("______________________________________________________________________________________________________________________________")
+
 }
 
 coverage();                                                     
