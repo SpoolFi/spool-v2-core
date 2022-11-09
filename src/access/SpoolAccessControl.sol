@@ -23,8 +23,7 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl, Sp
      * @notice Check whether account was granted given role for given smart vault
      */
     function hasSmartVaultRole(address smartVault, bytes32 role, address account) external view returns (bool) {
-        bytes32 role_ = keccak256(abi.encode(smartVault, role));
-        return hasRole(role_, account);
+        return hasRole(_getSmartVaultRole(smartVault, role), account);
     }
 
     /**
@@ -34,8 +33,7 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl, Sp
         external
         onlyAdminOrVaultAdmin(smartVault, msg.sender)
     {
-        bytes32 role_ = keccak256(abi.encode(smartVault, role));
-        _grantRole(role_, account);
+        _grantRole(_getSmartVaultRole(smartVault, role), account);
     }
 
     /**
@@ -45,23 +43,25 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl, Sp
         external
         onlyAdminOrVaultAdmin(smartVault, msg.sender)
     {
-        bytes32 role_ = keccak256(abi.encode(smartVault, role));
-        _revokeRole(role_, account);
+        _revokeRole(_getSmartVaultRole(smartVault, role), account);
     }
 
     /**
      * @notice Renounce specific role for given smart vault
      */
     function renounceSmartVaultRole(address smartVault, bytes32 role) external {
-        bytes32 role_ = keccak256(abi.encode(smartVault, role));
-        renounceRole(role_, msg.sender);
+        renounceRole(keccak256(abi.encode(smartVault, role)), msg.sender);
     }
 
     function _onlyAdminOrVaultAdmin(address smartVault, address account) private {
-        bytes32 vaultAdminRole = keccak256(abi.encode(smartVault, ROLE_SMART_VAULT_ADMIN));
+        bytes32 vaultAdminRole = _getSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN);
         if (!hasRole(DEFAULT_ADMIN_ROLE, account) && !hasRole(vaultAdminRole, account)) {
             revert MissingRole(vaultAdminRole, account);
         }
+    }
+
+    function _getSmartVaultRole(address smartVault, bytes32 role) internal view returns (bytes32) {
+        return keccak256(abi.encode(smartVault, role));
     }
 
     /**
