@@ -35,7 +35,7 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl, Sp
         onlyAdminOrVaultAdmin(smartVault, msg.sender)
     {
         bytes32 role_ = keccak256(abi.encode(smartVault, role));
-        grantRole(role_, account);
+        _grantRole(role_, account);
     }
 
     /**
@@ -46,7 +46,7 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl, Sp
         onlyAdminOrVaultAdmin(smartVault, msg.sender)
     {
         bytes32 role_ = keccak256(abi.encode(smartVault, role));
-        revokeRole(role_, account);
+        _revokeRole(role_, account);
     }
 
     /**
