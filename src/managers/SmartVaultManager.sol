@@ -490,13 +490,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         validSmartVault(smartVault)
         returns (uint256)
     {
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVault]);
-        _runGuards(depositor, receiver, assets, assetGroup, RequestType.Deposit);
-        _runActions(depositor, receiver, assets, assetGroup, RequestType.Deposit);
-        uint256 flushIdx = _depositAssets(smartVault, depositor, receiver, assets, assetGroup);
-
-        DepositMetadata memory metadata = DepositMetadata(assets, block.timestamp, flushIdx);
-        return ISmartVault(smartVault).mintDepositNFT(receiver, metadata);
+        return _depositAssets(smartVault, depositor, receiver, assets);
     }
 
     /**
@@ -514,13 +508,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         address receiver,
         uint256[][] calldata slippages
     ) external validSmartVault(smartVault) returns (uint256) {
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVault]);
-        _runGuards(msg.sender, receiver, assets, assetGroup, RequestType.Deposit);
-        _runActions(msg.sender, receiver, assets, assetGroup, RequestType.Deposit);
-        uint256 flushIdx = _depositAssets(smartVault, msg.sender, receiver, assets, assetGroup);
-
-        DepositMetadata memory metadata = DepositMetadata(assets, block.timestamp, flushIdx);
-        return ISmartVault(smartVault).mintDepositNFT(receiver, metadata);
+        revert("0");
     }
 
     /**
@@ -540,13 +528,7 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
         validSmartVault(smartVault)
         returns (uint256)
     {
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVault]);
-        _runActions(msg.sender, receiver, assets, assetGroup, RequestType.Deposit);
-        _runGuards(msg.sender, receiver, assets, assetGroup, RequestType.Deposit);
-        uint256 flushIdx = _depositAssets(smartVault, msg.sender, receiver, assets, assetGroup);
-
-        DepositMetadata memory metadata = DepositMetadata(assets, block.timestamp, flushIdx);
-        return ISmartVault(smartVault).mintDepositNFT(receiver, metadata);
+        return _depositAssets(smartVault, msg.sender, receiver, assets);
     }
 
     function claimWithdrawal(address smartVaultAddress, uint256 withdrawalNftId, address receiver)
@@ -686,21 +668,19 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
-    function _depositAssets(
-        address smartVault,
-        address owner,
-        address, /* receiver */
-        uint256[] memory assets,
-        address[] memory tokens
-    ) internal returns (uint256) {
-        require(assets.length == tokens.length, "SmartVault::depositFor::invalid assets length");
+    function _depositAssets(address smartVault, address owner, address receiver, uint256[] memory assets)
+        internal
+        returns (uint256)
+    {
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVault]);
+        _runGuards(owner, receiver, assets, tokens, RequestType.Deposit);
+        _runActions(owner, receiver, assets, tokens, RequestType.Deposit);
 
         for (uint256 i = 0; i < assets.length; i++) {
             ERC20(tokens[i]).safeTransferFrom(owner, address(_masterWallet), assets[i]);
         }
 
         if (tokens.length != assets.length) revert InvalidAssetLengths();
-
         uint256 flushIdx = _flushIndexes[smartVault];
 
         for (uint256 i = 0; i < assets.length; i++) {
@@ -708,7 +688,8 @@ contract SmartVaultManager is SmartVaultRegistry, ISmartVaultManager {
             _vaultDeposits[smartVault][flushIdx][i] += assets[i];
         }
 
-        return _flushIndexes[smartVault];
+        DepositMetadata memory metadata = DepositMetadata(assets, block.timestamp, flushIdx);
+        return ISmartVault(smartVault).mintDepositNFT(receiver, metadata);
     }
 
     function _redeemShares(address smartVaultAddress, uint256 vaultShares, address receiver, address owner)
