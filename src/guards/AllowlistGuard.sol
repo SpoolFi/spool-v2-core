@@ -5,6 +5,11 @@ import "../interfaces/ISmartVault.sol";
 
 /* ========== ERRORS ========== */
 
+/**
+ * @notice Used when caller is not allowed to manage the allowlist for the smart vault.
+ * @param caller Address of the caller.
+ * @param smartVault Address of the smart vault.
+ */
 error CallerNotAllowlistManager(address caller, address smartVault);
 
 /* ========== CONTRACTS ========== */
@@ -12,15 +17,33 @@ error CallerNotAllowlistManager(address caller, address smartVault);
 contract AllowlistGuard {
     /* ========== EVENTS ========== */
 
+    /**
+     * @notice Emitted when addresses are added to the allowlist for the smart vault.
+     * @param smartVault Address of the smart vault.
+     * @param allowlistId ID of the allowlist of the smart vault.
+     * @param addresses Addresses added to the allowlist.
+     */
     event AddedToAllowlist(address indexed smartVault, uint256 indexed allowlistId, address[] addresses);
 
+    /**
+     * @notice Emitted when addresses are removed from the allowlist for the smart vault.
+     * @param smartVault Address of the smart vault.
+     * @param allowlistId ID of the allowlist of the smart vault.
+     * @param addresses Addresses removed from the allowlist.
+     */
     event RemovedFromAllowlist(address indexed smartVault, uint256 indexed allowlistId, address[] addresses);
 
     /* ========== STATE VARIABLES ========== */
 
+    /**
+     * @notice ID of the role that is allowed to manage the allowlist for a smart vault.
+     */
     bytes32 public constant ALLOWLIST_MANAGER_ROLE = keccak256("ALLOWLIST_MANAGER_ROLE");
 
-    // vault => allowlist ID => address => allowed
+    /**
+     * @notice Allowlists for a smart vault.
+     * Each smart vault can have multiple allowlists, differentiated by an ID.
+     */
     mapping(address => mapping(uint256 => mapping(address => bool))) private allowlists;
 
     /* ========== CONSTRUCTOR ========== */
@@ -29,12 +52,27 @@ contract AllowlistGuard {
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
+    /**
+     * @notice Check if address is on allowlist for a smart vault.
+     * @param smartVault Address of the smart vault.
+     * @param allowlistId ID of the allowlist for the smart vault.
+     * @param address_ Address to check.
+     * @return True when address is on the allowlist, false otherwise.
+     */
     function isAllowed(address smartVault, uint256 allowlistId, address address_) external view returns (bool) {
         return allowlists[smartVault][allowlistId][address_];
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
+    /**
+     * @notice Add addresses to allowlist for a smart vault.
+     * @dev Requirements:
+     * - caller must be set as allowlist manager on the smart vault
+     * @param smartVault Address of the smart vault.
+     * @param allowlistId ID of the allowlist for the smart vault.
+     * @param addresses Addresses to add to the allowlist.
+     */
     function addToAllowlist(address smartVault, uint256 allowlistId, address[] calldata addresses)
         external
         onlyAllowlistManager(smartVault)
@@ -46,6 +84,14 @@ contract AllowlistGuard {
         emit AddedToAllowlist(smartVault, allowlistId, addresses);
     }
 
+    /**
+     * @notice Remove addresses from allowlist for a smart vault.
+     * @dev Requirements:
+     * - caller must be set as allowlist manager on the smart vault
+     * @param smartVault Address of the smart vault.
+     * @param allowlistId ID of the allowlist for the smart vault.
+     * @param addresses Addresses to remove from the allowlist.
+     */
     function removeFromAllowlist(address smartVault, uint256 allowlistId, address[] calldata addresses)
         external
         onlyAllowlistManager(smartVault)

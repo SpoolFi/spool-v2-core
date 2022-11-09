@@ -56,7 +56,7 @@ contract ActionManagerTest is Test {
         uint256[] memory amounts = new uint256[](1);
 
         ActionContext memory actionContext =
-            ActionContext(address(user), address(user), RequestType.Deposit, tokens, amounts);
+            ActionContext(address(user), address(user), address(user), RequestType.Deposit, tokens, amounts);
         actionManager.runActions(smartVaultId, actionContext);
     }
 }

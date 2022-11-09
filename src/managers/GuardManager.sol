@@ -38,7 +38,7 @@ contract GuardManager is Ownable, IGuardManager {
 
             bytes memory encoded = _encodeFunctionCall(smartVaultId, guard, context);
             (bool success, bytes memory data) = guard.contractAddress.staticcall(encoded);
-            _checkResult(success, data, guard.operator, guard.expectedValue);
+            _checkResult(success, data, guard.operator, guard.expectedValue, i);
         }
     }
 
@@ -97,7 +97,10 @@ contract GuardManager is Ownable, IGuardManager {
         return Strings.toHexString(uint256(uint160(address_)), 20);
     }
 
-    function _checkResult(bool success, bytes memory returnValue, bytes2 operator, bytes32 value) internal pure {
+    function _checkResult(bool success, bytes memory returnValue, bytes2 operator, bytes32 value, uint256 guardNum)
+        internal
+        pure
+    {
         if (!success) revert GuardError();
 
         bool result = true;
@@ -116,7 +119,7 @@ contract GuardManager is Ownable, IGuardManager {
             result = abi.decode(returnValue, (bool));
         }
 
-        if (!result) revert GuardFailed();
+        if (!result) revert GuardFailed(guardNum);
     }
 
     /**
@@ -156,6 +159,8 @@ contract GuardManager is Ownable, IGuardManager {
                 result = bytes.concat(result, abi.encode(context.receiver));
             } else if (paramType == GuardParamType.Executor) {
                 result = bytes.concat(result, abi.encode(context.executor));
+            } else if (paramType == GuardParamType.Owner) {
+                result = bytes.concat(result, abi.encode(context.owner));
             } else if (paramType == GuardParamType.Amounts) {
                 result = bytes.concat(result, abi.encode(paramsEndLoc));
                 paramsEndLoc += 32 + context.amounts.length * 32;
