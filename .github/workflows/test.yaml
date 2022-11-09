@@ -40,7 +40,7 @@ jobs:
       - name: Run Forge tests
         run: |
           forge test -vvv
-          forge test > test_output.txt
+          forge test --json > test_output.txt
         id: test
 
       - name: Install ts-node
