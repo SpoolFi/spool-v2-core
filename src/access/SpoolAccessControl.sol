@@ -50,7 +50,11 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl, Sp
      * @notice Renounce specific role for given smart vault
      */
     function renounceSmartVaultRole(address smartVault, bytes32 role) external {
-        renounceRole(keccak256(abi.encode(smartVault, role)), msg.sender);
+        renounceRole(_getSmartVaultRole(smartVault, role), msg.sender);
+    }
+
+    function checkIsAdminOrVaultAdmin(address smartVault, address account) external {
+        _onlyAdminOrVaultAdmin(smartVault, account);
     }
 
     function _onlyAdminOrVaultAdmin(address smartVault, address account) private {
@@ -115,6 +119,14 @@ abstract contract SpoolAccessControllable is SpoolAccessRoles {
      */
     modifier onlySmartVaultRole(address smartVault, bytes32 role, address account) {
         _checkSmartVaultRole(smartVault, role, account);
+        _;
+    }
+
+    /**
+     * @notice Reverts if account not admin or smart vault admin
+     */
+    modifier onlyAdminOrVaultAdmin(address smartVault, address account) {
+        _accessControl.checkIsAdminOrVaultAdmin(smartVault, account);
         _;
     }
 }

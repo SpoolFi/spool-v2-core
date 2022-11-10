@@ -9,10 +9,10 @@ import "./mocks/MockToken.sol";
 import "./mocks/Constants.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
 
-contract RewardManagerEmissionTests is Test {
+contract RewardManagerEmissionTests is Test, SpoolAccessRoles {
     function test_getActiveRewards_failsWhenNotInvokedController() public {
-        RewardManager rewardManager = new RewardManager();
-
+        SpoolAccessControl sac = new SpoolAccessControl();
+        RewardManager rewardManager = new RewardManager(sac);
         uint256 rewardAmount = 100000 ether;
         uint32 rewardDuration = SECONDS_IN_DAY * 10;
 
@@ -34,8 +34,8 @@ contract RewardManagerEmissionTests is Test {
     }
 
     function testA() public {
-        RewardManager rewardManager = new RewardManager();
-
+        SpoolAccessControl sac = new SpoolAccessControl();
+        RewardManager rewardManager = new RewardManager(sac);
         uint256 rewardAmount = 1000000 ether;
         uint32 rewardDuration = SECONDS_IN_DAY * 10;
         address vaultOwner = address(100);
@@ -47,7 +47,7 @@ contract RewardManagerEmissionTests is Test {
 
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
         deal(address(smartVault), user, rewardAmount, true); // Depositing into a vault.
-
+        sac.grantSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, vaultOwner);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
         rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);

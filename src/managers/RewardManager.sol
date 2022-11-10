@@ -2,6 +2,7 @@
 pragma solidity ^0.8.16;
 import {console} from "forge-std/console.sol";
 
+import "../access/SpoolAccessControl.sol";
 import "../interfaces/IRewardManager.sol";
 import "../utils/Math.sol";
 
@@ -9,7 +10,7 @@ import "@openzeppelin/security/ReentrancyGuard.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 
 
-contract RewardManager is IRewardManager, ReentrancyGuard {
+contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllable  {
     using SafeERC20 for IERC20;
     /* ========== CONSTANTS ========== */
 
@@ -28,6 +29,9 @@ contract RewardManager is IRewardManager, ReentrancyGuard {
     mapping(address => mapping(IERC20 => RewardConfiguration)) public rewardConfiguration;
 
     mapping(address => mapping(IERC20 => bool)) tokenBlacklist;
+
+    constructor (ISpoolAccessControl spoolAccessControl) SpoolAccessControllable(spoolAccessControl) {}
+
     /* ========== VIEWS ========== */
 
     function lastTimeRewardApplicable(address smartVault, IERC20 token) public view returns (uint32) {
@@ -130,7 +134,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard {
      */
     function addToken(address smartVault, IERC20 token, uint32 rewardsDuration, uint256 reward)
         external
-        /*onlyVaultOwnerOrSpoolOwner TODO acl */
+        onlyAdminOrVaultAdmin(smartVault, msg.sender)
         exceptUnderlying(token)
     {
         RewardConfiguration storage config = rewardConfiguration[smartVault][token];
@@ -333,6 +337,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard {
      */
     function _onlyController() private view {
         // TODO Add ACL !!!
+
         /* require(
             msg.sender == address(controller),
             "OCTRL"

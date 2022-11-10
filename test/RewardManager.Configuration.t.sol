@@ -11,7 +11,8 @@ import "@openzeppelin/token/ERC20/IERC20.sol";
 
 contract RewardManagerConfigurationTests is Test {
     function test_Configuration_shouldAddOneToken() public {
-        RewardManager rewardManager = new RewardManager();
+        SpoolAccessControl sac = new SpoolAccessControl();
+        RewardManager rewardManager = new RewardManager(sac);
 
         uint256 rewardAmount = 100000 ether;
         uint32 rewardDuration = SECONDS_IN_DAY * 10;
@@ -44,8 +45,8 @@ contract RewardManagerConfigurationTests is Test {
     }
 
     function test_Configruation_addingTwoRewardTokens() public {
-        RewardManager rewardManager = new RewardManager();
-
+        SpoolAccessControl sac = new SpoolAccessControl();
+        RewardManager rewardManager = new RewardManager(sac);
         uint256 rewardAmount = 100000 ether;
         uint32 rewardDuration = SECONDS_IN_DAY * 10;
 
@@ -83,8 +84,8 @@ contract RewardManagerConfigurationTests is Test {
     }
 
     function test_Force_Removed_Tokens_Are_Not_Added() public {
-        RewardManager rewardManager = new RewardManager();
-
+        SpoolAccessControl sac = new SpoolAccessControl();
+        RewardManager rewardManager = new RewardManager(sac);
         uint256 rewardAmount = 100000 ether;
         uint32 rewardDuration = SECONDS_IN_DAY * 10;
 
