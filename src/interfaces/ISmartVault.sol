@@ -16,14 +16,26 @@ import "./RequestType.sol";
 error InsufficientBalance(uint256 available, uint256 required);
 
 /**
+ * @notice Used when the ID for deposit NFTs overflows.
+ * @dev Should never happen.
+ */
+error DepositIdOverflow();
+
+/**
  * @notice Used when the ID for withdrawal NFTs overflows.
  * @dev Should never happen.
  */
 error WithdrawalIdOverflow();
 
 /**
+ * @notice Used when ID does not represent a deposit NFT.
+ * @param depositNftId Invalid ID for deposit NFT.
+ */
+error InvalidDepositNftId(uint256 depositNftId);
+
+/**
  * @notice Used when ID does not represent a withdrawal NFT.
- * @param withdrawalNftId Invalid withdrawal NFT ID.
+ * @param withdrawalNftId Invalid ID for withdrawal NFT.
  */
 error InvalidWithdrawalNftId(uint256 withdrawalNftId);
 
@@ -74,6 +86,13 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
     function isShareTokenTransferable() external view returns (bool isTransferable);
 
     /**
+     * @notice Gets metadata for a deposit NFT.
+     * @param depositNftId ID of the deposit NFT.
+     * @return Metadata of the deposit NFT.
+     */
+    function getDepositMetadata(uint256 depositNftId) external view returns (DepositMetadata memory);
+
+    /**
      * @notice Gets metadata for a withdrawal NFT.
      * @param withdrawalNftId ID of the withdrawal NFT.
      * @return Metadata of the withdrawal NFT.
@@ -120,9 +139,18 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
         external
         returns (uint256 receipt);
 
-    function burnNFT(address owner, uint256 nftID, RequestType type_) external;
+    function burnNFT(address owner, uint256 nftId, RequestType type_) external;
 
     function mintDepositNFT(address receiver, DepositMetadata memory metadata) external returns (uint256 receipt);
+
+    /**
+     * @notice Transfers unclaimed shares to claimer.
+     * @dev Requirements:
+     * - can only be called from smart vault manager.
+     * @param claimer Address that claims the shares.
+     * @param amount Amount of shares to transfer.
+     */
+    function claimShares(address claimer, uint256 amount) external;
 
     function releaseStrategyShares(address[] memory strategies, uint256[] memory shares) external;
 }

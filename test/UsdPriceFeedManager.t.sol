@@ -95,4 +95,38 @@ contract UsdPriceFeedManagerTest is Test {
         vm.expectRevert(abi.encodeWithSelector(NonPositivePrice.selector, -1));
         usdPriceFeedManager.usdToAsset(daiAddress, 1);
     }
+
+    function test_assetToUsdCustomPrice_shouldConvert() public {
+        _setDaiAsset();
+        daiUsdPriceAggregator.pushAnswer(1_00007408);
+
+        uint256 price = usdPriceFeedManager.assetToUsd(daiAddress, 10 ** usdPriceFeedManager.assetDecimals(daiAddress));
+
+        assertEq(
+            usdPriceFeedManager.assetToUsdCustomPrice(daiAddress, 1_854895125485269876, price),
+            1_85503253611616582479241408
+        );
+    }
+
+    function test_assetToUsdCustomPrice_shouldRevertWhenAssetIsNotValid() public {
+        vm.expectRevert(abi.encodeWithSelector(InvalidAsset.selector, daiAddress));
+        usdPriceFeedManager.assetToUsdCustomPrice(daiAddress, 1, 1);
+    }
+
+    function test_usdToAssetCustomPrice_shouldConvert() public {
+        _setDaiAsset();
+        daiUsdPriceAggregator.pushAnswer(1_00007408);
+
+        uint256 price = usdPriceFeedManager.assetToUsd(daiAddress, 10 ** usdPriceFeedManager.assetDecimals(daiAddress));
+
+        assertEq(
+            usdPriceFeedManager.usdToAssetCustomPrice(daiAddress, 1_85503253611616582479241408, price),
+            1_854895125485269876
+        );
+    }
+
+    function test_usdToAssetCustomPrice_shouldRevertWhenAssetIsNotValid() public {
+        vm.expectRevert(abi.encodeWithSelector(InvalidAsset.selector, daiAddress));
+        usdPriceFeedManager.usdToAssetCustomPrice(daiAddress, 1, 1);
+    }
 }
