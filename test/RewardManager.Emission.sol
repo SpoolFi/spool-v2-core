@@ -7,19 +7,16 @@ import "../src/managers/RewardManager.sol";
 import "../src/interfaces/IRewardManager.sol";
 import "./mocks/MockToken.sol";
 import "./mocks/Constants.sol";
+import "./RewardManager.t.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
 
-contract RewardManagerEmissionTests is Test, SpoolAccessRoles {
-    function test_getActiveRewards_failsWhenNotInvokedController() public {
-        SpoolAccessControl sac = new SpoolAccessControl();
-        RewardManager rewardManager = new RewardManager(sac);
-        uint256 rewardAmount = 100000 ether;
-        uint32 rewardDuration = SECONDS_IN_DAY * 10;
+contract RewardManagerEmissionTests is RewardManagerTests {
 
-        address smartVault = address(1);
+    function test_getActiveRewards_failsWhenNotInvokedController() public {
+
+
         address user = address(100);
 
-        MockToken rewardToken = new MockToken("REWARD", "REWARD");
 
         deal(address(rewardToken), user, rewardAmount, true);
 
@@ -33,17 +30,9 @@ contract RewardManagerEmissionTests is Test, SpoolAccessRoles {
         //        rewardManager.getActiveRewards(smartVault, user); // TODO expectRevert when ACL is complete
     }
 
-    function testA() public {
-        SpoolAccessControl sac = new SpoolAccessControl();
-        RewardManager rewardManager = new RewardManager(sac);
-        uint256 rewardAmount = 1000000 ether;
-        uint32 rewardDuration = SECONDS_IN_DAY * 10;
-        address vaultOwner = address(100);
-        address user = address(101);
+    function test_getActiveRewards_userGetsRewards() public {
 
-        MockToken rewardToken = new MockToken("R", "R");
-        MockToken smartVaultToken = new MockToken("SVT", "SVT");
-        address smartVault = address(smartVaultToken);
+        address user = address(101);
 
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
         deal(address(smartVault), user, rewardAmount, true); // Depositing into a vault.
@@ -53,7 +42,6 @@ contract RewardManagerEmissionTests is Test, SpoolAccessRoles {
         rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
         vm.stopPrank();
 
-//        console.log(rewardManager.rewardPerToken(smartVault, rewardToken));
         uint256 userRewardTokenBalanceBefore = rewardToken.balanceOf(user);
         console.log(userRewardTokenBalanceBefore);
         skip(rewardDuration * 2);
@@ -67,8 +55,5 @@ contract RewardManagerEmissionTests is Test, SpoolAccessRoles {
 
         uint256 userRewardTokenBalance = rewardToken.balanceOf(user);
         assertGt(userRewardTokenBalance, 0);
-
-
-        console.log(userRewardTokenBalance);
     }
 }

@@ -7,28 +7,11 @@ import "../src/managers/RewardManager.sol";
 import "../src/interfaces/IRewardManager.sol";
 import "./mocks/MockToken.sol";
 import "./mocks/Constants.sol";
+import "./RewardManager.t.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
 
-contract RewardManagerConfigurationTests is Test, SpoolAccessRoles {
-    SpoolAccessControl sac;
-    RewardManager rewardManager;
-    uint256 rewardAmount;
-    uint32 rewardDuration;
-    address vaultOwner;
-    address smartVault;
-    MockToken rewardToken;
-    function setUp() public {
-        sac = new SpoolAccessControl();
-        rewardManager = new RewardManager(sac);
-        rewardAmount = 100000 ether;
-        rewardDuration = SECONDS_IN_DAY * 10;
-        MockToken smartVaultToken = new MockToken("SVT", "SVT");
-        smartVault = address(smartVaultToken);
-        vaultOwner = address(100);
+contract RewardManagerConfigurationTests is RewardManagerTests {
 
-        sac.grantSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, vaultOwner);
-        rewardToken = new MockToken("R", "R");
-    }
     function test_Configuration_shouldAddOneToken() public {
 
 
