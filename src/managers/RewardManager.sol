@@ -376,6 +376,7 @@ contract  RewardManager is IRewardManager, ReentrancyGuard {
     * @notice Ensures that the caller is the controller
      */
     function _onlyController() private view {
+        // TODO Add ACL !!!
        /* require(
             msg.sender == address(controller),
             "OCTRL"

@@ -9,7 +9,7 @@ import "./mocks/MockToken.sol";
 import "./mocks/Constants.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
 
-contract RewardManagerTest is Test {
+contract RewardManagerConfigurationTests is Test {
 
     function test_Configuration_ShouldAddOneToken() public {
         RewardManager rewardManager = new RewardManager();
