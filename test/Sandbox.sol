@@ -30,6 +30,14 @@ contract B {
 
 contract C is A, B {}
 
+interface ISingleFunction {
+    function SomeRandomFunctionName(address token) external view returns (bool);
+}
+
+contract ImpSF is ISingleFunction {
+    mapping(address => bool) public SomeRandomFunctionName;
+}
+
 contract ActionManagerTest is Test {
     function testA() public {
         address user = address(256);
