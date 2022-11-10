@@ -46,36 +46,34 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager {
 
     /* ========== EXTERNAL FUNCTIONS ========== */
 
-    /**
-     * @notice Returns decimal places used for USD amount.
-     * @return Decimal places used for USD.
-     */
     function usdDecimals() external pure returns (uint256) {
         return USD_DECIMALS;
     }
 
-    /**
-     * @notice Calculates asset worth in USD.
-     * @dev Requirements:
-     * - asset must be valid
-     * @param asset Asset used in conversion.
-     * @param assetAmount Amount of asset to convert (in asset decimals).
-     * @return USD amount (in USD decimals).
-     */
     function assetToUsd(address asset, uint256 assetAmount) external view onlyValidAsset(asset) returns (uint256) {
         return assetAmount * _getAssetPriceInUsd(asset) * assetPriceAggregatorMultiplier[asset] / assetMultiplier[asset];
     }
 
-    /**
-     * @notice Calculates USD worth in asset.
-     * @dev Requirements:
-     * - asset must be valid
-     * @param asset Asset used in conversion.
-     * @param usdAmount Amount of USD to convert (in USD decimals).
-     * @return Asset amount (in asset decimals).
-     */
     function usdToAsset(address asset, uint256 usdAmount) external view onlyValidAsset(asset) returns (uint256) {
         return usdAmount * assetMultiplier[asset] / assetPriceAggregatorMultiplier[asset] / _getAssetPriceInUsd(asset);
+    }
+
+    function assetToUsdCustomPrice(address asset, uint256 assetAmount, uint256 price)
+        external
+        view
+        onlyValidAsset(asset)
+        returns (uint256)
+    {
+        return assetAmount * price / assetMultiplier[asset];
+    }
+
+    function usdToAssetCustomPrice(address asset, uint256 usdAmount, uint256 price)
+        external
+        view
+        onlyValidAsset(asset)
+        returns (uint256)
+    {
+        return usdAmount * assetMultiplier[asset] / price;
     }
 
     /* ========== PRIVATE FUNCTIONS ========== */

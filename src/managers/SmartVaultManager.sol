@@ -230,7 +230,7 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
 }
 
 contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
     using ArrayMapping for mapping(uint256 => uint256);
 
     /* ========== STATE VARIABLES ========== */
@@ -524,17 +524,24 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             revert DepositNotSyncedYet();
         }
 
-        uint256[] memory totalDepositedAssets = _vaultDeposits[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
-        uint256[] memory exchangeRates = _flushExchangeRates[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
-
         uint256 depositedUsd;
         uint256 totalDepositedUsd;
-        for (uint256 i = 0; i < data.assets.length; i++) {
-            depositedUsd = data.assets[i] * exchangeRates[i];
-            totalDepositedUsd = totalDepositedAssets[i] * exchangeRates[i];
+        {
+            address[] memory assets = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVaultAddress]);
+            uint256[] memory totalDepositedAssets =
+                _vaultDeposits[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
+            uint256[] memory exchangeRates =
+                _flushExchangeRates[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
+
+            for (uint256 i = 0; i < data.assets.length; i++) {
+                depositedUsd += _priceFeedManager.assetToUsdCustomPrice(assets[i], data.assets[i], exchangeRates[i]);
+                totalDepositedUsd +=
+                    _priceFeedManager.assetToUsdCustomPrice(assets[i], totalDepositedAssets[i], exchangeRates[i]);
+            }
         }
 
-        uint256 claimedVaultTokens = _mintedVaultShares[smartVaultAddress][data.flushIndex] * depositedUsd / totalDepositedUsd;
+        uint256 claimedVaultTokens =
+            _mintedVaultShares[smartVaultAddress][data.flushIndex] * depositedUsd / totalDepositedUsd;
         // there will be some dust after all users claim SVTs
         smartVault.claimShares(msg.sender, claimedVaultTokens);
 
@@ -700,7 +707,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _runActions(smartVault, msg.sender, receiver, owner, assets, tokens, RequestType.Deposit);
 
         for (uint256 i = 0; i < assets.length; i++) {
-            ERC20(tokens[i]).safeTransferFrom(owner, address(_masterWallet), assets[i]);
+            IERC20(tokens[i]).safeTransferFrom(owner, address(_masterWallet), assets[i]);
         }
 
         if (tokens.length != assets.length) revert InvalidAssetLengths();
@@ -769,7 +776,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function _getExchangeRates(address[] memory tokens) internal view returns (uint256[] memory) {
         uint256[] memory exchangeRates = new uint256[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {
-            exchangeRates[i] = _priceFeedManager.assetToUsd(tokens[i], 10 ** ERC20(tokens[i]).decimals());
+            exchangeRates[i] = _priceFeedManager.assetToUsd(tokens[i], 10 ** _priceFeedManager.assetDecimals(tokens[i]));
         }
 
         return exchangeRates;

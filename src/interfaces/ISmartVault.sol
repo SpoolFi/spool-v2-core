@@ -139,7 +139,7 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
         external
         returns (uint256 receipt);
 
-    function burnNFT(address owner, uint256 nftID, RequestType type_) external;
+    function burnNFT(address owner, uint256 nftId, RequestType type_) external;
 
     function mintDepositNFT(address receiver, DepositMetadata memory metadata) external returns (uint256 receipt);
 
