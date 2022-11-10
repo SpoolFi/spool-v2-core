@@ -13,30 +13,20 @@ import "@openzeppelin/token/ERC20/IERC20.sol";
 contract RewardManagerEmissionTests is RewardManagerTests {
 
     function test_getActiveRewards_failsWhenNotInvokedController() public {
+        deal(address(rewardToken), vaultOwner, rewardAmount, true);
 
-
-        address user = address(100);
-
-
-        deal(address(rewardToken), user, rewardAmount, true);
-
-        vm.startPrank(user);
+        vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
         rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount / 2);
-        //        rewardToken.transfer(address(rewardManager), rewardAmount/2);
         vm.stopPrank();
 
         vm.prank(user);
-        //        rewardManager.getActiveRewards(smartVault, user); // TODO expectRevert when ACL is complete
+        //rewardManager.getActiveRewards(smartVault, user); // TODO expectRevert when ACL is complete
     }
 
     function test_getActiveRewards_userGetsRewards() public {
-
-        address user = address(101);
-
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
         deal(address(smartVault), user, rewardAmount, true); // Depositing into a vault.
-        sac.grantSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, vaultOwner);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
         rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);

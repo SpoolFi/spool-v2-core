@@ -17,7 +17,7 @@ contract RewardManagerTests is Test, SpoolAccessRoles {
     address vaultOwner;
     address smartVault;
     MockToken rewardToken;
-
+    address user;
     function setUp() public {
         sac = new SpoolAccessControl();
         rewardManager = new RewardManager(sac);
@@ -29,5 +29,7 @@ contract RewardManagerTests is Test, SpoolAccessRoles {
 
         sac.grantSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, vaultOwner);
         rewardToken = new MockToken("R", "R");
+
+        user = address(101);
     }
 }

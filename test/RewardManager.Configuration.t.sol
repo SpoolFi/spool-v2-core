@@ -70,18 +70,12 @@ contract RewardManagerConfigurationTests is RewardManagerTests {
     }
 
     function test_Force_Removed_Tokens_Are_Not_Added() public {
-        address user = address(100);
-        deal(address(rewardToken), user, rewardAmount, true);
+        deal(address(rewardToken), vaultOwner, rewardAmount, true);
 
-        vm.startPrank(user);
+        vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
         rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
-        vm.stopPrank();
-        vm.startPrank(vaultOwner);
-        rewardManager.forceRemoveReward(smartVault, rewardToken); // TODO ACL this should fail once we add acl
-        vm.stopPrank();
-
-        vm.startPrank(user);
+        rewardManager.forceRemoveReward(smartVault, rewardToken);
         vm.expectRevert(bytes("TOBL"));
         rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
         vm.stopPrank();
