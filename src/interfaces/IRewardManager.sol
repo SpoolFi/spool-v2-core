@@ -3,7 +3,6 @@ pragma solidity ^0.8.16;
 
 import "@openzeppelin/token/ERC20/IERC20.sol";
 
-
 interface IRewardManager {
     /* ========== STRUCTS ========== */
     // The reward configuration struct, containing all the necessary data of a typical Synthetix StakingReward contract
@@ -19,7 +18,7 @@ interface IRewardManager {
     /* ========== FUNCTIONS ========== */
 
     function getActiveRewards(address smartVault, address account) external;
-    function tokenBlacklisted(address smartVault, IERC20 token) view external returns(bool);
+    function tokenBlacklisted(address smartVault, IERC20 token) external view returns (bool);
 
     /* ========== EVENTS ========== */
 

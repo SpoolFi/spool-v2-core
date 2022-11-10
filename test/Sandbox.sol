@@ -31,7 +31,7 @@ contract B {
 contract C is A, B {}
 
 interface ISingleFunction {
-    function SomeRandomFunctionName(address token) view external returns (bool);
+    function SomeRandomFunctionName(address token) external view returns (bool);
 }
 
 contract ImpSF is ISingleFunction {
