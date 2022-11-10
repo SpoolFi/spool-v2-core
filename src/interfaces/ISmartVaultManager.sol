@@ -13,6 +13,11 @@ error InvalidDepositAmount(address smartVault);
 error IncorrectDepositRatio();
 
 /**
+ * @notice Used when trying to claim SVTs for deposit that was not synced yet.
+ */
+error DepositNotSyncedYet();
+
+/**
  * @notice Used when there is nothing to flush.
  */
 error NothingToFlush();
@@ -146,6 +151,7 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
      * @notice Claims withdrawal of assets by burning withdrawal NFT.
      * @dev Requirements:
      * - withdrawal NFT must be valid
+     * @param smartVault Address of the smart vault that issued the withdrawal NFT.
      * @param withdrawalNftId ID of withdrawal NFT to burn.
      * @param receiver Receiver of claimed assets.
      * @return assetAmounts Amounts of assets claimed.
@@ -154,6 +160,17 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
     function claimWithdrawal(address smartVault, uint256 withdrawalNftId, address receiver)
         external
         returns (uint256[] memory, uint256);
+
+    /**
+     * @notice Claims smart vault tokens by burning the deposit NFT.
+     * @dev Requirements:
+     * - deposit NFT must be valid
+     * - flush must be synced
+     * @param smartVaultAddress Address of the smart vault that issued the deposit NFT.
+     * @param depositNftId ID of the deposit NFT to burn.
+     * @return Amount of smart vault tokens claimed.
+     */
+    function claimSmartVaultTokens(address smartVaultAddress, uint256 depositNftId) external returns (uint256);
 
     /**
      * @dev Burns exactly shares from owner and sends assets of underlying tokens to receiver.

@@ -100,6 +100,10 @@ contract SmartVault is AccessControlUpgradeable, ERC20Upgradeable, ERC1155Upgrad
         revert("0");
     }
 
+    function getDepositMetadata(uint256 depositNftId) external view returns (DepositMetadata memory) {
+        return _depositMetadata[depositNftId];
+    }
+
     function getWithdrawalMetadata(uint256 withdrawalNftId) external view returns (WithdrawalMetadata memory) {
         return _withdrawalMetadata[withdrawalNftId];
     }
@@ -150,15 +154,21 @@ contract SmartVault is AccessControlUpgradeable, ERC20Upgradeable, ERC1155Upgrad
 
     function burnNFT(address owner, uint256 nftID, RequestType type_) external onlySmartVaultManager {
         // check validity and ownership of the NFT
-        if (nftID <= _maxDepositID && type_ == RequestType.Withdrawal) {
+        if (type_ == RequestType.Deposit && nftID > _maximalDepositId) {
+            revert InvalidDepositNftId(nftID);
+        }
+        if (type_ == RequestType.Withdrawal && nftID <= _maximalDepositId) {
             revert InvalidWithdrawalNftId(nftID);
         }
-
         if (balanceOf(owner, nftID) != 1) {
             revert InvalidNftBalance(balanceOf(owner, nftID));
         }
 
         _burn(owner, nftID, 1);
+    }
+
+    function claimShares(address claimer, uint256 amount) external onlySmartVaultManager {
+        _transfer(address(this), claimer, amount);
     }
 
     function releaseStrategyShares(address[] memory strategies, uint256[] memory shares)
@@ -170,8 +180,24 @@ contract SmartVault is AccessControlUpgradeable, ERC20Upgradeable, ERC1155Upgrad
         }
     }
 
+    function mintDepositNFT(address receiver, DepositMetadata memory metadata)
+        external
+        onlySmartVaultManager
+        returns (uint256)
+    {
+        if (_maxDepositID >= _maximalDepositId - 1) {
+            revert DepositIdOverflow();
+        }
+        _maxDepositID++;
+        _depositMetadata[_maxDepositID] = metadata;
+        _mint(receiver, _maxDepositID, 1, "");
+
+        return _maxDepositID;
+    }
+
     function mintWithdrawalNFT(address receiver, WithdrawalMetadata memory metadata)
         external
+        onlySmartVaultManager
         returns (uint256 receipt)
     {
         if (_maxWithdrawalID >= _maximalWithdrawalId - 1) {
@@ -182,16 +208,6 @@ contract SmartVault is AccessControlUpgradeable, ERC20Upgradeable, ERC1155Upgrad
         _mint(receiver, _maxWithdrawalID, 1, "");
 
         return _maxWithdrawalID;
-    }
-
-    function mintDepositNFT(address receiver, DepositMetadata memory metadata) external returns (uint256) {
-        _maxDepositID++;
-        require(_maxDepositID < 2 ** 256 / 2, "SmartVault::deposit::Deposit ID overflow.");
-
-        _mint(receiver, _maxDepositID, 1, "");
-        _depositMetadata[_maxDepositID] = metadata;
-
-        return _maxDepositID;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
