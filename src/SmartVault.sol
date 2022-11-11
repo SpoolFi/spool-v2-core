@@ -35,12 +35,12 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
     mapping(uint256 => WithdrawalMetadata) private _withdrawalMetadata;
 
     // @notice Deposit NFT ID
-    uint256 private _maxDepositId = 0;
+    uint256 private _lastDepositId = 0;
     // @notice Maximal value of deposit NFT ID.
     uint256 private _maximalDepositId = 2 ** 255 - 1;
 
     // @notice Withdrawal NFT ID
-    uint256 private _maxWithdrawalId = 2 ** 255;
+    uint256 private _lastWithdrawalId = 2 ** 255;
     // @notice Maximal value of withdrawal NFT ID.
     uint256 private _maximalWithdrawalId = 2 ** 256 - 1;
 
@@ -166,14 +166,14 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256)
     {
-        if (_maxDepositId >= _maximalDepositId - 1) {
+        if (_lastDepositId >= _maximalDepositId - 1) {
             revert DepositIdOverflow();
         }
-        _maxDepositId++;
-        _depositMetadata[_maxDepositId] = metadata;
-        _mint(receiver, _maxDepositId, 1, "");
+        _lastDepositId++;
+        _depositMetadata[_lastDepositId] = metadata;
+        _mint(receiver, _lastDepositId, 1, "");
 
-        return _maxDepositId;
+        return _lastDepositId;
     }
 
     function mintWithdrawalNFT(address receiver, WithdrawalMetadata memory metadata)
@@ -181,14 +181,14 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256 receipt)
     {
-        if (_maxWithdrawalId >= _maximalWithdrawalId - 1) {
+        if (_lastWithdrawalId >= _maximalWithdrawalId - 1) {
             revert WithdrawalIdOverflow();
         }
-        _maxWithdrawalId++;
-        _withdrawalMetadata[_maxWithdrawalId] = metadata;
-        _mint(receiver, _maxWithdrawalId, 1, "");
+        _lastWithdrawalId++;
+        _withdrawalMetadata[_lastWithdrawalId] = metadata;
+        _mint(receiver, _lastWithdrawalId, 1, "");
 
-        return _maxWithdrawalId;
+        return _lastWithdrawalId;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
