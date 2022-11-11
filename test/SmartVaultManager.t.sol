@@ -22,7 +22,6 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
     ISmartVaultManager smartVaultManager;
     ISpoolAccessControl accessControl;
     IStrategyRegistry strategyRegistry;
-    IRiskManager riskManager;
     MockPriceFeedManager priceFeedManager;
     IAssetGroupRegistry assetGroupRegistry;
 
@@ -35,10 +34,9 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
 
     function setUp() public {
         accessControl = new SpoolAccessControl();
-        masterWallet = new MasterWallet();
+        masterWallet = new MasterWallet(accessControl);
         assetGroupRegistry = new AssetGroupRegistry();
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
-        riskManager = new RiskManager();
         priceFeedManager = new MockPriceFeedManager();
         ISmartVaultDeposits depositManager = new SmartVaultDeposits(masterWallet);
         IGuardManager guardManager = new GuardManager();
@@ -47,7 +45,6 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         smartVaultManager = new SmartVaultManager(
             accessControl,
             strategyRegistry,
-            riskManager,
             depositManager,
             priceFeedManager,
             assetGroupRegistry,
@@ -88,7 +85,7 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         address riskProvider_ = smartVaultManager.riskProvider(smartVault);
         assertEq(riskProvider_, address(0));
 
-        riskManager.registerRiskProvider(riskProvider, true);
+        accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         smartVaultManager.setRiskProvider(smartVault, riskProvider);
 
         riskProvider_ = smartVaultManager.riskProvider(smartVault);

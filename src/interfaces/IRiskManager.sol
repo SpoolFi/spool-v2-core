@@ -2,8 +2,6 @@
 pragma solidity ^0.8.16;
 
 interface IRiskManager {
-    function registerRiskProvider(address riskProvider, bool isEnabled) external;
-
     function setRiskScores(address riskProvider, uint256[] memory riskScores) external;
 
     function calculateAllocations(
@@ -13,11 +11,6 @@ interface IRiskManager {
         uint256[] memory riskScores,
         uint256[] memory strategyApys
     ) external returns (uint256[][] memory);
-
-    /**
-     * @notice TODO
-     */
-    function isRiskProvider(address riskProvider) external view returns (bool);
 
     /**
      * @notice TODO

@@ -9,7 +9,9 @@ contract SpoolAccessRoles {
     bytes32 public constant ROLE_SMART_VAULT_ADMIN = keccak256("SMART_VAULT_ADMIN");
     bytes32 public constant ROLE_GUARD_ALLOWLIST_MANAGER = keccak256("GUARD_ALLOWLIST_MANAGER");
     bytes32 public constant ROLE_STRATEGY_CLAIMER = keccak256("STRATEGY_CLAIMER");
+    bytes32 public constant ROLE_MASTER_WALLET_MANAGER = keccak256("MASTER_WALLET_MANAGER");
     bytes32 public constant ROLE_SMART_VAULT_MANAGER = keccak256("SMART_VAULT_MANAGER");
+    bytes32 public constant ROLE_RISK_PROVIDER = keccak256("RISK_PROVIDER");
 }
 
 /**

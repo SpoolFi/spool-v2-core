@@ -247,15 +247,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /// @notice Price Feed Manager
     IUsdPriceFeedManager private immutable _priceFeedManager;
 
-    /// @notice Risk manager
-    IRiskManager private immutable _riskManager;
-
     /// @notice Vault deposits logic
     ISmartVaultDeposits private immutable _vaultDepositsManager;
 
+    /// @notice Asset Group registry
     IAssetGroupRegistry private immutable _assetGroupRegistry;
 
-    /// @notice TODO
+    /// @notice Master wallet
     IMasterWallet private immutable _masterWallet;
 
     mapping(address => uint256) internal _assetGroups;
@@ -302,7 +300,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     constructor(
         ISpoolAccessControl accessControl_,
         IStrategyRegistry strategyRegistry_,
-        IRiskManager riskManager_,
         ISmartVaultDeposits vaultDepositsManager_,
         IUsdPriceFeedManager priceFeedManager_,
         IAssetGroupRegistry assetGroupRegistry_,
@@ -311,7 +308,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         IGuardManager guardManager_
     ) SpoolAccessControllable(accessControl_) {
         _strategyRegistry = strategyRegistry_;
-        _riskManager = riskManager_;
         _vaultDepositsManager = vaultDepositsManager_;
         _priceFeedManager = priceFeedManager_;
         _assetGroupRegistry = assetGroupRegistry_;
@@ -608,7 +604,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /**
      * @notice TODO
      */
-    function setRiskProvider(address smartVault, address riskProvider_) external validRiskProvider(riskProvider_) {
+    function setRiskProvider(address smartVault, address riskProvider_) external onlyRole(ROLE_RISK_PROVIDER, riskProvider_) {
         _smartVaultRiskProviders[smartVault] = riskProvider_;
     }
 
@@ -823,12 +819,5 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     ) internal {
         ActionContext memory context = ActionContext(recipient, executor, owner, requestType, assetGroup, assets);
         _actionManager.runActions(smartVault, context);
-    }
-
-    /* ========== MODIFIERS ========== */
-
-    modifier validRiskProvider(address address_) {
-        if (!_riskManager.isRiskProvider(address_)) revert InvalidRiskProvider({address_: address_});
-        _;
     }
 }

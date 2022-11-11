@@ -40,7 +40,8 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         tokenA = new MockToken("Token A", "TA");
         tokenB = new MockToken("Token B", "TB");
 
-        masterWallet = new MasterWallet();
+        accessControl = new SpoolAccessControl();
+        masterWallet = new MasterWallet(accessControl);
 
         address[] memory assetGroup = new address[](2);
         assetGroup[0] = address(tokenA);
@@ -52,18 +53,15 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         IAction[] memory emptyActions = new IAction[](0);
         RequestType[] memory emptyActionsRequestTypes = new RequestType[](0);
 
-        accessControl = new SpoolAccessControl();
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
         GuardManager guardManager = new GuardManager();
         ActionManager actionManager = new ActionManager();
-        RiskManager riskManager = new RiskManager();
         UsdPriceFeedManager priceFeedManager = new UsdPriceFeedManager();
         SmartVaultDeposits vaultDepositManager = new SmartVaultDeposits(masterWallet);
 
         smartVaultManager = new SmartVaultManager(
             accessControl,
             strategyRegistry,
-            riskManager,
             vaultDepositManager,
             priceFeedManager,
             assetGroupRegistry,
@@ -102,7 +100,8 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         mySmartVaultStrategies[0] = address(strategyA);
         mySmartVaultStrategies[1] = address(strategyB);
         smartVaultManager.setStrategies(address(mySmartVault), mySmartVaultStrategies);
-        masterWallet.setWalletManager(address(smartVaultManager), true);
+
+        accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
     }
 
     function test_shouldBeAbleToWithdraw() public {

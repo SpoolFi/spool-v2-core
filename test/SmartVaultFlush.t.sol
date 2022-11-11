@@ -17,17 +17,19 @@ import "./mocks/MockStrategy.sol";
 import "./mocks/MockSwapper.sol";
 import "./mocks/MockToken.sol";
 
-contract SmartVaultFlushTest is Test {
+contract SmartVaultFlushTest is Test, SpoolAccessRoles {
     IStrategyRegistry strategyRegistry;
     MockPriceFeedManager priceFeedManager;
     ISmartVaultDeposits depositManager;
     MockToken token1;
     MockToken token2;
     IMasterWallet masterWallet;
+    ISpoolAccessControl accessControl;
 
     function setUp() public {
-        masterWallet = new MasterWallet();
-        strategyRegistry = new StrategyRegistry(masterWallet, new SpoolAccessControl());
+        accessControl = new SpoolAccessControl();
+        masterWallet = new MasterWallet(accessControl);
+        strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
         priceFeedManager = new MockPriceFeedManager();
         depositManager = new SmartVaultDeposits(masterWallet);
         token1 = new MockToken("Token1", "T1");
@@ -152,7 +154,8 @@ contract SmartVaultFlushTest is Test {
         token2.mint(address(masterWallet), depositsIn[1]);
 
         MockSwapper swapper = _createSwapper();
-        masterWallet.setWalletManager(address(depositManager), true);
+
+        accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(depositManager));
         SwapInfo[] memory swapInfo = new SwapInfo[](1);
         swapInfo[0] = SwapInfo(
             address(swapper),

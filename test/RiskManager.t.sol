@@ -5,22 +5,15 @@ import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
 import "../src/managers/RiskManager.sol";
 
-contract RiskManagerTest is Test {
+contract RiskManagerTest is Test, SpoolAccessRoles {
     IRiskManager riskManager;
+    ISpoolAccessControl accessControl;
     address riskProvider = address(10);
     address smartVault = address(100);
 
     function setUp() public {
-        riskManager = new RiskManager();
-    }
-
-    function test_registerRiskProvider() public {
-        vm.expectRevert("RiskManager::registerRiskProvider: Flag already set.");
-        riskManager.registerRiskProvider(riskProvider, false);
-        assertFalse(riskManager.isRiskProvider(riskProvider));
-
-        riskManager.registerRiskProvider(riskProvider, true);
-        assertTrue(riskManager.isRiskProvider(riskProvider));
+        accessControl = new SpoolAccessControl();
+        riskManager = new RiskManager(accessControl);
     }
 
     function test_setRiskScore() public {
@@ -31,10 +24,10 @@ contract RiskManagerTest is Test {
         riskScores2[0] = 1;
         riskScores2[1] = 2;
 
-        vm.expectRevert("RiskManager::_validRiskProvider: Invalid risk provider");
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_RISK_PROVIDER, riskProvider));
         riskManager.setRiskScores(riskProvider, riskScores2);
 
-        riskManager.registerRiskProvider(riskProvider, true);
+        accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         riskManager.setRiskScores(riskProvider, riskScores2);
 
         riskScores = riskManager.riskScores(riskProvider);

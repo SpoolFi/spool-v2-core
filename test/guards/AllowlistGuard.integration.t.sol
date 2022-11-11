@@ -44,15 +44,13 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         ActionManager actionManager = new ActionManager();
         AssetGroupRegistry assetGroupRegistry = new AssetGroupRegistry();
         guardManager = new GuardManager();
-        MasterWallet masterWallet = new MasterWallet();
+        MasterWallet masterWallet = new MasterWallet(accessControl);
         UsdPriceFeedManager priceFeedManager = new UsdPriceFeedManager();
-        RiskManager riskManager = new RiskManager();
         SmartVaultDeposits vaultDepositManager = new SmartVaultDeposits(masterWallet);
         StrategyRegistry strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
         smartVaultManager = new SmartVaultManager(
             accessControl,
             strategyRegistry,
-            riskManager,
             vaultDepositManager,
             priceFeedManager,
             assetGroupRegistry,
@@ -61,8 +59,8 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
             guardManager
         );
 
-        masterWallet.setWalletManager(address(smartVaultManager), true);
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
+        accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
 
         allowlistGuard = new AllowlistGuard(accessControl);
 

@@ -2,24 +2,17 @@
 pragma solidity ^0.8.16;
 
 import "../interfaces/IRiskManager.sol";
+import "../access/SpoolAccessControl.sol";
 
-contract RiskManager is IRiskManager {
+contract RiskManager is IRiskManager, SpoolAccessControllable {
     /* ========== STATE VARIABLES ========== */
-
-    /// @notice Risk provider registry
-    mapping(address => bool) internal _riskProviders;
 
     /// @notice Risk score registry
     mapping(address => uint256[]) internal _riskScores;
 
-    /* ========== VIEW FUNCTIONS ========== */
+    constructor(ISpoolAccessControl accessControl) SpoolAccessControllable(accessControl) {}
 
-    /**
-     * @notice TODO
-     */
-    function isRiskProvider(address riskProvider_) external view returns (bool) {
-        return _riskProviders[riskProvider_];
-    }
+    /* ========== VIEW FUNCTIONS ========== */
 
     /**
      * @notice TODO
@@ -33,17 +26,9 @@ contract RiskManager is IRiskManager {
     /**
      * @notice TODO
      */
-    function registerRiskProvider(address riskProvider_, bool isEnabled) external {
-        require(_riskProviders[riskProvider_] != isEnabled, "RiskManager::registerRiskProvider: Flag already set.");
-        _riskProviders[riskProvider_] = isEnabled;
-    }
-
-    /**
-     * @notice TODO
-     */
     function setRiskScores(address riskProvider_, uint256[] memory riskScores)
         external
-        validRiskProvider(riskProvider_)
+        onlyRole(ROLE_RISK_PROVIDER, riskProvider_)
     {
         _riskScores[riskProvider_] = riskScores;
     }
@@ -59,18 +44,5 @@ contract RiskManager is IRiskManager {
         uint256[] memory strategyApys
     ) external returns (uint256[][] memory) {
         revert("0");
-    }
-
-    /* ========== INTERNAL FUNCTIONS ========== */
-
-    function _validRiskProvider(address riskProvider_) internal view {
-        require(_riskProviders[riskProvider_], "RiskManager::_validRiskProvider: Invalid risk provider");
-    }
-
-    /* ========== MODIFIERS ========== */
-
-    modifier validRiskProvider(address riskProvider_) {
-        _validRiskProvider(riskProvider_);
-        _;
     }
 }
