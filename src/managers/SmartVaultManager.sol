@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.16;
+pragma solidity ^0.8.17;
 
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
@@ -217,7 +217,7 @@ contract SmartVaultDeposits is ISmartVaultDeposits {
     function _getRevertMsg(bytes memory _returnData) private pure returns (string memory) {
         // if the _res length is less than 68, then the transaction failed silently (without a revert message)
         if (_returnData.length < 68) {
-            return "CompositeOrder::getRevertMsg: Transaction reverted silently.";
+            return "SmartVaultManager::_getRevertMsg: Transaction reverted silently.";
         }
 
         assembly {

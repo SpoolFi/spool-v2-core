@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.16;
+pragma solidity ^0.8.17;
 
 import {console} from "forge-std/console.sol";
 import "@0xsequence/sstore2/SSTORE2.sol";
@@ -63,7 +63,7 @@ contract ActionManager is IActionManager {
      * @param action TODO
      * @param whitelist TODO
      */
-    function whitelistAction(address action, bool whitelist) external 
+    function whitelistAction(address action, bool whitelist) external
     // TODO MISSING MODIFIER FOR ACCESS CONTROL
     {
         if (actionWhitelisted[action] == whitelist) revert ActionStatusAlreadySet();

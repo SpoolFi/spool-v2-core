@@ -1,13 +1,13 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.16;
-import {console} from "forge-std/console.sol";
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.17;
 
-import "../access/SpoolAccessControl.sol";
-import "../interfaces/IRewardManager.sol";
-import "../utils/Math.sol";
+import {console} from "forge-std/console.sol";
 
 import "@openzeppelin/security/ReentrancyGuard.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "../access/SpoolAccessControl.sol";
+import "../interfaces/IRewardManager.sol";
+import "../utils/Math.sol";
 
 
 contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllable  {
@@ -153,7 +153,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
         }
     }
 
-    function notifyRewardAmount(address smartVault, IERC20 token, uint256 reward, uint32 rewardsDuration) external 
+    function notifyRewardAmount(address smartVault, IERC20 token, uint256 reward, uint32 rewardsDuration) external
     /*onlyVaultOwnerOrSpoolOwner TODO acl */
     {
         rewardConfiguration[smartVault][token].rewardsDuration = rewardsDuration;
@@ -241,7 +241,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
      *
      * @param token Token address to remove
      */
-    function forceRemoveReward(address smartVault, IERC20 token) external 
+    function forceRemoveReward(address smartVault, IERC20 token) external
     /* onlyOwner TODO ACL */
     {
         //tokenBlacklist.token] = true; add list + smartVault

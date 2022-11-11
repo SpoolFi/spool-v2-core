@@ -1,4 +1,5 @@
-pragma solidity ^0.8.13;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.17;
 
 import "../../src/managers/UsdPriceFeedManager.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
