@@ -46,12 +46,10 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         guardManager = new GuardManager();
         MasterWallet masterWallet = new MasterWallet(accessControl);
         UsdPriceFeedManager priceFeedManager = new UsdPriceFeedManager();
-        SmartVaultDeposits vaultDepositManager = new SmartVaultDeposits(masterWallet);
         StrategyRegistry strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
         smartVaultManager = new SmartVaultManager(
             accessControl,
             strategyRegistry,
-            vaultDepositManager,
             priceFeedManager,
             assetGroupRegistry,
             masterWallet,

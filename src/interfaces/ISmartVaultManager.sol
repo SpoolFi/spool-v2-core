@@ -40,6 +40,7 @@ struct DepositBag {
     uint256[][] depositRatios;
     uint256 depositUSD;
     uint256 usdDecimals;
+    address masterWallet;
 }
 
 struct DepositRatioQueryBag {
@@ -50,6 +51,7 @@ struct DepositRatioQueryBag {
     uint256[] exchangeRates;
     uint256[][] strategyRatios;
     uint256 usdDecimals;
+    address masterWallet;
 }
 
 /* ========== INTERFACES ========== */
@@ -70,16 +72,6 @@ interface ISmartVaultReallocator {
     function setStrategies(address smartVault, address[] memory strategies_) external;
 
     function reallocate() external;
-}
-
-interface ISmartVaultDeposits {
-    function getDepositRatio(DepositRatioQueryBag calldata bag) external view returns (uint256[] memory);
-
-    function distributeVaultDeposits(
-        DepositRatioQueryBag memory bag,
-        uint256[] memory depositsIn,
-        SwapInfo[] calldata swapInfo
-    ) external returns (uint256[][] memory);
 }
 
 interface ISmartVaultSyncer {

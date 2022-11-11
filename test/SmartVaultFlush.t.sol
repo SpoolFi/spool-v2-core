@@ -16,11 +16,11 @@ import "./mocks/MockPriceFeedManager.sol";
 import "./mocks/MockStrategy.sol";
 import "./mocks/MockSwapper.sol";
 import "./mocks/MockToken.sol";
+import "./mocks/MockSmartVaultDeposits.sol";
 
 contract SmartVaultFlushTest is Test, SpoolAccessRoles {
     IStrategyRegistry strategyRegistry;
     MockPriceFeedManager priceFeedManager;
-    ISmartVaultDeposits depositManager;
     MockToken token1;
     MockToken token2;
     IMasterWallet masterWallet;
@@ -31,7 +31,6 @@ contract SmartVaultFlushTest is Test, SpoolAccessRoles {
         masterWallet = new MasterWallet(accessControl);
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
         priceFeedManager = new MockPriceFeedManager();
-        depositManager = new SmartVaultDeposits(masterWallet);
         token1 = new MockToken("Token1", "T1");
         token2 = new MockToken("Token2", "T2");
     }
@@ -50,10 +49,17 @@ contract SmartVaultFlushTest is Test, SpoolAccessRoles {
         exchangeRates[1] = priceFeedManager.assetToUsd(address(token2), 10 ** token2.decimals());
 
         DepositRatioQueryBag memory bag = DepositRatioQueryBag(
-            address(0), assetGroup, strategies, allocations, exchangeRates, ratios, priceFeedManager.usdDecimals()
+            address(0),
+            assetGroup,
+            strategies,
+            allocations,
+            exchangeRates,
+            ratios,
+            priceFeedManager.usdDecimals(),
+            address(masterWallet)
         );
 
-        uint256[] memory ratio = depositManager.getDepositRatio(bag);
+        uint256[] memory ratio = SmartVaultDeposits.getDepositRatio(bag);
 
         assertEq(ratio.length, 2);
         assertEq(ratio[0] / ratio[0], 1);
@@ -79,10 +85,17 @@ contract SmartVaultFlushTest is Test, SpoolAccessRoles {
 
         SwapInfo[] memory swapInfo = new SwapInfo[](0);
         DepositRatioQueryBag memory bag = DepositRatioQueryBag(
-            address(0), assetGroup, strategies, allocations, exchangeRates, ratios, priceFeedManager.usdDecimals()
+            address(0),
+            assetGroup,
+            strategies,
+            allocations,
+            exchangeRates,
+            ratios,
+            priceFeedManager.usdDecimals(),
+            address(masterWallet)
         );
 
-        uint256[][] memory distribution = depositManager.distributeVaultDeposits(bag, depositsIn, swapInfo);
+        uint256[][] memory distribution = SmartVaultDeposits.distributeVaultDeposits(bag, depositsIn, swapInfo);
         assertEq(distribution.length, 3);
         assertEq(distribution[0].length, 2);
 
@@ -125,11 +138,18 @@ contract SmartVaultFlushTest is Test, SpoolAccessRoles {
 
         SwapInfo[] memory swapInfo = new SwapInfo[](0);
         DepositRatioQueryBag memory bag = DepositRatioQueryBag(
-            address(0), assetGroup, strategies, allocations, exchangeRates, ratios, priceFeedManager.usdDecimals()
+            address(0),
+            assetGroup,
+            strategies,
+            allocations,
+            exchangeRates,
+            ratios,
+            priceFeedManager.usdDecimals(),
+            address(masterWallet)
         );
 
         vm.expectRevert(abi.encodeWithSelector(IncorrectDepositRatio.selector));
-        depositManager.distributeVaultDeposits(bag, depositsIn, swapInfo);
+        SmartVaultDeposits.distributeVaultDeposits(bag, depositsIn, swapInfo);
     }
 
     function test_distributeVaultDeposits_withSwap() public {
@@ -155,6 +175,7 @@ contract SmartVaultFlushTest is Test, SpoolAccessRoles {
 
         MockSwapper swapper = _createSwapper();
 
+        MockSmartVaultDeposits depositManager = new MockSmartVaultDeposits();
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(depositManager));
         SwapInfo[] memory swapInfo = new SwapInfo[](1);
         swapInfo[0] = SwapInfo(
@@ -165,7 +186,14 @@ contract SmartVaultFlushTest is Test, SpoolAccessRoles {
         );
 
         DepositRatioQueryBag memory bag = DepositRatioQueryBag(
-            address(0), assetGroup, strategies, allocations, exchangeRates, ratios, priceFeedManager.usdDecimals()
+            address(0),
+            assetGroup,
+            strategies,
+            allocations,
+            exchangeRates,
+            ratios,
+            priceFeedManager.usdDecimals(),
+            address(masterWallet)
         );
 
         uint256[][] memory distribution = depositManager.distributeVaultDeposits(bag, depositsIn, swapInfo);

@@ -9,8 +9,7 @@ import "../access/SpoolAccessControl.sol";
 import "../interfaces/IRewardManager.sol";
 import "../utils/Math.sol";
 
-
-contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllable  {
+contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllable {
     using SafeERC20 for IERC20;
     /* ========== CONSTANTS ========== */
 
@@ -30,7 +29,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
 
     mapping(address => mapping(IERC20 => bool)) tokenBlacklist;
 
-    constructor (ISpoolAccessControl spoolAccessControl) SpoolAccessControllable(spoolAccessControl) {}
+    constructor(ISpoolAccessControl spoolAccessControl) SpoolAccessControllable(spoolAccessControl) {}
 
     /* ========== VIEWS ========== */
 
@@ -66,7 +65,6 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
         RewardConfiguration storage config = rewardConfiguration[smartVault][token];
 
         uint256 userShares = _userDeposits(smartVault, account);
-
 
         if (userShares == 0) {
             return config.rewards[account];
@@ -153,7 +151,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
         }
     }
 
-    function notifyRewardAmount(address smartVault, IERC20 token, uint256 reward, uint32 rewardsDuration) external
+    function notifyRewardAmount(address smartVault, IERC20 token, uint256 reward, uint32 rewardsDuration) external 
     /*onlyVaultOwnerOrSpoolOwner TODO acl */
     {
         rewardConfiguration[smartVault][token].rewardsDuration = rewardsDuration;
@@ -241,7 +239,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
      *
      * @param token Token address to remove
      */
-    function forceRemoveReward(address smartVault, IERC20 token) external
+    function forceRemoveReward(address smartVault, IERC20 token) external 
     /* onlyOwner TODO ACL */
     {
         //tokenBlacklist.token] = true; add list + smartVault

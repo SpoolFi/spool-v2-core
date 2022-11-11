@@ -11,10 +11,7 @@ import "./RewardManager.t.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
 
 contract RewardManagerConfigurationTests is RewardManagerTests {
-
     function test_Configuration_shouldAddOneToken() public {
-
-
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);

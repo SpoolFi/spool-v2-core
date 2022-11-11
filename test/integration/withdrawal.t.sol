@@ -57,12 +57,10 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         GuardManager guardManager = new GuardManager();
         ActionManager actionManager = new ActionManager();
         UsdPriceFeedManager priceFeedManager = new UsdPriceFeedManager();
-        SmartVaultDeposits vaultDepositManager = new SmartVaultDeposits(masterWallet);
 
         smartVaultManager = new SmartVaultManager(
             accessControl,
             strategyRegistry,
-            vaultDepositManager,
             priceFeedManager,
             assetGroupRegistry,
             masterWallet,

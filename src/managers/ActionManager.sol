@@ -63,7 +63,7 @@ contract ActionManager is IActionManager {
      * @param action TODO
      * @param whitelist TODO
      */
-    function whitelistAction(address action, bool whitelist) external
+    function whitelistAction(address action, bool whitelist) external 
     // TODO MISSING MODIFIER FOR ACCESS CONTROL
     {
         if (actionWhitelisted[action] == whitelist) revert ActionStatusAlreadySet();

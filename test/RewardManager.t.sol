@@ -18,6 +18,7 @@ contract RewardManagerTests is Test, SpoolAccessRoles {
     address smartVault;
     MockToken rewardToken;
     address user;
+
     function setUp() public {
         sac = new SpoolAccessControl();
         rewardManager = new RewardManager(sac);

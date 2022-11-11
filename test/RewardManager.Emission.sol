@@ -11,7 +11,6 @@ import "./RewardManager.t.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
 
 contract RewardManagerEmissionTests is RewardManagerTests {
-
     function test_getActiveRewards_failsWhenNotInvokedController() public {
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
 
@@ -35,10 +34,10 @@ contract RewardManagerEmissionTests is RewardManagerTests {
         uint256 userRewardTokenBalanceBefore = rewardToken.balanceOf(user);
         console.log(userRewardTokenBalanceBefore);
         skip(rewardDuration * 2);
-//        console.log(rewardManager.rewardPerToken(smartVault, rewardToken));
+        //        console.log(rewardManager.rewardPerToken(smartVault, rewardToken));
         //    function rewardPerToken(address smartVault, IERC20 token) public view returns (uint224) {
 
-//        console.log(rewardManager.earned(smartVault, rewardToken, user));
+        //        console.log(rewardManager.earned(smartVault, rewardToken, user));
 
         //        vm.prank(user);
         rewardManager.getActiveRewards(smartVault, user);
