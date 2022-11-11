@@ -56,6 +56,7 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
             guardManager
         );
         accessControl.grantRole(ROLE_SMART_VAULT, smartVault);
+        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
 
         token1 = new MockToken("Token1", "T1");
         token2 = new MockToken("Token2", "T2");
@@ -231,10 +232,10 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         IActionManager actionManager = new ActionManager();
         SmartVault smartVault_ = new SmartVault(
             "TestVault",
-            smartVaultManager
+            accessControl
         );
 
-        smartVault_.initialize(assetGroupId, assetGroupRegistry);
+        smartVault_.initialize(assetGroupId);
 
         guardManager.setGuards(address(smartVault_), new GuardDefinition[](0));
         actionManager.setActions(address(smartVault_), new IAction[](0), new RequestType[](0));

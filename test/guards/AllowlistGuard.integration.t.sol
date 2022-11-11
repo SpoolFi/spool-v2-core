@@ -62,6 +62,7 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         );
 
         masterWallet.setWalletManager(address(smartVaultManager), true);
+        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
 
         allowlistGuard = new AllowlistGuard(accessControl);
 
@@ -75,8 +76,8 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         strategy.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategy));
 
-        smartVault = new SmartVault("SmartVault", smartVaultManager);
-        smartVault.initialize(assetGroupId, assetGroupRegistry);
+        smartVault = new SmartVault("SmartVault", accessControl);
+        smartVault.initialize(assetGroupId);
         accessControl.grantRole(ROLE_SMART_VAULT, address(smartVault));
         IAction[] memory actions = new IAction[](0);
         RequestType[] memory actionsRequestTypes = new RequestType[](0);

@@ -73,6 +73,7 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         );
 
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
+        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
 
         strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry);
         uint256[] memory strategyARatios = new uint256[](2);
@@ -90,9 +91,9 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
 
         mySmartVault = new SmartVault(
             "MySmartVault",
-            smartVaultManager
+            accessControl
         );
-        mySmartVault.initialize(assetGroupId, assetGroupRegistry);
+        mySmartVault.initialize(assetGroupId);
         accessControl.grantRole(ROLE_SMART_VAULT, address(mySmartVault));
 
         guardManager.setGuards(address(mySmartVault), emptyGuards);
