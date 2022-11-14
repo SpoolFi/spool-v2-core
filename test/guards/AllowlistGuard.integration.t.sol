@@ -39,6 +39,8 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         dave = address(0xd);
         eve = address(0xe);
 
+        address riskProvider = address(0x1);
+
         token = new MockToken("Token", "T");
         accessControl = new SpoolAccessControl();
 
@@ -46,22 +48,21 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         AssetGroupRegistry assetGroupRegistry = new AssetGroupRegistry();
         guardManager = new GuardManager();
         MasterWallet masterWallet = new MasterWallet(accessControl);
-        UsdPriceFeedManager priceFeedManager = new UsdPriceFeedManager();
         StrategyRegistry strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
-        Swapper swapper = new Swapper();
         smartVaultManager = new SmartVaultManager(
             accessControl,
             strategyRegistry,
-            priceFeedManager,
+            new UsdPriceFeedManager(),
             assetGroupRegistry,
             masterWallet,
             actionManager,
             guardManager,
-            swapper
+            new Swapper()
         );
 
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
+        accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
 
         allowlistGuard = new AllowlistGuard(accessControl);
 
@@ -70,20 +71,32 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
         MockStrategy strategy = new MockStrategy("Strategy", strategyRegistry, assetGroupRegistry);
-        uint256[] memory strategyRatios = new uint256[](1);
-        strategyRatios[0] = 1_000;
-        strategy.initialize(assetGroupId, strategyRatios);
-        strategyRegistry.registerStrategy(address(strategy));
+        {
+            uint256[] memory strategyRatios = new uint256[](1);
+            strategyRatios[0] = 1_000;
+            strategy.initialize(assetGroupId, strategyRatios);
+            strategyRegistry.registerStrategy(address(strategy));
+        }
 
-        smartVault = new SmartVault("SmartVault", accessControl);
-        smartVault.initialize(assetGroupId);
-        accessControl.grantRole(ROLE_SMART_VAULT, address(smartVault));
-        IAction[] memory actions = new IAction[](0);
-        RequestType[] memory actionsRequestTypes = new RequestType[](0);
-        actionManager.setActions(address(smartVault), actions, actionsRequestTypes);
-        address[] memory smartVaultStrategies = new address[](1);
-        smartVaultStrategies[0] = address(strategy);
-        smartVaultManager.setStrategies(address(smartVault), smartVaultStrategies);
+        {
+            smartVault = new SmartVault("SmartVault", accessControl);
+            smartVault.initialize();
+            accessControl.grantRole(ROLE_SMART_VAULT, address(smartVault));
+            IAction[] memory actions = new IAction[](0);
+            RequestType[] memory actionsRequestTypes = new RequestType[](0);
+            actionManager.setActions(address(smartVault), actions, actionsRequestTypes);
+            address[] memory smartVaultStrategies = new address[](1);
+            smartVaultStrategies[0] = address(strategy);
+            uint256[] memory smartVaultStrategyAllocations = new uint256[](1);
+            smartVaultStrategyAllocations[0] = 1_000;
+            SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
+                assetGroupId: assetGroupId,
+                strategies: smartVaultStrategies,
+                strategyAllocations: smartVaultStrategyAllocations,
+                riskProvider: riskProvider
+            });
+            smartVaultManager.registerSmartVault(address(smartVault), registrationForm);
+        }
 
         setUpAllowlistGuard();
     }

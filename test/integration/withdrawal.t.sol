@@ -38,6 +38,8 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         alice = address(0xa);
         bob = address(0xb);
 
+        address riskProvider = address(0x1);
+
         tokenA = new MockToken("Token A", "TA");
         tokenB = new MockToken("Token B", "TB");
 
@@ -71,6 +73,7 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
             swapper
         );
 
+        accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
 
@@ -92,7 +95,7 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
             "MySmartVault",
             accessControl
         );
-        mySmartVault.initialize(assetGroupId);
+        mySmartVault.initialize();
         accessControl.grantRole(ROLE_SMART_VAULT, address(mySmartVault));
 
         guardManager.setGuards(address(mySmartVault), emptyGuards);
@@ -100,7 +103,16 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         mySmartVaultStrategies = new address[](2);
         mySmartVaultStrategies[0] = address(strategyA);
         mySmartVaultStrategies[1] = address(strategyB);
-        smartVaultManager.setStrategies(address(mySmartVault), mySmartVaultStrategies);
+        uint256[] memory mySmartVaultStrategyAllocations = new uint256[](2);
+        mySmartVaultStrategyAllocations[0] = 400;
+        mySmartVaultStrategyAllocations[1] = 600;
+        SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
+            assetGroupId: assetGroupId,
+            strategies: mySmartVaultStrategies,
+            strategyAllocations: mySmartVaultStrategyAllocations,
+            riskProvider: riskProvider
+        });
+        smartVaultManager.registerSmartVault(address(mySmartVault), registrationForm);
 
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
     }

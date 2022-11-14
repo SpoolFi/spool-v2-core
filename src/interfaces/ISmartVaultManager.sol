@@ -3,14 +3,11 @@ pragma solidity ^0.8.17;
 
 /* ========== ERRORS ========== */
 
-error SmartVaultAlreadyRegistered(address address_);
 error InvalidAssetLengths();
 error InvalidArrayLength();
-error EmptyStrategyArray();
-error InvalidSmartVault(address address_);
-error InvalidRiskProvider(address address_);
 error InvalidDepositAmount(address smartVault);
 error IncorrectDepositRatio();
+error InsufficientBalance(uint256 available, uint256 required);
 
 /**
  * @notice Used when trying to claim SVTs for deposit that was not synced yet.
@@ -22,7 +19,43 @@ error DepositNotSyncedYet();
  */
 error NothingToFlush();
 
+/**
+ * @notice Used when trying to register a smart vault that was already registered.
+ */
+error SmartVaultAlreadyRegistered();
+
+/**
+ * @notice Used when trying to perform an action for smart vault that was not registered yet.
+ */
+error SmartVaultNotRegisteredYet();
+
+/**
+ * @notice Used when no strategy was provided during smart vault registration.
+ */
+error SmartVaultRegistrationNoStrategies();
+
+/**
+ * @notice Used when length of allocation does not match length of strategies provided during smart vault registration.
+ */
+error SmartVaultRegistrationIncorrectAllocationLength();
+
+/**
+ * @notice Used when provided allocation for a strategy is zero during smart vault registration.
+ */
+error SmartVaultRegistrationZeroAllocation();
+
 /* ========== STRUCTS ========== */
+
+/**
+ * @notice Struct holding all data for registration of smart vault.
+ *
+ */
+struct SmartVaultRegistrationForm {
+    uint256 assetGroupId;
+    address[] strategies;
+    uint256[] strategyAllocations;
+    address riskProvider;
+}
 
 struct SwapInfo {
     address swapTarget;
@@ -67,11 +100,7 @@ interface ISmartVaultReallocator {
 
     function riskProvider(address smartVault) external view returns (address riskProviderAddress);
 
-    function setRiskProvider(address smartVault, address riskProvider_) external;
-
-    function setAllocations(address smartVault, uint256[] memory allocations) external;
-
-    function setStrategies(address smartVault, address[] memory strategies_) external;
+    function assetGroupId(address smartVault) external view returns (uint256 assetGroupId);
 
     function reallocate() external;
 }
@@ -94,6 +123,8 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
     function getDepositRatio(address smartVault) external view returns (uint256[] memory);
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
+
+    function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm) external;
 
     function flushSmartVault(address smartVault, SwapInfo[] calldata swapInfo) external;
 

@@ -49,7 +49,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /// @notice Master wallet
     IMasterWallet private immutable _masterWallet;
 
-    mapping(address => uint256) internal _assetGroups;
+    mapping(address => bool) internal _smartVaultRegistry;
+
+    mapping(address => uint256) internal _smartVaultAssetGroups;
 
     /// @notice Smart Vault strategy registry
     mapping(address => address[]) internal _smartVaultStrategies;
@@ -142,6 +144,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /**
      * @notice TODO
      */
+    function assetGroupId(address smartVault) external view returns (uint256) {
+        return _smartVaultAssetGroups[smartVault];
+    }
+
+    /**
+     * @notice TODO
+     */
     function getLatestFlushIndex(address smartVault) external view returns (uint256) {
         return _flushIndexes[smartVault];
     }
@@ -150,7 +159,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * @notice Smart vault deposits for given flush index.
      */
     function smartVaultDeposits(address smartVault, uint256 flushIdx) external view returns (uint256[] memory) {
-        uint256 assetGroupLength = _assetGroupRegistry.assetGroupLength(_assetGroups[smartVault]);
+        uint256 assetGroupLength = _assetGroupRegistry.assetGroupLength(_smartVaultAssetGroups[smartVault]);
         return _vaultDeposits[smartVault][flushIdx].toArray(assetGroupLength);
     }
 
@@ -186,11 +195,11 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function getDepositRatio(address smartVault)
         external
         view
-        onlyRole(ROLE_SMART_VAULT, smartVault)
+        onlyRegisteredSmartVault(smartVault)
         returns (uint256[] memory)
     {
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVault]);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
         DepositRatioQueryBag memory bag = DepositRatioQueryBag(
             smartVault,
             tokens,
@@ -226,7 +235,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      */
     function redeem(address smartVault, uint256 shares, address receiver, address owner)
         external
-        onlyRole(ROLE_SMART_VAULT, smartVault)
+        onlyRegisteredSmartVault(smartVault)
         returns (uint256)
     {
         return _redeemShares(smartVault, shares, receiver, owner);
@@ -245,7 +254,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address receiver,
         uint256[][] calldata, /*slippages*/
         address owner
-    ) external onlyRole(ROLE_SMART_VAULT, smartVault) returns (uint256[] memory) {
+    ) external onlyRegisteredSmartVault(smartVault) returns (uint256[] memory) {
         revert("0");
     }
 
@@ -258,7 +267,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      */
     function depositFor(address smartVault, uint256[] calldata assets, address receiver, address depositor)
         external
-        onlyRole(ROLE_SMART_VAULT, smartVault)
+        onlyRegisteredSmartVault(smartVault)
         returns (uint256)
     {
         return _depositAssets(smartVault, depositor, receiver, assets);
@@ -278,7 +287,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256[] calldata assets,
         address receiver,
         uint256[][] calldata slippages
-    ) external onlyRole(ROLE_SMART_VAULT, smartVault) returns (uint256) {
+    ) external onlyRegisteredSmartVault(smartVault) returns (uint256) {
         revert("0");
     }
 
@@ -296,7 +305,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      */
     function deposit(address smartVault, uint256[] calldata assets, address receiver)
         external
-        onlyRole(ROLE_SMART_VAULT, smartVault)
+        onlyRegisteredSmartVault(smartVault)
         returns (uint256)
     {
         return _depositAssets(smartVault, msg.sender, receiver, assets);
@@ -304,7 +313,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     function claimSmartVaultTokens(address smartVaultAddress, uint256 depositNftId)
         external
-        onlyRole(ROLE_SMART_VAULT, smartVaultAddress)
+        onlyRegisteredSmartVault(smartVaultAddress)
         returns (uint256)
     {
         ISmartVault smartVault = ISmartVault(smartVaultAddress);
@@ -318,7 +327,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256 depositedUsd;
         uint256 totalDepositedUsd;
         {
-            address[] memory assets = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVaultAddress]);
+            address[] memory assets = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVaultAddress]);
             uint256[] memory totalDepositedAssets =
                 _vaultDeposits[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
             uint256[] memory exchangeRates =
@@ -341,14 +350,14 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     function claimWithdrawal(address smartVaultAddress, uint256 withdrawalNftId, address receiver)
         external
-        onlyRole(ROLE_SMART_VAULT, smartVaultAddress)
+        onlyRegisteredSmartVault(smartVaultAddress)
         returns (uint256[] memory, uint256)
     {
         ISmartVault smartVault = ISmartVault(smartVaultAddress);
         WithdrawalMetadata memory data = smartVault.getWithdrawalMetadata(withdrawalNftId);
         smartVault.burnNFT(msg.sender, withdrawalNftId, RequestType.Withdrawal);
 
-        uint256 assetGroupID = _assetGroups[smartVaultAddress];
+        uint256 assetGroupID = _smartVaultAssetGroups[smartVaultAddress];
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupID);
         uint256[] memory withdrawnAssets =
             _calculateWithdrawal(smartVaultAddress, withdrawalNftId, data, assetGroup.length);
@@ -367,33 +376,48 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== REGISTRY ========== */
 
-    /**
-     * @notice TODO
-     */
-    function setStrategies(address smartVault, address[] memory strategies_)
+    function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm)
         external
-        onlyRole(ROLE_SMART_VAULT, smartVault)
+        onlyUnregisteredSmartVault(smartVault)
+        onlyRole(ROLE_RISK_PROVIDER, registrationForm.riskProvider)
     {
-        if (strategies_.length == 0) revert EmptyStrategyArray();
+        // TODO: should check if same asset group on strategies and smart vault
 
-        for (uint256 i = 0; i < strategies_.length; i++) {
-            address strategy = strategies_[i];
+        // set asset group
+        _smartVaultAssetGroups[smartVault] = registrationForm.assetGroupId;
+
+        // set strategies
+        if (registrationForm.strategies.length == 0) {
+            revert SmartVaultRegistrationNoStrategies();
+        }
+
+        for (uint256 i = 0; i < registrationForm.strategies.length; i++) {
+            address strategy = registrationForm.strategies[i];
             if (!_strategyRegistry.isStrategy(strategy)) {
                 revert InvalidStrategy(strategy);
             }
         }
 
-        _smartVaultStrategies[smartVault] = strategies_;
-    }
+        _smartVaultStrategies[smartVault] = registrationForm.strategies;
 
-    /**
-     * @notice TODO
-     */
-    function setAllocations(address smartVault, uint256[] memory allocations_)
-        external
-        onlyRole(ROLE_SMART_VAULT, smartVault)
-    {
-        _smartVaultAllocations[smartVault].setValues(allocations_);
+        // set strategy allocations
+        if (registrationForm.strategyAllocations.length != registrationForm.strategies.length) {
+            revert SmartVaultRegistrationIncorrectAllocationLength();
+        }
+
+        for (uint256 i = 0; i < registrationForm.strategyAllocations.length; i++) {
+            if (registrationForm.strategyAllocations[i] == 0) {
+                revert SmartVaultRegistrationZeroAllocation();
+            }
+        }
+
+        _smartVaultAllocations[smartVault].setValues(registrationForm.strategyAllocations);
+
+        // set risk provider
+        _smartVaultRiskProviders[smartVault] = registrationForm.riskProvider;
+
+        // update registry
+        _smartVaultRegistry[smartVault] = true;
     }
 
     /**
@@ -417,7 +441,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      */
     function flushSmartVault(address smartVault, SwapInfo[] calldata swapInfo)
         external
-        onlyRole(ROLE_SMART_VAULT, smartVault)
+        onlyRegisteredSmartVault(smartVault)
     {
         uint256 flushIdx = _flushIndexes[smartVault];
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
@@ -428,7 +452,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         if (_vaultDeposits[smartVault][flushIdx][0] > 0) {
             // handle deposits
-            address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVault]);
+            address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
 
             DepositRatioQueryBag memory bag = DepositRatioQueryBag(
                 smartVault,
@@ -498,7 +522,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         internal
         returns (uint256)
     {
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroups[smartVault]);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
         _runGuards(smartVault, msg.sender, receiver, owner, assets, tokens, RequestType.Deposit);
         _runActions(smartVault, msg.sender, receiver, owner, assets, tokens, RequestType.Deposit);
 
@@ -601,5 +625,31 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     ) internal {
         ActionContext memory context = ActionContext(recipient, executor, owner, requestType, assetGroup, assets);
         _actionManager.runActions(smartVault, context);
+    }
+
+    function _onlyUnregisteredSmartVault(address smartVault) internal view {
+        _checkRole(ROLE_SMART_VAULT, smartVault);
+        if (_smartVaultRegistry[smartVault]) {
+            revert SmartVaultAlreadyRegistered();
+        }
+    }
+
+    function _onlyRegisteredSmartVault(address smartVault) internal view {
+        _checkRole(ROLE_SMART_VAULT, smartVault);
+        if (!_smartVaultRegistry[smartVault]) {
+            revert SmartVaultNotRegisteredYet();
+        }
+    }
+
+    /* ========== MODIFIERS ========== */
+
+    modifier onlyUnregisteredSmartVault(address smartVault) {
+        _onlyUnregisteredSmartVault(smartVault);
+        _;
+    }
+
+    modifier onlyRegisteredSmartVault(address smartVault) {
+        _onlyRegisteredSmartVault(smartVault);
+        _;
     }
 }

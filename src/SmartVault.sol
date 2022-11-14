@@ -6,8 +6,6 @@ import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "./interfaces/CommonErrors.sol";
-import "./interfaces/IAssetGroupRegistry.sol";
-import "./interfaces/ISmartVaultManager.sol";
 import "./interfaces/ISmartVault.sol";
 import "./interfaces/RequestType.sol";
 import "./access/SpoolAccessControl.sol";
@@ -16,11 +14,6 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
     using SafeERC20 for ERC20;
 
     /* ========== STATE VARIABLES ========== */
-
-    /**
-     * @notice ID of the asset group used by the smart vault.
-     */
-    uint256 internal _assetGroupId;
 
     // @notice Vault name
     string internal _vaultName;
@@ -54,9 +47,7 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         _vaultName = vaultName_;
     }
 
-    function initialize(uint256 assetGroupId_) external initializer {
-        _assetGroupId = assetGroupId_;
-
+    function initialize() external initializer {
         __ERC1155_init("");
         __ERC20_init("", "");
     }
@@ -84,10 +75,6 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
 
     function getWithdrawalMetadata(uint256 withdrawalNftId) external view returns (WithdrawalMetadata memory) {
         return _withdrawalMetadata[withdrawalNftId];
-    }
-
-    function assetGroupId() external view returns (uint256) {
-        return _assetGroupId;
     }
 
     /**

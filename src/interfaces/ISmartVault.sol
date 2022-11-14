@@ -3,17 +3,10 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
-import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "./RequestType.sol";
 
 /* ========== ERRORS ========== */
-
-/**
- * @notice Used when the balance is too low to perform an action.
- * @param available Balance available for the action.
- * @param required Balance required for the action.
- */
-error InsufficientBalance(uint256 available, uint256 required);
 
 /**
  * @notice Used when the ID for deposit NFTs overflows.
@@ -66,12 +59,6 @@ struct WithdrawalMetadata {
 /* ========== INTERFACES ========== */
 
 interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
-    event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
-
-    event Withdraw(
-        address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
-    );
-
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /**
@@ -98,12 +85,6 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
      * @return Metadata of the withdrawal NFT.
      */
     function getWithdrawalMetadata(uint256 withdrawalNftId) external view returns (WithdrawalMetadata memory);
-
-    /**
-     * @notice Gets asset group used by the smart vault.
-     * @return ID of the asset group.
-     */
-    function assetGroupId() external view returns (uint256);
 
     /**
      * @dev Returns the total amount of the underlying asset that is “managed” by Vault.

@@ -42,6 +42,8 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         IActionManager actionManager = new ActionManager();
         ISwapper swapper = new Swapper();
 
+        accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
+
         smartVaultManager = new SmartVaultManager(
             accessControl,
             strategyRegistry,
@@ -59,66 +61,135 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         token2 = new MockToken("Token2", "T2");
     }
 
-    function test_setAllocations() public {
-        uint256[] memory allocations = new uint256[](2);
-        allocations[0] = 10;
-        allocations[1] = 20;
+    function test_registerSmartVault_shouldRegister() public {
+        (address[] memory strategies, uint256 assetGroupId) = _createStrategies();
 
-        address[] memory strategies = new address[](2);
-        strategies[0] = address(10);
-        strategies[1] = address(11);
+        uint256[] memory strategyAllocations = new uint256[](3);
+        strategyAllocations[0] = 100;
+        strategyAllocations[1] = 300;
+        strategyAllocations[2] = 600;
 
-        uint256[] memory vaultAlloc = smartVaultManager.allocations(smartVault);
-        assertEq(vaultAlloc.length, 0);
+        SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
+            assetGroupId: assetGroupId,
+            strategies: strategies,
+            strategyAllocations: strategyAllocations,
+            riskProvider: riskProvider
+        });
+        smartVaultManager.registerSmartVault(smartVault, registrationForm);
 
-        strategyRegistry.registerStrategy(address(10));
-        strategyRegistry.registerStrategy(address(11));
-        smartVaultManager.setStrategies(smartVault, strategies);
-        smartVaultManager.setAllocations(smartVault, allocations);
-
-        vaultAlloc = smartVaultManager.allocations(smartVault);
-        assertEq(vaultAlloc.length, 2);
-        assertEq(vaultAlloc[0], 10);
+        assertEq(smartVaultManager.assetGroupId(smartVault), assetGroupId);
+        assertEq(smartVaultManager.strategies(smartVault), strategies);
+        assertEq(smartVaultManager.allocations(smartVault), strategyAllocations);
+        assertEq(smartVaultManager.riskProvider(smartVault), riskProvider);
     }
 
-    function test_setRiskProvider() public {
-        address riskProvider_ = smartVaultManager.riskProvider(smartVault);
-        assertEq(riskProvider_, address(0));
+    function test_registerSmartVault_shouldRevert() public {
+        (address[] memory strategies, uint256 assetGroupId) = _createStrategies();
 
-        accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
-        smartVaultManager.setRiskProvider(smartVault, riskProvider);
+        uint256[] memory strategyAllocations = new uint256[](3);
+        strategyAllocations[0] = 100;
+        strategyAllocations[1] = 300;
+        strategyAllocations[2] = 600;
 
-        riskProvider_ = smartVaultManager.riskProvider(smartVault);
-        assertEq(riskProvider_, riskProvider);
-    }
+        SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
+            assetGroupId: assetGroupId,
+            strategies: strategies,
+            strategyAllocations: strategyAllocations,
+            riskProvider: riskProvider
+        });
 
-    function test_setStrategies() public {
-        address[] memory strategies = new address[](2);
-        strategies[0] = address(10);
-        strategies[1] = address(11);
+        // when not smart vault
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SMART_VAULT, address(0xabc)));
+        smartVaultManager.registerSmartVault(address(0xabc), registrationForm);
 
-        address smartVault_ = address(20);
-        accessControl.grantRole(ROLE_SMART_VAULT, smartVault_);
+        // when not risk provider
+        {
+            SmartVaultRegistrationForm memory _registrationForm = SmartVaultRegistrationForm({
+                assetGroupId: assetGroupId,
+                strategies: strategies,
+                strategyAllocations: strategyAllocations,
+                riskProvider: address(0xabc)
+            });
+            vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_RISK_PROVIDER, address(0xabc)));
+            smartVaultManager.registerSmartVault(smartVault, _registrationForm);
+        }
 
-        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SMART_VAULT, address(0)));
-        smartVaultManager.setStrategies(address(0), strategies);
+        // when no strategy
+        {
+            address[] memory _strategies = new address[](0);
+            SmartVaultRegistrationForm memory _registrationForm = SmartVaultRegistrationForm({
+                assetGroupId: assetGroupId,
+                strategies: _strategies,
+                strategyAllocations: strategyAllocations,
+                riskProvider: riskProvider
+            });
+            vm.expectRevert(SmartVaultRegistrationNoStrategies.selector);
+            smartVaultManager.registerSmartVault(smartVault, _registrationForm);
+        }
 
-        vm.expectRevert(abi.encodeWithSelector(EmptyStrategyArray.selector));
-        smartVaultManager.setStrategies(smartVault_, new address[](0));
+        // when not strategy
+        {
+            address[] memory _strategies = new address[](1);
+            _strategies[0] = address(0xabc);
+            SmartVaultRegistrationForm memory _registrationForm = SmartVaultRegistrationForm({
+                assetGroupId: assetGroupId,
+                strategies: _strategies,
+                strategyAllocations: strategyAllocations,
+                riskProvider: riskProvider
+            });
+            vm.expectRevert(abi.encodeWithSelector(InvalidStrategy.selector, address(0xabc)));
+            smartVaultManager.registerSmartVault(smartVault, _registrationForm);
+        }
 
-        vm.expectRevert(abi.encodeWithSelector(InvalidStrategy.selector, address(10)));
-        smartVaultManager.setStrategies(smartVault_, strategies);
+        // when  allocations do not match strategies
+        {
+            uint256[] memory _strategyAllocations = new uint256[](2);
+            _strategyAllocations[0] = 400;
+            _strategyAllocations[1] = 600;
+            SmartVaultRegistrationForm memory _registrationForm = SmartVaultRegistrationForm({
+                assetGroupId: assetGroupId,
+                strategies: strategies,
+                strategyAllocations: _strategyAllocations,
+                riskProvider: riskProvider
+            });
+            vm.expectRevert(SmartVaultRegistrationIncorrectAllocationLength.selector);
+            smartVaultManager.registerSmartVault(smartVault, _registrationForm);
 
-        address[] memory vaultStrategies = smartVaultManager.strategies(smartVault_);
-        assertEq(vaultStrategies.length, 0);
+            _strategyAllocations = new uint256[](4);
+            _strategyAllocations[0] = 100;
+            _strategyAllocations[1] = 200;
+            _strategyAllocations[2] = 300;
+            _strategyAllocations[3] = 400;
+            _registrationForm = SmartVaultRegistrationForm({
+                assetGroupId: assetGroupId,
+                strategies: strategies,
+                strategyAllocations: _strategyAllocations,
+                riskProvider: riskProvider
+            });
+            vm.expectRevert(SmartVaultRegistrationIncorrectAllocationLength.selector);
+            smartVaultManager.registerSmartVault(smartVault, _registrationForm);
+        }
 
-        strategyRegistry.registerStrategy(address(10));
-        strategyRegistry.registerStrategy(address(11));
-        smartVaultManager.setStrategies(smartVault_, strategies);
+        // when allocation is zero
+        {
+            uint256[] memory _strategyAllocations = new uint256[](3);
+            _strategyAllocations[0] = 400;
+            _strategyAllocations[1] = 600;
+            _strategyAllocations[2] = 0;
+            SmartVaultRegistrationForm memory _registrationForm = SmartVaultRegistrationForm({
+                assetGroupId: assetGroupId,
+                strategies: strategies,
+                strategyAllocations: _strategyAllocations,
+                riskProvider: riskProvider
+            });
+            vm.expectRevert(SmartVaultRegistrationZeroAllocation.selector);
+            smartVaultManager.registerSmartVault(smartVault, _registrationForm);
+        }
 
-        vaultStrategies = smartVaultManager.strategies(smartVault_);
-        assertEq(vaultStrategies.length, 2);
-        assertEq(vaultStrategies[0], address(10));
+        // when smart vault already registered
+        smartVaultManager.registerSmartVault(smartVault, registrationForm);
+        vm.expectRevert(SmartVaultAlreadyRegistered.selector);
+        smartVaultManager.registerSmartVault(smartVault, registrationForm);
     }
 
     function test_getDepositRatio() public {
@@ -232,7 +303,7 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
             accessControl
         );
 
-        smartVault_.initialize(assetGroupId);
+        smartVault_.initialize();
 
         guardManager.setGuards(address(smartVault_), new GuardDefinition[](0));
         actionManager.setActions(address(smartVault_), new IAction[](0), new RequestType[](0));
@@ -243,8 +314,13 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         allocations[2] = 100; // C
 
         accessControl.grantRole(ROLE_SMART_VAULT, address(smartVault_));
-        smartVaultManager.setStrategies(address(smartVault_), strategies);
-        smartVaultManager.setAllocations(address(smartVault_), allocations);
+        SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
+            assetGroupId: assetGroupId,
+            strategies: strategies,
+            strategyAllocations: allocations,
+            riskProvider: riskProvider
+        });
+        smartVaultManager.registerSmartVault(address(smartVault_), registrationForm);
 
         return smartVault_;
     }
