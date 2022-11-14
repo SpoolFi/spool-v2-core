@@ -1,13 +1,37 @@
-const fs = require("fs")
+const fs = require("fs");
+import axios from "axios";
+
+
+
+
+const config = {
+    headers: {
+        'Content-Type': 'text/plain'
+    }
+};
+
+const url = "https://github-tests-to-telegram-bot.1epl1di4e824g.eu-west-2.cs.amazonlightsail.com/";
+
+
+function escapeString(string: any){
+    let escapeables = ["*", "_", '{', '}', '[', ']', '<', '>', '(', ')', '#', '+', '-', '.', '!', '|', '='];
+
+    escapeables.forEach(function(escapable){
+        const regex = new RegExp('\\' + escapable, "gi");
+        string = string.replace(regex, "\\" + escapable);
+    }); 
+    return string;
+}
+
 
 
 function coverage(){
-
-    console.log("\nCOVERAGE")
-    console.log("______________________________________________________________________________________________________________________________")
+    var retn: string = "";
+    retn += "\`\`\`\nCOVERAGE";
+    retn += "\n___________________________________________________________________";
     const rgx = /src\/.*.sol *\| \d{1,3}.\d{1,3}% \((\d+\/\d+)\) *\| \d{1,3}.\d{1,3}% \((\d+\/\d+)\) *\| \d{1,3}.\d{1,3}% \((\d+\/\d+)\) *\| \d{1,3}.\d{1,3}% \((\d+\/\d+)\)/gi;
     const findNull = /\0/g;
-    const filename = "coverage_output.txt"
+    const filename = "coverage_output.txt";
 
     const cov = fs.readFileSync(filename).toString();
     var withoutNulls = cov.replace(findNull, "");
@@ -22,7 +46,7 @@ function coverage(){
     }
 
     for (const contract of matches) {
-        console.log(contract)
+        retn += "\n" + contract;
         const rgx2 = /src\/.*.sol *\| \d{1,3}.\d{1,3}% \((\d+\/\d+)\) *\| \d{1,3}.\d{1,3}% \((\d+\/\d+)\) *\| \d{1,3}.\d{1,3}% \((\d+\/\d+)\) *\| \d{1,3}.\d{1,3}% \((\d+\/\d+)\)/gi;
 
         const contractCoverage: any = rgx2.exec(contract);
@@ -49,23 +73,26 @@ function coverage(){
     `
     }
 
-    console.table(printCoverage())
+    retn += "\n" + printCoverage();
 
     function parseCoverage(coverageString: any) {
         const covrg = coverageString.split("/");
 
-        return [parseInt(covrg[0]), parseInt(covrg[1])]
+        return [parseInt(covrg[0]), parseInt(covrg[1])];
     }
 
     function addCoverage(covArray: any, newCov: any) {
-        return [covArray[0] + newCov[0], covArray[1] + newCov[1]]
+        return [covArray[0] + newCov[0], covArray[1] + newCov[1]];
     }
-    console.log("______________________________________________________________________________________________________________________________")
+    retn += "\n___________________________________________________________________\`\`\`";
+    
+    return retn;
 }
 
 function sizes() {
-    console.log("\nSIZES")
-    console.log("______________________________________________________________________________________________________________________________")
+    var retn: string = "";
+    retn += "\`\`\`\nSIZES";
+    retn += "\n___________________________________________________________________";
     const re = /([a-zA-Z0-9.() ])+/g;
     const findNull = /\0/g;
     const findSpace = / /g;
@@ -96,6 +123,7 @@ function sizes() {
             if(match){
                 try{
                     if(match[0][0] != "Contract"){ // table header
+                        retn += (match[0][0], match[1][0], match[2][0] + "\n");
                         table.push(new Entry(match[0][0], match[1][0], match[2][0]));
                     }
                 }
@@ -104,15 +132,16 @@ function sizes() {
         }
     }
 
-    console.table(table);
-    console.log("______________________________________________________________________________________________________________________________")
 
+    retn += ("\n___________________________________________________________________\`\`\`");
+    return retn;
 }
 
 
 function test() {
-    console.log("\nTESTS");
-    console.log("______________________________________________________________________________________________________________________________")
+    var retn: string = "";
+    retn += ("\`\`\`\nTESTS");
+    retn += ("\n___________________________________________________________________");
 
     const filename = "test_output.txt";
     const findNull = /\0/g;
@@ -123,16 +152,17 @@ function test() {
     var json = JSON.parse(arr[1]);
     
     for(var i in json) {
-        console.log(`${i} - duration ${json[i].duration.secs + json[i].duration.nanos / 1000000000}s`);
+        retn += (`\n${i} - duration ${json[i].duration.secs + json[i].duration.nanos / 1000000000}s`);
         for(var j in json[i].test_results){
-            console.log(`${j}: ${json[i].test_results[j].success}`)
+            retn += (`\n${j}: ${json[i].test_results[j].success}`)
         }
-        console.log();
+        retn += "\n";
     }
-    console.log("______________________________________________________________________________________________________________________________")
-
+    retn += ("\n___________________________________________________________________\`\`\`");
+    return retn;
 }
 
-coverage();                                                     
-sizes();                                        
-test();                                                     
+
+axios.post(url, coverage(), config);
+axios.post(url, escapeString(sizes()), config);
+axios.post(url, escapeString(test()), config);
