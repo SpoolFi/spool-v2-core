@@ -41,6 +41,7 @@ struct DepositBag {
     uint256 depositUSD;
     uint256 usdDecimals;
     address masterWallet;
+    address swapper;
 }
 
 struct DepositRatioQueryBag {
@@ -52,6 +53,7 @@ struct DepositRatioQueryBag {
     uint256[][] strategyRatios;
     uint256 usdDecimals;
     address masterWallet;
+    address swapper;
 }
 
 /* ========== INTERFACES ========== */

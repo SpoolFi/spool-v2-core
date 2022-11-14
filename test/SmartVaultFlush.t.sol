@@ -12,11 +12,12 @@ import "../src/managers/StrategyRegistry.sol";
 import "../src/managers/UsdPriceFeedManager.sol";
 import "../src/MasterWallet.sol";
 import "../src/SmartVault.sol";
+import "../src/Swapper.sol";
+import "./mocks/MockExchange.sol";
 import "./mocks/MockPriceFeedManager.sol";
-import "./mocks/MockStrategy.sol";
-import "./mocks/MockSwapper.sol";
-import "./mocks/MockToken.sol";
 import "./mocks/MockSmartVaultDeposits.sol";
+import "./mocks/MockStrategy.sol";
+import "./mocks/MockToken.sol";
 
 contract SmartVaultFlushTest is Test, SpoolAccessRoles {
     IStrategyRegistry strategyRegistry;
@@ -25,12 +26,14 @@ contract SmartVaultFlushTest is Test, SpoolAccessRoles {
     MockToken token2;
     IMasterWallet masterWallet;
     ISpoolAccessControl accessControl;
+    ISwapper swapper;
 
     function setUp() public {
         accessControl = new SpoolAccessControl();
         masterWallet = new MasterWallet(accessControl);
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
         priceFeedManager = new MockPriceFeedManager();
+        swapper = new Swapper();
         token1 = new MockToken("Token1", "T1");
         token2 = new MockToken("Token2", "T2");
     }
@@ -56,7 +59,8 @@ contract SmartVaultFlushTest is Test, SpoolAccessRoles {
             exchangeRates,
             ratios,
             priceFeedManager.usdDecimals(),
-            address(masterWallet)
+            address(masterWallet),
+            address(swapper)
         );
 
         uint256[] memory ratio = SmartVaultDeposits.getDepositRatio(bag);
@@ -92,7 +96,8 @@ contract SmartVaultFlushTest is Test, SpoolAccessRoles {
             exchangeRates,
             ratios,
             priceFeedManager.usdDecimals(),
-            address(masterWallet)
+            address(masterWallet),
+            address(swapper)
         );
 
         uint256[][] memory distribution = SmartVaultDeposits.distributeVaultDeposits(bag, depositsIn, swapInfo);
@@ -145,7 +150,8 @@ contract SmartVaultFlushTest is Test, SpoolAccessRoles {
             exchangeRates,
             ratios,
             priceFeedManager.usdDecimals(),
-            address(masterWallet)
+            address(masterWallet),
+            address(swapper)
         );
 
         vm.expectRevert(abi.encodeWithSelector(IncorrectDepositRatio.selector));
@@ -173,16 +179,16 @@ contract SmartVaultFlushTest is Test, SpoolAccessRoles {
         token1.mint(address(masterWallet), depositsIn[0]);
         token2.mint(address(masterWallet), depositsIn[1]);
 
-        MockSwapper swapper = _createSwapper();
+        MockExchange exchange = _createExchange();
 
         MockSmartVaultDeposits depositManager = new MockSmartVaultDeposits();
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(depositManager));
         SwapInfo[] memory swapInfo = new SwapInfo[](1);
         swapInfo[0] = SwapInfo(
-            address(swapper),
+            address(exchange),
             address(token1),
             1000 ether,
-            abi.encodeWithSelector(swapper.swap.selector, address(token1), 1 ether, address(masterWallet))
+            abi.encodeWithSelector(exchange.swap.selector, address(token1), 1 ether, address(masterWallet))
         );
 
         DepositRatioQueryBag memory bag = DepositRatioQueryBag(
@@ -193,7 +199,8 @@ contract SmartVaultFlushTest is Test, SpoolAccessRoles {
             exchangeRates,
             ratios,
             priceFeedManager.usdDecimals(),
-            address(masterWallet)
+            address(masterWallet),
+            address(swapper)
         );
 
         uint256[][] memory distribution = depositManager.distributeVaultDeposits(bag, depositsIn, swapInfo);
@@ -216,11 +223,11 @@ contract SmartVaultFlushTest is Test, SpoolAccessRoles {
         assertEq(distribution[0][1] + distribution[1][1] + distribution[2][1], depositsIn[1] + swapFor);
     }
 
-    function _createSwapper() private returns (MockSwapper) {
-        MockSwapper swap = new MockSwapper(token1, token2, priceFeedManager);
-        token1.mint(address(swap), 10000 ether);
-        token2.mint(address(swap), 10000 ether);
-        return swap;
+    function _createExchange() private returns (MockExchange) {
+        MockExchange exchange = new MockExchange(token1, token2, priceFeedManager);
+        token1.mint(address(exchange), 10000 ether);
+        token2.mint(address(exchange), 10000 ether);
+        return exchange;
     }
 
     function _createStrategies() private returns (address[] memory, address[] memory, uint256[][] memory) {

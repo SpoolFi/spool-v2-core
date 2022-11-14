@@ -13,6 +13,7 @@ import "../../src/managers/StrategyRegistry.sol";
 import "../../src/managers/UsdPriceFeedManager.sol";
 import "../../src/MasterWallet.sol";
 import "../../src/SmartVault.sol";
+import "../../src/Swapper.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
 
@@ -47,6 +48,7 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         MasterWallet masterWallet = new MasterWallet(accessControl);
         UsdPriceFeedManager priceFeedManager = new UsdPriceFeedManager();
         StrategyRegistry strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
+        Swapper swapper = new Swapper();
         smartVaultManager = new SmartVaultManager(
             accessControl,
             strategyRegistry,
@@ -54,7 +56,8 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
             assetGroupRegistry,
             masterWallet,
             actionManager,
-            guardManager
+            guardManager,
+            swapper
         );
 
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));

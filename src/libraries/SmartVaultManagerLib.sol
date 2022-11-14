@@ -5,6 +5,7 @@ import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/IStrategy.sol";
+import "../interfaces/ISwapper.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 
 library SmartVaultUtils {
@@ -130,7 +131,8 @@ library SmartVaultDeposits {
             depositRatios,
             depositUSD,
             bag.usdDecimals,
-            bag.masterWallet
+            bag.masterWallet,
+            bag.swapper
         );
 
         depositBag.depositsIn = _swapToRatio(depositBag, swapInfo);
@@ -145,7 +147,7 @@ library SmartVaultDeposits {
     function _swapToRatio(DepositBag memory bag, SwapInfo[] memory swapInfo) internal returns (uint256[] memory) {
         uint256[] memory oldBalances = SmartVaultUtils.getBalances(bag.tokens, bag.masterWallet);
         for (uint256 i; i < swapInfo.length; i++) {
-            _swap(swapInfo[i], IMasterWallet(bag.masterWallet));
+            _swap(swapInfo[i], IMasterWallet(bag.masterWallet), ISwapper(bag.swapper));
         }
         uint256[] memory newBalances = SmartVaultUtils.getBalances(bag.tokens, bag.masterWallet);
         uint256[] memory depositsOut = new uint256[](bag.tokens.length);
@@ -227,11 +229,9 @@ library SmartVaultDeposits {
         return outRatios;
     }
 
-    function _swap(SwapInfo memory _swapInfo, IMasterWallet _masterWallet) private {
+    function _swap(SwapInfo memory _swapInfo, IMasterWallet _masterWallet, ISwapper _swapper) private {
         _masterWallet.approve(IERC20(_swapInfo.token), _swapInfo.swapTarget, _swapInfo.amountIn);
-        (bool success, bytes memory data) = _swapInfo.swapTarget.call(_swapInfo.swapCallData);
-        if (!success) revert(SmartVaultUtils.getRevertMsg(data));
-
+        _swapper.swap(_swapInfo);
         _masterWallet.resetApprove(IERC20(_swapInfo.token), _swapInfo.swapTarget);
     }
 }

@@ -26,6 +26,11 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== STATE VARIABLES ========== */
 
+    /**
+     * @notice Contract executing token swaps for vault flush.
+     */
+    ISwapper internal immutable _swapper;
+
     // @notice Guard manager
     IGuardManager internal immutable _guardManager;
 
@@ -92,7 +97,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         IAssetGroupRegistry assetGroupRegistry_,
         IMasterWallet masterWallet_,
         IActionManager actionManager_,
-        IGuardManager guardManager_
+        IGuardManager guardManager_,
+        ISwapper swapper_
     ) SpoolAccessControllable(accessControl_) {
         _strategyRegistry = strategyRegistry_;
         _priceFeedManager = priceFeedManager_;
@@ -100,6 +106,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _masterWallet = masterWallet_;
         _actionManager = actionManager_;
         _guardManager = guardManager_;
+        _swapper = swapper_;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -192,7 +199,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             SmartVaultUtils.getExchangeRates(tokens, _priceFeedManager),
             SmartVaultUtils.getStrategyRatios(strategies_),
             _priceFeedManager.usdDecimals(),
-            address(_masterWallet)
+            address(_masterWallet),
+            address(_swapper)
         );
 
         return SmartVaultDeposits.getDepositRatio(bag);
@@ -430,7 +438,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
                 SmartVaultUtils.getExchangeRates(tokens, _priceFeedManager),
                 SmartVaultUtils.getStrategyRatios(strategies_),
                 _priceFeedManager.usdDecimals(),
-                address(_masterWallet)
+                address(_masterWallet),
+                address(_swapper)
             );
 
             _flushExchangeRates[smartVault][flushIdx].setValues(bag.exchangeRates);
