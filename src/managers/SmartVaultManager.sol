@@ -174,7 +174,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /**
      * @notice Gets total value (in USD) of assets managed by the vault.
      */
-    function getVaultTotalUsdValue(address smartVault) external view returns (uint256) {
+    function getVaultTotalUsdValue(address smartVault) public view returns (uint256) {
         address[] memory strategyAddresses = _smartVaultStrategies[smartVault];
 
         uint256 totalUsdValue = 0;
@@ -444,10 +444,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         onlyRegisteredSmartVault(smartVault)
     {
         uint256 flushIdx = _flushIndexes[smartVault];
-        address[] memory strategies_ = _smartVaultStrategies[smartVault];
-
         uint256 withdrawals = _withdrawnVaultShares[smartVault][flushIdx];
-
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
         uint256[] memory flushDhwIndexes;
 
         if (_vaultDeposits[smartVault][flushIdx][0] > 0) {
@@ -504,10 +502,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         // TODO: sync yields
         // TODO: sync deposits
 
-        while (_flushIndexesToSync[smartVault] < _flushIndexes[smartVault]) {
-            _syncWithdrawals(smartVault, _flushIndexesToSync[smartVault]);
+        uint256 flushIndex = _flushIndexesToSync[smartVault];
+        while (flushIndex < _flushIndexes[smartVault]) {
+            _syncWithdrawals(smartVault, flushIndex);
+            _syncDeposits(smartVault, flushIndex);
 
-            _flushIndexesToSync[smartVault]++;
+            flushIndex++;
+            _flushIndexesToSync[smartVault] = flushIndex;
         }
     }
 
@@ -601,6 +602,32 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _withdrawnAssets[smartVault][flushIndex].setValues(withdrawnAssets_);
     }
 
+    function _syncDeposits(address smartVault, uint256 flushIndex) private {
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
+        uint256[] memory deposits = _vaultDeposits[smartVault][flushIndex].toArray(strategies_.length);
+        uint256 vaultDepositUSDTotal = 0;
+
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            address strategy = strategies_[i];
+            uint256 dhwIndex = _dhwIndexes[smartVault][flushIndex][i];
+            uint256 mintedSSTs = _strategyRegistry.sharesMinted(strategy, dhwIndex);
+            uint256[] memory strategyDeposits = _strategyRegistry.depositedAssets(strategy, dhwIndex);
+
+            uint256 vaultDepositUSD = 0;
+            uint256 strategyDepositUSD = 0;
+
+            uint256 vaultSSTs = mintedSSTs * vaultDepositUSD / strategyDepositUSD;
+            IStrategy(strategy).transfer(smartVault, vaultSSTs);
+
+            // TODO: take slippages into account
+            // uint256 vaultTrueDeposited = vaultDeposited - depositSlippage * vaultDeposited / strategyDeposited;
+            vaultDepositUSDTotal += vaultDepositUSD;
+        }
+
+        uint256 toMint = vaultDepositUSDTotal * ISmartVault(smartVault).totalSupply() / getVaultTotalUsdValue(smartVault);
+        ISmartVault(smartVault).mint(smartVault, toMint);
+    }
+
     function _runGuards(
         address smartVault,
         address executor,
@@ -623,7 +650,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address[] memory assetGroup,
         RequestType requestType
     ) internal {
-        ActionContext memory context = ActionContext(recipient, executor, owner, requestType, assetGroup, assets);
+        ActionContext memory context = ActionContext(recipient,
+            executor, owner, requestType, assetGroup, assets);
         _actionManager.runActions(smartVault, context);
     }
 

@@ -20,7 +20,8 @@ interface IStrategyRegistry {
 
     function isStrategy(address strategy) external view returns (bool);
     function currentIndex(address strategy) external view returns (uint256);
-    function strategyDeposits(address strategy, uint256 index) external view returns (uint256[] memory);
+    function depositedAssets(address strategy, uint256 dhwIndex) external view returns (uint256[] memory);
+    function sharesMinted(address strategy, uint256 dhwIndex) external view returns (uint256);
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 

@@ -59,6 +59,10 @@ library SmartVaultUtils {
 
         return balances;
     }
+
+    function assetsToUSD() {
+
+    }
 }
 
 library SmartVaultDeposits {

@@ -18,19 +18,21 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     IMasterWallet immutable _masterWallet;
 
     /// @notice TODO
-    mapping(address => bool) internal _strategies;
+    mapping(address => bool) private _strategies;
 
     /// @notice TODO
-    mapping(address => uint256) _currentIndexes;
+    mapping(address => uint256) private _currentIndexes;
 
     /// @notice TODO strategy => index => tokenAmounts
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) _strategyDeposits;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) private _depositedAssets;
 
     /// @notice TODO strategy => index => sstAmount
-    mapping(address => mapping(uint256 => uint256)) _withdrawnShares;
+    mapping(address => mapping(uint256 => uint256)) private _withdrawnShares;
 
     /// @notice TODO strategy => index => tokenAmounts
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) _withdrawnAssets;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) private _withdrawnAssets;
+
+    mapping(address => mapping(uint256 => uint256)) public override sharesMinted;
 
     constructor(IMasterWallet masterWallet_, ISpoolAccessControl accessControl_)
         SpoolAccessControllable(accessControl_)
@@ -50,9 +52,9 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     /**
      * @notice Deposits for given strategy and DHW index
      */
-    function strategyDeposits(address strategy, uint256 index) external view returns (uint256[] memory) {
+    function depositedAssets(address strategy, uint256 index) external view returns (uint256[] memory) {
         uint256 assetGroupLength = IStrategy(strategy).assets().length;
-        return _strategyDeposits[strategy][index].toArray(assetGroupLength);
+        return _depositedAssets[strategy][index].toArray(assetGroupLength);
     }
 
     /**
@@ -108,7 +110,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
             indexes[i] = latestIndex;
 
             for (uint256 j = 0; j < amounts[i].length; j++) {
-                _strategyDeposits[strategy][latestIndex][j] += amounts[i][j];
+                _depositedAssets[strategy][latestIndex][j] += amounts[i][j];
             }
         }
 
