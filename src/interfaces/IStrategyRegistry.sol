@@ -13,6 +13,12 @@ error StrategyAlreadyRegistered(address address_);
  */
 error DhwNotRunYetForIndex(address strategy, uint256 strategyIndex);
 
+struct StrategyAtIndex {
+    uint256 sharesMinted;
+    uint256[] depositedAssets;
+    uint256[] slippages;
+}
+
 /* ========== INTERFACES ========== */
 
 interface IStrategyRegistry {
@@ -20,7 +26,8 @@ interface IStrategyRegistry {
 
     function isStrategy(address strategy) external view returns (bool);
     function currentIndex(address strategy) external view returns (uint256);
-    function strategyDeposits(address strategy, uint256 index) external view returns (uint256[] memory);
+    function depositedAssets(address strategy, uint256 dhwIndex) external view returns (uint256[] memory);
+    function strategyAtIndex(address strategy, uint256 dhwIndex) external view returns (StrategyAtIndex memory);
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 

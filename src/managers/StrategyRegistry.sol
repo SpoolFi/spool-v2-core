@@ -8,6 +8,7 @@ import "../interfaces/CommonErrors.sol";
 import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../libraries/ArrayMapping.sol";
+import "../libraries/SpoolUtils.sol";
 import "../access/SpoolAccessControl.sol";
 
 contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
@@ -17,25 +18,34 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
 
     IMasterWallet immutable _masterWallet;
 
-    /// @notice TODO
-    mapping(address => bool) internal _strategies;
+    IUsdPriceFeedManager immutable _priceFeedManager;
 
     /// @notice TODO
-    mapping(address => uint256) _currentIndexes;
+    mapping(address => bool) private _strategies;
 
-    /// @notice TODO strategy => index => tokenAmounts
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) _strategyDeposits;
+    /// @notice TODO
+    mapping(address => uint256) private _currentIndexes;
+
+    /// @notice TODO strategy => index => depositAmounts
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) private _depositedAssets;
+
+    /// @notice TODO strategy => index => depositSlippages
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) private _depositSlippages;
 
     /// @notice TODO strategy => index => sstAmount
-    mapping(address => mapping(uint256 => uint256)) _withdrawnShares;
+    mapping(address => mapping(uint256 => uint256)) private _withdrawnShares;
 
     /// @notice TODO strategy => index => tokenAmounts
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) _withdrawnAssets;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) private _withdrawnAssets;
 
-    constructor(IMasterWallet masterWallet_, ISpoolAccessControl accessControl_)
+    /// @notice TODO strategy => index => SSTs minted
+    mapping(address => mapping(uint256 => uint256)) private _sharesMinted;
+
+    constructor(IMasterWallet masterWallet_, ISpoolAccessControl accessControl_, IUsdPriceFeedManager priceFeedManager_)
         SpoolAccessControllable(accessControl_)
     {
         _masterWallet = masterWallet_;
+        _priceFeedManager = priceFeedManager_;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -50,9 +60,9 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     /**
      * @notice Deposits for given strategy and DHW index
      */
-    function strategyDeposits(address strategy, uint256 index) external view returns (uint256[] memory) {
+    function depositedAssets(address strategy, uint256 index) external view returns (uint256[] memory) {
         uint256 assetGroupLength = IStrategy(strategy).assets().length;
-        return _strategyDeposits[strategy][index].toArray(assetGroupLength);
+        return _depositedAssets[strategy][index].toArray(assetGroupLength);
     }
 
     /**
@@ -60,6 +70,18 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
      */
     function currentIndex(address strategy) external view returns (uint256) {
         return _currentIndexes[strategy];
+    }
+
+    /**
+     * @notice Get state of a strategy for a given DHW index
+     */
+    function strategyAtIndex(address strategy, uint256 dhwIndex) external view returns (StrategyAtIndex memory) {
+        uint256 assetGroupLength = IStrategy(strategy).assets().length;
+        return StrategyAtIndex(
+            _sharesMinted[strategy][dhwIndex],
+            _depositedAssets[strategy][dhwIndex].toArray(assetGroupLength),
+            _depositSlippages[strategy][dhwIndex].toArray(assetGroupLength)
+        );
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
@@ -85,15 +107,24 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
      */
     function doHardWork(address[] memory strategies_) external {
         for (uint256 i = 0; i < strategies_.length; i++) {
-            address strategy = strategies_[i];
-            uint256 dhwIndex = _currentIndexes[strategy];
-            uint256[] memory withdrawnAssets_ = IStrategy(strategy).redeem(
-                _withdrawnShares[strategy][dhwIndex], address(_masterWallet), address(_masterWallet)
+            IStrategy strategy = IStrategy(strategies_[i]);
+            address strategyAddr = address(strategy);
+            address[] memory assetGroup = strategy.assets();
+
+            uint256 dhwIndex = _currentIndexes[strategyAddr];
+            uint256[] memory withdrawnAssets_ = strategy.redeem(
+                _withdrawnShares[strategyAddr][dhwIndex], address(_masterWallet), address(_masterWallet)
             );
 
-            _withdrawnAssets[strategy][dhwIndex].setValues(withdrawnAssets_);
+            _withdrawnAssets[strategyAddr][dhwIndex].setValues(withdrawnAssets_);
+            uint256 depositUSD = SpoolUtils.assetsToUSD(
+                assetGroup, _depositedAssets[strategyAddr][dhwIndex].toArray(assetGroup.length), _priceFeedManager
+            );
+
+            _sharesMinted[strategyAddr][dhwIndex] = depositUSD;
+
             // TODO: transfer assets to smart vault manager
-            _currentIndexes[strategy]++;
+            _currentIndexes[strategyAddr]++;
         }
     }
 
@@ -108,7 +139,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
             indexes[i] = latestIndex;
 
             for (uint256 j = 0; j < amounts[i].length; j++) {
-                _strategyDeposits[strategy][latestIndex][j] += amounts[i][j];
+                _depositedAssets[strategy][latestIndex][j] += amounts[i][j];
             }
         }
 

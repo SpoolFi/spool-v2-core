@@ -6,13 +6,15 @@ import "forge-std/Test.sol";
 import "../src/interfaces/IStrategyRegistry.sol";
 import "../src/managers/StrategyRegistry.sol";
 import "../src/MasterWallet.sol";
+import "./mocks/MockPriceFeedManager.sol";
 
 contract StrategyRegistryTest is Test {
     IStrategyRegistry strategyRegistry;
 
     function setUp() public {
         ISpoolAccessControl accessControl = new SpoolAccessControl();
-        strategyRegistry = new StrategyRegistry(new MasterWallet(accessControl), accessControl);
+        strategyRegistry =
+            new StrategyRegistry(new MasterWallet(accessControl), accessControl, new MockPriceFeedManager());
     }
 
     function test_registerStrategy() public {

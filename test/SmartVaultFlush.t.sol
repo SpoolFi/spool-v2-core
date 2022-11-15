@@ -31,8 +31,8 @@ contract SmartVaultFlushTest is Test, SpoolAccessRoles {
     function setUp() public {
         accessControl = new SpoolAccessControl();
         masterWallet = new MasterWallet(accessControl);
-        strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
         priceFeedManager = new MockPriceFeedManager();
+        strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
         swapper = new Swapper();
         token1 = new MockToken("Token1", "T1");
         token2 = new MockToken("Token2", "T2");

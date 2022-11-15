@@ -36,8 +36,8 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         accessControl = new SpoolAccessControl();
         masterWallet = new MasterWallet(accessControl);
         assetGroupRegistry = new AssetGroupRegistry();
-        strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
         priceFeedManager = new MockPriceFeedManager();
+        strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
         IGuardManager guardManager = new GuardManager();
         IActionManager actionManager = new ActionManager();
         ISwapper swapper = new Swapper();
@@ -242,17 +242,17 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         uint256 dhwIndex = strategyRegistry.currentIndex(strategies[0]);
         uint256 r = 10 ** 5;
 
-        uint256[] memory deposits1 = strategyRegistry.strategyDeposits(strategies[0], dhwIndex);
+        uint256[] memory deposits1 = strategyRegistry.depositedAssets(strategies[0], dhwIndex);
         assertEq(deposits1.length, 2);
         assertEq(deposits1[0] / r * r, 59.9104248817164 ether);
         assertEq(deposits1[1] / r * r, 4.0739088919567 ether);
 
-        uint256[] memory deposits2 = strategyRegistry.strategyDeposits(strategies[1], dhwIndex);
+        uint256[] memory deposits2 = strategyRegistry.depositedAssets(strategies[1], dhwIndex);
         assertEq(deposits2.length, 2);
         assertEq(deposits2[0] / r * r, 30.1775244829541 ether);
         assertEq(deposits2[1] / r * r, 2.0218941403579 ether);
 
-        uint256[] memory deposits3 = strategyRegistry.strategyDeposits(strategies[2], dhwIndex);
+        uint256[] memory deposits3 = strategyRegistry.depositedAssets(strategies[2], dhwIndex);
         assertEq(deposits3.length, 2);
         assertEq(deposits3[0] / r * r, 9.9120506353293 ether);
         assertEq(deposits3[1] / r * r, 0.6839314938377 ether);
