@@ -12,6 +12,10 @@ const config = {
 
 const url = "https://github-tests-to-telegram-bot.1epl1di4e824g.eu-west-2.cs.amazonlightsail.com/";
 
+async function delay(ms: number) {
+    await new Promise<void>(resolve => setTimeout(()=>resolve(), ms)).then();
+}
+
 
 function escapeString(string: any){
     let escapeables = ["*", "_", '{', '}', '[', ']', '<', '>', '(', ')', '#', '+', '-', '.', '!', '|', '='];
@@ -161,6 +165,16 @@ function test() {
 }
 
 
-axios.post(url, coverage(), config);
-axios.post(url, escapeString(sizes()), config);
-axios.post(url, escapeString(test()), config);
+async function main(){
+    axios.post(url, "TEST RUN ON BRANCH: " + process.argv[2], config);
+
+    await delay(1000);
+
+
+    axios.post(url, coverage(), config);
+    axios.post(url, escapeString(sizes()), config);
+    axios.post(url, escapeString(test()), config);
+}
+
+
+main();
