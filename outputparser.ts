@@ -122,7 +122,7 @@ function sizes() {
             const match = [...withoutSpaces.matchAll(re)];
             if(match){
                 try{
-                    retn += ("\n" + match[0][0].padStart(60, " ") + match[1][0].padStart(20, " ") + match[2][0].padStart(20, " ") );
+                    retn += ("\n" + match[0][0].padEnd(30, " ") + match[1][0].padEnd(20, " ") + match[2][0].padEnd(20, " ") );
                     table.push(new Entry(match[0][0], match[1][0], match[2][0]));
                 }
                 catch(e){}
