@@ -48,6 +48,7 @@ jobs:
         run: |
           npm i ts-node -g
           npm i --save-dev @types/node
+          npm i axios
 
       - name: Output results
         run: ts-node ./outputparser.ts
