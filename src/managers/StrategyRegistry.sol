@@ -117,7 +117,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
             );
 
             _withdrawnAssets[strategyAddr][dhwIndex].setValues(withdrawnAssets_);
-            uint256 depositUSD = SmartVaultUtils.assetsToUSD(
+            uint256 depositUSD = SpoolUtils.assetsToUSD(
                 assetGroup, _depositedAssets[strategyAddr][dhwIndex].toArray(assetGroup.length), _priceFeedManager
             );
 

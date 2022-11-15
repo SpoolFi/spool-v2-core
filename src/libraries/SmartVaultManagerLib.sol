@@ -8,7 +8,7 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/ISwapper.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 
-library SmartVaultUtils {
+library SpoolUtils {
     function getStrategyRatios(address[] memory strategies_) public view returns (uint256[][] memory) {
         uint256[][] memory ratios = new uint256[][](strategies_.length);
         for (uint256 i = 0; i < strategies_.length; i++) {
@@ -67,7 +67,7 @@ library SmartVaultUtils {
     {
         uint256 usdTotal = 0;
         for (uint256 i = 0; i < tokens.length; i++) {
-            usdTotal = priceFeedManager.assetToUsd(tokens[i], assets[i]);
+            usdTotal += priceFeedManager.assetToUsd(tokens[i], assets[i]);
         }
 
         return usdTotal;
@@ -158,11 +158,11 @@ library SmartVaultDeposits {
      * TODO: check if "swap" feature is exploitable
      */
     function _swapToRatio(DepositBag memory bag, SwapInfo[] memory swapInfo) internal returns (uint256[] memory) {
-        uint256[] memory oldBalances = SmartVaultUtils.getBalances(bag.tokens, bag.masterWallet);
+        uint256[] memory oldBalances = SpoolUtils.getBalances(bag.tokens, bag.masterWallet);
         for (uint256 i; i < swapInfo.length; i++) {
             _swap(swapInfo[i], IMasterWallet(bag.masterWallet), ISwapper(bag.swapper));
         }
-        uint256[] memory newBalances = SmartVaultUtils.getBalances(bag.tokens, bag.masterWallet);
+        uint256[] memory newBalances = SpoolUtils.getBalances(bag.tokens, bag.masterWallet);
         uint256[] memory depositsOut = new uint256[](bag.tokens.length);
 
         for (uint256 i = 0; i < bag.tokens.length; i++) {

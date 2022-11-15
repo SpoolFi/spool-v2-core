@@ -207,8 +207,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             tokens,
             strategies_,
             _smartVaultAllocations[smartVault].toArray(strategies_.length),
-            SmartVaultUtils.getExchangeRates(tokens, _priceFeedManager),
-            SmartVaultUtils.getStrategyRatios(strategies_),
+            SpoolUtils.getExchangeRates(tokens, _priceFeedManager),
+            SpoolUtils.getStrategyRatios(strategies_),
             _priceFeedManager.usdDecimals(),
             address(_masterWallet),
             address(_swapper)
@@ -459,8 +459,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
                 tokens,
                 strategies_,
                 _smartVaultAllocations[smartVault].toArray(strategies_.length),
-                SmartVaultUtils.getExchangeRates(tokens, _priceFeedManager),
-                SmartVaultUtils.getStrategyRatios(strategies_),
+                SpoolUtils.getExchangeRates(tokens, _priceFeedManager),
+                SpoolUtils.getStrategyRatios(strategies_),
                 _priceFeedManager.usdDecimals(),
                 address(_masterWallet),
                 address(_swapper)
@@ -509,10 +509,24 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         // TODO: sync yields
         // TODO: sync deposits
 
+        address[] memory strategies = _smartVaultStrategies[smartVault];
+
         uint256 flushIndex = _flushIndexesToSync[smartVault];
         while (flushIndex < _flushIndexes[smartVault]) {
-            _syncWithdrawals(smartVault, flushIndex);
-            _syncDeposits(smartVault, flushIndex);
+            // TODO: Check if all DHW indexes were processed for given flushIndex (here, not down the stack)
+
+            uint256[] memory indexes = _dhwIndexes[smartVault][flushIndex].toArray(strategies.length);
+
+            for (uint256 i = 0; i < strategies.length; i++) {
+                uint256 dhwIndex = _dhwIndexes[smartVault][flushIndex][i];
+
+                if (dhwIndex == _strategyRegistry.currentIndex(strategies[i])) {
+                    revert DhwNotRunYetForIndex(strategies[i], dhwIndex);
+                }
+            }
+
+            _syncWithdrawals(smartVault, flushIndex, strategies, indexes);
+            _syncDeposits(smartVault, flushIndex, strategies, indexes);
 
             flushIndex++;
             _flushIndexesToSync[smartVault] = flushIndex;
@@ -592,52 +606,50 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return withdrawnAssets;
     }
 
-    function _syncWithdrawals(address smartVault, uint256 flushIndex) private {
+    function _syncWithdrawals(
+        address smartVault,
+        uint256 flushIndex,
+        address[] memory strategies,
+        uint256[] memory dhwIndexes
+    ) private {
         uint256 withdrawnShares = _withdrawnVaultShares[smartVault][flushIndex];
 
         if (withdrawnShares == 0) {
             return;
         }
 
-        address[] memory strategies_ = _smartVaultStrategies[smartVault];
         uint256[] memory withdrawnAssets_ = _strategyRegistry.claimWithdrawals(
-            strategies_,
-            _dhwIndexes[smartVault][flushIndex].toArray(strategies_.length),
-            _withdrawnStrategyShares[smartVault][flushIndex].toArray(strategies_.length)
+            strategies, dhwIndexes, _withdrawnStrategyShares[smartVault][flushIndex].toArray(strategies.length)
         );
 
         _withdrawnAssets[smartVault][flushIndex].setValues(withdrawnAssets_);
     }
 
-    function _syncDeposits(address smartVault, uint256 flushIndex) private {
-        address[] memory strategies_ = _smartVaultStrategies[smartVault];
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-        uint256 vaultDepositUSDTotal = 0;
-
-        // No deposits
+    function _syncDeposits(
+        address smartVault,
+        uint256 flushIndex,
+        address[] memory strategies,
+        uint256[] memory dhwIndexes
+    ) private {
         if (_vaultDeposits[smartVault][flushIndex][0] == 0) {
             return;
         }
 
-        for (uint256 i = 0; i < strategies_.length; i++) {
-            address strategy = strategies_[i];
-            uint256 dhwIndex = _dhwIndexes[smartVault][flushIndex][i];
+        uint256 vaultDepositUSDTotal = 0;
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
 
-            if (dhwIndex == _strategyRegistry.currentIndex(strategy)) {
-                revert DhwNotRunYetForIndex(strategy, dhwIndex);
-            }
+        for (uint256 i = 0; i < strategies.length; i++) {
+            address strategy = strategies[i];
 
+            StrategyAtIndex memory atDHW = _strategyRegistry.strategyAtIndex(strategy, dhwIndexes[i]);
             uint256[] memory vaultDeposits =
-                _vaultFlushedDeposits[smartVault][flushIndex][strategy].toArray(strategies_.length);
-            uint256 vaultDepositUSD = SmartVaultUtils.assetsToUSD(assetGroup, vaultDeposits, _priceFeedManager);
+                _vaultFlushedDeposits[smartVault][flushIndex][strategy].toArray(strategies.length);
 
-            StrategyAtIndex memory strategyData = _strategyRegistry.strategyAtIndex(strategy, dhwIndex);
+            uint256 vaultDepositUSD = SpoolUtils.assetsToUSD(assetGroup, vaultDeposits, _priceFeedManager);
+            uint256 slippageUSD = SpoolUtils.assetsToUSD(assetGroup, atDHW.slippages, _priceFeedManager);
+            uint256 strategyDepositUSD = SpoolUtils.assetsToUSD(assetGroup, atDHW.depositedAssets, _priceFeedManager);
 
-            uint256 slippageUSD = SmartVaultUtils.assetsToUSD(assetGroup, strategyData.slippages, _priceFeedManager);
-            uint256 strategyDepositUSD =
-                SmartVaultUtils.assetsToUSD(assetGroup, strategyData.depositedAssets, _priceFeedManager);
-
-            uint256 vaultStrategyShares = strategyData.sharesMinted * vaultDepositUSD / strategyDepositUSD;
+            uint256 vaultStrategyShares = atDHW.sharesMinted * vaultDepositUSD / strategyDepositUSD;
             IStrategy(strategy).transfer(smartVault, vaultStrategyShares);
 
             uint256 vaultTrueDeposited = vaultDepositUSD - slippageUSD * vaultDepositUSD / strategyDepositUSD;

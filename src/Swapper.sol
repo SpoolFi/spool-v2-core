@@ -7,6 +7,6 @@ import "./libraries/SmartVaultManagerLib.sol";
 contract Swapper is ISwapper {
     function swap(SwapInfo memory swapInfo) external {
         (bool success, bytes memory data) = swapInfo.swapTarget.call(swapInfo.swapCallData);
-        if (!success) revert(SmartVaultUtils.getRevertMsg(data));
+        if (!success) revert(SpoolUtils.getRevertMsg(data));
     }
 }
