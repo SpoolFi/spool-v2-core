@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.17;
 
-import "../../src/libraries/SmartVaultManagerLib.sol";
+import "../../src/libraries/SmartVaultDeposits.sol";
 import "../../src/interfaces/ISmartVaultManager.sol";
 
 contract MockSmartVaultDeposits {

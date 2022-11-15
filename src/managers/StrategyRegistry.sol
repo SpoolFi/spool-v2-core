@@ -8,7 +8,7 @@ import "../interfaces/CommonErrors.sol";
 import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../libraries/ArrayMapping.sol";
-import "../libraries/SmartVaultManagerLib.sol";
+import "../libraries/SpoolUtils.sol";
 import "../access/SpoolAccessControl.sol";
 
 contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "./interfaces/ISwapper.sol";
-import "./libraries/SmartVaultManagerLib.sol";
+import "./libraries/SpoolUtils.sol";
 
 contract Swapper is ISwapper {
     function swap(SwapInfo memory swapInfo) external {
