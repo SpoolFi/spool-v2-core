@@ -122,10 +122,8 @@ function sizes() {
             const match = [...withoutSpaces.matchAll(re)];
             if(match){
                 try{
-                    if(match[0][0] != "Contract"){ // table header
-                        retn += (match[0][0], match[1][0], match[2][0] + "\n");
-                        table.push(new Entry(match[0][0], match[1][0], match[2][0]));
-                    }
+                    retn += ("\n" + match[0][0].padStart(20, " ") + match[1][0].padStart(20, " ") + match[2][0].padStart(20, " ") );
+                    table.push(new Entry(match[0][0], match[1][0], match[2][0]));
                 }
                 catch(e){}
             }
