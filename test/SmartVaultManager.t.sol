@@ -36,8 +36,8 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         accessControl = new SpoolAccessControl();
         masterWallet = new MasterWallet(accessControl);
         assetGroupRegistry = new AssetGroupRegistry();
-        strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
         priceFeedManager = new MockPriceFeedManager();
+        strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
         IGuardManager guardManager = new GuardManager();
         IActionManager actionManager = new ActionManager();
         ISwapper swapper = new Swapper();

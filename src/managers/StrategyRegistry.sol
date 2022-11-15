@@ -8,6 +8,7 @@ import "../interfaces/CommonErrors.sol";
 import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../libraries/ArrayMapping.sol";
+import "../libraries/SmartVaultManagerLib.sol";
 import "../access/SpoolAccessControl.sol";
 
 contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
@@ -17,14 +18,19 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
 
     IMasterWallet immutable _masterWallet;
 
+    IUsdPriceFeedManager immutable _priceFeedManager;
+
     /// @notice TODO
     mapping(address => bool) private _strategies;
 
     /// @notice TODO
     mapping(address => uint256) private _currentIndexes;
 
-    /// @notice TODO strategy => index => tokenAmounts
+    /// @notice TODO strategy => index => depositAmounts
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) private _depositedAssets;
+
+    /// @notice TODO strategy => index => depositSlippages
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) private _depositSlippages;
 
     /// @notice TODO strategy => index => sstAmount
     mapping(address => mapping(uint256 => uint256)) private _withdrawnShares;
@@ -32,12 +38,14 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     /// @notice TODO strategy => index => tokenAmounts
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) private _withdrawnAssets;
 
-    mapping(address => mapping(uint256 => uint256)) public override sharesMinted;
+    /// @notice TODO strategy => index => SSTs minted
+    mapping(address => mapping(uint256 => uint256)) private _sharesMinted;
 
-    constructor(IMasterWallet masterWallet_, ISpoolAccessControl accessControl_)
+    constructor(IMasterWallet masterWallet_, ISpoolAccessControl accessControl_, IUsdPriceFeedManager priceFeedManager_)
         SpoolAccessControllable(accessControl_)
     {
         _masterWallet = masterWallet_;
+        _priceFeedManager = priceFeedManager_;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -64,6 +72,18 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         return _currentIndexes[strategy];
     }
 
+    /**
+     * @notice Get state of a strategy for a given DHW index
+     */
+    function strategyAtIndex(address strategy, uint256 dhwIndex) external view returns (StrategyAtIndex memory) {
+        uint256 assetGroupLength = IStrategy(strategy).assets().length;
+        return StrategyAtIndex(
+            _sharesMinted[strategy][dhwIndex],
+            _depositedAssets[strategy][dhwIndex].toArray(assetGroupLength),
+            _depositSlippages[strategy][dhwIndex].toArray(assetGroupLength)
+        );
+    }
+
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     /**
@@ -87,15 +107,24 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
      */
     function doHardWork(address[] memory strategies_) external {
         for (uint256 i = 0; i < strategies_.length; i++) {
-            address strategy = strategies_[i];
-            uint256 dhwIndex = _currentIndexes[strategy];
-            uint256[] memory withdrawnAssets_ = IStrategy(strategy).redeem(
-                _withdrawnShares[strategy][dhwIndex], address(_masterWallet), address(_masterWallet)
+            IStrategy strategy = IStrategy(strategies_[i]);
+            address strategyAddr = address(strategy);
+            address[] memory assetGroup = strategy.assets();
+
+            uint256 dhwIndex = _currentIndexes[strategyAddr];
+            uint256[] memory withdrawnAssets_ = strategy.redeem(
+                _withdrawnShares[strategyAddr][dhwIndex], address(_masterWallet), address(_masterWallet)
             );
 
-            _withdrawnAssets[strategy][dhwIndex].setValues(withdrawnAssets_);
+            _withdrawnAssets[strategyAddr][dhwIndex].setValues(withdrawnAssets_);
+            uint256 depositUSD = SmartVaultUtils.assetsToUSD(
+                assetGroup, _depositedAssets[strategyAddr][dhwIndex].toArray(assetGroup.length), _priceFeedManager
+            );
+
+            _sharesMinted[strategyAddr][dhwIndex] = depositUSD;
+
             // TODO: transfer assets to smart vault manager
-            _currentIndexes[strategy]++;
+            _currentIndexes[strategyAddr]++;
         }
     }
 

@@ -15,6 +15,7 @@ import "../../src/SmartVault.sol";
 import "../../src/Swapper.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
+import "../mocks/MockPriceFeedManager.sol";
 
 contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
     address private alice;
@@ -56,11 +57,11 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         IAction[] memory emptyActions = new IAction[](0);
         RequestType[] memory emptyActionsRequestTypes = new RequestType[](0);
 
-        strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
+        IUsdPriceFeedManager priceFeedManager = new MockPriceFeedManager();
+        strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
         GuardManager guardManager = new GuardManager();
         ActionManager actionManager = new ActionManager();
         Swapper swapper = new Swapper();
-        UsdPriceFeedManager priceFeedManager = new UsdPriceFeedManager();
 
         smartVaultManager = new SmartVaultManager(
             accessControl,

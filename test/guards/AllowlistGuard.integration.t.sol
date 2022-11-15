@@ -16,6 +16,7 @@ import "../../src/SmartVault.sol";
 import "../../src/Swapper.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
+import "../mocks/MockPriceFeedManager.sol";
 
 contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
     address private alice;
@@ -48,11 +49,12 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         AssetGroupRegistry assetGroupRegistry = new AssetGroupRegistry();
         guardManager = new GuardManager();
         MasterWallet masterWallet = new MasterWallet(accessControl);
-        StrategyRegistry strategyRegistry = new StrategyRegistry(masterWallet, accessControl);
+        IUsdPriceFeedManager priceFeedManager = new MockPriceFeedManager();
+        StrategyRegistry strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
         smartVaultManager = new SmartVaultManager(
             accessControl,
             strategyRegistry,
-            new UsdPriceFeedManager(),
+            priceFeedManager,
             assetGroupRegistry,
             masterWallet,
             actionManager,
