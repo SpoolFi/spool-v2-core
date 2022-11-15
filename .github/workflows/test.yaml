@@ -51,4 +51,4 @@ jobs:
           npm i axios
 
       - name: Output results
-        run: ts-node ./outputparser.ts ${{ github.ref_name }}
+        run: ts-node ./outputparser.ts ${{ github.head_ref || github.ref_name }}
