@@ -36,7 +36,7 @@ contract MockExchange {
             revert("Invalid token");
         }
 
-        source.transferFrom(recipient, address(this), amount);
+        source.transferFrom(msg.sender, address(this), amount);
         target.transfer(recipient, out);
 
         return out;

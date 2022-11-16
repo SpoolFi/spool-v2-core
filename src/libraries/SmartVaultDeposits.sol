@@ -93,13 +93,21 @@ library SmartVaultDeposits {
      * TODO: check if "swap" feature is exploitable
      */
     function _swapToRatio(DepositBag memory bag, SwapInfo[] memory swapInfo) internal returns (uint256[] memory) {
+        // Swap tokens:
+        // - check initial balances of tokens
         uint256[] memory oldBalances = SpoolUtils.getBalances(bag.tokens, bag.masterWallet);
-        for (uint256 i; i < swapInfo.length; i++) {
-            _swap(swapInfo[i], IMasterWallet(bag.masterWallet), ISwapper(bag.swapper));
+        if (swapInfo.length > 0) {
+            // - transfer tokens to the swapper contract
+            for (uint256 i = 0; i < bag.tokens.length; i++) {
+                IMasterWallet(bag.masterWallet).transfer(IERC20(bag.tokens[i]), bag.swapper, bag.depositsIn[i]);
+            }
+            // - make swap
+            ISwapper(bag.swapper).swap(bag.tokens, swapInfo, bag.masterWallet);
         }
+        // - check final balances
         uint256[] memory newBalances = SpoolUtils.getBalances(bag.tokens, bag.masterWallet);
-        uint256[] memory depositsOut = new uint256[](bag.tokens.length);
 
+        uint256[] memory depositsOut = new uint256[](bag.tokens.length);
         for (uint256 i = 0; i < bag.tokens.length; i++) {
             uint256 ratio = 0;
 
@@ -175,11 +183,5 @@ library SmartVaultDeposits {
         }
 
         return outRatios;
-    }
-
-    function _swap(SwapInfo memory _swapInfo, IMasterWallet _masterWallet, ISwapper _swapper) private {
-        _masterWallet.approve(IERC20(_swapInfo.token), _swapInfo.swapTarget, _swapInfo.amountIn);
-        _swapper.swap(_swapInfo);
-        _masterWallet.resetApprove(IERC20(_swapInfo.token), _swapInfo.swapTarget);
     }
 }

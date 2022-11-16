@@ -18,9 +18,9 @@ library SpoolUtils {
     }
 
     function getExchangeRates(address[] memory tokens, IUsdPriceFeedManager _priceFeedManager)
-    public
-    view
-    returns (uint256[] memory)
+        public
+        view
+        returns (uint256[] memory)
     {
         uint256[] memory exchangeRates = new uint256[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -43,7 +43,7 @@ library SpoolUtils {
         }
 
         assembly {
-        // slice the sig hash
+            // slice the sig hash
             _returnData := add(_returnData, 0x04)
         }
 
@@ -60,9 +60,9 @@ library SpoolUtils {
     }
 
     function assetsToUSD(address[] memory tokens, uint256[] memory assets, IUsdPriceFeedManager priceFeedManager)
-    public
-    view
-    returns (uint256)
+        public
+        view
+        returns (uint256)
     {
         uint256 usdTotal = 0;
         for (uint256 i = 0; i < tokens.length; i++) {
