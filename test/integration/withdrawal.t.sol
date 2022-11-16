@@ -53,15 +53,8 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         assetGroupRegistry = new AssetGroupRegistry();
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
-        GuardDefinition[] memory emptyGuards = new GuardDefinition[](0);
-        IAction[] memory emptyActions = new IAction[](0);
-        RequestType[] memory emptyActionsRequestTypes = new RequestType[](0);
-
         IUsdPriceFeedManager priceFeedManager = new MockPriceFeedManager();
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
-        GuardManager guardManager = new GuardManager();
-        ActionManager actionManager = new ActionManager();
-        Swapper swapper = new Swapper();
 
         smartVaultManager = new SmartVaultManager(
             accessControl,
@@ -69,53 +62,48 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
             priceFeedManager,
             assetGroupRegistry,
             masterWallet,
-            actionManager,
-            guardManager,
-            swapper
+            new ActionManager(),
+            new GuardManager(),
+            new Swapper()
         );
+
+        strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry);
+        uint256[] memory strategyRatios = new uint256[](2);
+        strategyRatios[0] = 1_000;
+        strategyRatios[1] = 68;
+        strategyA.initialize(assetGroupId, strategyRatios);
+        strategyRegistry.registerStrategy(address(strategyA));
+
+        strategyRatios[1] = 67;
+        strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry);
+        strategyB.initialize(assetGroupId, strategyRatios);
+        strategyRegistry.registerStrategy(address(strategyB));
+
+        mySmartVault = new SmartVault("MySmartVault", accessControl);
+        mySmartVault.initialize();
+        accessControl.grantRole(ROLE_SMART_VAULT, address(mySmartVault));
+
+        mySmartVaultStrategies = new address[](2);
+        mySmartVaultStrategies[0] = address(strategyA);
+        mySmartVaultStrategies[1] = address(strategyB);
+
+        uint256[] memory mySmartVaultStrategyAllocations = new uint256[](2);
+        mySmartVaultStrategyAllocations[0] = 400;
+        mySmartVaultStrategyAllocations[1] = 600;
 
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
+        accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
 
-        strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry);
-        uint256[] memory strategyARatios = new uint256[](2);
-        strategyARatios[0] = 1_000;
-        strategyARatios[1] = 68;
-        strategyA.initialize(assetGroupId, strategyARatios);
-        strategyRegistry.registerStrategy(address(strategyA));
-
-        strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry);
-        uint256[] memory strategyBRatios = new uint256[](2);
-        strategyBRatios[0] = 1_000;
-        strategyBRatios[1] = 67;
-        strategyB.initialize(assetGroupId, strategyBRatios);
-        strategyRegistry.registerStrategy(address(strategyB));
-
-        mySmartVault = new SmartVault(
-            "MySmartVault",
-            accessControl
-        );
-        mySmartVault.initialize();
-        accessControl.grantRole(ROLE_SMART_VAULT, address(mySmartVault));
-
-        guardManager.setGuards(address(mySmartVault), emptyGuards);
-        actionManager.setActions(address(mySmartVault), emptyActions, emptyActionsRequestTypes);
-        mySmartVaultStrategies = new address[](2);
-        mySmartVaultStrategies[0] = address(strategyA);
-        mySmartVaultStrategies[1] = address(strategyB);
-        uint256[] memory mySmartVaultStrategyAllocations = new uint256[](2);
-        mySmartVaultStrategyAllocations[0] = 400;
-        mySmartVaultStrategyAllocations[1] = 600;
         SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
             assetGroupId: assetGroupId,
             strategies: mySmartVaultStrategies,
             strategyAllocations: mySmartVaultStrategyAllocations,
             riskProvider: riskProvider
         });
-        smartVaultManager.registerSmartVault(address(mySmartVault), registrationForm);
 
-        accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
+        smartVaultManager.registerSmartVault(address(mySmartVault), registrationForm);
     }
 
     function test_shouldBeAbleToWithdraw() public {

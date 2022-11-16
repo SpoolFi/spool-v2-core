@@ -75,24 +75,26 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _dhwIndexes;
 
     /// @notice TODO smart vault => flush index => assets deposited
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) _vaultDeposits;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _vaultDeposits;
 
-    mapping(address => mapping(uint256 => mapping(address => mapping(uint256 => uint256)))) _vaultFlushedDeposits;
+    /// @notice TODO smart vault => flush index => strategy => assets deposited
+    mapping(address => mapping(uint256 => mapping(address => mapping(uint256 => uint256)))) internal
+        _vaultFlushedDeposits;
 
     /// @notice TODO smart vault => flush index => vault shares minted
-    mapping(address => mapping(uint256 => uint256)) _mintedVaultShares;
+    mapping(address => mapping(uint256 => uint256)) internal _mintedVaultShares;
 
     /// @notice TODO smart vault => flush index => vault shares withdrawn
-    mapping(address => mapping(uint256 => uint256)) _withdrawnVaultShares;
+    mapping(address => mapping(uint256 => uint256)) internal _withdrawnVaultShares;
 
     /// @notice TODO smart vault => flush index => strategy shares withdrawn
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) _withdrawnStrategyShares;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _withdrawnStrategyShares;
 
     /// @notice TODO smart vault => flush index => assets withdrawn
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) _withdrawnAssets;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _withdrawnAssets;
 
     /// @notice TODO smart vault => flush index => exchange rates
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) _flushExchangeRates;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _flushExchangeRates;
 
     constructor(
         ISpoolAccessControl accessControl_,
@@ -639,12 +641,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
 
         for (uint256 i = 0; i < strategies.length; i++) {
-            address strategy = strategies[i];
-
-            StrategyAtIndex memory atDHW = _strategyRegistry.strategyAtIndex(strategy, dhwIndexes[i]);
+            StrategyAtIndex memory atDHW = _strategyRegistry.strategyAtIndex(strategies[i], dhwIndexes[i]);
             uint256[] memory vaultDeposits =
-                _vaultFlushedDeposits[smartVault][flushIndex][strategy].toArray(strategies.length);
-
+                _vaultFlushedDeposits[smartVault][flushIndex][strategies[i]].toArray(strategies.length);
             uint256 vaultDepositUSD =
                 _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, vaultDeposits, atDHW.exchangeRates);
             uint256 slippageUSD =
@@ -653,19 +652,25 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
                 _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, atDHW.depositedAssets, atDHW.exchangeRates);
 
             uint256 vaultStrategyShares = atDHW.sharesMinted * vaultDepositUSD / strategyDepositUSD;
-            IStrategy(strategy).transfer(smartVault, vaultStrategyShares);
 
-            uint256 vaultTrueDeposited = vaultDepositUSD - slippageUSD * vaultDepositUSD / strategyDepositUSD;
-            vaultDepositUSDTotal += vaultTrueDeposited;
+            vaultDepositUSDTotal += vaultDepositUSD - slippageUSD * vaultDepositUSD / strategyDepositUSD;
+            IStrategy(strategies[i]).transferFrom(strategies[i], smartVault, vaultStrategyShares);
         }
 
         if (vaultDepositUSDTotal == 0) {
             return;
         }
 
-        uint256 toMint =
-            vaultDepositUSDTotal * ISmartVault(smartVault).totalSupply() / getVaultTotalUsdValue(smartVault);
+        // TODO: What if total vault USD value is 0?
+        uint256 toMint = vaultDepositUSDTotal * ISmartVault(smartVault).totalSupply() / getVaultTotalUsdValue(smartVault);
+
+        // First cycle, after initial deposits
+        if (toMint == 0) {
+            toMint = 1000 ether;
+        }
+
         ISmartVault(smartVault).mint(smartVault, toMint);
+        _mintedVaultShares[smartVault][flushIndex] = toMint;
     }
 
     function _runGuards(

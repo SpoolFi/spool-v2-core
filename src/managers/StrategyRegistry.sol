@@ -21,28 +21,28 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     IUsdPriceFeedManager immutable _priceFeedManager;
 
     /// @notice TODO
-    mapping(address => bool) private _strategies;
+    mapping(address => bool) internal _strategies;
 
     /// @notice TODO
-    mapping(address => uint256) private _currentIndexes;
+    mapping(address => uint256) internal _currentIndexes;
 
     /// @notice TODO strategy => index => depositAmounts
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) private _depositedAssets;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _depositedAssets;
 
     /// @notice TODO strategy => index => depositSlippages
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) private _depositSlippages;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _depositSlippages;
 
     /// @notice TODO strategy => index => depositExchangeRates
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) private _dhwExchangeRates;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _dhwExchangeRates;
 
     /// @notice TODO strategy => index => sstAmount
-    mapping(address => mapping(uint256 => uint256)) private _withdrawnShares;
+    mapping(address => mapping(uint256 => uint256)) internal _withdrawnShares;
 
     /// @notice TODO strategy => index => tokenAmounts
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) private _withdrawnAssets;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _withdrawnAssets;
 
     /// @notice TODO strategy => index => SSTs minted
-    mapping(address => mapping(uint256 => uint256)) private _sharesMinted;
+    mapping(address => mapping(uint256 => uint256)) internal _sharesMinted;
 
     constructor(IMasterWallet masterWallet_, ISpoolAccessControl accessControl_, IUsdPriceFeedManager priceFeedManager_)
         SpoolAccessControllable(accessControl_)
@@ -129,7 +129,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
                 assetGroup, _depositedAssets[strategyAddr][dhwIndex].toArray(assetGroup.length), exchangeRates
             );
 
-            _sharesMinted[strategyAddr][dhwIndex] = depositUSD;
+            _sharesMinted[strategyAddr][dhwIndex] = depositUSD * 20;
 
             // TODO: transfer assets to smart vault manager
             _currentIndexes[strategyAddr]++;

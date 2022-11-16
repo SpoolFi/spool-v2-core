@@ -46,4 +46,8 @@ contract MockStrategy is Strategy {
         __withdrawnAssets = withdrawnAssets_;
         __withdrawnAssetsSet = true;
     }
+
+    function setTotalUsdValue(uint256 totalUsdValue_) external {
+        totalUsdValue = totalUsdValue_;
+    }
 }

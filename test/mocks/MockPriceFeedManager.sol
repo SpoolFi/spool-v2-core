@@ -3,6 +3,7 @@ pragma solidity ^0.8.17;
 
 import "../../src/managers/UsdPriceFeedManager.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
+import "forge-std/console.sol";
 
 contract MockPriceFeedManager is IUsdPriceFeedManager {
     uint256 private constant USD_DECIMALS = 26;
@@ -31,21 +32,21 @@ contract MockPriceFeedManager is IUsdPriceFeedManager {
     }
 
     function assetToUsdCustomPrice(address asset, uint256 assetAmount, uint256 price) public view returns (uint256) {
-        return assetAmount * price / ERC20(asset).decimals();
+        return assetAmount * price / 10 ** ERC20(asset).decimals();
     }
 
     function usdToAssetCustomPrice(address asset, uint256 usdAmount, uint256 price) external view returns (uint256) {
         return usdAmount * ERC20(asset).decimals() / price;
     }
 
-    function assetToUsdCustomPriceBulk(
-        address[] calldata tokens,
-        uint256[] calldata assets,
-        uint256[] calldata prices
-    ) public view returns (uint256) {
+    function assetToUsdCustomPriceBulk(address[] calldata assets, uint256[] calldata assetAmounts, uint256[] calldata prices)
+        public
+        view
+        returns (uint256)
+    {
         uint256 usdTotal = 0;
-        for (uint256 i = 0; i < tokens.length; i++) {
-            usdTotal += assetToUsdCustomPrice(tokens[i], assets[i], prices[i]);
+        for (uint256 i = 0; i < assets.length; i++) {
+            usdTotal += assetToUsdCustomPrice(assets[i], assetAmounts[i], prices[i]);
         }
 
         return usdTotal;

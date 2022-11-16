@@ -76,11 +76,11 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager {
         return usdAmount * assetMultiplier[asset] / price;
     }
 
-    function assetToUsdCustomPriceBulk(
-        address[] calldata tokens,
-        uint256[] calldata assets,
-        uint256[] calldata prices
-    ) public view returns (uint256) {
+    function assetToUsdCustomPriceBulk(address[] calldata tokens, uint256[] calldata assets, uint256[] calldata prices)
+        public
+        view
+        returns (uint256)
+    {
         uint256 usdTotal = 0;
         for (uint256 i = 0; i < tokens.length; i++) {
             usdTotal += assetToUsdCustomPrice(tokens[i], assets[i], prices[i]);
