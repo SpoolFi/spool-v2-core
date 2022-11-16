@@ -2,29 +2,45 @@
 pragma solidity ^0.8.17;
 
 library Arrays {
-    function toDyn1Uint(uint256[1] memory _self) public returns (uint256[] memory) {
+    function toArray(uint256 x1) public returns (uint256[] memory) {
         uint256[] memory result = new uint256[](1);
-        result[0] = _self[0];
+        result[0] = x1;
         return result;
     }
 
-    function toDyn2Uint(uint256[2] memory _self) public returns (uint256[] memory) {
+    function toArray(uint256 x1, uint256 x2) public returns (uint256[] memory) {
         uint256[] memory result = new uint256[](2);
-        result[0] = _self[0];
-        result[1] = _self[1];
+        result[0] = x1;
+        result[1] = x2;
         return result;
     }
 
-    function toDyn1Addr(address[1] memory _self) public returns (address[] memory) {
+    function toArray(uint256 x1, uint256 x2, uint256 x3) public returns (uint256[] memory) {
+        uint256[] memory result = new uint256[](3);
+        result[0] = x1;
+        result[1] = x2;
+        result[2] = x3;
+        return result;
+    }
+
+    function toArray(address x1) public returns (address[] memory) {
         address[] memory result = new address[](1);
-        result[0] = _self[0];
+        result[0] = x1;
         return result;
     }
 
-    function toDyn2Addr(address[2] memory _self) public returns (address[] memory) {
+    function toArray(address x1, address x2) public returns (address[] memory) {
         address[] memory result = new address[](2);
-        result[0] = _self[0];
-        result[1] = _self[1];
+        result[0] = x1;
+        result[1] = x2;
+        return result;
+    }
+
+    function toArray(address x1, address x2, address x3) public returns (address[] memory) {
+        address[] memory result = new address[](3);
+        result[0] = x1;
+        result[1] = x2;
+        result[2] = x3;
         return result;
     }
 }

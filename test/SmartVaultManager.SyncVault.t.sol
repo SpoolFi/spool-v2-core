@@ -98,7 +98,6 @@ contract MockStrategyRegistry is StrategyRegistry {
 }
 
 contract DepositIntegrationTest is Test, SpoolAccessRoles {
-    uint256 PRC = 10 ** 18;
     address private alice = address(0xa);
     address private bob = address(0xb);
     address private riskProvider = address(0x1);
@@ -135,13 +134,13 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
             new Swapper()
         );
 
-        strategies = Arrays.toDyn2Addr([address(strategyA), address(strategyB)]);
+        strategies = Arrays.toArray(address(strategyA), address(strategyB));
         uint256 assetGroupId =
-            assetGroupRegistry.registerAssetGroup(Arrays.toDyn2Addr([address(tokenA), address(tokenB)]));
+            assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(tokenA), address(tokenB)));
 
         // Ratios arbitrary -> vault sync normalizes to $ based on stored exchange rates
-        strategyA.initialize(assetGroupId, Arrays.toDyn2Uint([uint256(999), uint256(999)]));
-        strategyB.initialize(assetGroupId, Arrays.toDyn2Uint([uint256(999), uint256(999)]));
+        strategyA.initialize(assetGroupId, Arrays.toArray(999, 999));
+        strategyB.initialize(assetGroupId, Arrays.toArray(999, 999));
         vault.initialize();
 
         accessControl.grantRole(ROLE_SMART_VAULT, address(vault));
@@ -155,33 +154,33 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
             SmartVaultRegistrationForm({
                 assetGroupId: assetGroupId,
                 strategies: strategies,
-                strategyAllocations: Arrays.toDyn2Uint([uint256(400), uint256(600)]),
+                strategyAllocations: Arrays.toArray(400, 600),
                 riskProvider: riskProvider
             })
         );
     }
 
     function test_vaultSync_deposit() public {
-        uint256[] memory exchangeRates = Arrays.toDyn2Uint([uint256(10**26), uint256(10**26)]);
+        uint256[] memory exchangeRates = Arrays.toArray(10**26, 10**26);
         uint256[][] memory flushedDeposits = new uint256[][](2);
-        flushedDeposits[0] = Arrays.toDyn2Uint([40 * PRC, 120 * PRC]);
-        flushedDeposits[1] = Arrays.toDyn2Uint([60 * PRC, 180 * PRC]);
+        flushedDeposits[0] = Arrays.toArray(40 ether, 120 ether);
+        flushedDeposits[1] = Arrays.toArray(60 ether, 180 ether);
 
-        deal(address(strategyA), address(strategyA), 1000 * PRC, true);
-        deal(address(strategyB), address(strategyB), 1000 * PRC, true);
+        deal(address(strategyA), address(strategyA), 1000 ether, true);
+        deal(address(strategyB), address(strategyB), 1000 ether, true);
 
         vm.prank(address(strategyA));
-        strategyA.approve(address(smartVaultManager), 1000 * PRC);
+        strategyA.approve(address(smartVaultManager), 1000 ether);
         vm.prank(address(strategyB));
-        strategyB.approve(address(smartVaultManager), 1000 * PRC);
+        strategyB.approve(address(smartVaultManager), 1000 ether);
 
         smartVaultManager.setData(
             VaultManagerData({
                 smartVault: address(vault),
                 flushIndex: 0,
                 strategies: strategies,
-                dhwIndexes: Arrays.toDyn2Uint([uint256(0), uint256(0)]),
-                vaultDeposits: Arrays.toDyn2Uint([100 * PRC, 300 * PRC]),
+                dhwIndexes: Arrays.toArray(0, 0),
+                vaultDeposits: Arrays.toArray(100 ether, 300 ether),
                 flushedDeposits: flushedDeposits
             })
         );
@@ -190,11 +189,11 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
             StrategyRegistryData({
                 strategy: strategies[0],
                 dhwIndex: 0,
-                sharesMinted: 1000 * PRC,
-                deposits: Arrays.toDyn2Uint([80 * PRC, 240 * PRC]),
-                slippages: Arrays.toDyn2Uint([uint256(0), uint256(0)]),
+                sharesMinted: 1000 ether,
+                deposits: Arrays.toArray(80 ether, 240 ether),
+                slippages: Arrays.toArray(0, 0),
                 exchangeRates: exchangeRates,
-                assetGroup: Arrays.toDyn2Addr([address(tokenA), address(tokenB)])
+                assetGroup: Arrays.toArray(address(tokenA), address(tokenB))
             })
         );
 
@@ -202,11 +201,11 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
             StrategyRegistryData({
                 strategy: strategies[1],
                 dhwIndex: 0,
-                sharesMinted: 1000 * PRC,
-                deposits: Arrays.toDyn2Uint([60 * PRC, 180 * PRC]),
-                slippages: Arrays.toDyn2Uint([uint256(0), uint256(0)]),
+                sharesMinted: 1000 ether,
+                deposits: Arrays.toArray(60 ether, 180 ether),
+                slippages: Arrays.toArray(0, 0),
                 exchangeRates: exchangeRates,
-                assetGroup: Arrays.toDyn2Addr([address(tokenA), address(tokenB)])
+                assetGroup: Arrays.toArray(address(tokenA), address(tokenB))
             })
         );
 
