@@ -58,17 +58,4 @@ library SpoolUtils {
 
         return balances;
     }
-
-    function assetsToUSD(address[] memory tokens, uint256[] memory assets, IUsdPriceFeedManager priceFeedManager)
-        public
-        view
-        returns (uint256)
-    {
-        uint256 usdTotal = 0;
-        for (uint256 i = 0; i < tokens.length; i++) {
-            usdTotal += priceFeedManager.assetToUsd(tokens[i], assets[i]);
-        }
-
-        return usdTotal;
-    }
 }

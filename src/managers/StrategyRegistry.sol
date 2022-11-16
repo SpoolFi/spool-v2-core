@@ -32,6 +32,9 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     /// @notice TODO strategy => index => depositSlippages
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) private _depositSlippages;
 
+    /// @notice TODO strategy => index => depositExchangeRates
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) private _dhwExchangeRates;
+
     /// @notice TODO strategy => index => sstAmount
     mapping(address => mapping(uint256 => uint256)) private _withdrawnShares;
 
@@ -80,7 +83,8 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         return StrategyAtIndex(
             _sharesMinted[strategy][dhwIndex],
             _depositedAssets[strategy][dhwIndex].toArray(assetGroupLength),
-            _depositSlippages[strategy][dhwIndex].toArray(assetGroupLength)
+            _depositSlippages[strategy][dhwIndex].toArray(assetGroupLength),
+            _dhwExchangeRates[strategy][dhwIndex].toArray(assetGroupLength)
         );
     }
 
@@ -106,19 +110,23 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
      * @notice TODO: just a quick mockup so we can test withdrawals
      */
     function doHardWork(address[] memory strategies_) external {
+        address[] memory assetGroup = IStrategy(strategies_[0]).assets();
+        uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(assetGroup, _priceFeedManager);
+
         for (uint256 i = 0; i < strategies_.length; i++) {
             IStrategy strategy = IStrategy(strategies_[i]);
             address strategyAddr = address(strategy);
-            address[] memory assetGroup = strategy.assets();
 
             uint256 dhwIndex = _currentIndexes[strategyAddr];
+            _dhwExchangeRates[strategyAddr][dhwIndex].setValues(exchangeRates);
+
             uint256[] memory withdrawnAssets_ = strategy.redeem(
                 _withdrawnShares[strategyAddr][dhwIndex], address(_masterWallet), address(_masterWallet)
             );
 
             _withdrawnAssets[strategyAddr][dhwIndex].setValues(withdrawnAssets_);
-            uint256 depositUSD = SpoolUtils.assetsToUSD(
-                assetGroup, _depositedAssets[strategyAddr][dhwIndex].toArray(assetGroup.length), _priceFeedManager
+            uint256 depositUSD = _priceFeedManager.assetToUsdCustomPriceBulk(
+                assetGroup, _depositedAssets[strategyAddr][dhwIndex].toArray(assetGroup.length), exchangeRates
             );
 
             _sharesMinted[strategyAddr][dhwIndex] = depositUSD;

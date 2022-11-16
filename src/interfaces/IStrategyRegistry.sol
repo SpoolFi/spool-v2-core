@@ -17,6 +17,7 @@ struct StrategyAtIndex {
     uint256 sharesMinted;
     uint256[] depositedAssets;
     uint256[] slippages;
+    uint256[] exchangeRates;
 }
 
 /* ========== INTERFACES ========== */

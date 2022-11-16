@@ -645,9 +645,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             uint256[] memory vaultDeposits =
                 _vaultFlushedDeposits[smartVault][flushIndex][strategy].toArray(strategies.length);
 
-            uint256 vaultDepositUSD = SpoolUtils.assetsToUSD(assetGroup, vaultDeposits, _priceFeedManager);
-            uint256 slippageUSD = SpoolUtils.assetsToUSD(assetGroup, atDHW.slippages, _priceFeedManager);
-            uint256 strategyDepositUSD = SpoolUtils.assetsToUSD(assetGroup, atDHW.depositedAssets, _priceFeedManager);
+            uint256 vaultDepositUSD =
+                _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, vaultDeposits, atDHW.exchangeRates);
+            uint256 slippageUSD =
+                _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, atDHW.slippages, atDHW.exchangeRates);
+            uint256 strategyDepositUSD =
+                _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, atDHW.depositedAssets, atDHW.exchangeRates);
 
             uint256 vaultStrategyShares = atDHW.sharesMinted * vaultDepositUSD / strategyDepositUSD;
             IStrategy(strategy).transfer(smartVault, vaultStrategyShares);

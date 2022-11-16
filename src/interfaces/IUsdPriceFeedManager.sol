@@ -44,6 +44,19 @@ interface IUsdPriceFeedManager {
         returns (uint256 usdValue);
 
     /**
+     * @notice Calculates assets value in USD using provided prices.
+     * @param assets Addresses of assets.
+     * @param assetAmounts Amounts of assets in asset decimals.
+     * @param prices Prices of asset in USD.
+     * @return usdValue Value in USD in USD decimals.
+     */
+    function assetToUsdCustomPriceBulk(
+        address[] calldata assets,
+        uint256[] calldata assetAmounts,
+        uint256[] calldata prices
+    ) external view returns (uint256 usdValue);
+
+    /**
      * @notice Calculates USD value in asset using provided price.
      * @param asset Address of asset.
      * @param usdAmount Amount of USD in USD decimals.
