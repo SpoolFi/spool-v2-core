@@ -405,6 +405,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _smartVaultStrategies[smartVault] = registrationForm.strategies;
 
         // set strategy allocations
+        // TODO: need to make sure all allocations add up to the ALLOC_PRECISION
         if (registrationForm.strategyAllocations.length != registrationForm.strategies.length) {
             revert SmartVaultRegistrationIncorrectAllocationLength();
         }
