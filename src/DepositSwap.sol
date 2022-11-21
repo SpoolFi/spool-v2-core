@@ -1,45 +1,62 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.17;
 
+import "@openzeppelin/token/ERC20/IERC20.sol";
+import "./interfaces/CommonErrors.sol";
+import "./interfaces/IAssetGroupRegistry.sol";
 import "./interfaces/IDepositSwap.sol";
+import "./interfaces/ISmartVaultManager.sol";
+import "./interfaces/ISwapper.sol";
 
 contract DepositSwap is IDepositSwap {
     /* ========== STATE VARIABLES ========== */
 
+    IAssetGroupRegistry private immutable _assetGroupRegistry;
+    ISmartVaultManager private immutable _smartVaultManager;
+    ISwapper private immutable _swapper;
+
     /* ========== CONSTRUCTOR ========== */
 
-    /**
-     * @notice Initializes variables
-     */
-    constructor() {}
-    /**
-     * @notice TODO
-     * @param vault TODO
-     * @param inAssets TODO
-     * @param slippages TODO
-     * @param outAssets TODO
-     * @return depositNFTId TODO
-     */
-
-    function swapAndDeposit(
-        address vault,
-        uint256[] calldata inAssets,
-        uint256[] calldata slippages,
-        uint256[] calldata outAssets,
-        address receiver
-    ) external returns (uint256 depositNFTId) {
-        revert("0");
+    constructor(IAssetGroupRegistry assetGroupRegistry_, ISmartVaultManager smartVaultManager_, ISwapper swapper_) {
+        _assetGroupRegistry = assetGroupRegistry_;
+        _smartVaultManager = smartVaultManager_;
+        _swapper = swapper_;
     }
-
-    /* ========== MODIFIERS ========== */
 
     /* ========== EXTERNAL FUNCTIONS ========== */
 
-    /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
+    function swapAndDeposit(
+        address[] calldata inTokens,
+        uint256[] calldata inAmounts,
+        SwapInfo[] calldata swapInfo,
+        address smartVault,
+        address receiver
+    ) external returns (uint256) {
+        if (inTokens.length != inAmounts.length) revert InvalidArrayLength();
+        // Transfer the tokens from the caller to the swapper.
+        for (uint256 i = 0; i < inTokens.length; i++) {
+            IERC20(inTokens[i]).transferFrom(msg.sender, address(_swapper), inAmounts[i]);
+        }
 
-    /* ========== PUBLIC FUNCTIONS ========== */
+        // Make the swap.
+        _swapper.swap(inTokens, swapInfo, address(this));
 
-    /* ========== INTERNAL FUNCTIONS ========== */
+        address[] memory outTokens = _assetGroupRegistry.listAssetGroup(_smartVaultManager.assetGroupId(smartVault));
+        uint256[] memory outAmounts = new uint256[](outTokens.length);
+        // Figure out how much we got out of the swap.
+        for (uint256 i = 0; i < outTokens.length; i++) {
+            outAmounts[i] = IERC20(outTokens[i]).balanceOf(address(this));
+            IERC20(outTokens[i]).approve(address(_smartVaultManager), outAmounts[i]);
+        }
 
-    /* ========== PRIVATE FUNCTIONS ========== */
+        // Deposit into the smart vault.
+        uint256 nftId = _smartVaultManager.depositFor(smartVault, outAmounts, receiver, address(this));
+
+        // Return unswapped tokens.
+        for (uint256 i = 0; i < inTokens.length; i++) {
+            IERC20(inTokens[i]).transfer(msg.sender, IERC20(inTokens[i]).balanceOf(address(this)));
+        }
+
+        return nftId;
+    }
 }

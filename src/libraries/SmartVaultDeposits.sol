@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.17;
 
+import "../interfaces/CommonErrors.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IMasterWallet.sol";

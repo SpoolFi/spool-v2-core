@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 /* ========== ERRORS ========== */
 
 error InvalidAssetLengths();
-error InvalidArrayLength();
 error InvalidDepositAmount(address smartVault);
 error IncorrectDepositRatio();
 error InsufficientBalance(uint256 available, uint256 required);
