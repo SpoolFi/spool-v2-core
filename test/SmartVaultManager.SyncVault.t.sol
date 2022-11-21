@@ -92,7 +92,8 @@ contract MockStrategyRegistry is StrategyRegistry {
         _strategies[data.strategy] = true;
         _currentIndexes[data.strategy] = data.dhwIndex + 1;
 
-        uint256 totalUsdValue = _priceFeedManager.assetToUsdCustomPriceBulk(data.assetGroup, data.deposits, data.exchangeRates);
+        uint256 totalUsdValue =
+            _priceFeedManager.assetToUsdCustomPriceBulk(data.assetGroup, data.deposits, data.exchangeRates);
         MockStrategy(data.strategy).setTotalUsdValue(totalUsdValue);
     }
 }
@@ -135,8 +136,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
         );
 
         strategies = Arrays.toArray(address(strategyA), address(strategyB));
-        uint256 assetGroupId =
-            assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(tokenA), address(tokenB)));
+        uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(tokenA), address(tokenB)));
 
         // Ratios arbitrary -> vault sync normalizes to $ based on stored exchange rates
         strategyA.initialize(assetGroupId, Arrays.toArray(999, 999));
@@ -161,7 +161,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
     }
 
     function test_vaultSync_deposit() public {
-        uint256[] memory exchangeRates = Arrays.toArray(10**26, 10**26);
+        uint256[] memory exchangeRates = Arrays.toArray(10 ** 26, 10 ** 26);
         uint256[][] memory flushedDeposits = new uint256[][](2);
         flushedDeposits[0] = Arrays.toArray(40 ether, 120 ether);
         flushedDeposits[1] = Arrays.toArray(60 ether, 180 ether);

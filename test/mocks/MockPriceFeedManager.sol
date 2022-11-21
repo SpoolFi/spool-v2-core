@@ -39,11 +39,11 @@ contract MockPriceFeedManager is IUsdPriceFeedManager {
         return usdAmount * ERC20(asset).decimals() / price;
     }
 
-    function assetToUsdCustomPriceBulk(address[] calldata assets, uint256[] calldata assetAmounts, uint256[] calldata prices)
-        public
-        view
-        returns (uint256)
-    {
+    function assetToUsdCustomPriceBulk(
+        address[] calldata assets,
+        uint256[] calldata assetAmounts,
+        uint256[] calldata prices
+    ) public view returns (uint256) {
         uint256 usdTotal = 0;
         for (uint256 i = 0; i < assets.length; i++) {
             usdTotal += assetToUsdCustomPrice(assets[i], assetAmounts[i], prices[i]);

@@ -663,7 +663,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         // TODO: What if total vault USD value is 0?
-        uint256 toMint = vaultDepositUSDTotal * ISmartVault(smartVault).totalSupply() / getVaultTotalUsdValue(smartVault);
+        uint256 toMint =
+            vaultDepositUSDTotal * ISmartVault(smartVault).totalSupply() / getVaultTotalUsdValue(smartVault);
 
         // First cycle, after initial deposits
         if (toMint == 0) {

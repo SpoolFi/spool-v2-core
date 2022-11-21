@@ -43,8 +43,8 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         address riskProvider = address(0x1);
 
         token = new MockToken("Token", "T");
-        accessControl = new SpoolAccessControl();
 
+        accessControl = new SpoolAccessControl();
         ActionManager actionManager = new ActionManager();
         AssetGroupRegistry assetGroupRegistry = new AssetGroupRegistry();
         guardManager = new GuardManager();
@@ -120,31 +120,31 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         // - ID of allowlist to use for the smart vault
         // - address to check against the allowlist
         GuardParamType[][] memory guardParamTypes = new GuardParamType[][](3);
-        bytes[][] memory methodParamValues = new bytes[][](3);
+        bytes[][] memory guardParamValues = new bytes[][](3);
 
         // first guard will check the person executing the deposit
         guardParamTypes[0] = new GuardParamType[](3);
         guardParamTypes[0][0] = GuardParamType.VaultAddress; // address of the smart vault
         guardParamTypes[0][1] = GuardParamType.CustomValue; // ID of the allowlist, set as method param value below
         guardParamTypes[0][2] = GuardParamType.Executor; // address of the executor
-        methodParamValues[0] = new bytes[](1);
-        methodParamValues[0][0] = abi.encode(uint256(0)); // ID of the allowlist is set to 0
+        guardParamValues[0] = new bytes[](1);
+        guardParamValues[0][0] = abi.encode(uint256(0)); // ID of the allowlist is set to 0
 
         // second guard will check the person owning the assets being deposited
         guardParamTypes[1] = new GuardParamType[](3);
         guardParamTypes[1][0] = GuardParamType.VaultAddress; // address of the smart vault
         guardParamTypes[1][1] = GuardParamType.CustomValue; // ID of the allowlist, set as method param value below
         guardParamTypes[1][2] = GuardParamType.Owner; // address of the owner
-        methodParamValues[1] = new bytes[](1);
-        methodParamValues[1][0] = abi.encode(uint256(1)); // ID of the allowlist is set to 1
+        guardParamValues[1] = new bytes[](1);
+        guardParamValues[1][0] = abi.encode(uint256(1)); // ID of the allowlist is set to 1
 
         // second guard will check the person receiving the deposit NFT
         guardParamTypes[2] = new GuardParamType[](3);
         guardParamTypes[2][0] = GuardParamType.VaultAddress; // address of the smart vault
         guardParamTypes[2][1] = GuardParamType.CustomValue; // ID of the allowlist, set as method param value below
         guardParamTypes[2][2] = GuardParamType.Receiver; // address of the receiver
-        methodParamValues[2] = new bytes[](1);
-        methodParamValues[2][0] = abi.encode(uint256(2)); // ID of the allowlist is set to 2
+        guardParamValues[2] = new bytes[](1);
+        guardParamValues[2][0] = abi.encode(uint256(2)); // ID of the allowlist is set to 2
 
         // define the guards
         guards[0] = GuardDefinition({ // guard checking the executor
@@ -152,7 +152,7 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
             methodSignature: "isAllowed(address,uint256,address)",
             expectedValue: 0, // do not need this
             methodParamTypes: guardParamTypes[0],
-            methodParamValues: methodParamValues[0],
+            methodParamValues: guardParamValues[0],
             requestType: RequestType.Deposit,
             operator: 0 // do not need this
         });
@@ -161,7 +161,7 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
             methodSignature: "isAllowed(address,uint256,address)",
             expectedValue: 0, // do not need this
             methodParamTypes: guardParamTypes[1],
-            methodParamValues: methodParamValues[1],
+            methodParamValues: guardParamValues[1],
             requestType: RequestType.Deposit,
             operator: 0 // do not need this
         });
@@ -170,7 +170,7 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
             methodSignature: "isAllowed(address,uint256,address)",
             expectedValue: 0, // do not need this
             methodParamTypes: guardParamTypes[2],
-            methodParamValues: methodParamValues[2],
+            methodParamValues: guardParamValues[2],
             requestType: RequestType.Deposit,
             operator: 0 // do not need this
         });
@@ -184,7 +184,6 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         address[] memory addressesToAdd = new address[](1);
         // Bob can execute the deposit
         addressesToAdd[0] = bob;
-
         vm.prank(alice);
         allowlistGuard.addToAllowlist(address(smartVault), 0, addressesToAdd);
         // Charlie can own the assets
