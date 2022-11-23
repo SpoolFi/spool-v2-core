@@ -40,7 +40,6 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
         IGuardManager guardManager = new GuardManager();
         IActionManager actionManager = new ActionManager();
-        ISwapper swapper = new Swapper();
 
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
 
@@ -52,7 +51,7 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
             masterWallet,
             actionManager,
             guardManager,
-            swapper
+            new Swapper()
         );
         accessControl.grantRole(ROLE_SMART_VAULT, smartVault);
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
@@ -261,9 +260,12 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
     }
 
     function _createStrategies() private returns (address[] memory, uint256) {
-        MockStrategy strategy1 = new MockStrategy("A", strategyRegistry, assetGroupRegistry);
-        MockStrategy strategy2 = new MockStrategy("B", strategyRegistry, assetGroupRegistry);
-        MockStrategy strategy3 = new MockStrategy("C", strategyRegistry, assetGroupRegistry);
+        MockStrategy strategy1 =
+            new MockStrategy("A", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
+        MockStrategy strategy2 =
+            new MockStrategy("B", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
+        MockStrategy strategy3 =
+            new MockStrategy("C", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
 
         address[] memory assetGroup = new address[](2);
         assetGroup[0] = address(token1);

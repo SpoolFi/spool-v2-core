@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.17;
 
+import "./ISwapper.sol";
+
 /* ========== ERRORS ========== */
 
 error InvalidStrategy(address address_);
@@ -13,11 +15,16 @@ error StrategyAlreadyRegistered(address address_);
  */
 error DhwNotRunYetForIndex(address strategy, uint256 strategyIndex);
 
+/**
+ * @notice Represents change of state for a strategy during a DHW.
+ * @param exchangeRates Exchange rates between assets and USD.
+ * @param assetsDeposited Amount of assets deposited into the strategy.
+ * @param sharesMinted Amount of strategy shares minted.
+ */
 struct StrategyAtIndex {
-    uint256 sharesMinted;
-    uint256[] depositedAssets;
-    uint256[] slippages;
     uint256[] exchangeRates;
+    uint256[] assetsDeposited;
+    uint256 sharesMinted;
 }
 
 /* ========== INTERFACES ========== */
@@ -41,7 +48,7 @@ interface IStrategyRegistry {
 
     function registerStrategy(address strategy) external;
     function removeStrategy(address strategy) external;
-    function doHardWork(address[] memory strategies_) external;
+    function doHardWork(address[] calldata strategies_, SwapInfo[][] calldata swapInfo) external;
     function addDeposits(address[] memory strategies_, uint256[][] memory amounts)
         external
         returns (uint256[] memory);

@@ -3,6 +3,7 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/utils/math/Math.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
@@ -16,7 +17,6 @@ import "../interfaces/RequestType.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
 import "../libraries/ArrayMapping.sol";
 import "../libraries/SmartVaultDeposits.sol";
-import "../interfaces/ISpoolAccessControl.sol";
 import "../access/SpoolAccessControl.sol";
 import "../interfaces/ISmartVaultManager.sol";
 
@@ -185,8 +185,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         for (uint256 i = 0; i < strategyAddresses.length; i++) {
             IStrategy strategy = IStrategy(strategyAddresses[i]);
-            totalUsdValue =
-                totalUsdValue + strategy.totalUsdValue() * strategy.balanceOf(smartVault) / strategy.totalSupply();
+            totalUsdValue = totalUsdValue
+                + Math.mulDiv(strategy.totalUsdValue(), strategy.balanceOf(smartVault), strategy.totalSupply());
         }
 
         return totalUsdValue;
@@ -343,7 +343,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         uint256 claimedVaultTokens =
-            _mintedVaultShares[smartVaultAddress][data.flushIndex] * depositedUsd / totalDepositedUsd;
+            Math.mulDiv(_mintedVaultShares[smartVaultAddress][data.flushIndex], depositedUsd, totalDepositedUsd);
         // there will be some dust after all users claim SVTs
         smartVault.claimShares(msg.sender, claimedVaultTokens);
 
@@ -642,48 +642,46 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function _syncDeposits(
         address smartVault,
         uint256 flushIndex,
-        address[] memory strategies,
-        uint256[] memory dhwIndexes
+        address[] memory strategies_,
+        uint256[] memory dhwIndexes_
     ) private {
+        // skip if there were no deposits made
         if (_vaultDeposits[smartVault][flushIndex][0] == 0) {
             return;
         }
 
-        uint256 vaultDepositUSDTotal = 0;
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
 
-        for (uint256 i = 0; i < strategies.length; i++) {
-            StrategyAtIndex memory atDHW = _strategyRegistry.strategyAtIndex(strategies[i], dhwIndexes[i]);
-            uint256[] memory vaultDeposits =
-                _vaultFlushedDeposits[smartVault][flushIndex][strategies[i]].toArray(strategies.length);
-            uint256 vaultDepositUSD =
-                _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, vaultDeposits, atDHW.exchangeRates);
-            uint256 slippageUSD =
-                _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, atDHW.slippages, atDHW.exchangeRates);
-            uint256 strategyDepositUSD =
-                _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, atDHW.depositedAssets, atDHW.exchangeRates);
+        // get vault's USD value before claiming SSTs
+        uint256 totalVaultValueBefore = getVaultTotalUsdValue(smartVault);
 
-            uint256 vaultStrategyShares = atDHW.sharesMinted * vaultDepositUSD / strategyDepositUSD;
+        // claim SSTs from each strategy
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            StrategyAtIndex memory atDhw = _strategyRegistry.strategyAtIndex(strategies_[i], dhwIndexes_[i]);
 
-            vaultDepositUSDTotal += vaultDepositUSD - slippageUSD * vaultDepositUSD / strategyDepositUSD;
-            IStrategy(strategies[i]).transferFrom(strategies[i], smartVault, vaultStrategyShares);
+            uint256[] memory vaultDepositedAssets =
+                _vaultFlushedDeposits[smartVault][flushIndex][strategies_[i]].toArray(strategies_.length);
+            uint256 vaultDepositedUsd =
+                _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, vaultDepositedAssets, atDhw.exchangeRates);
+            uint256 strategyDepositedUsd =
+                _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, atDhw.assetsDeposited, atDhw.exchangeRates);
+
+            uint256 vaultSstShare = Math.mulDiv(atDhw.sharesMinted, vaultDepositedUsd, strategyDepositedUsd);
+
+            IStrategy(strategies_[i]).claimShares(smartVault, vaultSstShare);
+            // TODO: there might be dust left after all vaults are synced
         }
 
-        if (vaultDepositUSDTotal == 0) {
-            return;
+        // mint SVTs based on USD value of claimed SSTs
+        uint256 totalDepositedUsd = getVaultTotalUsdValue(smartVault) - totalVaultValueBefore;
+        uint256 svtsToMint;
+        if (totalVaultValueBefore == 0) {
+            svtsToMint = totalDepositedUsd * 10 ** 30;
+        } else {
+            svtsToMint = Math.mulDiv(totalDepositedUsd, ISmartVault(smartVault).totalSupply(), totalVaultValueBefore);
         }
-
-        // TODO: What if total vault USD value is 0?
-        uint256 toMint =
-            vaultDepositUSDTotal * ISmartVault(smartVault).totalSupply() / getVaultTotalUsdValue(smartVault);
-
-        // First cycle, after initial deposits
-        if (toMint == 0) {
-            toMint = 1000 ether;
-        }
-
-        ISmartVault(smartVault).mint(smartVault, toMint);
-        _mintedVaultShares[smartVault][flushIndex] = toMint;
+        ISmartVault(smartVault).mint(smartVault, svtsToMint);
+        _mintedVaultShares[smartVault][flushIndex] = svtsToMint;
     }
 
     function _runGuards(

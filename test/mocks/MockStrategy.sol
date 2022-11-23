@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.17;
 
+import "@openzeppelin/token/ERC20/IERC20.sol";
 import "../../src/Strategy.sol";
 
 contract MockStrategy is Strategy {
@@ -8,9 +9,19 @@ contract MockStrategy is Strategy {
     uint256[] public __withdrawnAssets;
     bool public __withdrawnAssetsSet;
 
-    constructor(string memory name_, IStrategyRegistry strategyRegistry_, IAssetGroupRegistry assetGroupRegistry_)
-        Strategy(name_, strategyRegistry_, assetGroupRegistry_)
-    {}
+    ISwapper _swapper;
+    MockProtocol public protocol;
+
+    constructor(
+        string memory name_,
+        IStrategyRegistry strategyRegistry_,
+        IAssetGroupRegistry assetGroupRegistry_,
+        ISpoolAccessControl accessControl_,
+        ISwapper swapper_
+    ) Strategy(name_, strategyRegistry_, assetGroupRegistry_, accessControl_) {
+        _swapper = swapper_;
+        protocol = new MockProtocol();
+    }
 
     function initialize(uint256 assetGroupId_, uint256[] memory ratios_) public virtual {
         super.initialize(assetGroupId_);
@@ -25,11 +36,11 @@ contract MockStrategy is Strategy {
     function redeem(uint256 shares, address receiver, address owner) external override returns (uint256[] memory) {
         require(__withdrawnAssetsSet, "MockStrategy::dhw: Withdrawn assets not set.");
 
-        address[] memory _assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
 
         // withdraw from protocol
-        for (uint256 i = 0; i < _assetGroup.length; i++) {
-            IERC20(_assetGroup[i]).transfer(receiver, __withdrawnAssets[i]);
+        for (uint256 i = 0; i < assetGroup.length; i++) {
+            IERC20(assetGroup[i]).transfer(receiver, __withdrawnAssets[i]);
         }
 
         // burn SSTs for withdrawal
@@ -39,15 +50,55 @@ contract MockStrategy is Strategy {
         return __withdrawnAssets;
     }
 
-    function _setWithdrawnAssets(uint256[] memory withdrawnAssets_) external {
-        address[] memory _assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
-        require(withdrawnAssets_.length == _assetGroup.length, "MockStrategy::_setWithdrawnAssets: Not correct length.");
-
-        __withdrawnAssets = withdrawnAssets_;
-        __withdrawnAssetsSet = true;
-    }
-
     function setTotalUsdValue(uint256 totalUsdValue_) external {
         totalUsdValue = totalUsdValue_;
+    }
+
+    function swapAssets(address[] memory tokens, SwapInfo[] calldata swapInfo) internal override {
+        for (uint256 i = 0; i < tokens.length; i++) {
+            IERC20(tokens[i]).transfer(address(_swapper), IERC20(tokens[i]).balanceOf(address(this)));
+        }
+
+        _swapper.swap(tokens, swapInfo, address(this));
+    }
+
+    function depositToProtocol(address[] memory tokens, uint256[] memory amounts) internal override {
+        for (uint256 i = 0; i < tokens.length; i++) {
+            IERC20(tokens[i]).transfer(address(protocol), amounts[i]);
+        }
+    }
+
+    function getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
+        internal
+        override
+        returns (uint256)
+    {
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+
+        uint256 usdWorth = 0;
+        for (uint256 i = 0; i < assetGroup.length; i++) {
+            usdWorth += priceFeedManager.assetToUsdCustomPrice(
+                assetGroup[i], IERC20(assetGroup[i]).balanceOf(address(protocol)), exchangeRates[i]
+            );
+        }
+
+        return usdWorth;
+    }
+
+    function redeemFromProtocol(address[] memory tokens, uint256 ssts) internal override {
+        if (ssts == 0) {
+            return;
+        }
+
+        for (uint256 i = 0; i < tokens.length; i++) {
+            uint256 toWithdraw = IERC20(tokens[i]).balanceOf(address(protocol)) * ssts / totalSupply();
+            protocol.withdraw(tokens[i], toWithdraw);
+        }
+    }
+}
+
+contract MockProtocol {
+    function withdraw(address token, uint256 amount) external {
+        IERC20(token).transfer(msg.sender, amount);
     }
 }

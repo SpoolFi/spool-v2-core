@@ -112,7 +112,7 @@ contract SmartVaultDepositsTest is Test {
         assertEq(distribution[2][2], 1247153237176011);
     }
 
-    function test_distributeDeposit_shouldDistributeRealDeposit() public {
+    function test_distributeDeposit_shouldDistributeRealDeposit_1() public {
         uint256[] memory deposit = Arrays.toArray(1000 ether, 74 ether, 4300 ether);
 
         uint256[][] memory distribution = SmartVaultDeposits.distributeDeposit(
@@ -135,5 +135,30 @@ contract SmartVaultDepositsTest is Test {
         assertEq(distribution[2][0], 96_834894492535967193);
         assertEq(distribution[2][1], 7_525204657534679345);
         assertEq(distribution[2][2], 436_496506425387665711);
+    }
+
+    function test_distributeDeposit_shouldDistributeRealDeposit_2() public {
+        uint256[] memory deposit = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        uint256[][] memory distribution = SmartVaultDeposits.distributeDeposit(
+            DepositQueryBag1({
+                deposit: deposit,
+                exchangeRates: exchangeRates,
+                allocation: allocation,
+                strategyRatios: strategyRatios
+            })
+        );
+
+        assertEq(distribution[0][0], 60_787285104601571542);
+        assertEq(distribution[0][1], 4_315894186899640405);
+        assertEq(distribution[0][2], 261_378837986158875949);
+
+        assertEq(distribution[1][0], 29_529225446144831739);
+        assertEq(distribution[1][1], 2_185161135984434265);
+        assertEq(distribution[1][2], 132_878216195362029234);
+
+        assertEq(distribution[2][0], 9_683489449253596719);
+        assertEq(distribution[2][1], 735944677115925330);
+        assertEq(distribution[2][2], 44_542945818479094817);
     }
 }

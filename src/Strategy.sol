@@ -7,8 +7,9 @@ import "./interfaces/IAssetGroupRegistry.sol";
 import "./interfaces/IMasterWallet.sol";
 import "./interfaces/IStrategy.sol";
 import "./interfaces/IStrategyRegistry.sol";
+import "./access/SpoolAccessControl.sol";
 
-abstract contract Strategy is ERC20Upgradeable, IStrategy {
+abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrategy {
     /* ========== STATE VARIABLES ========== */
 
     IStrategyRegistry internal immutable _strategyRegistry;
@@ -30,8 +31,9 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
     constructor(
         string memory strategyName_,
         IStrategyRegistry strategyRegistry_,
-        IAssetGroupRegistry assetGroupRegistry_
-    ) {
+        IAssetGroupRegistry assetGroupRegistry_,
+        ISpoolAccessControl accessControl_
+    ) SpoolAccessControllable(accessControl_) {
         _strategyName = strategyName_;
         _strategyRegistry = strategyRegistry_;
         _assetGroupRegistry = assetGroupRegistry_;
@@ -65,11 +67,67 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
+    function doHardWork(
+        SwapInfo[] calldata swapInfo,
+        uint256 withdrawnShares,
+        address masterWallet,
+        uint256[] calldata exchangeRates,
+        IUsdPriceFeedManager priceFeedManager
+    ) external returns (DhwInfo memory) {
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+
+        // deposits
+        // - swap assets to correct ratio
+        swapAssets(tokens, swapInfo);
+
+        // - get amount of assets available to deposit
+        uint256[] memory assetsToDeposit = new uint256[](tokens.length);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            assetsToDeposit[i] = IERC20(tokens[i]).balanceOf(address(this));
+        }
+
+        // - deposit assets
+        uint256 usdWorth0 = getUsdWorth(exchangeRates, priceFeedManager);
+        depositToProtocol(tokens, assetsToDeposit);
+        uint256 usdWorth1 = getUsdWorth(exchangeRates, priceFeedManager);
+
+        // - mint SSTs
+        uint256 usdWorthDeposited = usdWorth1 - usdWorth0;
+        uint256 sstsToMint;
+        if (usdWorth0 == 0) {
+            sstsToMint = usdWorthDeposited * 10 ** 30;
+        } else {
+            sstsToMint = usdWorthDeposited * totalSupply() / usdWorth0;
+        }
+        _mint(address(this), sstsToMint);
+
+        // withdrawal
+        // - redeem shares from protocol
+        redeemFromProtocol(tokens, withdrawnShares);
+        _burn(address(this), withdrawnShares);
+        uint256 usdWorth2 = getUsdWorth(exchangeRates, priceFeedManager);
+
+        totalUsdValue = usdWorth2;
+
+        // - transfer assets to master wallet
+        uint256[] memory withdrawnAssets = new uint256[](tokens.length);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            withdrawnAssets[i] = IERC20(tokens[i]).balanceOf(address(this));
+            IERC20(tokens[i]).transfer(masterWallet, withdrawnAssets[i]);
+        }
+
+        return DhwInfo({usdRouted: usdWorthDeposited, sharesMinted: sstsToMint, assetsWithdrawn: withdrawnAssets});
+    }
+
     function redeemFast(uint256 shares, address receiver, uint256[][] calldata slippages, SwapData[] calldata swapData)
         external
         returns (uint256[] memory returnedAssets)
     {
         revert("0");
+    }
+
+    function claimShares(address claimer, uint256 amount) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
+        _transfer(address(this), claimer, amount);
     }
 
     function depositFast(uint256[] calldata assets, address receiver, uint256[][] calldata slippages)
@@ -93,9 +151,16 @@ abstract contract Strategy is ERC20Upgradeable, IStrategy {
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
-    function _sharesPerAssets() internal view virtual returns (uint256) {
-        return 0;
-    }
+    function swapAssets(address[] memory tokens, SwapInfo[] calldata swapInfo) internal virtual;
+
+    function depositToProtocol(address[] memory tokens, uint256[] memory amounts) internal virtual;
+
+    function getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
+        internal
+        virtual
+        returns (uint256);
+
+    function redeemFromProtocol(address[] memory tokens, uint256 ssts) internal virtual;
 
     /* ========== MODIFIERS ========== */
 }

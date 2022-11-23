@@ -72,7 +72,8 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         assetGroup[0] = address(token);
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
-        MockStrategy strategy = new MockStrategy("Strategy", strategyRegistry, assetGroupRegistry);
+        MockStrategy strategy =
+            new MockStrategy("Strategy", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
         {
             uint256[] memory strategyRatios = new uint256[](1);
             strategyRatios[0] = 1_000;

@@ -3,6 +3,8 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "./ISwapper.sol";
+import "./IUsdPriceFeedManager.sol";
 
 /**
  * @notice Strict holding information how to swap the asset
@@ -12,6 +14,12 @@ import "@openzeppelin-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 struct SwapData {
     uint256 slippage; // min amount out
     bytes path; // 1st byte is action, then path
+}
+
+struct DhwInfo {
+    uint256 usdRouted;
+    uint256 sharesMinted;
+    uint256[] assetsWithdrawn;
 }
 
 interface IStrategy is IERC20Upgradeable {
@@ -81,6 +89,16 @@ interface IStrategy is IERC20Upgradeable {
     function convertToAssets(uint256 shares) external view returns (uint256[] memory assets);
 
     /* ========== MUTATIVE FUNCTIONS ========== */
+
+    function doHardWork(
+        SwapInfo[] calldata swapInfo,
+        uint256 withdrawnShares,
+        address masterWallet,
+        uint256[] calldata exchangeRates,
+        IUsdPriceFeedManager priceFeedManager
+    ) external returns (DhwInfo memory);
+
+    function claimShares(address claimer, uint256 amount) external;
 
     /**
      * @notice Fast withdraw

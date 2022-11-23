@@ -7,6 +7,7 @@ import "../src/interfaces/IStrategyRegistry.sol";
 import "../src/managers/StrategyRegistry.sol";
 import "../src/MasterWallet.sol";
 import "./libraries/Arrays.sol";
+import "../src/Swapper.sol";
 import "./mocks/MockPriceFeedManager.sol";
 
 contract StrategyRegistryTest is Test {

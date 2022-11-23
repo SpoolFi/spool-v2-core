@@ -7,6 +7,7 @@ import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/CommonErrors.sol";
 import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IMasterWallet.sol";
+import "../interfaces/ISwapper.sol";
 import "../libraries/ArrayMapping.sol";
 import "../libraries/SpoolUtils.sol";
 import "../access/SpoolAccessControl.sol";
@@ -26,26 +27,44 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     /// @notice TODO
     mapping(address => uint256) internal _currentIndexes;
 
-    /// @notice TODO strategy => index => depositAmounts
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _depositedAssets;
-
-    /// @notice TODO strategy => index => depositSlippages
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _depositSlippages;
-
-    /// @notice TODO strategy => index => depositExchangeRates
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _dhwExchangeRates;
-
-    /// @notice TODO strategy => asset ratio
+    /**
+     * @notice Strategy asset ratios at last DHW.
+     * @dev strategy => assetIndex => exchange rate
+     */
     mapping(address => mapping(uint256 => uint256)) internal _dhwAssetRatios;
 
-    /// @notice TODO strategy => index => sstAmount
-    mapping(address => mapping(uint256 => uint256)) internal _withdrawnShares;
+    /**
+     * @notice Asset to USD exchange rates.
+     * @dev strategy => index => asset index => exchange rate
+     * TODO
+     */
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _exchangeRates;
 
-    /// @notice TODO strategy => index => tokenAmounts
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _withdrawnAssets;
+    /**
+     * @notice Assets deposited into the strategy.
+     * @dev strategy => index => asset index => desposited amount
+     * TODO
+     */
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _assetsDeposited;
 
-    /// @notice TODO strategy => index => SSTs minted
+    /**
+     * @notice Amount of SSTs minted for deposits.
+     * @dev strategy => index => SSTs minted
+     * TODO
+     */
     mapping(address => mapping(uint256 => uint256)) internal _sharesMinted;
+
+    /**
+     * @notice Amount of SSTs redeemed from strategy.
+     * @dev strategy => index => SSTs redeemed
+     */
+    mapping(address => mapping(uint256 => uint256)) internal _sharesRedeemed;
+
+    /**
+     * @notice Amount of assets withdrawn from protocol.
+     * @dev strategy => index => asset index => amount withdrawn
+     */
+    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _assetsWithdrawn;
 
     constructor(IMasterWallet masterWallet_, ISpoolAccessControl accessControl_, IUsdPriceFeedManager priceFeedManager_)
         SpoolAccessControllable(accessControl_)
@@ -68,7 +87,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
      */
     function depositedAssets(address strategy, uint256 index) external view returns (uint256[] memory) {
         uint256 assetGroupLength = IStrategy(strategy).assets().length;
-        return _depositedAssets[strategy][index].toArray(assetGroupLength);
+        return _assetsDeposited[strategy][index].toArray(assetGroupLength);
     }
 
     /**
@@ -87,12 +106,12 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
      */
     function strategyAtIndex(address strategy, uint256 dhwIndex) external view returns (StrategyAtIndex memory) {
         uint256 assetGroupLength = IStrategy(strategy).assets().length;
-        return StrategyAtIndex(
-            _sharesMinted[strategy][dhwIndex],
-            _depositedAssets[strategy][dhwIndex].toArray(assetGroupLength),
-            _depositSlippages[strategy][dhwIndex].toArray(assetGroupLength),
-            _dhwExchangeRates[strategy][dhwIndex].toArray(assetGroupLength)
-        );
+
+        return StrategyAtIndex({
+            exchangeRates: _exchangeRates[strategy][dhwIndex].toArray(assetGroupLength),
+            assetsDeposited: _assetsDeposited[strategy][dhwIndex].toArray(assetGroupLength),
+            sharesMinted: _sharesMinted[strategy][dhwIndex]
+        });
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
@@ -119,31 +138,36 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     /**
      * @notice TODO: just a quick mockup so we can test withdrawals
      */
-    function doHardWork(address[] memory strategies_) external {
+    function doHardWork(address[] memory strategies_, SwapInfo[][] calldata swapInfo) external {
         address[] memory assetGroup = IStrategy(strategies_[0]).assets();
         uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(assetGroup, _priceFeedManager);
 
         for (uint256 i = 0; i < strategies_.length; i++) {
             IStrategy strategy = IStrategy(strategies_[i]);
             address strategyAddr = address(strategy);
-
             uint256 dhwIndex = _currentIndexes[strategyAddr];
-            _dhwExchangeRates[strategyAddr][dhwIndex].setValues(exchangeRates);
+
+            // transfer deposited assets to strategy
+            for (uint256 j = 0; j < assetGroup.length; j++) {
+                _masterWallet.transfer(
+                    IERC20(assetGroup[j]), address(strategy), _assetsDeposited[address(strategy)][dhwIndex][j]
+                );
+            }
+
+            // call strategy to do hard work
+            DhwInfo memory dhwInfo = strategy.doHardWork(
+                swapInfo[i],
+                _sharesRedeemed[address(strategy)][dhwIndex],
+                address(_masterWallet),
+                exchangeRates,
+                _priceFeedManager
+            );
+
             _dhwAssetRatios[strategyAddr].setValues(strategy.assetRatio());
-
-            uint256[] memory withdrawnAssets_ = strategy.redeem(
-                _withdrawnShares[strategyAddr][dhwIndex], address(_masterWallet), address(_masterWallet)
-            );
-
-            _withdrawnAssets[strategyAddr][dhwIndex].setValues(withdrawnAssets_);
-            uint256 depositUSD = _priceFeedManager.assetToUsdCustomPriceBulk(
-                assetGroup, _depositedAssets[strategyAddr][dhwIndex].toArray(assetGroup.length), exchangeRates
-            );
-
-            _sharesMinted[strategyAddr][dhwIndex] = depositUSD * 20;
-
-            // TODO: transfer assets to smart vault manager
-            _currentIndexes[strategyAddr]++;
+            _currentIndexes[address(strategy)]++;
+            _exchangeRates[address(strategy)][dhwIndex].setValues(exchangeRates);
+            _sharesMinted[address(strategy)][dhwIndex] = dhwInfo.sharesMinted;
+            _assetsWithdrawn[address(strategy)][dhwIndex].setValues(dhwInfo.assetsWithdrawn);
         }
     }
 
@@ -158,7 +182,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
             indexes[i] = latestIndex;
 
             for (uint256 j = 0; j < amounts[i].length; j++) {
-                _depositedAssets[strategy][latestIndex][j] += amounts[i][j];
+                _assetsDeposited[strategy][latestIndex][j] += amounts[i][j];
             }
         }
 
@@ -176,7 +200,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
             uint256 latestIndex = _currentIndexes[strategy];
 
             indexes[i] = latestIndex;
-            _withdrawnShares[strategy][latestIndex] += strategyShares[i];
+            _sharesRedeemed[strategy][latestIndex] += strategyShares[i];
         }
 
         return indexes;
@@ -200,7 +224,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
 
             for (uint256 j = 0; j < totalWithdrawnAssets.length; j++) {
                 totalWithdrawnAssets[j] +=
-                    _withdrawnAssets[strategy][dhwIndex][j] * strategyShares[i] / _withdrawnShares[strategy][dhwIndex];
+                    _assetsWithdrawn[strategy][dhwIndex][j] * strategyShares[i] / _sharesRedeemed[strategy][dhwIndex];
                 // there will be dust left after all vaults sync
             }
         }

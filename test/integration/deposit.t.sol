@@ -70,7 +70,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
             new Swapper()
         );
 
-        strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry);
+        strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
         uint256[] memory strategyRatios = new uint256[](3);
         strategyRatios[0] = 1000;
         strategyRatios[1] = 71;
@@ -80,13 +80,13 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
 
         strategyRatios[1] = 74;
         strategyRatios[2] = 4500;
-        strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry);
+        strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
         strategyB.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyB));
 
         strategyRatios[1] = 76;
         strategyRatios[2] = 4600;
-        strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry);
+        strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
         strategyC.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyC));
 
@@ -157,5 +157,67 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
 
         // flush
         smartVaultManager.flushSmartVault(address(mySmartVault));
+
+        // DHW
+        SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
+        dhwSwapInfo[0] = new SwapInfo[](0);
+        dhwSwapInfo[1] = new SwapInfo[](0);
+        dhwSwapInfo[2] = new SwapInfo[](0);
+
+        strategyRegistry.doHardWork(mySmartVaultStrategies, dhwSwapInfo);
+
+        // check state
+        // - tokens were routed to the protocol
+        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 60_787285104601571542);
+        assertEq(tokenB.balanceOf(address(strategyA.protocol())), 4_315894186899640405);
+        assertEq(tokenC.balanceOf(address(strategyA.protocol())), 261_378837986158875949);
+        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 29_529225446144831739);
+        assertEq(tokenB.balanceOf(address(strategyB.protocol())), 2_185161135984434265);
+        assertEq(tokenC.balanceOf(address(strategyB.protocol())), 132_878216195362029234);
+        assertEq(tokenA.balanceOf(address(strategyC.protocol())), 9_683489449253596719);
+        assertEq(tokenB.balanceOf(address(strategyC.protocol())), 735944677115925330);
+        assertEq(tokenC.balanceOf(address(strategyC.protocol())), 44_542945818479094817);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenB.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenC.balanceOf(address(masterWallet)), 0);
+        // - strategy tokens were minted
+        assertEq(strategyA.totalSupply(), 21429769304693888499863000000000000000000000000000000000000000);
+        assertEq(strategyB.totalSupply(), 10714883153826626792598000000000000000000000000000000000000000);
+        assertEq(strategyC.totalSupply(), 3571627541479484707539000000000000000000000000000000000000000);
+
+        // sync vault
+        smartVaultManager.syncSmartVault(address(mySmartVault));
+
+        // check state
+        // - strategy tokens were claimed
+        assertEq(
+            strategyA.balanceOf(address(mySmartVault)), 21429769304693888499863000000000000000000000000000000000000000
+        );
+        assertEq(
+            strategyB.balanceOf(address(mySmartVault)), 10714883153826626792598000000000000000000000000000000000000000
+        );
+        assertEq(
+            strategyC.balanceOf(address(mySmartVault)), 3571627541479484707539000000000000000000000000000000000000000
+        );
+        assertEq(strategyA.balanceOf(address(strategyA)), 0);
+        assertEq(strategyB.balanceOf(address(strategyB)), 0);
+        assertEq(strategyB.balanceOf(address(strategyB)), 0);
+        // - vault tokens were minted
+        assertEq(mySmartVault.totalSupply(), 35716280000000000000000000000000000000000000000000000000000000);
+        assertEq(
+            mySmartVault.balanceOf(address(mySmartVault)),
+            35716280000000000000000000000000000000000000000000000000000000
+        );
+
+        // claim deposit
+        vm.prank(alice);
+        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), aliceDepositNftId);
+
+        // check state
+        // - vault tokens were claimed
+        assertEq(mySmartVault.balanceOf(address(alice)), 35716280000000000000000000000000000000000000000000000000000000);
+        assertEq(mySmartVault.balanceOf(address(mySmartVault)), 0);
+        // - deposit NFT was burned
+        assertEq(mySmartVault.balanceOf(alice, aliceDepositNftId), 0);
     }
 }

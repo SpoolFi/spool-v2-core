@@ -3,6 +3,13 @@ pragma solidity ^0.8.17;
 
 import "./ISmartVaultManager.sol";
 
+struct SwapInfo {
+    address swapTarget;
+    address token;
+    uint256 amountIn;
+    bytes swapCallData;
+}
+
 interface ISwapper {
     /**
      * @notice Performs a swap of tokens with external contracts.

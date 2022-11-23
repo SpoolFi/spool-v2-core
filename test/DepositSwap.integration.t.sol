@@ -76,7 +76,8 @@ contract DepositSwapIntegrationTest is Test, SpoolAccessRoles {
             assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         }
 
-        MockStrategy strategy = new MockStrategy("Strategy", strategyRegistry, assetGroupRegistry);
+        MockStrategy strategy =
+            new MockStrategy("Strategy", strategyRegistry, assetGroupRegistry, accessControl, swapper);
         {
             uint256[] memory strategyRatios = new uint256[](2);
             strategyRatios[0] = 800;
