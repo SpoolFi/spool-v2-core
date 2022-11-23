@@ -32,6 +32,7 @@ contract RewardManagerConfigurationTests is RewardManagerTests {
 
         uint256 rate = rewardAmount * 1 ether / rewardDuration;
         assertEq(rate, configurationRewardRate);
+        console.log(configurationPeriodFinish);
     }
 
     function test_Configruation_addingTwoRewardTokens() public {

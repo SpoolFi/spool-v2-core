@@ -64,7 +64,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
     function earned(address smartVault, IERC20 token, address account) public view returns (uint256) {
         RewardConfiguration storage config = rewardConfiguration[smartVault][token];
 
-        uint256 userShares = _userDeposits(smartVault, account);
+        uint256 userShares = _userDeposits(smartVault, account); // SVT-ji 1000
 
         if (userShares == 0) {
             return config.rewards[account];
@@ -152,7 +152,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
     }
 
     function notifyRewardAmount(address smartVault, IERC20 token, uint256 reward, uint32 rewardsDuration) external 
-    /*onlyVaultOwnerOrSpoolOwner TODO acl */
+    // onlyVaultOwnerOrSpoolOwner
     {
         rewardConfiguration[smartVault][token].rewardsDuration = rewardsDuration;
         _notifyRewardAmount(smartVault, token, reward);
@@ -280,6 +280,10 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
      * This function is meant to be invoked every time the instant deposit
      * of a user changes.
      */
+    function updateRewardsOnVault(address smartVault, address account) public {
+        _updateRewards(smartVault, account);
+    }
+
     function _updateRewards(address smartVault, address account) private {
         uint256 _rewardTokensCount = rewardTokensCount[smartVault];
 
