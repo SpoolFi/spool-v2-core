@@ -204,19 +204,17 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     {
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-        DepositRatioQueryBag memory bag = DepositRatioQueryBag(
-            smartVault,
-            tokens,
-            strategies_,
-            _smartVaultAllocations[smartVault].toArray(strategies_.length),
-            SpoolUtils.getExchangeRates(tokens, _priceFeedManager),
-            SpoolUtils.getStrategyRatios(strategies_),
-            _priceFeedManager.usdDecimals(),
-            address(_masterWallet),
-            address(_swapper)
-        );
 
-        return SmartVaultDeposits.getDepositRatio(bag);
+        uint256[][] memory strategyRatios = new uint256[][](strategies_.length);
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            strategyRatios[i] = _strategyRegistry.assetRatioAtLastDhw(strategies_[i]);
+        }
+
+        return SmartVaultDeposits.calculateDepositRatio(
+            SpoolUtils.getExchangeRates(tokens, _priceFeedManager),
+            _smartVaultAllocations[smartVault].toArray(strategies_.length),
+            strategyRatios
+        );
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
@@ -437,49 +435,41 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== BOOKKEEPING ========== */
 
-    /**
-     * @notice Transfer all pending deposits from the SmartVault to strategies
-     * @dev Swap to match ratio and distribute across strategies
-     *      as described in /notes/multi-asset-vault-deposit-ratios.md
-     * @param smartVault Smart Vault address
-     * @param swapInfo Swap info
-     */
-    function flushSmartVault(address smartVault, SwapInfo[] calldata swapInfo)
-        external
-        onlyRegisteredSmartVault(smartVault)
-    {
-        uint256 flushIdx = _flushIndexes[smartVault];
-        uint256 withdrawals = _withdrawnVaultShares[smartVault][flushIdx];
+    function flushSmartVault(address smartVault) external onlyRegisteredSmartVault(smartVault) {
+        uint256 flushIndex = _flushIndexes[smartVault];
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
         uint256[] memory flushDhwIndexes;
 
-        if (_vaultDeposits[smartVault][flushIdx][0] > 0) {
+        if (_vaultDeposits[smartVault][flushIndex][0] > 0) {
             // handle deposits
             address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
+            uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(tokens, _priceFeedManager);
+            uint256[] memory deposits = _vaultDeposits[smartVault][flushIndex].toArray(tokens.length);
+            uint256[] memory allocation = _smartVaultAllocations[smartVault].toArray(strategies_.length);
 
-            DepositRatioQueryBag memory bag = DepositRatioQueryBag(
-                smartVault,
-                tokens,
-                strategies_,
-                _smartVaultAllocations[smartVault].toArray(strategies_.length),
-                SpoolUtils.getExchangeRates(tokens, _priceFeedManager),
-                SpoolUtils.getStrategyRatios(strategies_),
-                _priceFeedManager.usdDecimals(),
-                address(_masterWallet),
-                address(_swapper)
-            );
+            _flushExchangeRates[smartVault][flushIndex].setValues(exchangeRates);
 
-            _flushExchangeRates[smartVault][flushIdx].setValues(bag.exchangeRates);
-
-            uint256[] memory deposits = _vaultDeposits[smartVault][flushIdx].toArray(tokens.length);
-            uint256[][] memory distribution = SmartVaultDeposits.distributeVaultDeposits(bag, deposits, swapInfo);
-
+            uint256[][] memory strategyRatios = new uint256[][](strategies_.length);
             for (uint256 i = 0; i < strategies_.length; i++) {
-                _vaultFlushedDeposits[smartVault][flushIdx][strategies_[i]].setValues(distribution[i]);
+                strategyRatios[i] = _strategyRegistry.assetRatioAtLastDhw(strategies_[i]);
             }
 
-            flushDhwIndexes = _strategyRegistry.addDeposits(bag.strategies, distribution);
+            uint256[][] memory distribution = SmartVaultDeposits.distributeDeposit(
+                DepositQueryBag1({
+                    deposit: deposits,
+                    exchangeRates: exchangeRates,
+                    allocation: allocation,
+                    strategyRatios: strategyRatios
+                })
+            );
+            flushDhwIndexes = _strategyRegistry.addDeposits(strategies_, distribution);
+
+            for (uint256 i = 0; i < strategies_.length; i++) {
+                _vaultFlushedDeposits[smartVault][flushIndex][strategies_[i]].setValues(distribution[i]);
+            }
         }
+
+        uint256 withdrawals = _withdrawnVaultShares[smartVault][flushIndex];
 
         if (withdrawals > 0) {
             // handle withdrawals
@@ -497,15 +487,15 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
             flushDhwIndexes = _strategyRegistry.addWithdrawals(strategies_, strategyWithdrawals);
 
-            _withdrawnStrategyShares[smartVault][flushIdx].setValues(strategyWithdrawals);
+            _withdrawnStrategyShares[smartVault][flushIndex].setValues(strategyWithdrawals);
         }
 
         if (flushDhwIndexes.length == 0) revert NothingToFlush();
 
-        _dhwIndexes[smartVault][flushIdx].setValues(flushDhwIndexes);
-        _flushIndexes[smartVault] = flushIdx + 1;
+        _dhwIndexes[smartVault][flushIndex].setValues(flushDhwIndexes);
+        _flushIndexes[smartVault] = flushIndex + 1;
 
-        emit SmartVaultFlushed(smartVault, flushIdx);
+        emit SmartVaultFlushed(smartVault, flushIndex);
     }
 
     function syncSmartVault(address smartVault) external {
@@ -547,23 +537,44 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         internal
         returns (uint256)
     {
+        // check assets length
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
+        if (tokens.length != assets.length) {
+            revert InvalidAssetLengths();
+        }
+
+        // run guards and actions
         _runGuards(smartVault, msg.sender, receiver, owner, assets, tokens, RequestType.Deposit);
         _runActions(smartVault, msg.sender, receiver, owner, assets, tokens, RequestType.Deposit);
 
-        for (uint256 i = 0; i < assets.length; i++) {
+        // gather all data
+        // - exchange rates
+        uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(tokens, _priceFeedManager);
+        // - strategy ratios for their last DHW
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
+        uint256[][] memory strategyRatios = new uint256[][](strategies_.length);
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            strategyRatios[i] = _strategyRegistry.assetRatioAtLastDhw(strategies_[i]);
+        }
+
+        // check if assets are in correct ratio
+        if (
+            !SmartVaultDeposits.checkDepositRatio(
+                assets, exchangeRates, _smartVaultAllocations[smartVault].toArray(strategies_.length), strategyRatios
+            )
+        ) {
+            revert IncorrectDepositRatio();
+        }
+
+        // transfer tokens from user to master wallet
+        uint256 flushIndex = _flushIndexes[smartVault];
+        for (uint256 i = 0; i < tokens.length; i++) {
             IERC20(tokens[i]).safeTransferFrom(owner, address(_masterWallet), assets[i]);
+            _vaultDeposits[smartVault][flushIndex][i] = assets[i];
         }
 
-        if (tokens.length != assets.length) revert InvalidAssetLengths();
-        uint256 flushIdx = _flushIndexes[smartVault];
-
-        for (uint256 i = 0; i < assets.length; i++) {
-            if (assets[i] == 0) revert InvalidDepositAmount({smartVault: smartVault});
-            _vaultDeposits[smartVault][flushIdx][i] += assets[i];
-        }
-
-        DepositMetadata memory metadata = DepositMetadata(assets, block.timestamp, flushIdx);
+        // mint deposit NFT
+        DepositMetadata memory metadata = DepositMetadata(assets, block.timestamp, flushIndex);
         return ISmartVault(smartVault).mintDepositNFT(receiver, metadata);
     }
 

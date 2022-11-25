@@ -35,6 +35,9 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     /// @notice TODO strategy => index => depositExchangeRates
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _dhwExchangeRates;
 
+    /// @notice TODO strategy => asset ratio
+    mapping(address => mapping(uint256 => uint256)) internal _dhwAssetRatios;
+
     /// @notice TODO strategy => index => sstAmount
     mapping(address => mapping(uint256 => uint256)) internal _withdrawnShares;
 
@@ -75,6 +78,10 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         return _currentIndexes[strategy];
     }
 
+    function assetRatioAtLastDhw(address strategy) external view returns (uint256[] memory) {
+        return _dhwAssetRatios[strategy].toArray(IStrategy(strategy).assets().length);
+    }
+
     /**
      * @notice Get state of a strategy for a given DHW index
      */
@@ -95,7 +102,10 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
      */
     function registerStrategy(address strategy) external {
         if (_strategies[strategy]) revert StrategyAlreadyRegistered({address_: strategy});
+
         _strategies[strategy] = true;
+        _currentIndexes[strategy] = 1;
+        _dhwAssetRatios[strategy].setValues(IStrategy(strategy).assetRatio());
     }
 
     /**
@@ -119,6 +129,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
 
             uint256 dhwIndex = _currentIndexes[strategyAddr];
             _dhwExchangeRates[strategyAddr][dhwIndex].setValues(exchangeRates);
+            _dhwAssetRatios[strategyAddr].setValues(strategy.assetRatio());
 
             uint256[] memory withdrawnAssets_ = strategy.redeem(
                 _withdrawnShares[strategyAddr][dhwIndex], address(_masterWallet), address(_masterWallet)

@@ -199,8 +199,8 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
 
         uint256[] memory ratio = smartVaultManager.getDepositRatio(address(smartVault_));
 
-        assertEq(ratio[0] / ratio[0], 1);
-        assertEq(ratio[1], 677973452615237513354);
+        assertEq(ratio[0], 3739334521644161);
+        assertEq(ratio[1], 253516953612242);
     }
 
     function test_addDepositsAndFlush() public {
@@ -233,8 +233,7 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         assertEq(deposits[0], 100 ether);
         assertEq(deposits[1], 6.779734526152375133 ether);
 
-        SwapInfo[] memory swapInfo = new SwapInfo[](0);
-        smartVaultManager.flushSmartVault(address(smartVault_), swapInfo);
+        smartVaultManager.flushSmartVault(address(smartVault_));
 
         flushIdx = smartVaultManager.getLatestFlushIndex(address(smartVault_));
         assertEq(flushIdx, 1);

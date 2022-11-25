@@ -30,6 +30,13 @@ interface IStrategyRegistry {
     function depositedAssets(address strategy, uint256 dhwIndex) external view returns (uint256[] memory);
     function strategyAtIndex(address strategy, uint256 dhwIndex) external view returns (StrategyAtIndex memory);
 
+    /**
+     * @notice Gets required asset ratio for strategy at last DHW.
+     * @param strategy Address of the strategy.
+     * @return assetRatio Asset ratio.
+     */
+    function assetRatioAtLastDhw(address strategy) external view returns (uint256[] memory assetRatio);
+
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     function registerStrategy(address strategy) external;

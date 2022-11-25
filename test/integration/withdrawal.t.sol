@@ -134,8 +134,7 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 1);
 
         // flush
-        SwapInfo[] memory swapInfo = new SwapInfo[](0);
-        smartVaultManager.flushSmartVault(address(mySmartVault), swapInfo);
+        smartVaultManager.flushSmartVault(address(mySmartVault));
 
         // check state
         // - vault tokens are burned

@@ -6,6 +6,7 @@ import "forge-std/Test.sol";
 import "../src/interfaces/IStrategyRegistry.sol";
 import "../src/managers/StrategyRegistry.sol";
 import "../src/MasterWallet.sol";
+import "./libraries/Arrays.sol";
 import "./mocks/MockPriceFeedManager.sol";
 
 contract StrategyRegistryTest is Test {
@@ -18,7 +19,7 @@ contract StrategyRegistryTest is Test {
     }
 
     function test_registerStrategy() public {
-        address strategy = address(1);
+        address strategy = address(new MockStrategy());
         assertFalse(strategyRegistry.isStrategy(strategy));
 
         strategyRegistry.registerStrategy(strategy);
@@ -29,7 +30,7 @@ contract StrategyRegistryTest is Test {
     }
 
     function test_removeStrategy() public {
-        address strategy = address(1);
+        address strategy = address(new MockStrategy());
 
         vm.expectRevert(abi.encodeWithSelector(InvalidStrategy.selector, strategy));
         strategyRegistry.removeStrategy(strategy);
@@ -39,5 +40,11 @@ contract StrategyRegistryTest is Test {
 
         strategyRegistry.removeStrategy(strategy);
         assertFalse(strategyRegistry.isStrategy(strategy));
+    }
+}
+
+contract MockStrategy {
+    function assetRatio() external returns (uint256[] memory) {
+        return Arrays.toArray(1, 2);
     }
 }

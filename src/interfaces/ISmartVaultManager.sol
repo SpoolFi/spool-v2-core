@@ -3,15 +3,25 @@ pragma solidity ^0.8.17;
 
 /* ========== ERRORS ========== */
 
-error InvalidAssetLengths();
-error InvalidDepositAmount(address smartVault);
-error IncorrectDepositRatio();
-error InsufficientBalance(uint256 available, uint256 required);
-
 /**
  * @notice Used when trying to claim SVTs for deposit that was not synced yet.
  */
 error DepositNotSyncedYet();
+
+/**
+ * @notice Used when deposit is not made in correct asset ratio.
+ */
+error IncorrectDepositRatio();
+
+/**
+ * @notice Used when user has insufficient balance for redeemal of shares.
+ */
+error InsufficientBalance(uint256 available, uint256 required);
+
+/**
+ * @notice Used when deposited assets are not the same length as underlying assets.
+ */
+error InvalidAssetLengths();
 
 /**
  * @notice Used when there is nothing to flush.
@@ -63,31 +73,6 @@ struct SwapInfo {
     bytes swapCallData;
 }
 
-struct DepositBag {
-    address[] tokens;
-    address[] strategies;
-    uint256[] depositsIn;
-    uint256[] decimals;
-    uint256[] exchangeRates;
-    uint256[][] depositRatios;
-    uint256 depositUSD;
-    uint256 usdDecimals;
-    address masterWallet;
-    address swapper;
-}
-
-struct DepositRatioQueryBag {
-    address smartVault;
-    address[] tokens;
-    address[] strategies;
-    uint256[] allocations;
-    uint256[] exchangeRates;
-    uint256[][] strategyRatios;
-    uint256 usdDecimals;
-    address masterWallet;
-    address swapper;
-}
-
 /* ========== INTERFACES ========== */
 
 interface ISmartVaultReallocator {
@@ -125,7 +110,7 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
 
     function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm) external;
 
-    function flushSmartVault(address smartVault, SwapInfo[] calldata swapInfo) external;
+    function flushSmartVault(address smartVault) external;
 
     function smartVaultDeposits(address smartVault, uint256 flushIdx) external returns (uint256[] memory);
 

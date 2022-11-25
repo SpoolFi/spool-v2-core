@@ -10,179 +10,121 @@ import "../interfaces/ISwapper.sol";
 import "../libraries/SpoolUtils.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 
+struct DepositQueryBag1 {
+    uint256[] deposit;
+    uint256[] exchangeRates;
+    uint256[] allocation;
+    uint256[][] strategyRatios;
+}
+
 library SmartVaultDeposits {
-    /// @notice Deposit ratio precision
-    uint256 constant RATIO_PRECISION = 10 ** 22;
+    uint256 constant PRECISSION_MULTIPLIER = 10 ** 42;
+    uint256 constant DEPOSIT_TOLERANCE = 50;
+    uint256 constant FULL_PERCENT = 100_00;
 
-    /// @notice Vault-strategy allocation precision
-    uint256 constant ALLOC_PRECISION = 1000;
+    function distributeDeposit(DepositQueryBag1 memory bag) public pure returns (uint256[][] memory) {
+        uint256[][] memory flushFactors = calculateFlushFactors(bag.exchangeRates, bag.allocation, bag.strategyRatios);
+        uint256[] memory idealDepositRatio = _calculateDepositRatioFromFlushFactors(flushFactors);
 
-    /// @notice Difference between desired and actual amounts in WEI after swapping
-    uint256 constant SWAP_TOLERANCE = 500;
+        uint256[] memory distributed = new uint256[](bag.deposit.length);
+        uint256[][] memory distribution = new uint256[][](bag.allocation.length);
 
-    /**
-     * @notice Calculate current Smart Vault asset deposit ratio
-     * @dev As described in /notes/multi-asset-vault-deposit-ratios.md
-     */
-    function getDepositRatio(DepositRatioQueryBag memory bag) external pure returns (uint256[] memory) {
-        uint256[] memory outRatios = new uint256[](bag.tokens.length);
+        // loop over strategies
+        for (uint256 i = 0; i < bag.allocation.length; i++) {
+            distribution[i] = new uint256[](bag.exchangeRates.length);
 
-        if (bag.tokens.length == 1) {
-            outRatios[0] = 1;
-            return outRatios;
-        }
-
-        uint256[][] memory ratios = _getDepositRatios(bag);
-        for (uint256 i = 0; i < bag.strategies.length; i++) {
-            for (uint256 j = 0; j < bag.tokens.length; j++) {
-                outRatios[j] += ratios[i][j];
+            // loop over assets
+            for (uint256 j = 0; j < bag.exchangeRates.length; j++) {
+                distribution[i][j] = bag.deposit[j] * flushFactors[i][j] / idealDepositRatio[j];
+                distributed[j] += distribution[i][j];
             }
         }
 
-        for (uint256 j = bag.tokens.length; j > 0; j--) {
-            outRatios[j - 1] = outRatios[j - 1] * RATIO_PRECISION / outRatios[0];
+        // handle dust
+        for (uint256 j = 0; j < bag.exchangeRates.length; j++) {
+            distribution[0][j] += bag.deposit[j] - distributed[j];
         }
 
-        return outRatios;
+        return distribution;
     }
 
-    /**
-     * @notice Calculate Smart Vault deposit distributions for underlying strategies based on their
-     * internal ratio.
-     * @param bag Deposit specific parameters
-     * @param swapInfo Information needed to perform asset swaps
-     * @return Token deposit amounts per strategy
-     */
-    function distributeVaultDeposits(
-        DepositRatioQueryBag memory bag,
-        uint256[] memory depositsIn,
-        SwapInfo[] calldata swapInfo
-    ) external returns (uint256[][] memory) {
-        if (bag.tokens.length != depositsIn.length) revert InvalidAssetLengths();
-
-        uint256[] memory decimals = new uint256[](bag.tokens.length);
-        uint256[][] memory depositRatios;
-        uint256 depositUSD = 0;
-
-        depositRatios = _getDepositRatios(bag);
-
-        for (uint256 j = 0; j < bag.tokens.length; j++) {
-            decimals[j] = ERC20(bag.tokens[j]).decimals();
-            depositUSD += bag.exchangeRates[j] * depositsIn[j] / 10 ** decimals[j];
+    function checkDepositRatio(
+        uint256[] memory deposit,
+        uint256[] memory exchangeRates,
+        uint256[] memory allocation,
+        uint256[][] memory strategyRatios
+    ) public view returns (bool) {
+        if (deposit.length == 1) {
+            return true;
         }
 
-        DepositBag memory depositBag = DepositBag(
-            bag.tokens,
-            bag.strategies,
-            depositsIn,
-            decimals,
-            bag.exchangeRates,
-            depositRatios,
-            depositUSD,
-            bag.usdDecimals,
-            bag.masterWallet,
-            bag.swapper
-        );
+        uint256[] memory idealDeposit = calculateDepositRatio(exchangeRates, allocation, strategyRatios);
 
-        depositBag.depositsIn = _swapToRatio(depositBag, swapInfo);
-        return _distributeAcrossStrategies(depositBag);
+        // loop over assets
+        for (uint256 i = 1; i < deposit.length; i++) {
+            uint256 valueA = deposit[i] * idealDeposit[i - 1];
+            uint256 valueB = deposit[i - 1] * idealDeposit[i];
+
+            if ( // check if valueA is within DEPOSIT_TOLERANCE of valueB
+                valueA < (valueB * (FULL_PERCENT - DEPOSIT_TOLERANCE) / FULL_PERCENT)
+                    || valueA > (valueB * (FULL_PERCENT + DEPOSIT_TOLERANCE) / FULL_PERCENT)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
-    /**
-     * @notice Swap to match required ratio
-     * TODO: take slippage into consideration
-     * TODO: check if "swap" feature is exploitable
-     */
-    function _swapToRatio(DepositBag memory bag, SwapInfo[] memory swapInfo) internal returns (uint256[] memory) {
-        // Swap tokens:
-        // - check initial balances of tokens
-        uint256[] memory oldBalances = SpoolUtils.getBalances(bag.tokens, bag.masterWallet);
-        if (swapInfo.length > 0) {
-            // - transfer tokens to the swapper contract
-            for (uint256 i = 0; i < bag.tokens.length; i++) {
-                IMasterWallet(bag.masterWallet).transfer(IERC20(bag.tokens[i]), bag.swapper, bag.depositsIn[i]);
-            }
-            // - make swap
-            ISwapper(bag.swapper).swap(bag.tokens, swapInfo, bag.masterWallet);
-        }
-        // - check final balances
-        uint256[] memory newBalances = SpoolUtils.getBalances(bag.tokens, bag.masterWallet);
-
-        uint256[] memory depositsOut = new uint256[](bag.tokens.length);
-        for (uint256 i = 0; i < bag.tokens.length; i++) {
-            uint256 ratio = 0;
-
-            for (uint256 j = 0; j < bag.depositRatios.length; j++) {
-                ratio += bag.depositRatios[j][i];
-            }
-
-            // Add/Subtract swapped amounts
-            if (newBalances[i] >= oldBalances[i]) {
-                depositsOut[i] = bag.depositsIn[i] + (newBalances[i] - oldBalances[i]);
-            } else {
-                depositsOut[i] = bag.depositsIn[i] - (oldBalances[i] - newBalances[i]);
-            }
-
-            // Desired token deposit amount
-            uint256 desired = ratio * bag.depositUSD * 10 ** bag.decimals[i] / 10 ** bag.usdDecimals / RATIO_PRECISION;
-
-            // Check discrepancies
-            bool isOk = desired == depositsOut[i]
-                || desired > depositsOut[i] && (desired - depositsOut[i]) < SWAP_TOLERANCE
-                || desired < depositsOut[i] && (depositsOut[i] - desired) < SWAP_TOLERANCE;
-
-            if (!isOk) {
-                revert IncorrectDepositRatio();
-            }
-        }
-
-        return depositsOut;
+    function calculateDepositRatio(
+        uint256[] memory exchangeRates,
+        uint256[] memory allocation,
+        uint256[][] memory strategyRatios
+    ) public pure returns (uint256[] memory) {
+        return _calculateDepositRatioFromFlushFactors(calculateFlushFactors(exchangeRates, allocation, strategyRatios));
     }
 
-    function _distributeAcrossStrategies(DepositBag memory bag) internal pure returns (uint256[][] memory) {
-        uint256[] memory depositAccum = new uint256[](bag.tokens.length);
-        uint256[][] memory strategyDeposits = new uint256[][](bag.strategies.length);
-        uint256 usdPrecision = 10 ** bag.usdDecimals;
+    function calculateFlushFactors(
+        uint256[] memory exchangeRates,
+        uint256[] memory allocation,
+        uint256[][] memory strategyRatios
+    ) public pure returns (uint256[][] memory) {
+        uint256[][] memory flushFactors = new uint256[][](allocation.length);
 
-        for (uint256 i = 0; i < bag.strategies.length; i++) {
-            strategyDeposits[i] = new uint256[](bag.tokens.length);
+        // loop over strategies
+        for (uint256 i = 0; i < allocation.length; i++) {
+            flushFactors[i] = new uint256[](exchangeRates.length);
 
-            for (uint256 j = 0; j < bag.tokens.length; j++) {
-                uint256 tokenPrecision = 10 ** bag.decimals[j];
-                strategyDeposits[i][j] =
-                    bag.depositUSD * bag.depositRatios[i][j] * tokenPrecision / RATIO_PRECISION / usdPrecision;
-                depositAccum[j] += strategyDeposits[i][j];
+            uint256 normalization = 0;
+            // loop over assets
+            for (uint256 j = 0; j < exchangeRates.length; j++) {
+                normalization += strategyRatios[i][j] * exchangeRates[j];
+            }
 
-                // Dust
-                if (i == bag.strategies.length - 1) {
-                    strategyDeposits[i][j] += bag.depositsIn[j] - depositAccum[j];
-                }
+            // loop over assets
+            for (uint256 j = 0; j < exchangeRates.length; j++) {
+                flushFactors[i][j] = allocation[i] * strategyRatios[i][j] * PRECISSION_MULTIPLIER / normalization;
             }
         }
 
-        return strategyDeposits;
+        return flushFactors;
     }
 
-    function _getDepositRatios(DepositRatioQueryBag memory bag) internal pure returns (uint256[][] memory) {
-        uint256[][] memory outRatios = new uint256[][](bag.strategies.length);
-        if (bag.strategies.length != bag.allocations.length) revert InvalidArrayLength();
+    function _calculateDepositRatioFromFlushFactors(uint256[][] memory flushFactors)
+        internal
+        pure
+        returns (uint256[] memory)
+    {
+        uint256[] memory depositRatio = new uint256[](flushFactors[0].length);
 
-        uint256 usdPrecision = 10 ** bag.usdDecimals;
-
-        for (uint256 i = 0; i < bag.strategies.length; i++) {
-            outRatios[i] = new uint256[](bag.tokens.length);
-            uint256 ratioNorm = 0;
-
-            for (uint256 j = 0; j < bag.tokens.length; j++) {
-                ratioNorm += bag.exchangeRates[j] * bag.strategyRatios[i][j];
-            }
-
-            for (uint256 j = 0; j < bag.tokens.length; j++) {
-                outRatios[i][j] += bag.allocations[i] * bag.strategyRatios[i][j] * usdPrecision * RATIO_PRECISION
-                    / ratioNorm / ALLOC_PRECISION;
+        // loop over strategies
+        for (uint256 i = 0; i < flushFactors.length; i++) {
+            // loop over assets
+            for (uint256 j = 0; j < flushFactors[i].length; j++) {
+                depositRatio[j] += flushFactors[i][j];
             }
         }
 
-        return outRatios;
+        return depositRatio;
     }
 }
