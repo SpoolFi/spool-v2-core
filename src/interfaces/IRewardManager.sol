@@ -15,6 +15,9 @@ interface IRewardManager {
         mapping(address => uint256) userRewardPerTokenPaid;
         mapping(address => uint256) rewards;
     }
+
+    // dodaj vse funkcije ki so public in external
+
     /* ========== FUNCTIONS ========== */
 
     function getActiveRewards(address smartVault, address account) external;
@@ -22,9 +25,9 @@ interface IRewardManager {
 
     /* ========== EVENTS ========== */
 
-    event RewardPaid(IERC20 token, address indexed user, uint256 reward);
-    event RewardAdded(IERC20 indexed token, uint256 amount, uint256 duration);
-    event RewardExtended(IERC20 indexed token, uint256 amount, uint256 leftover, uint256 duration, uint32 periodFinish);
-    event RewardRemoved(IERC20 indexed token);
-    event PeriodFinishUpdated(IERC20 indexed token, uint32 periodFinish);
+    event RewardPaid(address smartVault, IERC20 token, address indexed user, uint256 reward);
+    event RewardAdded(address smartVault, IERC20 indexed token, uint256 amount, uint256 duration);
+    event RewardExtended(address smartVault, IERC20 indexed token, uint256 amount, uint256 leftover, uint256 duration, uint32 periodFinish);
+    event RewardRemoved(address smartVault, IERC20 indexed token);
+    event PeriodFinishUpdated(address smartVault, IERC20 indexed token, uint32 periodFinish);
 }

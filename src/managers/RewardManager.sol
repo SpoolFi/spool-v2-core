@@ -83,7 +83,9 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    // claimRewards
+    /**
+     * @notice TODO
+     */
     function getRewards(address smartVault, IERC20[] memory tokens) external nonReentrant {
         for (uint256 i; i < tokens.length; i++) {
             _getReward(smartVault, tokens[i], msg.sender);
@@ -110,7 +112,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
         if (reward > 0) {
             config.rewards[account] = 0;
             token.safeTransfer(account, reward);
-            emit RewardPaid(token, account, reward);
+            emit RewardPaid(smartVault, token, account, reward);
         }
     }
 
@@ -171,7 +173,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
 
         if (block.timestamp >= config.periodFinish) {
             config.rewardRate = SafeCast.toUint192((reward * REWARD_ACCURACY) / config.rewardsDuration);
-            emit RewardAdded(token, reward, config.rewardsDuration);
+            emit RewardAdded(smartVault, token, reward, config.rewardsDuration);
         } else {
             // If extending or adding additional rewards,
             // cannot set new finish time to be less than previously configured
@@ -182,7 +184,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
             require(newRewardRate >= config.rewardRate, "LRR");
 
             config.rewardRate = newRewardRate;
-            emit RewardExtended(token, reward, leftover, config.rewardsDuration, newPeriodFinish);
+            emit RewardExtended(smartVault, token, reward, leftover, config.rewardsDuration, newPeriodFinish);
         }
 
         config.lastUpdateTime = uint32(block.timestamp);
@@ -201,7 +203,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
             rewardConfiguration[smartVault][token].periodFinish = timestamp;
         }
 
-        emit PeriodFinishUpdated(token, rewardConfiguration[smartVault][token].periodFinish);
+        emit PeriodFinishUpdated(smartVault, token, rewardConfiguration[smartVault][token].periodFinish);
     }
 
     /**
@@ -316,7 +318,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
 
                 delete rewardTokens[smartVault][_rewardTokensCount- 1];
                 rewardTokensCount[smartVault]--;
-                emit RewardRemoved(token);
+                emit RewardRemoved(smartVault, token);
 
                 break;
             }
