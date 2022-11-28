@@ -192,7 +192,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
     // End rewards emission earlier
     function updatePeriodFinish(address smartVault, IERC20 token, uint32 timestamp)
         external
-        /* onlyOwner TODO ACL */
+        onlyAdminOrVaultAdmin(smartVault, msg.sender)
         updateReward(smartVault, token, address(0))
     {
         if (rewardConfiguration[smartVault][token].lastUpdateTime > timestamp) {
@@ -222,7 +222,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
      */
     function claimFinishedRewards(address smartVault, IERC20 token, uint256 amount)
         external
-        /* onlyOwner TODO ACL */
+        onlyAdminOrVaultAdmin(smartVault, msg.sender)
         exceptUnderlying(token)
         onlyFinished(smartVault, token)
     {
@@ -239,8 +239,9 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
      *
      * @param token Token address to remove
      */
-    function forceRemoveReward(address smartVault, IERC20 token) external 
-    /* onlyOwner TODO ACL */
+    function forceRemoveReward(address smartVault, IERC20 token)
+        external
+        onlyAdminOrVaultAdmin(smartVault, msg.sender)
     {
         //tokenBlacklist.token] = true; add list + smartVault
         tokenBlacklist[smartVault][token] = true;
@@ -281,6 +282,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
      * of a user changes.
      */
     function updateRewardsOnVault(address smartVault, address account) public {
+        // TODO ACL
         _updateRewards(smartVault, account);
     }
 

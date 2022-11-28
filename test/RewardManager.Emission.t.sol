@@ -18,9 +18,8 @@ contract RewardManagerEmissionTests is RewardManagerTests {
         rewardToken.approve(address(rewardManager), rewardAmount);
         rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount / 2);
         vm.stopPrank();
-
         vm.prank(user);
-//        rewardManager.getActiveRewards(smartVault, user); // TODO expectRevert when ACL is complete
+        //        rewardManager.getActiveRewards(smartVault, user); // TODO expectRevert when ACL is complete
     }
 
     function test_getActiveRewards_userGetsRewards() public {
@@ -43,16 +42,14 @@ contract RewardManagerEmissionTests is RewardManagerTests {
         rewardManager.updateRewardsOnVault(smartVault, user);
         deal(address(smartVault), user, rewardAmount, true); // Depositing into a vault.
 
-
         uint256 userBalanceBefore = rewardToken.balanceOf(user);
         skip(rewardDuration * 2);
 
         rewardManager.getActiveRewards(smartVault, user);
 
-
         uint256 userBalanceAfter = rewardToken.balanceOf(user);
 
-        uint256 userBalanceGain = userBalanceAfter-userBalanceBefore;
+        uint256 userBalanceGain = userBalanceAfter - userBalanceBefore;
 
         assertEq(userBalanceGain, 99999999999999999900000);
     }
@@ -61,7 +58,7 @@ contract RewardManagerEmissionTests is RewardManagerTests {
         addRewardTokens();
 
         uint256 userDeposit = rewardAmount;
-        uint256 user2Deposit = rewardAmount/2;
+        uint256 user2Deposit = rewardAmount / 2;
         rewardManager.updateRewardsOnVault(smartVault, user);
         deal(address(smartVault), user, userDeposit, true); // Depositing into a vault.
 
@@ -80,12 +77,14 @@ contract RewardManagerEmissionTests is RewardManagerTests {
         uint256 userBalanceAfter = rewardToken.balanceOf(user);
         uint256 user2BalanceAfter = rewardToken.balanceOf(user2);
 
-        uint256 userGain = rewardAmount*userDeposit/totalDeposit;
-        uint256 user2Gain = rewardAmount*user2Deposit/totalDeposit;
+        uint256 userGain = rewardAmount * userDeposit / totalDeposit;
+        uint256 user2Gain = rewardAmount * user2Deposit / totalDeposit;
 
         assertEq(66666666666666666666666, userGain);
         assertEq(33333333333333333333333, user2Gain);
     }
+
+    function test_getActiveRewards_twoRewardAndtwoUsersBothClaimProportionally() public {}
 
     function addRewardTokens() private {
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
