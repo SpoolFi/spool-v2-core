@@ -84,8 +84,123 @@ contract RewardManagerEmissionTests is RewardManagerTests {
         assertEq(33333333333333333333333, user2Gain);
     }
 
-    function test_getActiveRewards_twoRewardAndtwoUsersBothClaimProportionally() public {}
+    function test_getActiveRewards_twoRewardAndtwoUsersBothClaimProportionally() public {
+        addRewardTokens();
+        MockToken rewardToken2 = new MockToken("R2", "R2");
+        deal(address(rewardToken2), vaultOwner, rewardAmount / 2, true); // Dealing half a R1 reward.
 
+        AssertData memory data;
+
+        data.userDeposit = 100000 ether;
+        data.user2Deposit = 50000 ether;
+        vm.startPrank(vaultOwner);
+        rewardToken2.approve(address(rewardManager), rewardAmount / 2);
+        rewardManager.addToken(smartVault, rewardToken2, rewardDuration, rewardAmount /2);
+        vm.stopPrank();
+        console.log(rewardManager.rewardTokensCount(smartVault));
+
+        rewardManager.updateRewardsOnVault(smartVault, user);
+        deal(address(smartVault), user, data.userDeposit, true); // Depositing into a vault.
+
+        address user2 = address(102);
+        rewardManager.updateRewardsOnVault(smartVault, user2);
+        deal(address(smartVault), user2, data.user2Deposit, true); // Depositing into a vault for user2 - half amount of user1
+
+        data.totalDeposit = data.user2Deposit + data.userDeposit;
+        data.R1userBalanceBefore = rewardToken.balanceOf(user);
+        data.R1user2BalanceBefore = rewardToken.balanceOf(user2);
+
+        data.R2userBalanceBefore = rewardToken2.balanceOf(user);
+        data.R2user2BalanceBefore = rewardToken2.balanceOf(user2);
+
+        skip(rewardDuration * 2);
+
+        rewardManager.getActiveRewards(smartVault, user);
+        rewardManager.getActiveRewards(smartVault, user2);
+
+        data.R1userBalanceAfter = rewardToken.balanceOf(user);
+        data.R1user2BalanceAfter = rewardToken.balanceOf(user2);
+
+        data.R2userBalanceAfter = rewardToken2.balanceOf(user);
+        data.R2user2BalanceAfter = rewardToken2.balanceOf(user2);
+
+        uint256 R1userGain = rewardAmount * data.userDeposit / data.totalDeposit;
+        uint256 R1user2Gain = rewardAmount * data.user2Deposit / data.totalDeposit;
+
+        uint256 R2userGain = rewardAmount/2 * data.userDeposit / data.totalDeposit;
+        uint256 R2user2Gain = rewardAmount/2 * data.user2Deposit / data.totalDeposit;
+
+        // Both rewards are claimed proportionally.
+        assertEq(R1userGain, 66666666666666666666666);
+        assertEq(R1user2Gain, 33333333333333333333333);
+
+        assertEq(R2userGain, 33333333333333333333333);
+        assertEq(R2user2Gain,16666666666666666666666);
+    }
+
+    function test_getActiveRewards_reward2DistributedCompletelyR1StillActive() public {
+        addRewardTokens();
+        MockToken rewardToken2 = new MockToken("R2", "R2");
+        deal(address(rewardToken2), vaultOwner, rewardAmount / 10, true); // Dealing a tenth of the R1 reward.
+
+
+        vm.startPrank(vaultOwner);
+        rewardToken2.approve(address(rewardManager), rewardAmount / 10);
+        rewardManager.addToken(smartVault, rewardToken2, rewardDuration / 10, rewardAmount /10);
+        vm.stopPrank();
+        assertEq(rewardManager.rewardTokensCount(smartVault), 2);
+
+
+        rewardManager.updateRewardsOnVault(smartVault, user);
+        deal(address(smartVault), user, rewardAmount, true); // Depositing into a vault.
+        skip(rewardDuration  / 2);
+        rewardManager.getActiveRewards(smartVault, user);
+        assertEq(rewardManager.rewardTokensCount(smartVault), 1);
+
+        console.log(rewardToken2.balanceOf(user));
+        // user should get all rewards from R2 and half from R1 todo assert
+    }
+
+    function test_getActiveRewards_RemoveTokensAfterFinish() public {
+        addRewardTokens();
+        MockToken rewardToken2 = new MockToken("R2", "R2");
+        deal(address(rewardToken2), vaultOwner, rewardAmount, true); // Dealing a tenth of the R1 reward.
+
+
+        vm.startPrank(vaultOwner);
+        rewardToken2.approve(address(rewardManager), rewardAmount );
+        rewardManager.addToken(smartVault, rewardToken2, rewardDuration*2, rewardAmount);
+        vm.stopPrank();
+
+        rewardManager.updateRewardsOnVault(smartVault, user);
+        deal(address(smartVault), user, rewardAmount, true); // Depositing into a vault.
+
+        skip(rewardDuration * 2);
+
+        vm.startPrank(vaultOwner);
+        rewardManager.removeReward(smartVault, rewardToken2);
+        vm.stopPrank();
+
+        rewardManager.getActiveRewards(smartVault, user);
+        IERC20[] memory tokens = new IERC20 [] (1);
+        tokens[0] = rewardToken2;
+        rewardManager.getRewards(smartVault, tokens);
+    }
+    struct AssertData {
+        uint256 userDeposit;
+        uint256 user2Deposit;
+        uint totalDeposit;
+        uint256 R1userBalanceBefore;
+        uint256 R1user2BalanceBefore;
+
+        uint256 R2userBalanceBefore;
+        uint256 R2user2BalanceBefore;
+
+        uint256 R1userBalanceAfter;
+        uint256 R1user2BalanceAfter;
+        uint256 R2userBalanceAfter;
+        uint256 R2user2BalanceAfter;
+    }
     function addRewardTokens() private {
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
         vm.startPrank(vaultOwner);

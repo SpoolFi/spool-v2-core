@@ -245,7 +245,6 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
         external
         onlyAdminOrVaultAdmin(smartVault, msg.sender)
     {
-        //tokenBlacklist.token] = true; add list + smartVault
         tokenBlacklist[smartVault][token] = true;
         _removeReward(smartVault, token);
 
