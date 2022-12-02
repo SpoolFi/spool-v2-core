@@ -23,10 +23,10 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
     /* ========== EXTERNAL FUNCTIONS ========== */
 
     /**
-     * @notice TODO
-     * @param smartVault TODO
-     * @param actions_ TODO
-     * @param requestTypes TODO
+     * @notice Set executable actions for given smart vault
+     * @param smartVault SmartVault address
+     * @param actions_ array of actions
+     * @param requestTypes when an action should be triggered
      */
     function setActions(address smartVault, IAction[] calldata actions_, RequestType[] calldata requestTypes)
         external
@@ -43,9 +43,9 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
     }
 
     /**
-     * @notice TODO
-     * @param smartVault TODO
-     * @param actionCtx TODO
+     * @notice Run actions for smart vault with given context
+     * @param smartVault SmartVault address
+     * @param actionCtx action execution context
      */
     function runActions(address smartVault, ActionContext calldata actionCtx)
         external
@@ -63,9 +63,9 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
     }
 
     /**
-     * @notice TODO
-     * @param action TODO
-     * @param whitelist TODO
+     * @notice Whitelist an action address
+     * @param action Action address
+     * @param whitelist Whether to whitelist or not
      */
     function whitelistAction(address action, bool whitelist) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
         if (actionWhitelisted[action] == whitelist) revert ActionStatusAlreadySet();
@@ -98,18 +98,10 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
     /* ========== MODIFIERS ========== */
 
     /**
-     * @notice TODO
+     * @notice Reverts if actions have already been initialized for given smart vault
      */
     modifier notInitialized(address smartVault) {
         _isInitialized(smartVault, false);
-        _;
-    }
-
-    /**
-     * @notice TODO
-     */
-    modifier areActionsInitialized(address smartVault) {
-        _isInitialized(smartVault, true);
         _;
     }
 }

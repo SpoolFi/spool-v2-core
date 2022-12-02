@@ -17,14 +17,16 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
 
     /* ========== STATE VARIABLES ========== */
 
+    /// @notice Wallet holding funds pending DHW
     IMasterWallet immutable _masterWallet;
 
+    /// @notice Price feed manager
     IUsdPriceFeedManager immutable _priceFeedManager;
 
-    /// @notice TODO
+    /// @notice Strategy registry
     mapping(address => bool) internal _strategies;
 
-    /// @notice TODO
+    /// @notice Current DHW index for strategies
     mapping(address => uint256) internal _currentIndexes;
 
     /**
@@ -36,21 +38,18 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     /**
      * @notice Asset to USD exchange rates.
      * @dev strategy => index => asset index => exchange rate
-     * TODO
      */
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _exchangeRates;
 
     /**
      * @notice Assets deposited into the strategy.
      * @dev strategy => index => asset index => desposited amount
-     * TODO
      */
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _assetsDeposited;
 
     /**
      * @notice Amount of SSTs minted for deposits.
      * @dev strategy => index => SSTs minted
-     * TODO
      */
     mapping(address => mapping(uint256 => uint256)) internal _sharesMinted;
 
@@ -76,7 +75,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
-     * @notice TODO
+     * @notice Checks if given address is registered as a strategy
      */
     function isStrategy(address strategy) external view returns (bool) {
         return _strategies[strategy];
@@ -117,7 +116,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice TODO
+     * @notice Add strategy to registry
      */
     function registerStrategy(address strategy) external {
         if (_strategies[strategy]) revert StrategyAlreadyRegistered({address_: strategy});
@@ -128,7 +127,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     }
 
     /**
-     * @notice TODO
+     * @notice Remove strategy from registry
      */
     function removeStrategy(address strategy) external {
         if (!_strategies[strategy]) revert InvalidStrategy({address_: strategy});
