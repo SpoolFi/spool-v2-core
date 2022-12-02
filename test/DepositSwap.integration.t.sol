@@ -93,8 +93,6 @@ contract DepositSwapIntegrationTest is Test, SpoolAccessRoles {
             IAction[] memory actions = new IAction[](0);
             RequestType[] memory actionsRequestTypes = new RequestType[](0);
             actionManager.setActions(address(smartVault), actions, actionsRequestTypes);
-            GuardDefinition[] memory guards = new GuardDefinition[](0);
-            guardManager.setGuards(address(smartVault), guards);
             address[] memory smartVaultStrategies = new address[](1);
             smartVaultStrategies[0] = address(strategy);
             uint256[] memory smartVaultStrategyAllocations = new uint256[](1);

@@ -10,7 +10,8 @@ contract GuardManager is IGuardManager {
     /* ========== STATE VARIABLES ========== */
 
     mapping(address => bool) public guardsInitialized;
-    mapping(address => address) internal guardPointer;
+    mapping(address => mapping(RequestType => address)) internal guardPointer;
+    mapping(address => mapping(RequestType => GuardDefinition[])) internal _guards;
 
     constructor() {}
 
@@ -26,14 +27,10 @@ contract GuardManager is IGuardManager {
             return;
         }
 
-        GuardDefinition[] memory guards = _readGuards(smartVaultId);
+        GuardDefinition[] memory guards = _readGuards(smartVaultId, context.requestType);
 
         for (uint256 i = 0; i < guards.length; i++) {
             GuardDefinition memory guard = guards[i];
-
-            if (guard.requestType != context.requestType) {
-                continue;
-            }
 
             bytes memory encoded = _encodeFunctionCall(smartVaultId, guard, context);
             (bool success, bytes memory data) = guard.contractAddress.staticcall(encoded);
@@ -46,8 +43,12 @@ contract GuardManager is IGuardManager {
      * @param smartVaultId Smart Vault address
      * @return Array of guards
      */
-    function readGuards(address smartVaultId) external view returns (GuardDefinition[] memory) {
-        return _readGuards(smartVaultId);
+    function readGuards(address smartVaultId, RequestType requestType)
+        external
+        view
+        returns (GuardDefinition[] memory)
+    {
+        return _readGuards(smartVaultId, requestType);
     }
 
     /**
@@ -58,10 +59,18 @@ contract GuardManager is IGuardManager {
      * @param smartVaultId Smart Vault address
      * @param guards Array of guards
      */
-    function setGuards(address smartVaultId, GuardDefinition[] calldata guards) public hasNoGuards(smartVaultId) {
-        _writeGuards(smartVaultId, guards);
-        guardsInitialized[smartVaultId] = true;
+    function setGuards(address smartVaultId, GuardDefinition[][] calldata guards, RequestType[] calldata requestTypes)
+        public
+        hasNoGuards(smartVaultId)
+    {
+        for (uint256 i = 0; i < requestTypes.length; i++) {
+            for (uint256 j = 0; j < guards[i].length; j++) {
+                _guards[smartVaultId][requestTypes[i]].push(guards[i][j]);
+            }
+            _writeGuards(smartVaultId, requestTypes[i], guards[i]);
+        }
 
+        guardsInitialized[smartVaultId] = true;
         emit GuardsInitialized(smartVaultId);
     }
 
@@ -82,18 +91,22 @@ contract GuardManager is IGuardManager {
         if (guardsInitialized[smartVaultId]) revert GuardsAlreadyInitialized();
     }
 
-    function _readGuards(address smartVaultId) internal view returns (GuardDefinition[] memory guards) {
-        bytes memory value = SSTORE2.read(guardPointer[smartVaultId]);
+    function _readGuards(address smartVaultId, RequestType requestType)
+        internal
+        view
+        returns (GuardDefinition[] memory guards)
+    {
+        if (guardPointer[smartVaultId][requestType] == address(0)) {
+            return new GuardDefinition[](0);
+        }
+
+        bytes memory value = SSTORE2.read(guardPointer[smartVaultId][requestType]);
         return abi.decode(value, (GuardDefinition[]));
     }
 
-    function _writeGuards(address smartVaultId, GuardDefinition[] calldata guards) internal {
+    function _writeGuards(address smartVaultId, RequestType requestType, GuardDefinition[] calldata guards) internal {
         address key = SSTORE2.write(abi.encode(guards));
-        guardPointer[smartVaultId] = key;
-    }
-
-    function _addressToString(address address_) internal pure returns (string memory) {
-        return Strings.toHexString(uint256(uint160(address_)), 20);
+        guardPointer[smartVaultId][requestType] = key;
     }
 
     function _checkResult(bool success, bytes memory returnValue, bytes2 operator, bytes32 value, uint256 guardNum)

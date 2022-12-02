@@ -107,7 +107,8 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
         // Setup smart vault with one guard:
         // - check that the person receiving the deposit NFT has at least one selected NFT
         // The guard is implemented using the `balanceOf` function of the IERC721 contract.
-        GuardDefinition[] memory guards = new GuardDefinition[](1);
+        GuardDefinition[][] memory guards = new GuardDefinition[][](1);
+        guards[0] = new GuardDefinition[](1);
 
         // guard call receives one parameter:
         // - address to check the NFT balance of
@@ -118,18 +119,20 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
         guardParamTypes[0] = GuardParamType.Receiver;
 
         // define the guard
-        guards[0] = GuardDefinition({ // guard checking the NFT balance of the receiver
+        guards[0][0] = GuardDefinition({ // guard checking the NFT balance of the receiver
             contractAddress: address(nft),
             methodSignature: "balanceOf(address)",
             methodParamTypes: guardParamTypes,
             methodParamValues: guardParamValues,
-            requestType: RequestType.Deposit,
             operator: ">=", // balance must be equal to or greater than 1
             expectedValue: bytes32(uint256(1))
         });
 
+        RequestType[] memory requestTypes = new RequestType[](1);
+        requestTypes[0] = RequestType.Deposit;
+
         // set guards for the smart contract
-        guardManager.setGuards(address(smartVault), guards);
+        guardManager.setGuards(address(smartVault), guards, requestTypes);
 
         // mint one NFT for Bob and two NFTs for Charlie
         nft.mint(bob);

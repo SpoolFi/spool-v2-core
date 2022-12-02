@@ -114,7 +114,8 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         // allowlist, as to separate the three roles.
         // AllowlistGuards supports this by allowing multiple allowlists per each
         // smart vault, each allowlist having a different ID.
-        GuardDefinition[] memory guards = new GuardDefinition[](3);
+        GuardDefinition[][] memory guards = new GuardDefinition[][](1);
+        guards[0] = new GuardDefinition[](3);
 
         // guard call receives three parameters:
         // - address of the smart vault
@@ -148,36 +149,36 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         guardParamValues[2][0] = abi.encode(uint256(2)); // ID of the allowlist is set to 2
 
         // define the guards
-        guards[0] = GuardDefinition({ // guard checking the executor
+        guards[0][0] = GuardDefinition({ // guard checking the executor
             contractAddress: address(allowlistGuard),
             methodSignature: "isAllowed(address,uint256,address)",
             expectedValue: 0, // do not need this
             methodParamTypes: guardParamTypes[0],
             methodParamValues: guardParamValues[0],
-            requestType: RequestType.Deposit,
             operator: 0 // do not need this
         });
-        guards[1] = GuardDefinition({ // guard checking the owner
+        guards[0][1] = GuardDefinition({ // guard checking the owner
             contractAddress: address(allowlistGuard),
             methodSignature: "isAllowed(address,uint256,address)",
             expectedValue: 0, // do not need this
             methodParamTypes: guardParamTypes[1],
             methodParamValues: guardParamValues[1],
-            requestType: RequestType.Deposit,
             operator: 0 // do not need this
         });
-        guards[2] = GuardDefinition({ // guard checking the receiver
+        guards[0][2] = GuardDefinition({ // guard checking the receiver
             contractAddress: address(allowlistGuard),
             methodSignature: "isAllowed(address,uint256,address)",
             expectedValue: 0, // do not need this
             methodParamTypes: guardParamTypes[2],
             methodParamValues: guardParamValues[2],
-            requestType: RequestType.Deposit,
             operator: 0 // do not need this
         });
 
+        RequestType[] memory requestTypes = new RequestType[](1);
+        requestTypes[0] = RequestType.Deposit;
+
         // set guards for the smart vault
-        guardManager.setGuards(address(smartVault), guards);
+        guardManager.setGuards(address(smartVault), guards, requestTypes);
 
         // allow Alice to update allowlists for the smart vault
         accessControl.grantSmartVaultRole(address(smartVault), ROLE_GUARD_ALLOWLIST_MANAGER, alice);

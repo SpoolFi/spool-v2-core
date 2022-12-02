@@ -3,5 +3,8 @@ pragma solidity ^0.8.17;
 
 enum RequestType {
     Deposit,
-    Withdrawal
+    Withdrawal,
+    BurnDepositNFT,
+    TransferDepositNFT,
+    TransferSVTs
 }

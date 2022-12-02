@@ -5,35 +5,29 @@ import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
 import "../src/managers/GuardManager.sol";
 import {MockGuard} from "./mocks/MockGuard.sol";
+import "./utils/GasHelpers.sol";
 
-contract GuardManagerTest is Test {
+contract GuardManagerTest is Test, GasHelpers {
     IGuardManager guardManager;
     MockGuard mockGuard;
     address smartVaultId = address(1);
     address user = address(256);
-    GuardDefinition[] guards;
 
     function setUp() public {
         guardManager = new GuardManager();
         mockGuard = new MockGuard();
 
-        _createGuards();
-        guardManager.setGuards(smartVaultId, guards);
+        (GuardDefinition[][] memory guards, RequestType[] memory requestTypes) = _createGuards();
+        guardManager.setGuards(smartVaultId, guards, requestTypes);
     }
 
-    function _createGuards() internal {
+    function _createGuards() internal returns (GuardDefinition[][] memory, RequestType[] memory) {
         bytes[] memory emptyBytes = new bytes[](0);
         GuardParamType[] memory paramTypes = new GuardParamType[](1);
         paramTypes[0] = GuardParamType.Executor;
 
         GuardDefinition memory guard = GuardDefinition(
-            address(mockGuard),
-            "isWhitelisted(address)",
-            bytes32(uint256(1)),
-            paramTypes,
-            emptyBytes,
-            RequestType.Deposit,
-            "=="
+            address(mockGuard), "isWhitelisted(address)", bytes32(uint256(1)), paramTypes, emptyBytes, "=="
         );
 
         GuardParamType[] memory paramTypes2 = new GuardParamType[](2);
@@ -48,18 +42,11 @@ contract GuardManagerTest is Test {
             bytes32(uint256(1)),
             paramTypes2,
             methodValues2,
-            RequestType.Deposit,
             "=="
         );
 
         GuardDefinition memory guard3 = GuardDefinition(
-            address(mockGuard),
-            "isWhitelisted(address)",
-            bytes32(uint256(1)),
-            paramTypes,
-            emptyBytes,
-            RequestType.Withdrawal,
-            "=="
+            address(mockGuard), "isWhitelisted(address)", bytes32(uint256(1)), paramTypes, emptyBytes, "=="
         );
 
         GuardParamType[] memory paramTypes4 = new GuardParamType[](2);
@@ -80,26 +67,30 @@ contract GuardManagerTest is Test {
             bytes32(uint256(1)),
             paramTypes4,
             methodValues4,
-            RequestType.Deposit,
             "=="
         );
 
-        guards.push(guard);
-        guards.push(guard2);
-        guards.push(guard3);
-        guards.push(guard4);
+        GuardDefinition[][] memory guards = new GuardDefinition[][](2);
+        guards[0] = new GuardDefinition[](3);
+        guards[0][0] = guard;
+        guards[0][1] = guard2;
+        guards[0][2] = guard4;
+
+        guards[1] = new GuardDefinition[](1);
+        guards[1][0] = guard3;
+
+        RequestType[] memory requestTypes = new RequestType[](2);
+        requestTypes[0] = RequestType.Deposit;
+        requestTypes[1] = RequestType.Withdrawal;
+
+        return (guards, requestTypes);
     }
 
     function test_readGuards() public {
-        GuardDefinition[] memory storedGuards = guardManager.readGuards(smartVaultId);
+        GuardDefinition[] memory storedGuards = guardManager.readGuards(smartVaultId, RequestType.Deposit);
 
-        assertEq(storedGuards.length, 4);
-        assertEq(storedGuards[0].contractAddress, guards[0].contractAddress);
-        assertEq(storedGuards[0].methodSignature, guards[0].methodSignature);
+        assertEq(storedGuards.length, 3);
         assertEq(storedGuards[0].methodParamTypes.length, 1);
-        assertEq(uint8(storedGuards[0].requestType), uint8(RequestType.Deposit));
-        assertEq(uint8(storedGuards[1].requestType), uint8(RequestType.Deposit));
-        assertEq(uint8(storedGuards[2].requestType), uint8(RequestType.Withdrawal));
         assertEq(uint8(storedGuards[0].methodParamTypes[0]), uint8(GuardParamType.Executor));
     }
 
@@ -118,10 +109,13 @@ contract GuardManagerTest is Test {
 
         mockGuard.setWhitelist(user, true);
 
+        startMeasuringGas("Test");
         guardManager.runGuards(smartVaultId, context);
+        stopMeasuringGas();
     }
 
     function test_writeGuards() public {
-        guardManager.setGuards(address(2), guards);
+        (GuardDefinition[][] memory guards, RequestType[] memory requestTypes) = _createGuards();
+        guardManager.setGuards(address(2), guards, requestTypes);
     }
 }

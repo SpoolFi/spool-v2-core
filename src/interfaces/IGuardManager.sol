@@ -38,7 +38,6 @@ struct GuardDefinition {
     bytes32 expectedValue;
     GuardParamType[] methodParamTypes;
     bytes[] methodParamValues;
-    RequestType requestType;
     bytes2 operator;
 }
 
@@ -58,8 +57,12 @@ struct RequestContext {
 
 interface IGuardManager {
     function runGuards(address smartVault, RequestContext calldata context) external view;
-    function readGuards(address smartVault) external view returns (GuardDefinition[] memory);
-    function setGuards(address smartVault, GuardDefinition[] calldata guards) external;
+    function readGuards(address smartVaultId, RequestType requestType)
+        external
+        view
+        returns (GuardDefinition[] memory);
+    function setGuards(address smartVaultId, GuardDefinition[][] calldata guards, RequestType[] calldata requestTypes)
+        external;
 
     event GuardsInitialized(address indexed smartVaultId);
 }

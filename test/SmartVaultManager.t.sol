@@ -306,9 +306,6 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
 
         smartVault_.initialize();
 
-        guardManager.setGuards(address(smartVault_), new GuardDefinition[](0));
-        actionManager.setActions(address(smartVault_), new IAction[](0), new RequestType[](0));
-
         uint256[] memory allocations = new uint256[](3);
         allocations[0] = 600; // A
         allocations[1] = 300; // B
