@@ -11,7 +11,6 @@ contract GuardManager is IGuardManager {
 
     mapping(address => bool) public guardsInitialized;
     mapping(address => mapping(RequestType => address)) internal guardPointer;
-    mapping(address => mapping(RequestType => GuardDefinition[])) internal _guards;
 
     constructor() {}
 
@@ -64,9 +63,6 @@ contract GuardManager is IGuardManager {
         hasNoGuards(smartVaultId)
     {
         for (uint256 i = 0; i < requestTypes.length; i++) {
-            for (uint256 j = 0; j < guards[i].length; j++) {
-                _guards[smartVaultId][requestTypes[i]].push(guards[i][j]);
-            }
             _writeGuards(smartVaultId, requestTypes[i], guards[i]);
         }
 
