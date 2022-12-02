@@ -5,6 +5,7 @@ import "@openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
 import "../interfaces/ISpoolAccessControl.sol";
 
 contract SpoolAccessRoles {
+    bytes32 public constant ROLE_SPOOL_ADMIN = 0x00;
     bytes32 public constant ROLE_SMART_VAULT = keccak256("SMART_VAULT");
     bytes32 public constant ROLE_SMART_VAULT_ADMIN = keccak256("SMART_VAULT_ADMIN");
     bytes32 public constant ROLE_GUARD_ALLOWLIST_MANAGER = keccak256("GUARD_ALLOWLIST_MANAGER");

@@ -7,7 +7,7 @@ import "../src/managers/ActionManager.sol";
 import "./mocks/MockToken.sol";
 import {MockAction, MockActionSetAmountTo100} from "./mocks/MockAction.sol";
 
-contract ActionManagerTest is Test {
+contract ActionManagerTest is Test, SpoolAccessRoles {
     IActionManager actionManager;
     IAction mockAction;
     MockToken mockToken;
@@ -16,9 +16,11 @@ contract ActionManagerTest is Test {
     address user = address(256);
 
     function setUp() public {
-        actionManager = new ActionManager();
+        ISpoolAccessControl accessControl = new SpoolAccessControl();
+        actionManager = new ActionManager(accessControl);
         mockAction = new MockAction();
         mockToken = new MockToken("MCK", "MCK");
+        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, smartVaultId);
     }
 
     function test_whitelistAction_addressIsNotWhitelisted() public {
@@ -57,6 +59,8 @@ contract ActionManagerTest is Test {
 
         ActionContext memory actionContext =
             ActionContext(address(user), address(user), address(user), RequestType.Deposit, tokens, amounts);
+
+        vm.prank(smartVaultId);
         actionManager.runActions(smartVaultId, actionContext);
     }
 }

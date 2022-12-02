@@ -65,7 +65,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
             priceFeedManager,
             assetGroupRegistry,
             masterWallet,
-            new ActionManager(),
+            new ActionManager(accessControl),
             new GuardManager(),
             new Swapper()
         );

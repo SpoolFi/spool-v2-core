@@ -22,17 +22,9 @@ struct ActionContext {
     uint256[] amounts;
 }
 
-struct ActionBag {
-    address[] tokens;
-    uint256[] amounts;
-    bytes payload;
-}
-
 interface IAction {
     function actionType() external view;
-    function executeAction(ActionContext calldata actionCtx, ActionBag calldata actionBag)
-        external
-        returns (ActionBag memory);
+    function executeAction(ActionContext calldata actionCtx) external;
 }
 
 interface IActionManager {

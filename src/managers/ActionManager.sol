@@ -4,8 +4,9 @@ pragma solidity ^0.8.17;
 import {console} from "forge-std/console.sol";
 import "@solmate/utils/SSTORE2.sol";
 import "../interfaces/IAction.sol";
+import "../access/SpoolAccessControl.sol";
 
-contract ActionManager is IActionManager {
+contract ActionManager is IActionManager, SpoolAccessControllable {
     /* ========== STATE VARIABLES ========== */
 
     // @notice True if actions for given smart vault were already initialized
@@ -17,7 +18,7 @@ contract ActionManager is IActionManager {
     // @notice Action registry
     mapping(address => mapping(uint256 => address[])) public actions;
 
-    constructor() {}
+    constructor(ISpoolAccessControl accessControl) SpoolAccessControllable(accessControl) {}
 
     /* ========== EXTERNAL FUNCTIONS ========== */
 
@@ -29,6 +30,7 @@ contract ActionManager is IActionManager {
      */
     function setActions(address smartVault, IAction[] calldata actions_, RequestType[] calldata requestTypes)
         external
+        onlyRole(ROLE_SPOOL_ADMIN, msg.sender)
         notInitialized(smartVault)
     {
         for (uint256 i; i < actions_.length; i++) {
@@ -45,16 +47,18 @@ contract ActionManager is IActionManager {
      * @param smartVault TODO
      * @param actionCtx TODO
      */
-    function runActions(address smartVault, ActionContext calldata actionCtx) external {
+    function runActions(address smartVault, ActionContext calldata actionCtx)
+        external
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+    {
         if (!actionsInitialized[smartVault]) {
             return;
         }
 
         address[] memory actions_ = actions[smartVault][uint8(actionCtx.requestType)];
-        ActionBag memory bag = ActionBag(actionCtx.tokens, actionCtx.amounts, "");
 
         for (uint256 i; i < actions_.length; i++) {
-            bag = _executeAction(smartVault, actions_[i], actionCtx, bag);
+            _executeAction(smartVault, actions_[i], actionCtx);
         }
     }
 
@@ -63,9 +67,7 @@ contract ActionManager is IActionManager {
      * @param action TODO
      * @param whitelist TODO
      */
-    function whitelistAction(address action, bool whitelist) external 
-    // TODO MISSING MODIFIER FOR ACCESS CONTROL
-    {
+    function whitelistAction(address action, bool whitelist) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
         if (actionWhitelisted[action] == whitelist) revert ActionStatusAlreadySet();
         actionWhitelisted[action] = whitelist;
 
@@ -74,11 +76,8 @@ contract ActionManager is IActionManager {
 
     /* ========== PRIVATE FUNCTIONS ========== */
 
-    function _executeAction(address smartVault, address action_, ActionContext memory actionCtx, ActionBag memory bag)
-        private
-        returns (ActionBag memory)
-    {
-        return IAction(action_).executeAction(actionCtx, bag);
+    function _executeAction(address smartVault, address action_, ActionContext memory actionCtx) private {
+        IAction(action_).executeAction(actionCtx);
     }
 
     function _isInitialized(address smartVault, bool initialized) private view {

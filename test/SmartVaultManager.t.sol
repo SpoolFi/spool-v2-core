@@ -39,7 +39,7 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         priceFeedManager = new MockPriceFeedManager();
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
         IGuardManager guardManager = new GuardManager();
-        IActionManager actionManager = new ActionManager();
+        IActionManager actionManager = new ActionManager(accessControl);
 
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
 
@@ -298,7 +298,7 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
 
     function _createVault(address[] memory strategies, uint256 assetGroupId) private returns (ISmartVault) {
         IGuardManager guardManager = new GuardManager();
-        IActionManager actionManager = new ActionManager();
+        IActionManager actionManager = new ActionManager(accessControl);
         SmartVault smartVault_ = new SmartVault(
             "TestVault",
             accessControl

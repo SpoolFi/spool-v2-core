@@ -46,7 +46,7 @@ contract DepositSwapIntegrationTest is Test, SpoolAccessRoles {
         tokenC = new MockToken("Token C", "TC");
 
         ISpoolAccessControl accessControl = new SpoolAccessControl();
-        ActionManager actionManager = new ActionManager();
+        ActionManager actionManager = new ActionManager(accessControl);
         assetGroupRegistry = new AssetGroupRegistry();
         GuardManager guardManager = new GuardManager();
         masterWallet = new MasterWallet(accessControl);
