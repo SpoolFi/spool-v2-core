@@ -1,6 +1,5 @@
 ds-test/=lib/forge-std/lib/ds-test/src/
 forge-std/=lib/forge-std/src/
-@0xsequence/sstore2/=lib/sstore2/contracts
-@0xsequence/create3/=lib/create3/contracts
 @openzeppelin=lib/openzeppelin-contracts/contracts
 @openzeppelin-upgradeable=lib/openzeppelin-contracts-upgradeable/contracts
+@solmate=lib/solmate/src

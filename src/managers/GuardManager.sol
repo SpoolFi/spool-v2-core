@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import {console} from "forge-std/console.sol";
 import "@openzeppelin/utils/Strings.sol";
-import "@0xsequence/sstore2/SSTORE2.sol";
+import "@solmate/utils/SSTORE2.sol";
 import "../interfaces/IGuardManager.sol";
 
 contract GuardManager is IGuardManager {
