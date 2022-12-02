@@ -63,7 +63,7 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
             assetGroupRegistry,
             masterWallet,
             new ActionManager(accessControl),
-            new GuardManager(),
+            new GuardManager(accessControl),
             new Swapper()
         );
 

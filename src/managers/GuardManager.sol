@@ -5,14 +5,15 @@ import {console} from "forge-std/console.sol";
 import "@openzeppelin/utils/Strings.sol";
 import "@solmate/utils/SSTORE2.sol";
 import "../interfaces/IGuardManager.sol";
+import "../access/SpoolAccessControl.sol";
 
-contract GuardManager is IGuardManager {
+contract GuardManager is IGuardManager, SpoolAccessControllable {
     /* ========== STATE VARIABLES ========== */
 
     mapping(address => bool) public guardsInitialized;
     mapping(address => mapping(RequestType => address)) internal guardPointer;
 
-    constructor() {}
+    constructor(ISpoolAccessControl accessControl) SpoolAccessControllable(accessControl) {}
 
     /* ========== EXTERNAL FUNCTIONS ========== */
 
@@ -61,6 +62,7 @@ contract GuardManager is IGuardManager {
     function setGuards(address smartVaultId, GuardDefinition[][] calldata guards, RequestType[] calldata requestTypes)
         public
         hasNoGuards(smartVaultId)
+        onlyRole(ROLE_SPOOL_ADMIN, msg.sender)
     {
         for (uint256 i = 0; i < requestTypes.length; i++) {
             _writeGuards(smartVaultId, requestTypes[i], guards[i]);

@@ -14,7 +14,8 @@ contract GuardManagerTest is Test, GasHelpers {
     address user = address(256);
 
     function setUp() public {
-        guardManager = new GuardManager();
+        ISpoolAccessControl accessControl = new SpoolAccessControl();
+        guardManager = new GuardManager(accessControl);
         mockGuard = new MockGuard();
 
         (GuardDefinition[][] memory guards, RequestType[] memory requestTypes) = _createGuards();

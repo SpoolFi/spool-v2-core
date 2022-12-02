@@ -47,7 +47,7 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         accessControl = new SpoolAccessControl();
         ActionManager actionManager = new ActionManager(accessControl);
         AssetGroupRegistry assetGroupRegistry = new AssetGroupRegistry();
-        guardManager = new GuardManager();
+        guardManager = new GuardManager(accessControl);
         MasterWallet masterWallet = new MasterWallet(accessControl);
         IUsdPriceFeedManager priceFeedManager = new MockPriceFeedManager();
         StrategyRegistry strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);

@@ -48,7 +48,7 @@ contract DepositSwapIntegrationTest is Test, SpoolAccessRoles {
         ISpoolAccessControl accessControl = new SpoolAccessControl();
         ActionManager actionManager = new ActionManager(accessControl);
         assetGroupRegistry = new AssetGroupRegistry();
-        GuardManager guardManager = new GuardManager();
+        GuardManager guardManager = new GuardManager(accessControl);
         masterWallet = new MasterWallet(accessControl);
         priceFeedManager = new MockPriceFeedManager();
         StrategyRegistry strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
