@@ -218,20 +218,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== DEPOSIT/WITHDRAW ========== */
 
-    /**
-     * @dev Burns exactly shares from owner and sends assets of underlying tokens to receiver.
-     * @param shares TODO
-     * @param receiver TODO
-     * @param owner TODO
-     * - MUST emit the Withdraw event.
-     * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the
-     *   redeem execution, and are accounted for during redeem.
-     * - MUST revert if all of shares cannot be redeemed (due to withdrawal limit being reached, slippage, the owner
-     *   not having enough shares, etc).
-     *
-     * NOTE: some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
-     * Those methods should be performed separately.
-     */
     function redeem(address smartVault, uint256 shares, address receiver, address owner)
         external
         onlyRegisteredSmartVault(smartVault)
@@ -240,14 +226,48 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return _redeemShares(smartVault, shares, receiver, owner);
     }
 
-    function redeemFast(
-        address smartVault,
-        uint256 shares,
-        address receiver,
-        uint256[][] calldata, /*slippages*/
-        address owner
-    ) external onlyRegisteredSmartVault(smartVault) returns (uint256[] memory) {
-        revert("0");
+    function redeemFast(address smartVault, uint256 shares)
+        external
+        onlyRegisteredSmartVault(smartVault)
+        returns (uint256[] memory)
+    {
+        if (ISmartVault(smartVault).balanceOf(msg.sender) < shares) {
+            revert InsufficientBalance(ISmartVault(smartVault).balanceOf(msg.sender), shares);
+        }
+
+        {
+            // run guards
+            uint256[] memory assets = new uint256[](1);
+            assets[0] = shares;
+            address[] memory tokens = new address[](1);
+            tokens[0] = smartVault;
+            _runGuards(smartVault, msg.sender, msg.sender, msg.sender, assets, tokens, RequestType.Withdrawal);
+        }
+
+        // figure out how much to redeem from each strategy
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
+        uint256[] memory strategySharesToRedeem = new uint256[](strategies_.length);
+        {
+            uint256 totalVaultShares = ISmartVault(smartVault).totalSupply();
+            for (uint256 i = 0; i < strategies_.length; i++) {
+                uint256 strategyShares = IStrategy(strategies_[i]).balanceOf(smartVault);
+
+                strategySharesToRedeem[i] = strategyShares * shares / totalVaultShares;
+            }
+        }
+
+        // redeem from strategies
+        ISmartVault(smartVault).releaseStrategyShares(strategies_, strategySharesToRedeem);
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
+        uint256[] memory assetsWithdrawn = _strategyRegistry.redeemFast(strategies_, strategySharesToRedeem, assetGroup);
+
+        // burn vault shares
+        ISmartVault(smartVault).burn(msg.sender, shares);
+
+        // transfer assets to the redeemer
+        for (uint256 i = 0; i < assetGroup.length; i++) {
+            _masterWallet.transfer(IERC20(assetGroup[i]), msg.sender, assetsWithdrawn[i]);
+        }
     }
 
     function depositFor(address smartVault, uint256[] calldata assets, address receiver, address depositor)

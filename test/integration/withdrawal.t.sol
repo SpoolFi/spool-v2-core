@@ -195,4 +195,38 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         assertEq(mySmartVault.balanceOf(alice, aliceWithdrawalNftId), 0, "27");
         assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 0, "28");
     }
+
+    function test_shouldBeAbleToWithdrawFast() public {
+        // set initial state
+        deal(address(mySmartVault), alice, 4_000_000, true);
+        deal(address(mySmartVault), bob, 1_000_000, true);
+        deal(address(strategyA), address(mySmartVault), 40_000_000, true);
+        deal(address(strategyB), address(mySmartVault), 10_000_000, true);
+        deal(address(tokenA), address(strategyA.protocol()), 40 ether, true);
+        deal(address(tokenB), address(strategyA.protocol()), 2.72 ether, true);
+        deal(address(tokenA), address(strategyB.protocol()), 10 ether, true);
+        deal(address(tokenB), address(strategyB.protocol()), 0.67 ether, true);
+
+        // withdraw fast
+        vm.startPrank(alice);
+        mySmartVault.approve(address(smartVaultManager), 4_000_000);
+        uint256[] memory withdrawnAssets = smartVaultManager.redeemFast(address(mySmartVault), 3_000_000);
+
+        // check state
+        // - vault tokens were burned
+        assertEq(mySmartVault.balanceOf(alice), 1_000_000);
+        assertEq(mySmartVault.totalSupply(), 2_000_000);
+        // - strategy tokens were burned
+        assertEq(strategyA.balanceOf(address(mySmartVault)), 16_000_000);
+        assertEq(strategyB.balanceOf(address(mySmartVault)), 4_000_000);
+        assertEq(strategyA.totalSupply(), 16_000_000);
+        assertEq(strategyB.totalSupply(), 4_000_000);
+        // - assets were transferred to Alice
+        assertEq(tokenA.balanceOf(alice), 30 ether);
+        assertEq(tokenB.balanceOf(alice), 2.034 ether);
+        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 16 ether);
+        assertEq(tokenB.balanceOf(address(strategyA.protocol())), 1.088 ether);
+        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 4 ether);
+        assertEq(tokenB.balanceOf(address(strategyB.protocol())), 0.268 ether);
+    }
 }

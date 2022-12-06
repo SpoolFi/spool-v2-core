@@ -66,6 +66,17 @@ interface IStrategyRegistry {
         returns (uint256[] memory);
 
     /**
+     * @notice Instantly redeems strategy shares for assets.
+     * @param strategies_ Addresses of strategies.
+     * @param strategyShares Amount of shares to redeem.
+     * @param assetGroup Asset group of the smart vault.
+     * @return withdrawnAssets Amount of assets withdrawn.
+     */
+    function redeemFast(address[] memory strategies_, uint256[] memory strategyShares, address[] memory assetGroup)
+        external
+        returns (uint256[] memory withdrawnAssets);
+
+    /**
      * @notice Claims withdrawals from the strategies.
      * @dev Requirements:
      * - must be called by SmartVaultManager

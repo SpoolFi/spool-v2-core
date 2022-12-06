@@ -101,16 +101,21 @@ interface IStrategy is IERC20Upgradeable {
     function claimShares(address claimer, uint256 amount) external;
 
     /**
-     * @notice Fast withdraw
-     * @param shares TODO
-     * @param receiver TODO
-     * @param slippages TODO
-     * @param swapData TODO
-     * @return returnedAssets Withdrawn amount withdrawn
+     * @notice Instantly redeems strategy shares for assets.
+     * @param shares Amount of shares to redeem.
+     * @param masterWallet Address of master wallet.
+     * @param assetGroup Asset group.
+     * @param exchangeRates Asset to USD exchange rates.
+     * @param priceFeedManager Price feed manager contract.
+     * @return assetsWithdrawn Amount of assets withdrawn.
      */
-    function redeemFast(uint256 shares, address receiver, uint256[][] calldata slippages, SwapData[] calldata swapData)
-        external
-        returns (uint256[] memory returnedAssets);
+    function redeemFast(
+        uint256 shares,
+        address masterWallet,
+        address[] memory assetGroup,
+        uint256[] memory exchangeRates,
+        IUsdPriceFeedManager priceFeedManager
+    ) external returns (uint256[] memory assetsWithdrawn);
 
     /**
      * @notice TODO

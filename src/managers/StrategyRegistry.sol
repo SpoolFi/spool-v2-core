@@ -204,6 +204,29 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         return indexes;
     }
 
+    function redeemFast(address[] memory strategies_, uint256[] memory strategyShares, address[] memory assetGroup)
+        external
+        returns (uint256[] memory)
+    {
+        uint256[] memory withdrawnAssets = new uint256[](assetGroup.length);
+
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            uint256[] memory strategyWithdrawnAssets = IStrategy(strategies_[i]).redeemFast(
+                strategyShares[i],
+                address(_masterWallet),
+                assetGroup,
+                SpoolUtils.getExchangeRates(assetGroup, _priceFeedManager),
+                _priceFeedManager
+            );
+
+            for (uint256 j = 0; j < strategyWithdrawnAssets.length; j++) {
+                withdrawnAssets[j] += strategyWithdrawnAssets[j];
+            }
+        }
+
+        return withdrawnAssets;
+    }
+
     function claimWithdrawals(
         address[] memory strategies_,
         uint256[] memory dhwIndexes,

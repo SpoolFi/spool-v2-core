@@ -130,21 +130,12 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
     ) external returns (uint256 receipt);
 
     /**
-     * @notice Used to withdraw underlying asset.
-     * @param shares TODO
-     * @param receiver TODO
-     * @param owner TODO
-     * @param slippages TODO
-     * @param owner TODO
-     * @return returnedAssets  TODO
+     * @notice Instantly redeems smart vault shares for assets.
+     * @param smartVault Address of the smart vault.
+     * @param shares Amount of shares to redeem.
+     * @return withdrawnAssets Amount of assets withdrawn.
      */
-    function redeemFast(
-        address smartVault,
-        uint256 shares,
-        address receiver,
-        uint256[][] calldata slippages,
-        address owner
-    ) external returns (uint256[] memory returnedAssets);
+    function redeemFast(address smartVault, uint256 shares) external returns (uint256[] memory withdrawnAssets);
 
     /**
      * @notice Claims withdrawal of assets by burning withdrawal NFT.

@@ -121,11 +121,27 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         return DhwInfo({usdRouted: usdWorthDeposited, sharesMinted: sstsToMint, assetsWithdrawn: withdrawnAssets});
     }
 
-    function redeemFast(uint256 shares, address receiver, uint256[][] calldata slippages, SwapData[] calldata swapData)
-        external
-        returns (uint256[] memory returnedAssets)
-    {
-        revert("0");
+    function redeemFast(
+        uint256 shares,
+        address masterWallet,
+        address[] memory assetGroup,
+        uint256[] memory exchangeRates,
+        IUsdPriceFeedManager priceFeedManager
+    ) external returns (uint256[] memory) {
+        // redeem shares from protocol
+        redeemFromProtocol(assetGroup, shares);
+        _burn(address(this), shares);
+
+        totalUsdValue = getUsdWorth(exchangeRates, priceFeedManager);
+
+        // transfer assets to master wallet
+        uint256[] memory assetsWithdrawn = new uint256[](assetGroup.length);
+        for (uint256 i = 0; i < assetGroup.length; i++) {
+            assetsWithdrawn[i] = IERC20(assetGroup[i]).balanceOf(address(this));
+            IERC20(assetGroup[i]).transfer(masterWallet, assetsWithdrawn[i]);
+        }
+
+        return assetsWithdrawn;
     }
 
     function claimShares(address claimer, uint256 amount) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
