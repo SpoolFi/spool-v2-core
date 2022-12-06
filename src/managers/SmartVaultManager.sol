@@ -26,6 +26,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== STATE VARIABLES ========== */
 
+    uint256 internal constant INITIAL_SHARE_MULTIPLIER = 1000000000000000000000000000000;  // 10 ** 30
+
     /**
      * @notice Contract executing token swaps for vault flush.
      */
@@ -205,15 +207,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
 
-        uint256[][] memory strategyRatios = new uint256[][](strategies_.length);
-        for (uint256 i = 0; i < strategies_.length; i++) {
-            strategyRatios[i] = _strategyRegistry.assetRatioAtLastDhw(strategies_[i]);
-        }
-
         return SmartVaultDeposits.calculateDepositRatio(
             SpoolUtils.getExchangeRates(tokens, _priceFeedManager),
             _smartVaultAllocations[smartVault].toArray(strategies_.length),
-            strategyRatios
+            SpoolUtils.getStrategyRatiosAtLastDhw(strategies_, _strategyRegistry)
         );
     }
 
@@ -243,13 +240,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return _redeemShares(smartVault, shares, receiver, owner);
     }
 
-    /**
-     * @notice Used to withdraw underlying asset.
-     * @param shares TODO
-     * @param receiver TODO
-     * @param owner TODO
-     * @return returnedAssets TODO
-     */
     function redeemFast(
         address smartVault,
         uint256 shares,
@@ -260,13 +250,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         revert("0");
     }
 
-    /**
-     * @notice TODO
-     * @param smartVault TODO
-     * @param depositor TODO
-     * @param assets TODO
-     * @param receiver TODO
-     */
     function depositFor(address smartVault, uint256[] calldata assets, address receiver, address depositor)
         external
         onlyRegisteredSmartVault(smartVault)
@@ -275,15 +258,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return _depositAssets(smartVault, depositor, receiver, assets);
     }
 
-    /**
-     * @notice TODO
-     * TODO: pass slippages
-     * @param smartVault TODO
-     * @param assets TODO
-     * @param receiver TODO
-     * @param slippages TODO
-     * @return receipt TODO
-     */
     function depositFast(
         address smartVault,
         uint256[] calldata assets,
@@ -293,18 +267,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         revert("0");
     }
 
-    /**
-     * @dev Mints shares Vault shares to receiver by depositing exactly amount of underlying tokens.
-     * @param assets TODO
-     *
-     * - MUST emit the Deposit event.
-     * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the
-     *   deposit execution, and are accounted for during deposit.
-     * - MUST revert if all of assets cannot be deposited (due to deposit limit being reached, slippage, the user not
-     *   approving enough underlying tokens to the Vault contract, etc).
-     *
-     * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
-     */
     function deposit(address smartVault, uint256[] calldata assets, address receiver)
         external
         onlyRegisteredSmartVault(smartVault)
@@ -449,17 +411,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
             _flushExchangeRates[smartVault][flushIndex].setValues(exchangeRates);
 
-            uint256[][] memory strategyRatios = new uint256[][](strategies_.length);
-            for (uint256 i = 0; i < strategies_.length; i++) {
-                strategyRatios[i] = _strategyRegistry.assetRatioAtLastDhw(strategies_[i]);
-            }
-
             uint256[][] memory distribution = SmartVaultDeposits.distributeDeposit(
                 DepositQueryBag1({
                     deposit: deposits,
                     exchangeRates: exchangeRates,
                     allocation: allocation,
-                    strategyRatios: strategyRatios
+                    strategyRatios: SpoolUtils.getStrategyRatiosAtLastDhw(strategies_, _strategyRegistry)
                 })
             );
             flushDhwIndexes = _strategyRegistry.addDeposits(strategies_, distribution);
@@ -547,24 +504,14 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _runGuards(smartVault, msg.sender, receiver, owner, assets, tokens, RequestType.Deposit);
         _runActions(smartVault, msg.sender, receiver, owner, assets, tokens, RequestType.Deposit);
 
-        // gather all data
-        // - exchange rates
-        uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(tokens, _priceFeedManager);
-        // - strategy ratios for their last DHW
-        address[] memory strategies_ = _smartVaultStrategies[smartVault];
-        uint256[][] memory strategyRatios = new uint256[][](strategies_.length);
-        for (uint256 i = 0; i < strategies_.length; i++) {
-            strategyRatios[i] = _strategyRegistry.assetRatioAtLastDhw(strategies_[i]);
-        }
-
         // check if assets are in correct ratio
-        if (
-            !SmartVaultDeposits.checkDepositRatio(
-                assets, exchangeRates, _smartVaultAllocations[smartVault].toArray(strategies_.length), strategyRatios
-            )
-        ) {
-            revert IncorrectDepositRatio();
-        }
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
+        SmartVaultDeposits.checkDepositRatio(
+            assets,
+            SpoolUtils.getExchangeRates(tokens, _priceFeedManager),
+            _smartVaultAllocations[smartVault].toArray(strategies_.length),
+            SpoolUtils.getStrategyRatiosAtLastDhw(strategies_, _strategyRegistry)
+        );
 
         // transfer tokens from user to master wallet
         uint256 flushIndex = _flushIndexes[smartVault];
@@ -676,7 +623,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256 totalDepositedUsd = getVaultTotalUsdValue(smartVault) - totalVaultValueBefore;
         uint256 svtsToMint;
         if (totalVaultValueBefore == 0) {
-            svtsToMint = totalDepositedUsd * 10 ** 30;
+            svtsToMint = totalDepositedUsd * INITIAL_SHARE_MULTIPLIER;
         } else {
             svtsToMint = Math.mulDiv(totalDepositedUsd, ISmartVault(smartVault).totalSupply(), totalVaultValueBefore);
         }

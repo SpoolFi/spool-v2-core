@@ -143,8 +143,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
 
         for (uint256 i = 0; i < strategies_.length; i++) {
             IStrategy strategy = IStrategy(strategies_[i]);
-            address strategyAddr = address(strategy);
-            uint256 dhwIndex = _currentIndexes[strategyAddr];
+            uint256 dhwIndex = _currentIndexes[address(strategy)];
 
             // transfer deposited assets to strategy
             for (uint256 j = 0; j < assetGroup.length; j++) {
@@ -162,7 +161,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
                 _priceFeedManager
             );
 
-            _dhwAssetRatios[strategyAddr].setValues(strategy.assetRatio());
+            _dhwAssetRatios[address(strategy)].setValues(strategy.assetRatio());
             _currentIndexes[address(strategy)]++;
             _exchangeRates[address(strategy)][dhwIndex].setValues(exchangeRates);
             _sharesMinted[address(strategy)][dhwIndex] = dhwInfo.sharesMinted;

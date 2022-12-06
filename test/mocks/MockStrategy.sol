@@ -23,6 +23,8 @@ contract MockStrategy is Strategy {
         protocol = new MockProtocol();
     }
 
+    function test_mock() external pure {}
+
     function initialize(uint256 assetGroupId_, uint256[] memory ratios_) public virtual {
         super.initialize(assetGroupId_);
 
@@ -98,6 +100,8 @@ contract MockStrategy is Strategy {
 }
 
 contract MockProtocol {
+    function test_mock() external pure {}
+
     function withdraw(address token, uint256 amount) external {
         IERC20(token).transfer(msg.sender, amount);
     }

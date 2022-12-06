@@ -11,11 +11,6 @@ import "./ISwapper.sol";
 error DepositNotSyncedYet();
 
 /**
- * @notice Used when deposit is not made in correct asset ratio.
- */
-error IncorrectDepositRatio();
-
-/**
  * @notice Used when user has insufficient balance for redeemal of shares.
  */
 error InsufficientBalance(uint256 available, uint256 required);

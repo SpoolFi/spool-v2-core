@@ -12,6 +12,8 @@ import "./access/SpoolAccessControl.sol";
 abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrategy {
     /* ========== STATE VARIABLES ========== */
 
+    uint256 internal constant INITIAL_SHARE_MULTIPLIER = 1000000000000000000000000000000;  // 10 ** 30
+
     IStrategyRegistry internal immutable _strategyRegistry;
 
     IAssetGroupRegistry internal immutable _assetGroupRegistry;
@@ -94,10 +96,10 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         // - mint SSTs
         uint256 usdWorthDeposited = usdWorth1 - usdWorth0;
         uint256 sstsToMint;
-        if (usdWorth0 == 0) {
-            sstsToMint = usdWorthDeposited * 10 ** 30;
-        } else {
+        if (usdWorth0 > 0) {
             sstsToMint = usdWorthDeposited * totalSupply() / usdWorth0;
+        } else {
+            sstsToMint = usdWorthDeposited * INITIAL_SHARE_MULTIPLIER;
         }
         _mint(address(this), sstsToMint);
 

@@ -7,6 +7,8 @@ contract GasHelpers {
     string private checkpointLabel;
     uint256 private checkpointGasLeft = 1; // Start the slot warm.
 
+    function test_util() external pure {}
+
     function startMeasuringGas(string memory label) internal virtual {
         checkpointLabel = label;
 

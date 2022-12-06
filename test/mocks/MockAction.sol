@@ -7,6 +7,8 @@ import {IAction, ActionContext} from "../../src/interfaces/IAction.sol";
 contract MockAction is IAction {
     mapping(address => bool) whitelist;
 
+    function test_mock() external pure {}
+
     function actionType() external view {}
 
     function executeAction(ActionContext calldata actionCtx) external {
@@ -16,6 +18,8 @@ contract MockAction is IAction {
 
 contract MockActionSetAmountTo100 is IAction {
     mapping(address => bool) whitelist;
+
+    function test_mock() external pure {}
 
     function actionType() external view {}
 

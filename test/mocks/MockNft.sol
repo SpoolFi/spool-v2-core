@@ -8,6 +8,8 @@ contract MockNft is ERC721 {
 
     constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
 
+    function test_mock() external pure {}
+
     function mint(address receiver) external returns (uint256) {
         latestId++;
 

@@ -5,6 +5,7 @@ import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/ISwapper.sol";
 import "../interfaces/IStrategy.sol";
+import "../interfaces/IStrategyRegistry.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 
 library SpoolUtils {
@@ -15,6 +16,16 @@ library SpoolUtils {
         }
 
         return ratios;
+    }
+
+    function getStrategyRatiosAtLastDhw(address[] memory strategies_, IStrategyRegistry strategyRegistry_) public view returns (uint256[][] memory) {
+        uint256[][] memory strategyRatios = new uint256[][](strategies_.length);
+
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            strategyRatios[i] = strategyRegistry_.assetRatioAtLastDhw(strategies_[i]);
+        }
+
+        return strategyRatios;
     }
 
     function getExchangeRates(address[] memory tokens, IUsdPriceFeedManager _priceFeedManager)

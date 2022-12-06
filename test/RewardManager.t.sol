@@ -33,4 +33,6 @@ contract RewardManagerTests is Test, SpoolAccessRoles {
 
         user = address(101);
     }
+
+    function test_mock() external pure {}
 }

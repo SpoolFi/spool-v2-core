@@ -26,6 +26,8 @@ contract MockAggregatorV3 is AggregatorV3Interface {
         latestRound = 1;
     }
 
+    function test_mock() external pure {}
+
     /* ========== ADMIN FUNCTIONS ========== */
 
     /**

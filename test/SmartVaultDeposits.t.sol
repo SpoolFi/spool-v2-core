@@ -46,45 +46,48 @@ contract SmartVaultDepositsTest is Test {
         assertEq(depositRatio[2], 12285914871975105);
     }
 
-    function test_checkDepositRatio_shouldReturnTrueIfDepositIsCloseEnough() public {
+    function test_checkDepositRatio_shouldPassIfDepositIsCloseEnough() public {
         uint256[] memory deposit;
 
         deposit = Arrays.toArray(2799819944784511, 202623112855200, 12285914871975105);
-        assertTrue(SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios), "1");
+        SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios);
 
         deposit = Arrays.toArray(279981994478451100, 20262311285520000, 1228591487197510500);
-        assertTrue(SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios), "2");
+        SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios);
 
         deposit = Arrays.toArray(2799819944784, 202623112855, 12285914871975);
-        assertTrue(SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios), "3");
+        SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios);
 
         deposit = Arrays.toArray(5599639889569022, 405246225710400, 24571829743950210);
-        assertTrue(SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios), "4");
+        SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios);
     }
 
-    function test_checkDepositRatio_shouldReturnFalseIfDepositIsNotCloseEnough() public {
+    function test_checkDepositRatio_shouldRevertIfDepositIsNotCloseEnough() public {
         uint256[] memory deposit;
 
         deposit = Arrays.toArray(1799819944784511, 202623112855200, 12285914871975105);
-        assertFalse(SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios), "1");
+        vm.expectRevert(IncorrectDepositRatio.selector);
+        SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios);
 
         deposit = Arrays.toArray(3799819944784511, 202623112855200, 12285914871975105);
-        assertFalse(SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios), "1");
+        vm.expectRevert(IncorrectDepositRatio.selector);
+        SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios);
 
         deposit = Arrays.toArray(2799819944784511, 102623112855200, 12285914871975105);
-        assertFalse(SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios), "1");
-        assertFalse(SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios), "1");
+        vm.expectRevert(IncorrectDepositRatio.selector);
+        SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios);
 
         deposit = Arrays.toArray(2799819944784511, 302623112855200, 12285914871975105);
-        assertFalse(SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios), "1");
-        assertFalse(SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios), "1");
+        vm.expectRevert(IncorrectDepositRatio.selector);
+        SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios);
 
         deposit = Arrays.toArray(2799819944784511, 202623112855200, 2285914871975105);
-        assertFalse(SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios), "1");
-        assertFalse(SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios), "1");
+        vm.expectRevert(IncorrectDepositRatio.selector);
+        SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios);
 
         deposit = Arrays.toArray(2799819944784511, 202623112855200, 32285914871975105);
-        assertFalse(SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios), "1");
+        vm.expectRevert(IncorrectDepositRatio.selector);
+        SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios);
     }
 
     function test_distributeDeposit_shouldDistributeIdealDeposit() public {

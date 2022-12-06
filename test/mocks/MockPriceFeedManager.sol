@@ -11,6 +11,8 @@ contract MockPriceFeedManager is IUsdPriceFeedManager {
 
     constructor() {}
 
+    function test_mock() external pure {}
+
     function assetDecimals(address asset) external view returns (uint256) {
         return ERC20(asset).decimals();
     }

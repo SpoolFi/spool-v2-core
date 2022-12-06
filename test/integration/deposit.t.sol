@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.17;
 
-import "forge-std/console.sol";
 import "forge-std/Test.sol";
 import "../../src/managers/ActionManager.sol";
 import "../../src/managers/AssetGroupRegistry.sol";
@@ -151,7 +150,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
         assertEq(tokenA.balanceOf(address(masterWallet)), 100 ether);
         assertEq(tokenB.balanceOf(address(masterWallet)), 7.237 ether);
         assertEq(tokenC.balanceOf(address(masterWallet)), 438.8 ether);
-        // - deposit NFT was minter
+        // - deposit NFT was minted
         assertEq(aliceDepositNftId, 1);
         assertEq(mySmartVault.balanceOf(alice, aliceDepositNftId), 1);
 

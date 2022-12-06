@@ -6,6 +6,8 @@ import {console} from "forge-std/console.sol";
 contract MockGuard {
     mapping(address => bool) whitelist;
 
+    function test_mock() external pure {}
+
     function isWhitelisted(address address_) external view returns (bool) {
         return whitelist[address_];
     }

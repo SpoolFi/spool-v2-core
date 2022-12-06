@@ -2,6 +2,8 @@
 pragma solidity ^0.8.17;
 
 library Arrays {
+    function test_lib() external pure {}
+
     function toArray(uint256 x1) public returns (uint256[] memory) {
         uint256[] memory result = new uint256[](1);
         result[0] = x1;

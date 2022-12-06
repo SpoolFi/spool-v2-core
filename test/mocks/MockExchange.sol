@@ -15,6 +15,8 @@ contract MockExchange {
         priceFeedManager = priceFeedManager_;
     }
 
+    function test_mock() external pure {}
+
     function swap(address token, uint256 amount, address recipient) external returns (uint256) {
         uint256 out = 0;
         IERC20 source;

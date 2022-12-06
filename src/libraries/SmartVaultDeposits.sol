@@ -10,6 +10,11 @@ import "../interfaces/ISwapper.sol";
 import "../libraries/SpoolUtils.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 
+/**
+ * @notice Used when deposit is not made in correct asset ratio.
+ */
+error IncorrectDepositRatio();
+
 struct DepositQueryBag1 {
     uint256[] deposit;
     uint256[] exchangeRates;
@@ -53,9 +58,9 @@ library SmartVaultDeposits {
         uint256[] memory exchangeRates,
         uint256[] memory allocation,
         uint256[][] memory strategyRatios
-    ) public view returns (bool) {
+    ) public view {
         if (deposit.length == 1) {
-            return true;
+            return;
         }
 
         uint256[] memory idealDeposit = calculateDepositRatio(exchangeRates, allocation, strategyRatios);
@@ -69,11 +74,9 @@ library SmartVaultDeposits {
                 valueA < (valueB * (FULL_PERCENT - DEPOSIT_TOLERANCE) / FULL_PERCENT)
                     || valueA > (valueB * (FULL_PERCENT + DEPOSIT_TOLERANCE) / FULL_PERCENT)
             ) {
-                return false;
+                revert IncorrectDepositRatio();
             }
         }
-
-        return true;
     }
 
     function calculateDepositRatio(
