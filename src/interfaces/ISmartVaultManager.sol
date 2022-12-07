@@ -111,9 +111,13 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
      * @param depositor TODO
      * @return depositNFTId TODO
      */
-    function depositFor(address smartVault, uint256[] calldata assets, address receiver, address depositor)
-        external
-        returns (uint256 depositNFTId);
+    function depositFor(
+        address smartVault,
+        uint256[] calldata assets,
+        address receiver,
+        address depositor,
+        address referral
+    ) external returns (uint256 depositNFTId);
 
     /**
      * @notice TODO
@@ -189,7 +193,7 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
-    function deposit(address smartVault, uint256[] calldata assets, address receiver)
+    function deposit(address smartVault, uint256[] calldata assets, address receiver, address referral)
         external
         returns (uint256 receipt);
 

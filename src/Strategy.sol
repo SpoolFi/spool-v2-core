@@ -12,7 +12,7 @@ import "./access/SpoolAccessControl.sol";
 abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrategy {
     /* ========== STATE VARIABLES ========== */
 
-    uint256 internal constant INITIAL_SHARE_MULTIPLIER = 1000000000000000000000000000000;  // 10 ** 30
+    uint256 internal constant INITIAL_SHARE_MULTIPLIER = 1000000000000000000000000000000; // 10 ** 30
 
     IStrategyRegistry internal immutable _strategyRegistry;
 

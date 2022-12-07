@@ -50,7 +50,7 @@ contract DepositSwap is IDepositSwap {
         }
 
         // Deposit into the smart vault.
-        uint256 nftId = _smartVaultManager.depositFor(smartVault, outAmounts, receiver, address(this));
+        uint256 nftId = _smartVaultManager.depositFor(smartVault, outAmounts, receiver, address(this), address(0));
 
         // Return unswapped tokens.
         for (uint256 i = 0; i < inTokens.length; i++) {

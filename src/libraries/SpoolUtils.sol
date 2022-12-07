@@ -18,7 +18,11 @@ library SpoolUtils {
         return ratios;
     }
 
-    function getStrategyRatiosAtLastDhw(address[] memory strategies_, IStrategyRegistry strategyRegistry_) public view returns (uint256[][] memory) {
+    function getStrategyRatiosAtLastDhw(address[] memory strategies_, IStrategyRegistry strategyRegistry_)
+        public
+        view
+        returns (uint256[][] memory)
+    {
         uint256[][] memory strategyRatios = new uint256[][](strategies_.length);
 
         for (uint256 i = 0; i < strategies_.length; i++) {

@@ -211,18 +211,18 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         depositAmounts[0] = 1 ether;
         // deposit as Bob using Charlies assets with Dave set as receiver, should pass
         vm.prank(bob);
-        smartVaultManager.depositFor(address(smartVault), depositAmounts, dave, charlie);
+        smartVaultManager.depositFor(address(smartVault), depositAmounts, dave, charlie, address(0));
         // deposit as Eve using Charlies assets with Dave set as receiver, should fail
         vm.prank(eve);
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
-        smartVaultManager.depositFor(address(smartVault), depositAmounts, dave, charlie);
+        smartVaultManager.depositFor(address(smartVault), depositAmounts, dave, charlie, address(0));
         // deposit as Bob using Eve assets with Dave set as receiver, should fail
         vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 1));
-        smartVaultManager.depositFor(address(smartVault), depositAmounts, dave, eve);
+        smartVaultManager.depositFor(address(smartVault), depositAmounts, dave, eve, address(0));
         // deposit as Bob using Charlies assets with Eve set as receiver, should fail
         vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 2));
-        smartVaultManager.depositFor(address(smartVault), depositAmounts, eve, charlie);
+        smartVaultManager.depositFor(address(smartVault), depositAmounts, eve, charlie, address(0));
     }
 }

@@ -138,7 +138,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
         tokenB.approve(address(smartVaultManager), depositAmounts[1]);
         tokenC.approve(address(smartVaultManager), depositAmounts[2]);
 
-        uint256 aliceDepositNftId = smartVaultManager.deposit(address(mySmartVault), depositAmounts, alice);
+        uint256 aliceDepositNftId = smartVaultManager.deposit(address(mySmartVault), depositAmounts, alice, address(0));
 
         vm.stopPrank();
 

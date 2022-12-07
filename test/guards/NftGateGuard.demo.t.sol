@@ -151,13 +151,13 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
 
         vm.prank(alice);
         // deposit for Bob who has one NFT, should pass
-        smartVaultManager.deposit(address(smartVault), depositAmounts, bob);
+        smartVaultManager.deposit(address(smartVault), depositAmounts, bob, address(0));
         vm.prank(alice);
         // deposit for Charlie who has two NFTs, should pass
-        smartVaultManager.deposit(address(smartVault), depositAmounts, charlie);
+        smartVaultManager.deposit(address(smartVault), depositAmounts, charlie, address(0));
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
         // deposit for Eve who doesn't have any NFT, should fail
-        smartVaultManager.deposit(address(smartVault), depositAmounts, eve);
+        smartVaultManager.deposit(address(smartVault), depositAmounts, eve, address(0));
     }
 }

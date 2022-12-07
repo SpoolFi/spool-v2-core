@@ -26,7 +26,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== STATE VARIABLES ========== */
 
-    uint256 internal constant INITIAL_SHARE_MULTIPLIER = 1000000000000000000000000000000;  // 10 ** 30
+    uint256 internal constant INITIAL_SHARE_MULTIPLIER = 1000000000000000000000000000000; // 10 ** 30
 
     /**
      * @notice Contract executing token swaps for vault flush.
@@ -270,11 +270,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
     }
 
-    function depositFor(address smartVault, uint256[] calldata assets, address receiver, address depositor)
-        external
-        onlyRegisteredSmartVault(smartVault)
-        returns (uint256)
-    {
+    function depositFor(
+        address smartVault,
+        uint256[] calldata assets,
+        address receiver,
+        address depositor,
+        address referral
+    ) external onlyRegisteredSmartVault(smartVault) returns (uint256) {
         return _depositAssets(smartVault, depositor, receiver, assets);
     }
 
@@ -287,7 +289,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         revert("0");
     }
 
-    function deposit(address smartVault, uint256[] calldata assets, address receiver)
+    function deposit(address smartVault, uint256[] calldata assets, address receiver, address referral)
         external
         onlyRegisteredSmartVault(smartVault)
         returns (uint256)

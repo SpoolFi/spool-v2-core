@@ -222,7 +222,7 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         token2.approve(address(smartVaultManager), 100 ether);
 
         vm.prank(user);
-        smartVaultManager.deposit(address(smartVault_), assets, user);
+        smartVaultManager.deposit(address(smartVault_), assets, user, address(0));
 
         uint256 flushIdx = smartVaultManager.getLatestFlushIndex(address(smartVault_));
         assertEq(flushIdx, 0);
