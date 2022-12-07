@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/token/ERC20/IERC20.sol";
+import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/CommonErrors.sol";
 import "./interfaces/IAssetGroupRegistry.sol";
 import "./interfaces/IDepositSwap.sol";
@@ -9,6 +10,8 @@ import "./interfaces/ISmartVaultManager.sol";
 import "./interfaces/ISwapper.sol";
 
 contract DepositSwap is IDepositSwap {
+    using SafeERC20 for IERC20;
+
     /* ========== STATE VARIABLES ========== */
 
     IAssetGroupRegistry private immutable _assetGroupRegistry;
@@ -35,7 +38,7 @@ contract DepositSwap is IDepositSwap {
         if (inTokens.length != inAmounts.length) revert InvalidArrayLength();
         // Transfer the tokens from the caller to the swapper.
         for (uint256 i = 0; i < inTokens.length; i++) {
-            IERC20(inTokens[i]).transferFrom(msg.sender, address(_swapper), inAmounts[i]);
+            IERC20(inTokens[i]).safeTransferFrom(msg.sender, address(_swapper), inAmounts[i]);
         }
 
         // Make the swap.
@@ -46,7 +49,7 @@ contract DepositSwap is IDepositSwap {
         // Figure out how much we got out of the swap.
         for (uint256 i = 0; i < outTokens.length; i++) {
             outAmounts[i] = IERC20(outTokens[i]).balanceOf(address(this));
-            IERC20(outTokens[i]).approve(address(_smartVaultManager), outAmounts[i]);
+            IERC20(outTokens[i]).safeApprove(address(_smartVaultManager), outAmounts[i]);
         }
 
         // Deposit into the smart vault.
@@ -54,7 +57,7 @@ contract DepositSwap is IDepositSwap {
 
         // Return unswapped tokens.
         for (uint256 i = 0; i < inTokens.length; i++) {
-            IERC20(inTokens[i]).transfer(msg.sender, IERC20(inTokens[i]).balanceOf(address(this)));
+            IERC20(inTokens[i]).safeTransfer(msg.sender, IERC20(inTokens[i]).balanceOf(address(this)));
         }
 
         return nftId;

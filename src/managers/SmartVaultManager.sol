@@ -268,6 +268,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         for (uint256 i = 0; i < assetGroup.length; i++) {
             _masterWallet.transfer(IERC20(assetGroup[i]), msg.sender, assetsWithdrawn[i]);
         }
+
+        return assetsWithdrawn;
     }
 
     function depositFor(

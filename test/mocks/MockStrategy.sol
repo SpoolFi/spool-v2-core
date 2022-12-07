@@ -2,9 +2,12 @@
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/token/ERC20/IERC20.sol";
+import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../../src/Strategy.sol";
 
 contract MockStrategy is Strategy {
+    using SafeERC20 for IERC20;
+
     uint256[] public ratios;
     uint256[] public __withdrawnAssets;
     bool public __withdrawnAssetsSet;
@@ -42,7 +45,7 @@ contract MockStrategy is Strategy {
 
         // withdraw from protocol
         for (uint256 i = 0; i < assetGroup.length; i++) {
-            IERC20(assetGroup[i]).transfer(receiver, __withdrawnAssets[i]);
+            IERC20(assetGroup[i]).safeTransfer(receiver, __withdrawnAssets[i]);
         }
 
         // burn SSTs for withdrawal
@@ -58,7 +61,7 @@ contract MockStrategy is Strategy {
 
     function swapAssets(address[] memory tokens, SwapInfo[] calldata swapInfo) internal override {
         for (uint256 i = 0; i < tokens.length; i++) {
-            IERC20(tokens[i]).transfer(address(_swapper), IERC20(tokens[i]).balanceOf(address(this)));
+            IERC20(tokens[i]).safeTransfer(address(_swapper), IERC20(tokens[i]).balanceOf(address(this)));
         }
 
         _swapper.swap(tokens, swapInfo, address(this));
@@ -66,7 +69,7 @@ contract MockStrategy is Strategy {
 
     function depositToProtocol(address[] memory tokens, uint256[] memory amounts) internal override {
         for (uint256 i = 0; i < tokens.length; i++) {
-            IERC20(tokens[i]).transfer(address(protocol), amounts[i]);
+            IERC20(tokens[i]).safeTransfer(address(protocol), amounts[i]);
         }
     }
 
@@ -100,9 +103,11 @@ contract MockStrategy is Strategy {
 }
 
 contract MockProtocol {
+    using SafeERC20 for IERC20;
+
     function test_mock() external pure {}
 
     function withdraw(address token, uint256 amount) external {
-        IERC20(token).transfer(msg.sender, amount);
+        IERC20(token).safeTransfer(msg.sender, amount);
     }
 }

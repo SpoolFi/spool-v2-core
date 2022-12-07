@@ -13,6 +13,7 @@ import "../../src/managers/UsdPriceFeedManager.sol";
 import "../../src/MasterWallet.sol";
 import "../../src/SmartVault.sol";
 import "../../src/Swapper.sol";
+import "../libraries/Arrays.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
@@ -211,6 +212,9 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         vm.startPrank(alice);
         mySmartVault.approve(address(smartVaultManager), 4_000_000);
         uint256[] memory withdrawnAssets = smartVaultManager.redeemFast(address(mySmartVault), 3_000_000);
+
+        // check return
+        assertEq(withdrawnAssets, Arrays.toArray(30 ether, 2.034 ether));
 
         // check state
         // - vault tokens were burned

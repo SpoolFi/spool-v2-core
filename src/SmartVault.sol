@@ -11,7 +11,7 @@ import "./interfaces/RequestType.sol";
 import "./access/SpoolAccessControl.sol";
 
 contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControllable, ISmartVault {
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -144,7 +144,7 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
     {
         for (uint256 i = 0; i < strategies.length; i++) {
-            IERC20(strategies[i]).transfer(strategies[i], shares[i]);
+            IERC20(strategies[i]).safeTransfer(strategies[i], shares[i]);
         }
     }
 

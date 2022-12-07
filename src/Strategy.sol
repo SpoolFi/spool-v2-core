@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/token/ERC20/ERC20.sol";
+import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "./interfaces/IAssetGroupRegistry.sol";
 import "./interfaces/IMasterWallet.sol";
@@ -10,6 +11,8 @@ import "./interfaces/IStrategyRegistry.sol";
 import "./access/SpoolAccessControl.sol";
 
 abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrategy {
+    using SafeERC20 for IERC20;
+
     /* ========== STATE VARIABLES ========== */
 
     uint256 internal constant INITIAL_SHARE_MULTIPLIER = 1000000000000000000000000000000; // 10 ** 30
@@ -115,7 +118,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         uint256[] memory withdrawnAssets = new uint256[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {
             withdrawnAssets[i] = IERC20(tokens[i]).balanceOf(address(this));
-            IERC20(tokens[i]).transfer(masterWallet, withdrawnAssets[i]);
+            IERC20(tokens[i]).safeTransfer(masterWallet, withdrawnAssets[i]);
         }
 
         return DhwInfo({usdRouted: usdWorthDeposited, sharesMinted: sstsToMint, assetsWithdrawn: withdrawnAssets});
@@ -138,7 +141,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         uint256[] memory assetsWithdrawn = new uint256[](assetGroup.length);
         for (uint256 i = 0; i < assetGroup.length; i++) {
             assetsWithdrawn[i] = IERC20(assetGroup[i]).balanceOf(address(this));
-            IERC20(assetGroup[i]).transfer(masterWallet, assetsWithdrawn[i]);
+            IERC20(assetGroup[i]).safeTransfer(masterWallet, assetsWithdrawn[i]);
         }
 
         return assetsWithdrawn;

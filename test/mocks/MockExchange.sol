@@ -2,9 +2,12 @@
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/token/ERC20/IERC20.sol";
+import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../../src/interfaces/IUsdPriceFeedManager.sol";
 
 contract MockExchange {
+    using SafeERC20 for IERC20;
+
     IERC20 tokenA;
     IERC20 tokenB;
     IUsdPriceFeedManager priceFeedManager;
@@ -38,8 +41,8 @@ contract MockExchange {
             revert("Invalid token");
         }
 
-        source.transferFrom(msg.sender, address(this), amount);
-        target.transfer(recipient, out);
+        source.safeTransferFrom(msg.sender, address(this), amount);
+        target.safeTransfer(recipient, out);
 
         return out;
     }
