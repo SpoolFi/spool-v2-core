@@ -120,20 +120,6 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
     ) external returns (uint256 depositNFTId);
 
     /**
-     * @notice TODO
-     * @param assets TODO
-     * @param receiver TODO
-     * @param slippages TODO
-     * @return receipt TODO
-     */
-    function depositFast(
-        address smartVault,
-        uint256[] calldata assets,
-        address receiver,
-        uint256[][] calldata slippages
-    ) external returns (uint256 receipt);
-
-    /**
      * @notice Instantly redeems smart vault shares for assets.
      * @param smartVault Address of the smart vault.
      * @param shares Amount of shares to redeem.

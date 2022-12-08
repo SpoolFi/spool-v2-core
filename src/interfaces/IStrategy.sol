@@ -118,17 +118,6 @@ interface IStrategy is IERC20Upgradeable {
     ) external returns (uint256[] memory assetsWithdrawn);
 
     /**
-     * @notice TODO
-     * @param assets TODO
-     * @param receiver TODO
-     * @param slippages TODO
-     * @return receipt TODO
-     */
-    function depositFast(uint256[] calldata assets, address receiver, uint256[][] calldata slippages)
-        external
-        returns (uint256 receipt);
-
-    /**
      * @dev Burns exactly shares from owner and sends assets of underlying tokens to receiver.
      *
      * - MUST emit the Withdraw event.

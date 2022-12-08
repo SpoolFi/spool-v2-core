@@ -280,15 +280,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return _depositAssets(smartVault, depositor, receiver, assets);
     }
 
-    function depositFast(
-        address smartVault,
-        uint256[] calldata assets,
-        address receiver,
-        uint256[][] calldata slippages
-    ) external onlyRegisteredSmartVault(smartVault) returns (uint256) {
-        revert("0");
-    }
-
     function deposit(address smartVault, uint256[] calldata assets, address receiver, address referral)
         external
         onlyRegisteredSmartVault(smartVault)

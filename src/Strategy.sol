@@ -148,13 +148,6 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         _transfer(address(this), claimer, amount);
     }
 
-    function depositFast(uint256[] calldata assets, address receiver, uint256[][] calldata slippages)
-        external
-        returns (uint256 receipt)
-    {
-        revert("0");
-    }
-
     function convertToAssets(uint256 shares) external view returns (uint256[] memory assets) {
         revert("0");
     }
