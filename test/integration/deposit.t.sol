@@ -12,7 +12,7 @@ import "../../src/managers/UsdPriceFeedManager.sol";
 import "../../src/MasterWallet.sol";
 import "../../src/SmartVault.sol";
 import "../../src/Swapper.sol";
-import "../libraries/Arrays.sol";
+import "../../src/libraries/Arrays.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
@@ -57,6 +57,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
 
         MockPriceFeedManager priceFeedManager = new MockPriceFeedManager();
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
+        IGuardManager guardManager = new GuardManager(accessControl);
 
         smartVaultManager = new SmartVaultManager(
             accessControl,
@@ -65,8 +66,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
             assetGroupRegistry,
             masterWallet,
             new ActionManager(accessControl),
-            new GuardManager(accessControl),
-            new Swapper()
+            guardManager
         );
 
         strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
@@ -89,7 +89,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
         strategyC.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyC));
 
-        mySmartVault = new SmartVault("MySmartVault", accessControl);
+        mySmartVault = new SmartVault("MySmartVault", accessControl, guardManager);
         mySmartVault.initialize();
         accessControl.grantRole(ROLE_SMART_VAULT, address(mySmartVault));
 

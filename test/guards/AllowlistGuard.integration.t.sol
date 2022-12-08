@@ -58,8 +58,7 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
             assetGroupRegistry,
             masterWallet,
             actionManager,
-            guardManager,
-            new Swapper()
+            guardManager
         );
 
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
@@ -82,7 +81,7 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         }
 
         {
-            smartVault = new SmartVault("SmartVault", accessControl);
+            smartVault = new SmartVault("SmartVault", accessControl, guardManager);
             smartVault.initialize();
             accessControl.grantRole(ROLE_SMART_VAULT, address(smartVault));
             IAction[] memory actions = new IAction[](0);

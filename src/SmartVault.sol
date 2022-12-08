@@ -9,11 +9,16 @@ import "./interfaces/CommonErrors.sol";
 import "./interfaces/ISmartVault.sol";
 import "./interfaces/RequestType.sol";
 import "./access/SpoolAccessControl.sol";
+import "./interfaces/IGuardManager.sol";
+import "./libraries/Arrays.sol";
 
 contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControllable, ISmartVault {
     using SafeERC20 for IERC20;
 
     /* ========== STATE VARIABLES ========== */
+
+    // @notice Guard manager
+    IGuardManager internal immutable _guardManager;
 
     // @notice Vault name
     string internal _vaultName;
@@ -42,8 +47,13 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
     /**
      * @notice Initializes variables
      * @param vaultName_ TODO
+     * @param accessControl_ TODO
+     * @param guardManager_ TODO
      */
-    constructor(string memory vaultName_, ISpoolAccessControl accessControl_) SpoolAccessControllable(accessControl_) {
+    constructor(string memory vaultName_, ISpoolAccessControl accessControl_, IGuardManager guardManager_)
+        SpoolAccessControllable(accessControl_)
+    {
+        _guardManager = guardManager_;
         _vaultName = vaultName_;
     }
 
@@ -59,14 +69,6 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
      */
     function vaultName() external view returns (string memory) {
         return _vaultName;
-    }
-
-    /**
-     * @notice TODO
-     * @return isTransferable TODO
-     */
-    function isShareTokenTransferable() external view returns (bool) {
-        revert("0");
     }
 
     function getDepositMetadata(uint256 depositNftId) external view returns (DepositMetadata memory) {
@@ -179,6 +181,35 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
+
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override {
+        // mint / burn
+        if (from == address(0) || to == address(0)) {
+            return;
+        }
+
+        RequestContext memory context =
+            RequestContext(to, msg.sender, from, RequestType.TransferSVTs, Arrays.toArray(amount), new address[](0));
+        _guardManager.runGuards(address(this), context);
+    }
+
+    function _beforeTokenTransfer(
+        address operator,
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    ) internal virtual override {
+        // mint
+        if (from == address(0)) {
+            return;
+        }
+
+        RequestContext memory context =
+            RequestContext(to, operator, from, RequestType.TransferNFT, ids, new address[](0));
+        _guardManager.runGuards(address(this), context);
+    }
 
     function _afterTokenTransfer(
         address,

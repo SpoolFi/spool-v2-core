@@ -14,7 +14,7 @@ import "../src/DepositSwap.sol";
 import "../src/MasterWallet.sol";
 import "../src/SmartVault.sol";
 import "../src/Swapper.sol";
-import "./libraries/Arrays.sol";
+import "../src/libraries/Arrays.sol";
 import "./mocks/MockExchange.sol";
 import "./mocks/MockPriceFeedManager.sol";
 import "./mocks/MockStrategy.sol";
@@ -60,8 +60,7 @@ contract DepositSwapIntegrationTest is Test, SpoolAccessRoles {
             assetGroupRegistry,
             masterWallet,
             actionManager,
-            guardManager,
-            swapper
+            guardManager
         );
 
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
@@ -87,7 +86,7 @@ contract DepositSwapIntegrationTest is Test, SpoolAccessRoles {
         }
 
         {
-            smartVault = new SmartVault("SmartVault", accessControl);
+            smartVault = new SmartVault("SmartVault", accessControl, guardManager);
             smartVault.initialize();
             accessControl.grantRole(ROLE_SMART_VAULT, address(smartVault));
             IAction[] memory actions = new IAction[](0);

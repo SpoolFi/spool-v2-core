@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "./RequestType.sol";
+import "./ISmartVault.sol";
 
 error GuardsAlreadyInitialized();
 error GuardsNotInitialized();
@@ -25,7 +26,7 @@ enum GuardParamType {
     Executor,
     Receiver,
     Owner,
-    Amounts,
+    Assets,
     Tokens,
     AssetGroup,
     CustomValue,
@@ -51,7 +52,7 @@ struct RequestContext {
     address executor;
     address owner;
     RequestType requestType;
-    uint256[] amounts;
+    uint256[] assets;
     address[] tokens;
 }
 

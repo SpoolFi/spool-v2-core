@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/IMasterWallet.sol";
-import "../interfaces/ISwapper.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";

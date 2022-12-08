@@ -50,8 +50,7 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
             assetGroupRegistry,
             masterWallet,
             actionManager,
-            guardManager,
-            new Swapper()
+            guardManager
         );
         accessControl.grantRole(ROLE_SMART_VAULT, smartVault);
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
@@ -301,7 +300,8 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         IActionManager actionManager = new ActionManager(accessControl);
         SmartVault smartVault_ = new SmartVault(
             "TestVault",
-            accessControl
+            accessControl,
+            guardManager
         );
 
         smartVault_.initialize();

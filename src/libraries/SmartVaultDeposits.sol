@@ -6,7 +6,6 @@ import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/IStrategy.sol";
-import "../interfaces/ISwapper.sol";
 import "../libraries/SpoolUtils.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 

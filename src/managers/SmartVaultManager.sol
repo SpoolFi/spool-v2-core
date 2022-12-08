@@ -28,11 +28,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     uint256 internal constant INITIAL_SHARE_MULTIPLIER = 1000000000000000000000000000000; // 10 ** 30
 
-    /**
-     * @notice Contract executing token swaps for vault flush.
-     */
-    ISwapper internal immutable _swapper;
-
     // @notice Guard manager
     IGuardManager internal immutable _guardManager;
 
@@ -105,8 +100,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         IAssetGroupRegistry assetGroupRegistry_,
         IMasterWallet masterWallet_,
         IActionManager actionManager_,
-        IGuardManager guardManager_,
-        ISwapper swapper_
+        IGuardManager guardManager_
     ) SpoolAccessControllable(accessControl_) {
         _strategyRegistry = strategyRegistry_;
         _priceFeedManager = priceFeedManager_;
@@ -114,7 +108,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _masterWallet = masterWallet_;
         _actionManager = actionManager_;
         _guardManager = guardManager_;
-        _swapper = swapper_;
     }
 
     /* ========== VIEW FUNCTIONS ========== */

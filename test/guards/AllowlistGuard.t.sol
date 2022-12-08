@@ -7,11 +7,7 @@ import "@openzeppelin/access/AccessControl.sol";
 import "../../src/interfaces/ISmartVault.sol";
 import "../../src/guards/AllowlistGuard.sol";
 
-contract SmartVaultFake is AccessControl {
-    constructor() {
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-    }
-}
+contract SmartVaultFake {}
 
 contract AllowlistGuardTest is Test, SpoolAccessRoles {
     event AddedToAllowlist(address indexed smartVault, uint256 indexed allowlistId, address[] addresses);

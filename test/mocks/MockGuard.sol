@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import {console} from "forge-std/console.sol";
+import "../../src/SmartVault.sol";
 
 contract MockGuard {
     mapping(address => bool) whitelist;
@@ -27,5 +28,18 @@ contract MockGuard {
         }
 
         return result == expectedValue;
+    }
+
+    function checkTimelock(address smartVault, uint256[] calldata assets, uint256 timelock) external returns (bool) {
+        uint256 tokenID = assets[0];
+        uint256 _maximalDepositId = 2 ** 255 - 1;
+
+        // Withdrawal
+        if (tokenID > _maximalDepositId) {
+            revert("Not applicable");
+        }
+
+        DepositMetadata memory metadata = SmartVault(smartVault).getDepositMetadata(tokenID);
+        return (block.timestamp - metadata.initiated) > timelock;
     }
 }

@@ -7,6 +7,7 @@ import "./libraries/SpoolUtils.sol";
 
 contract Swapper is ISwapper {
     using SafeERC20 for IERC20;
+
     function swap(address[] calldata tokens, SwapInfo[] calldata swapInfo, address receiver) external {
         // Perform the swaps.
         for (uint256 i = 0; i < swapInfo.length; i++) {

@@ -67,12 +67,6 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
     function vaultName() external view returns (string memory name);
 
     /**
-     * @notice TODO
-     * @return isTransferable
-     */
-    function isShareTokenTransferable() external view returns (bool isTransferable);
-
-    /**
      * @notice Gets metadata for a deposit NFT.
      * @param depositNftId ID of the deposit NFT.
      * @return Metadata of the deposit NFT.

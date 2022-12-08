@@ -171,9 +171,9 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
                 result = bytes.concat(result, abi.encode(context.executor));
             } else if (paramType == GuardParamType.Owner) {
                 result = bytes.concat(result, abi.encode(context.owner));
-            } else if (paramType == GuardParamType.Amounts) {
+            } else if (paramType == GuardParamType.Assets) {
                 result = bytes.concat(result, abi.encode(paramsEndLoc));
-                paramsEndLoc += 32 + context.amounts.length * 32;
+                paramsEndLoc += 32 + context.assets.length * 32;
             } else if (paramType == GuardParamType.Tokens) {
                 result = bytes.concat(result, abi.encode(paramsEndLoc));
                 paramsEndLoc += 32 + context.tokens.length * 32;
@@ -193,9 +193,9 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
                 customValueIdx++;
             } else if (paramType == GuardParamType.CustomValue) {
                 customValueIdx++;
-            } else if (paramType == GuardParamType.Amounts) {
-                result = bytes.concat(result, abi.encode(context.amounts.length));
-                result = bytes.concat(result, abi.encodePacked(context.amounts));
+            } else if (paramType == GuardParamType.Assets) {
+                result = bytes.concat(result, abi.encode(context.assets.length));
+                result = bytes.concat(result, abi.encodePacked(context.assets));
             } else if (paramType == GuardParamType.Tokens) {
                 result = bytes.concat(result, abi.encode(context.tokens.length));
                 result = bytes.concat(result, abi.encodePacked(context.tokens));
