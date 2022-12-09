@@ -14,7 +14,7 @@ import "../src/DepositSwap.sol";
 import "../src/MasterWallet.sol";
 import "../src/SmartVault.sol";
 import "../src/Swapper.sol";
-import "../src/libraries/Arrays.sol";
+import "./libraries/Arrays.sol";
 import "./mocks/MockExchange.sol";
 import "./mocks/MockPriceFeedManager.sol";
 import "./mocks/MockStrategy.sol";

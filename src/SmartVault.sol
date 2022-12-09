@@ -10,7 +10,6 @@ import "./interfaces/ISmartVault.sol";
 import "./interfaces/RequestType.sol";
 import "./access/SpoolAccessControl.sol";
 import "./interfaces/IGuardManager.sol";
-import "./libraries/Arrays.sol";
 
 contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControllable, ISmartVault {
     using SafeERC20 for IERC20;
@@ -188,8 +187,11 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
             return;
         }
 
+        uint256[] memory assets = new uint256[](1);
+        assets[0] = amount;
+
         RequestContext memory context =
-            RequestContext(to, msg.sender, from, RequestType.TransferSVTs, Arrays.toArray(amount), new address[](0));
+            RequestContext(to, msg.sender, from, RequestType.TransferSVTs, assets, new address[](0));
         _guardManager.runGuards(address(this), context);
     }
 

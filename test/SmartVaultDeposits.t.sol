@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 import "../src/libraries/SmartVaultDeposits.sol";
-import "../src/libraries/Arrays.sol";
+import "./libraries/Arrays.sol";
 
 contract SmartVaultDepositsTest is Test {
     uint256[] exchangeRates;

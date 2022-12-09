@@ -18,6 +18,7 @@ import "../mocks/MockNft.sol";
 import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
 import "../mocks/MockGuard.sol";
+import "../libraries/Arrays.sol";
 
 contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
     address private alice = address(0xa);

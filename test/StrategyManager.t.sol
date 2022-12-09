@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import "../src/interfaces/IStrategyRegistry.sol";
 import "../src/managers/StrategyRegistry.sol";
 import "../src/MasterWallet.sol";
-import "../src//libraries/Arrays.sol";
+import "./libraries/Arrays.sol";
 import "../src/Swapper.sol";
 import "./mocks/MockPriceFeedManager.sol";
 

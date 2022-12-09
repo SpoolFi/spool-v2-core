@@ -12,7 +12,7 @@ import "../../src/managers/UsdPriceFeedManager.sol";
 import "../../src/MasterWallet.sol";
 import "../../src/SmartVault.sol";
 import "../../src/Swapper.sol";
-import "../../src/libraries/Arrays.sol";
+import "../libraries/Arrays.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";

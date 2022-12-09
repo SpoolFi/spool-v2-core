@@ -6,7 +6,7 @@ import "../src/DepositSwap.sol";
 import "../src/interfaces/IAssetGroupRegistry.sol";
 import "../src/interfaces/ISmartVaultManager.sol";
 import "../src/interfaces/ISwapper.sol";
-import "../src//libraries/Arrays.sol";
+import "./libraries/Arrays.sol";
 
 contract DepositSwapTest is Test {
     function setUp() public {}
