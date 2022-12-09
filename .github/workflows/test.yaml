@@ -42,13 +42,3 @@ jobs:
           forge test -vvv
           forge test --json > test_output.txt
         id: test
-
-
-      - name: Install ts-node
-        run: |
-          npm i ts-node -g
-          npm i --save-dev @types/node
-          npm i axios
-
-      - name: Output results
-        run: ts-node ./outputparser.ts ${{ github.ref_name  }}
