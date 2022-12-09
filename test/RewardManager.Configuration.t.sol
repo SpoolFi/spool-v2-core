@@ -11,7 +11,7 @@ import "./RewardManager.t.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
 
 contract RewardManagerConfigurationTests is RewardManagerTests {
-    function test_Configuration_shouldAddOneToken() public {
+    function test_configuration_shouldAddOneToken() public {
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
@@ -35,7 +35,7 @@ contract RewardManagerConfigurationTests is RewardManagerTests {
         console.log(configurationPeriodFinish);
     }
 
-    function test_Configruation_addingTwoRewardTokens() public {
+    function test_configuration_addingTwoRewardTokens() public {
         MockToken r2Token = new MockToken("R2", "R2");
 
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
@@ -67,14 +67,14 @@ contract RewardManagerConfigurationTests is RewardManagerTests {
         assertEq(r2Token.balanceOf(address(rewardManager)), rewardAmount);
     }
 
-    function test_Force_Removed_Tokens_Are_Not_Added() public {
+    function test_configuration_forceRemovedTokensAreNotAdded() public {
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
 
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
         rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
         rewardManager.forceRemoveReward(smartVault, rewardToken);
-        vm.expectRevert(bytes("TOBL"));
+        vm.expectRevert(abi.encodeWithSelector(RewardTokenBlacklisted.selector, address(rewardToken)));
         rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
         vm.stopPrank();
 
@@ -93,5 +93,10 @@ contract RewardManagerConfigurationTests is RewardManagerTests {
         assertEq(0, configurationRewardRate);
         assertEq(0, configurationLastUpdateTime);
         assertEq(0, configurationRewardPerTokenStored);
+    }
+
+    function test_configuration_extendWithoutAdd() public {
+        vm.expectRevert(abi.encodeWithSelector(InvalidRewardToken.selector, address(rewardToken)));
+        rewardManager.extendRewardEmission(smartVault, rewardToken, rewardAmount, rewardDuration);
     }
 }

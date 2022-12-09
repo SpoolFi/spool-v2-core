@@ -81,7 +81,7 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
 
         {
             smartVault = new SmartVault("SmartVault", accessControl, guardManager);
-            smartVault.initialize();
+            smartVault.initialize(assetGroupId);
             accessControl.grantRole(ROLE_SMART_VAULT, address(smartVault));
             IAction[] memory actions = new IAction[](0);
             RequestType[] memory actionsRequestTypes = new RequestType[](0);

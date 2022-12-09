@@ -90,7 +90,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
         strategyRegistry.registerStrategy(address(strategyC));
 
         mySmartVault = new SmartVault("MySmartVault", accessControl, guardManager);
-        mySmartVault.initialize();
+        mySmartVault.initialize(assetGroupId);
         accessControl.grantRole(ROLE_SMART_VAULT, address(mySmartVault));
 
         mySmartVaultStrategies = new address[](3);

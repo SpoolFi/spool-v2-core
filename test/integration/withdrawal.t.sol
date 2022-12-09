@@ -81,7 +81,7 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         strategyRegistry.registerStrategy(address(strategyB));
 
         mySmartVault = new SmartVault("MySmartVault", accessControl, guardManager);
-        mySmartVault.initialize();
+        mySmartVault.initialize(assetGroupId);
         accessControl.grantRole(ROLE_SMART_VAULT, address(mySmartVault));
 
         mySmartVaultStrategies = new address[](2);

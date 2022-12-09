@@ -3,6 +3,13 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/token/ERC20/IERC20.sol";
 
+error AssetGroupToken(address token);
+error RewardTokenBlacklisted(address token);
+error RewardTokenAlreadyAdded(address token);
+error InvalidRewardDuration();
+error InvalidRewardToken(address token);
+error RewardTokenCapReached();
+
 interface IRewardManager {
     /* ========== STRUCTS ========== */
     // The reward configuration struct, containing all the necessary data of a typical Synthetix StakingReward contract
@@ -20,7 +27,7 @@ interface IRewardManager {
 
     /* ========== FUNCTIONS ========== */
 
-    function getActiveRewards(address smartVault, address account) external;
+    function claimRewardsFor(address smartVault, address account) external;
     function tokenBlacklisted(address smartVault, IERC20 token) external view returns (bool);
 
     /* ========== EVENTS ========== */

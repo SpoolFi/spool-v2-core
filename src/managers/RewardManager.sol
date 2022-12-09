@@ -7,19 +7,24 @@ import "@openzeppelin/security/ReentrancyGuard.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../access/SpoolAccessControl.sol";
 import "../interfaces/IRewardManager.sol";
+import "../interfaces/ISmartVault.sol";
 import "../utils/Math.sol";
+import "../interfaces/IAssetGroupRegistry.sol";
 
 contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllable {
     using SafeERC20 for IERC20;
     /* ========== CONSTANTS ========== */
 
-    /// @notice Number of vault incentivized tokens
-    mapping(address => uint8) public rewardTokensCount;
-
     /// @notice Multiplier used when dealing reward calculations
     uint256 private constant REWARD_ACCURACY = 1e18;
 
     /* ========== STATE VARIABLES ========== */
+
+    /// @notice Asset group registry
+    IAssetGroupRegistry private _assetGroupRegistry;
+
+    /// @notice Number of vault incentivized tokens
+    mapping(address => uint8) public rewardTokensCount;
 
     /// @notice All reward tokens supported by the contract
     mapping(address => mapping(uint256 => IERC20)) public rewardTokens;
@@ -29,7 +34,11 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
 
     mapping(address => mapping(IERC20 => bool)) tokenBlacklist;
 
-    constructor(ISpoolAccessControl spoolAccessControl) SpoolAccessControllable(spoolAccessControl) {}
+    constructor(ISpoolAccessControl spoolAccessControl, IAssetGroupRegistry assetGroupRegistry_)
+        SpoolAccessControllable(spoolAccessControl)
+    {
+        _assetGroupRegistry = assetGroupRegistry_;
+    }
 
     /* ========== VIEWS ========== */
 
@@ -37,11 +46,16 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
         return uint32(Math.min(block.timestamp, rewardConfiguration[smartVault][token].periodFinish));
     }
 
-    /// @notice Blacklisted force-removed tokens
+    /**
+     * @notice Blacklisted force-removed tokens
+     */
     function tokenBlacklisted(address smartVault, IERC20 token) external view returns (bool) {
         return tokenBlacklist[smartVault][token];
     }
 
+    /**
+     * @notice Reward amount per assets deposited
+     */
     function rewardPerToken(address smartVault, IERC20 token) public view returns (uint224) {
         RewardConfiguration storage config = rewardConfiguration[smartVault][token];
 
@@ -60,7 +74,9 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
         );
     }
 
-    // claimableRewards
+    /**
+     * @notice Amount of rewards earned
+     */
     function earned(address smartVault, IERC20 token, address account) public view returns (uint256) {
         RewardConfiguration storage config = rewardConfiguration[smartVault][token];
 
@@ -84,23 +100,30 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice TODO
+     * @notice Claim rewards
      */
-    function getRewards(address smartVault, IERC20[] memory tokens) external nonReentrant {
+    function claimRewards(address smartVault, IERC20[] memory tokens) external nonReentrant {
         for (uint256 i; i < tokens.length; i++) {
-            _getReward(smartVault, tokens[i], msg.sender);
+            _claimReward(smartVault, tokens[i], msg.sender);
         }
     }
 
-    // claimRewards
-    function getActiveRewards(address smartVault, address account) external override onlyController nonReentrant {
+    /**
+     * @notice Claim rewards for given account
+     */
+    function claimRewardsFor(address smartVault, address account)
+        external
+        override
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+        nonReentrant
+    {
         uint256 _rewardTokensCount = rewardTokensCount[smartVault];
         for (uint256 i; i < _rewardTokensCount; i++) {
-            _getReward(smartVault, rewardTokens[smartVault][i], account);
+            _claimReward(smartVault, rewardTokens[smartVault][i], account);
         }
     }
 
-    function _getReward(address smartVault, IERC20 token, address account)
+    function _claimReward(address smartVault, IERC20 token, address account)
         internal
         updateReward(smartVault, token, account)
     {
@@ -135,13 +158,14 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
     function addToken(address smartVault, IERC20 token, uint32 rewardsDuration, uint256 reward)
         external
         onlyAdminOrVaultAdmin(smartVault, msg.sender)
-        exceptUnderlying(token)
+        exceptUnderlying(smartVault, token)
     {
         RewardConfiguration storage config = rewardConfiguration[smartVault][token];
 
-        require(!tokenBlacklist[smartVault][token], "TOBL");
-        require(rewardsDuration != 0 && config.lastUpdateTime == 0, "BCFG");
-        require(rewardTokensCount[smartVault] <= 5, "TMAX");
+        if (tokenBlacklist[smartVault][token]) revert RewardTokenBlacklisted(address(token));
+        if (config.lastUpdateTime != 0) revert RewardTokenAlreadyAdded(address(token));
+        if (rewardsDuration == 0) revert InvalidRewardDuration();
+        if (rewardTokensCount[smartVault] > 5) revert RewardTokenCapReached();
 
         rewardTokens[smartVault][rewardTokensCount[smartVault]] = token;
         rewardTokensCount[smartVault]++;
@@ -149,18 +173,29 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
         config.rewardsDuration = rewardsDuration;
 
         if (reward > 0) {
-            _notifyRewardAmount(smartVault, token, reward);
+            _extendRewardEmission(smartVault, token, reward);
         }
     }
 
-    function notifyRewardAmount(address smartVault, IERC20 token, uint256 reward, uint32 rewardsDuration) external 
-    // onlyVaultOwnerOrSpoolOwner
+    /**
+     * @notice Extend reward emission
+     */
+    function extendRewardEmission(address smartVault, IERC20 token, uint256 reward, uint32 rewardsDuration)
+        external
+        onlyAdminOrVaultAdmin(smartVault, msg.sender)
+        exceptUnderlying(smartVault, token)
     {
+        if (tokenBlacklist[smartVault][token]) revert RewardTokenBlacklisted(address(token));
+        if (rewardsDuration == 0) revert InvalidRewardDuration();
+        if (rewardConfiguration[smartVault][token].lastUpdateTime == 0) {
+            revert InvalidRewardToken(address(token));
+        }
+
         rewardConfiguration[smartVault][token].rewardsDuration = rewardsDuration;
-        _notifyRewardAmount(smartVault, token, reward);
+        _extendRewardEmission(smartVault, token, reward);
     }
 
-    function _notifyRewardAmount(address smartVault, IERC20 token, uint256 reward)
+    function _extendRewardEmission(address smartVault, IERC20 token, uint256 reward)
         private
         updateReward(smartVault, token, address(0))
     {
@@ -191,7 +226,9 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
         config.periodFinish = newPeriodFinish;
     }
 
-    // End rewards emission earlier
+    /**
+     * @notice End rewards emission earlier
+     */
     function updatePeriodFinish(address smartVault, IERC20 token, uint32 timestamp)
         external
         onlyAdminOrVaultAdmin(smartVault, msg.sender)
@@ -225,7 +262,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
     function claimFinishedRewards(address smartVault, IERC20 token, uint256 amount)
         external
         onlyAdminOrVaultAdmin(smartVault, msg.sender)
-        exceptUnderlying(token)
+        exceptUnderlying(smartVault, token)
         onlyFinished(smartVault, token)
     {
         token.safeTransfer(msg.sender, amount);
@@ -267,14 +304,12 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
      */
     function removeReward(address smartVault, IERC20 token)
         external
-        /*onlyVaultOwnerOrSpoolOwner TODO acl */
+        onlyAdminOrVaultAdmin(smartVault, msg.sender)
         onlyFinished(smartVault, token)
         updateReward(smartVault, token, address(0))
     {
         _removeReward(smartVault, token);
     }
-
-    /* ========== PRIVATE FUNCTIONS ========== */
 
     /**
      * @notice Syncs rewards across all tokens of the system
@@ -282,10 +317,14 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
      * This function is meant to be invoked every time the instant deposit
      * of a user changes.
      */
-    function updateRewardsOnVault(address smartVault, address account) public {
-        // TODO ACL
+    function updateRewardsOnVault(address smartVault, address account)
+        public
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+    {
         _updateRewards(smartVault, account);
     }
+
+    /* ========== PRIVATE FUNCTIONS ========== */
 
     function _updateRewards(address smartVault, address account) private {
         uint256 _rewardTokensCount = rewardTokensCount[smartVault];
@@ -324,37 +363,20 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
         }
     }
 
-    function _exceptUnderlying(IERC20 token) private view {
-        /* TODO add _underlying
-       require(
-            token != _underlying(),
-            "NUT"
-        );
-        */
+    function _exceptUnderlying(address smartVault, IERC20 token) private view {
+        address[] memory vaultTokens = _assetGroupRegistry.listAssetGroup(ISmartVault(smartVault).assetGroupId());
+        for (uint256 i = 0; i < vaultTokens.length; i++) {
+            if (vaultTokens[i] == address(token)) {
+                revert AssetGroupToken(address(token));
+            }
+        }
     }
 
     function _onlyFinished(address smartVault, IERC20 token) private view {
         require(block.timestamp > rewardConfiguration[smartVault][token].periodFinish, "RNF");
     }
 
-    /**
-     * @notice Ensures that the caller is the controller
-     */
-    function _onlyController() private view {
-        // TODO Add ACL !!!
-
-        /* require(
-            msg.sender == address(controller),
-            "OCTRL"
-        );
-        */
-    }
-
-    /**
-     * @notice TODO
-     */
     function _userDeposits(address smartVault, address account) private view returns (uint256) {
-        // @return ERC20(smartVault).balanceOf(account)
         return IERC20(smartVault).balanceOf(account);
     }
 
@@ -370,21 +392,13 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
         _;
     }
 
-    modifier exceptUnderlying(IERC20 token) {
-        _exceptUnderlying(token);
+    modifier exceptUnderlying(address smartVault, IERC20 token) {
+        _exceptUnderlying(smartVault, token);
         _;
     }
 
     modifier onlyFinished(address smartVault, IERC20 token) {
         _onlyFinished(smartVault, token);
-        _;
-    }
-
-    /**
-     * @notice Throws if called by anyone else other than the controller
-     */
-    modifier onlyController() {
-        _onlyController();
         _;
     }
 }

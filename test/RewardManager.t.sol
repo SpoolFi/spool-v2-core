@@ -8,30 +8,42 @@ import "../src/interfaces/IRewardManager.sol";
 import "./mocks/MockToken.sol";
 import "./mocks/Constants.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
+import "../src/managers/AssetGroupRegistry.sol";
+import "../src/SmartVault.sol";
+import "../src/managers/GuardManager.sol";
+import "./libraries/Arrays.sol";
 
 contract RewardManagerTests is Test, SpoolAccessRoles {
     SpoolAccessControl sac;
     RewardManager rewardManager;
-    uint256 rewardAmount;
+    IAssetGroupRegistry assetGroupRegistry;
+    uint256 rewardAmount = 100000 ether;
     uint32 rewardDuration;
-    address vaultOwner;
+    address vaultOwner = address(100);
+    address user = address(101);
+    address smartVaultManager = address(102);
     address smartVault;
     MockToken rewardToken;
-    address user;
+    MockToken underlying;
 
     function setUp() public {
+        rewardToken = new MockToken("R", "R");
+        underlying = new MockToken("U", "U");
+
         sac = new SpoolAccessControl();
-        rewardManager = new RewardManager(sac);
-        rewardAmount = 100000 ether;
+        assetGroupRegistry = new AssetGroupRegistry();
+
+        uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(underlying)));
+        SmartVault smartVault_ = new SmartVault("SmartVault", sac, new GuardManager(sac));
+        smartVault_.initialize(assetGroupId);
+
+        rewardManager = new RewardManager(sac, assetGroupRegistry);
         rewardDuration = SECONDS_IN_DAY * 10;
-        MockToken smartVaultToken = new MockToken("SVT", "SVT");
-        smartVault = address(smartVaultToken);
-        vaultOwner = address(100);
+        smartVault = address(smartVault_);
 
         sac.grantSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, vaultOwner);
-        rewardToken = new MockToken("R", "R");
-
-        user = address(101);
+        sac.grantSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, user);
+        sac.grantRole(ROLE_SMART_VAULT_MANAGER, smartVaultManager);
     }
 
     function test_mock() external pure {}

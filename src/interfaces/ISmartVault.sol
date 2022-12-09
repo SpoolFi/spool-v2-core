@@ -62,6 +62,11 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /**
+     * @return asset group ID
+     */
+    function assetGroupId() external view returns (uint256);
+
+    /**
      * @return name Name of the vault
      */
     function vaultName() external view returns (string memory name);

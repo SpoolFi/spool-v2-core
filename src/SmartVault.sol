@@ -31,6 +31,9 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
     // @notice Withdrawal metadata registry
     mapping(uint256 => WithdrawalMetadata) private _withdrawalMetadata;
 
+    // @notice Asset group ID
+    uint256 public override assetGroupId;
+
     // @notice Deposit NFT ID
     uint256 private _lastDepositId = 0;
     // @notice Maximal value of deposit NFT ID.
@@ -56,9 +59,10 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         _vaultName = vaultName_;
     }
 
-    function initialize() external initializer {
+    function initialize(uint256 assetGroupId_) external initializer {
         __ERC1155_init("");
         __ERC20_init("", "");
+        assetGroupId = assetGroupId_;
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */

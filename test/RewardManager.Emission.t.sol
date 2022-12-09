@@ -11,7 +11,7 @@ import "./RewardManager.t.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
 
 contract RewardManagerEmissionTests is RewardManagerTests {
-    function test_getActiveRewards_failsWhenNotInvokedController() public {
+    function test_claimRewardsFor_failsWhenNotInvokedController() public {
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
 
         vm.startPrank(vaultOwner);
@@ -19,33 +19,37 @@ contract RewardManagerEmissionTests is RewardManagerTests {
         rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount / 2);
         vm.stopPrank();
         vm.prank(user);
-        //        rewardManager.getActiveRewards(smartVault, user); // TODO expectRevert when ACL is complete
+        //        rewardManager.claimRewardsFor(smartVault, user); // TODO expectRevert when ACL is complete
     }
 
-    function test_getActiveRewards_userGetsRewards() public {
+    function test_claimRewardsFor_userGetsRewards() public {
         addRewardTokens();
+        vm.prank(smartVaultManager);
         rewardManager.updateRewardsOnVault(smartVault, user);
         deal(address(smartVault), user, rewardAmount, true); // Depositing into a vault.
 
         uint256 userRewardTokenBalanceBefore = rewardToken.balanceOf(user);
         skip(rewardDuration * 2);
 
-        rewardManager.getActiveRewards(smartVault, user);
+        vm.prank(smartVaultManager);
+        rewardManager.claimRewardsFor(smartVault, user);
 
         uint256 userRewardTokenBalance = rewardToken.balanceOf(user);
 
         assertEq(userRewardTokenBalance, 99999999999999999900000);
     }
 
-    function test_getActiveRewards_shouldClaimRewardsProportionally() public {
+    function test_claimRewardsFor_shouldClaimRewardsProportionally() public {
         addRewardTokens();
+        vm.prank(smartVaultManager);
         rewardManager.updateRewardsOnVault(smartVault, user);
         deal(address(smartVault), user, rewardAmount, true); // Depositing into a vault.
 
         uint256 userBalanceBefore = rewardToken.balanceOf(user);
         skip(rewardDuration * 2);
 
-        rewardManager.getActiveRewards(smartVault, user);
+        vm.prank(smartVaultManager);
+        rewardManager.claimRewardsFor(smartVault, user);
 
         uint256 userBalanceAfter = rewardToken.balanceOf(user);
 
@@ -54,15 +58,17 @@ contract RewardManagerEmissionTests is RewardManagerTests {
         assertEq(userBalanceGain, 99999999999999999900000);
     }
 
-    function test_getActiveRewards_twoUsersBothClaimProportionally() public {
+    function test_claimRewardsFor_twoUsersBothClaimProportionally() public {
         addRewardTokens();
 
         uint256 userDeposit = rewardAmount;
         uint256 user2Deposit = rewardAmount / 2;
+        vm.prank(smartVaultManager);
         rewardManager.updateRewardsOnVault(smartVault, user);
         deal(address(smartVault), user, userDeposit, true); // Depositing into a vault.
 
         address user2 = address(102);
+        vm.prank(smartVaultManager);
         rewardManager.updateRewardsOnVault(smartVault, user2);
         deal(address(smartVault), user2, user2Deposit, true); // Depositing into a vault for user2
 
@@ -71,8 +77,11 @@ contract RewardManagerEmissionTests is RewardManagerTests {
         uint256 userBalanceBefore = rewardToken.balanceOf(user);
         uint256 user2BalanceBefore = rewardToken.balanceOf(user2);
         skip(rewardDuration * 2);
-        rewardManager.getActiveRewards(smartVault, user);
-        rewardManager.getActiveRewards(smartVault, user2);
+
+        vm.prank(smartVaultManager);
+        rewardManager.claimRewardsFor(smartVault, user);
+        vm.prank(smartVaultManager);
+        rewardManager.claimRewardsFor(smartVault, user2);
 
         uint256 userBalanceAfter = rewardToken.balanceOf(user);
         uint256 user2BalanceAfter = rewardToken.balanceOf(user2);
@@ -84,7 +93,7 @@ contract RewardManagerEmissionTests is RewardManagerTests {
         assertEq(33333333333333333333333, user2Gain);
     }
 
-    function test_getActiveRewards_twoRewardAndtwoUsersBothClaimProportionally() public {
+    function test_claimRewardsFor_twoRewardAndTwoUsersBothClaimProportionally() public {
         addRewardTokens();
         MockToken rewardToken2 = new MockToken("R2", "R2");
         deal(address(rewardToken2), vaultOwner, rewardAmount / 2, true); // Dealing half a R1 reward.
@@ -98,10 +107,12 @@ contract RewardManagerEmissionTests is RewardManagerTests {
         rewardManager.addToken(smartVault, rewardToken2, rewardDuration, rewardAmount / 2);
         vm.stopPrank();
 
+        vm.prank(smartVaultManager);
         rewardManager.updateRewardsOnVault(smartVault, user);
         deal(address(smartVault), user, data.userDeposit, true); // Depositing into a vault.
 
         address user2 = address(102);
+        vm.prank(smartVaultManager);
         rewardManager.updateRewardsOnVault(smartVault, user2);
         deal(address(smartVault), user2, data.user2Deposit, true); // Depositing into a vault for user2 - half amount of user1
 
@@ -114,8 +125,10 @@ contract RewardManagerEmissionTests is RewardManagerTests {
 
         skip(rewardDuration * 2);
 
-        rewardManager.getActiveRewards(smartVault, user);
-        rewardManager.getActiveRewards(smartVault, user2);
+        vm.prank(smartVaultManager);
+        rewardManager.claimRewardsFor(smartVault, user);
+        vm.prank(smartVaultManager);
+        rewardManager.claimRewardsFor(smartVault, user2);
 
         data.R1userBalanceAfter = rewardToken.balanceOf(user);
         data.R1user2BalanceAfter = rewardToken.balanceOf(user2);
@@ -137,7 +150,7 @@ contract RewardManagerEmissionTests is RewardManagerTests {
         assertEq(R2user2Gain, 16666666666666666666666);
     }
 
-    function test_getActiveRewards_reward2DistributedCompletelyR1StillActive() public {
+    function test_claimRewardsFor_reward2DistributedCompletelyR1StillActive() public {
         addRewardTokens();
         MockToken rewardToken2 = new MockToken("R2", "R2");
         deal(address(rewardToken2), vaultOwner, rewardAmount / 10, true); // Dealing a tenth of the R1 reward.
@@ -147,21 +160,24 @@ contract RewardManagerEmissionTests is RewardManagerTests {
         rewardManager.addToken(smartVault, rewardToken2, rewardDuration / 10, rewardAmount / 10);
         vm.stopPrank();
 
+        vm.prank(smartVaultManager);
         rewardManager.updateRewardsOnVault(smartVault, user);
         deal(address(smartVault), user, rewardAmount, true); // Depositing into a vault.
         skip(rewardDuration / 2);
-        rewardManager.getActiveRewards(smartVault, user);
+        vm.prank(smartVaultManager);
+        rewardManager.claimRewardsFor(smartVault, user);
 
         assertEq(rewardToken2.balanceOf(user), 9999999999999999900000); // R2 claimed completely.
         assertEq(rewardToken.balanceOf(user), 49999999999999999900000); // R1 claimed 50%
         skip(rewardDuration / 2 + 1);
-        rewardManager.getActiveRewards(smartVault, user);
+        vm.prank(smartVaultManager);
+        rewardManager.claimRewardsFor(smartVault, user);
         assertEq(rewardToken2.balanceOf(user), 9999999999999999900000); // R2 claimed completely before and stayed the same value.
         assertEq(rewardToken.balanceOf(user), 99999999999999999800000); // R1 claimed 50%
             // user should get all rewards from R2 and half from R1 todo assert
     }
 
-    function test_getActiveRewards_RemoveTokensAfterFinish() public {
+    function test_claimRewardsFor_RemoveTokensAfterFinish() public {
         addRewardTokens();
         MockToken rewardToken2 = new MockToken("R2", "R2");
         deal(address(rewardToken2), vaultOwner, rewardAmount / 2, true); // Dealing half of the R1 reward.
@@ -173,6 +189,7 @@ contract RewardManagerEmissionTests is RewardManagerTests {
 
         uint256 rewardCountBefore = rewardManager.rewardTokensCount(smartVault);
 
+        vm.prank(smartVaultManager);
         rewardManager.updateRewardsOnVault(smartVault, user);
         deal(address(smartVault), user, rewardAmount, true); // Depositing into a vault.
 
@@ -181,16 +198,16 @@ contract RewardManagerEmissionTests is RewardManagerTests {
 
         skip(rewardDuration * 10);
 
-        vm.startPrank(vaultOwner);
+        vm.prank(vaultOwner);
         rewardManager.removeReward(smartVault, rewardToken2);
-        rewardManager.getActiveRewards(smartVault, user);
-        vm.stopPrank();
+        vm.prank(smartVaultManager);
+        rewardManager.claimRewardsFor(smartVault, user);
 
         IERC20[] memory tokens = new IERC20 [] (1);
         tokens[0] = rewardToken2;
 
         vm.prank(user);
-        rewardManager.getRewards(smartVault, tokens);
+        rewardManager.claimRewards(smartVault, tokens);
 
         uint256 rewardCountAfter = rewardManager.rewardTokensCount(smartVault);
 

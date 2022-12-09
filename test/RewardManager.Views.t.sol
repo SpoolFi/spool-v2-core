@@ -13,6 +13,7 @@ import "@openzeppelin/token/ERC20/IERC20.sol";
 contract RewardManagerViewsTests is RewardManagerTests {
     function _setUp() public {
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
+        vm.prank(smartVaultManager);
         rewardManager.updateRewardsOnVault(smartVault, user);
         deal(address(smartVault), user, rewardAmount, true); // Depositing into a vault.
         vm.startPrank(vaultOwner);
@@ -25,7 +26,8 @@ contract RewardManagerViewsTests is RewardManagerTests {
         _setUp();
         assertEq(rewardManager.lastTimeRewardApplicable(smartVault, rewardToken), 1);
         skip(rewardDuration * 2);
-        rewardManager.getActiveRewards(smartVault, user);
+        vm.prank(smartVaultManager);
+        rewardManager.claimRewardsFor(smartVault, user);
         assertEq(rewardManager.lastTimeRewardApplicable(smartVault, rewardToken), 864001);
         skip(1000);
         assertEq(rewardManager.lastTimeRewardApplicable(smartVault, rewardToken), 864001);
@@ -49,6 +51,7 @@ contract RewardManagerViewsTests is RewardManagerTests {
         skip(1000);
         address secondUser = address(122);
 
+        vm.prank(smartVaultManager);
         rewardManager.updateRewardsOnVault(smartVault, secondUser);
         deal(address(smartVault), secondUser, rewardAmount, true); // "Depositing" into a vault.
 
