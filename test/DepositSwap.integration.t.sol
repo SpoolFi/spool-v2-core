@@ -13,6 +13,7 @@ import "../src/managers/UsdPriceFeedManager.sol";
 import "../src/DepositSwap.sol";
 import "../src/MasterWallet.sol";
 import "../src/SmartVault.sol";
+import "../src/SmartVaultFactory.sol";
 import "../src/Swapper.sol";
 import "./libraries/Arrays.sol";
 import "./mocks/MockExchange.sol";
@@ -31,7 +32,7 @@ contract DepositSwapIntegrationTest is Test, SpoolAccessRoles {
     AssetGroupRegistry private assetGroupRegistry;
     MasterWallet private masterWallet;
     MockPriceFeedManager private priceFeedManager;
-    SmartVault private smartVault;
+    ISmartVault private smartVault;
     SmartVaultManager private smartVaultManager;
     Swapper private swapper;
 
@@ -86,23 +87,31 @@ contract DepositSwapIntegrationTest is Test, SpoolAccessRoles {
         }
 
         {
-            smartVault = new SmartVault("SmartVault", accessControl, guardManager);
-            smartVault.initialize(assetGroupId);
-            accessControl.grantRole(ROLE_SMART_VAULT, address(smartVault));
-            IAction[] memory actions = new IAction[](0);
-            RequestType[] memory actionsRequestTypes = new RequestType[](0);
-            actionManager.setActions(address(smartVault), actions, actionsRequestTypes);
-            address[] memory smartVaultStrategies = new address[](1);
-            smartVaultStrategies[0] = address(strategy);
-            uint256[] memory smartVaultStrategyAllocations = new uint256[](1);
-            smartVaultStrategyAllocations[0] = 1_000;
-            SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
-                assetGroupId: assetGroupId,
-                strategies: smartVaultStrategies,
-                strategyAllocations: smartVaultStrategyAllocations,
-                riskProvider: riskProvider
-            });
-            smartVaultManager.registerSmartVault(address(smartVault), registrationForm);
+            address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
+            SmartVaultFactory smartVaultFactory = new SmartVaultFactory(
+                smartVaultImplementation,
+                accessControl,
+                actionManager,
+                guardManager,
+                smartVaultManager,
+                assetGroupRegistry
+            );
+            accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(smartVaultFactory));
+            accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
+
+            smartVault = smartVaultFactory.deploySmartVault(
+                SmartVaultSpecification({
+                    smartVaultName: "SmartVault",
+                    assetGroupId: assetGroupId,
+                    actions: new IAction[](0),
+                    actionRequestTypes: new RequestType[](0),
+                    guards: new GuardDefinition[][](0),
+                    guardRequestTypes: new RequestType[](0),
+                    strategies: Arrays.toArray(address(strategy)),
+                    strategyAllocations: Arrays.toArray(1_000),
+                    riskProvider: riskProvider
+                })
+            );
         }
     }
 

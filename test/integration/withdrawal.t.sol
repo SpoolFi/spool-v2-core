@@ -12,6 +12,7 @@ import "../../src/managers/StrategyRegistry.sol";
 import "../../src/managers/UsdPriceFeedManager.sol";
 import "../../src/MasterWallet.sol";
 import "../../src/SmartVault.sol";
+import "../../src/SmartVaultFactory.sol";
 import "../../src/Swapper.sol";
 import "../libraries/Arrays.sol";
 import "../mocks/MockStrategy.sol";
@@ -29,7 +30,7 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
     MockStrategy strategyB;
     address[] mySmartVaultStrategies;
 
-    SmartVault private mySmartVault;
+    ISmartVault private mySmartVault;
     SmartVaultManager private smartVaultManager;
     StrategyRegistry private strategyRegistry;
     MasterWallet private masterWallet;
@@ -56,6 +57,7 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
 
         IUsdPriceFeedManager priceFeedManager = new MockPriceFeedManager();
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
+        IActionManager actionManager = new ActionManager(accessControl);
         IGuardManager guardManager = new GuardManager(accessControl);
 
         smartVaultManager = new SmartVaultManager(
@@ -80,32 +82,41 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         strategyB.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyB));
 
-        mySmartVault = new SmartVault("MySmartVault", accessControl, guardManager);
-        mySmartVault.initialize(assetGroupId);
-        accessControl.grantRole(ROLE_SMART_VAULT, address(mySmartVault));
-
-        mySmartVaultStrategies = new address[](2);
-        mySmartVaultStrategies[0] = address(strategyA);
-        mySmartVaultStrategies[1] = address(strategyB);
-
-        uint256[] memory mySmartVaultStrategyAllocations = new uint256[](2);
-        mySmartVaultStrategyAllocations[0] = 400;
-        mySmartVaultStrategyAllocations[1] = 600;
-
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
 
-        SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
-            assetGroupId: assetGroupId,
-            strategies: mySmartVaultStrategies,
-            strategyAllocations: mySmartVaultStrategyAllocations,
-            riskProvider: riskProvider
-        });
+        {
+            address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
+            SmartVaultFactory smartVaultFactory = new SmartVaultFactory(
+                smartVaultImplementation,
+                accessControl,
+                actionManager,
+                guardManager,
+                smartVaultManager,
+                assetGroupRegistry
+            );
+            accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(smartVaultFactory));
+            accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
 
-        smartVaultManager.registerSmartVault(address(mySmartVault), registrationForm);
+            mySmartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB));
+
+            mySmartVault = smartVaultFactory.deploySmartVault(
+                SmartVaultSpecification({
+                    smartVaultName: "MySmartVault",
+                    assetGroupId: assetGroupId,
+                    actions: new IAction[](0),
+                    actionRequestTypes: new RequestType[](0),
+                    guards: new GuardDefinition[][](0),
+                    guardRequestTypes: new RequestType[](0),
+                    strategies: mySmartVaultStrategies,
+                    strategyAllocations: Arrays.toArray(400, 600),
+                    riskProvider: riskProvider
+                })
+            );
+        }
     }
 
     function test_shouldBeAbleToWithdraw() public {

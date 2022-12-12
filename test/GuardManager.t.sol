@@ -7,7 +7,7 @@ import "../src/managers/GuardManager.sol";
 import {MockGuard} from "./mocks/MockGuard.sol";
 import "./utils/GasHelpers.sol";
 
-contract GuardManagerTest is Test, GasHelpers {
+contract GuardManagerTest is Test, GasHelpers, SpoolAccessRoles {
     IGuardManager guardManager;
     MockGuard mockGuard;
     address smartVaultId = address(1);
@@ -17,6 +17,8 @@ contract GuardManagerTest is Test, GasHelpers {
         ISpoolAccessControl accessControl = new SpoolAccessControl();
         guardManager = new GuardManager(accessControl);
         mockGuard = new MockGuard();
+
+        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(this));
 
         (GuardDefinition[][] memory guards, RequestType[] memory requestTypes) = _createGuards();
         guardManager.setGuards(smartVaultId, guards, requestTypes);
@@ -117,6 +119,7 @@ contract GuardManagerTest is Test, GasHelpers {
 
     function test_writeGuards() public {
         (GuardDefinition[][] memory guards, RequestType[] memory requestTypes) = _createGuards();
+
         guardManager.setGuards(address(2), guards, requestTypes);
     }
 }

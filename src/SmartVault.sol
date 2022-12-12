@@ -14,13 +14,24 @@ import "./interfaces/IGuardManager.sol";
 contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControllable, ISmartVault {
     using SafeERC20 for IERC20;
 
-    /* ========== STATE VARIABLES ========== */
+    /* ========== CONSTANTS ========== */
+
+    // @notice Maximal value of deposit NFT ID.
+    uint256 private constant MAXIMAL_DEPOSIT_ID = 2 ** 255 - 1;
+
+    // @notice Maximal value of withdrawal NFT ID.
+    uint256 private constant MAXIMAL_WITHDRAWAL_ID = 2 ** 256 - 1;
 
     // @notice Guard manager
     IGuardManager internal immutable _guardManager;
 
+    // @notice Asset group ID
+    uint256 public assetGroupId;
+
     // @notice Vault name
     string internal _vaultName;
+
+    /* ========== STATE VARIABLES ========== */
 
     // @notice Mapping from token ID => owner address
     mapping(uint256 => address) private _nftOwners;
@@ -31,38 +42,31 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
     // @notice Withdrawal metadata registry
     mapping(uint256 => WithdrawalMetadata) private _withdrawalMetadata;
 
-    // @notice Asset group ID
-    uint256 public override assetGroupId;
-
     // @notice Deposit NFT ID
-    uint256 private _lastDepositId = 0;
-    // @notice Maximal value of deposit NFT ID.
-    uint256 private _maximalDepositId = 2 ** 255 - 1;
+    uint256 private _lastDepositId;
 
     // @notice Withdrawal NFT ID
-    uint256 private _lastWithdrawalId = 2 ** 255;
-    // @notice Maximal value of withdrawal NFT ID.
-    uint256 private _maximalWithdrawalId = 2 ** 256 - 1;
+    uint256 private _lastWithdrawalId;
 
     /* ========== CONSTRUCTOR ========== */
 
-    /**
-     * @notice Initializes variables
-     * @param vaultName_ TODO
-     * @param accessControl_ TODO
-     * @param guardManager_ TODO
-     */
-    constructor(string memory vaultName_, ISpoolAccessControl accessControl_, IGuardManager guardManager_)
+    constructor(ISpoolAccessControl accessControl_, IGuardManager guardManager_)
         SpoolAccessControllable(accessControl_)
     {
         _guardManager = guardManager_;
-        _vaultName = vaultName_;
+
+        _disableInitializers();
     }
 
-    function initialize(uint256 assetGroupId_) external initializer {
+    function initialize(string memory vaultName_, uint256 assetGroupId_) external initializer {
         __ERC1155_init("");
         __ERC20_init("", "");
+
+        _vaultName = vaultName_;
         assetGroupId = assetGroupId_;
+
+        _lastDepositId = 0;
+        _lastWithdrawalId = 2 ** 255;
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
@@ -127,10 +131,10 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
     {
         // check validity and ownership of the NFT
-        if (type_ == RequestType.Deposit && nftId > _maximalDepositId) {
+        if (type_ == RequestType.Deposit && nftId > MAXIMAL_DEPOSIT_ID) {
             revert InvalidDepositNftId(nftId);
         }
-        if (type_ == RequestType.Withdrawal && nftId <= _maximalDepositId) {
+        if (type_ == RequestType.Withdrawal && nftId <= MAXIMAL_DEPOSIT_ID) {
             revert InvalidWithdrawalNftId(nftId);
         }
         if (balanceOf(owner, nftId) != 1) {
@@ -158,7 +162,7 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256)
     {
-        if (_lastDepositId >= _maximalDepositId - 1) {
+        if (_lastDepositId >= MAXIMAL_DEPOSIT_ID - 1) {
             revert DepositIdOverflow();
         }
         _lastDepositId++;
@@ -173,7 +177,7 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256 receipt)
     {
-        if (_lastWithdrawalId >= _maximalWithdrawalId - 1) {
+        if (_lastWithdrawalId >= MAXIMAL_WITHDRAWAL_ID - 1) {
             revert WithdrawalIdOverflow();
         }
         _lastWithdrawalId++;

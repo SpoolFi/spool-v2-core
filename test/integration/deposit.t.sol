@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.17;
 
+import "forge-std/console.sol";
 import "forge-std/Test.sol";
 import "../../src/managers/ActionManager.sol";
 import "../../src/managers/AssetGroupRegistry.sol";
@@ -11,6 +12,7 @@ import "../../src/managers/StrategyRegistry.sol";
 import "../../src/managers/UsdPriceFeedManager.sol";
 import "../../src/MasterWallet.sol";
 import "../../src/SmartVault.sol";
+import "../../src/SmartVaultFactory.sol";
 import "../../src/Swapper.sol";
 import "../libraries/Arrays.sol";
 import "../mocks/MockStrategy.sol";
@@ -29,7 +31,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
     MockStrategy strategyC;
     address[] mySmartVaultStrategies;
 
-    SmartVault private mySmartVault;
+    ISmartVault private mySmartVault;
     SmartVaultManager private smartVaultManager;
     StrategyRegistry private strategyRegistry;
     MasterWallet private masterWallet;
@@ -57,6 +59,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
 
         MockPriceFeedManager priceFeedManager = new MockPriceFeedManager();
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
+        IActionManager actionManager = new ActionManager(accessControl);
         IGuardManager guardManager = new GuardManager(accessControl);
 
         smartVaultManager = new SmartVaultManager(
@@ -89,34 +92,41 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
         strategyC.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyC));
 
-        mySmartVault = new SmartVault("MySmartVault", accessControl, guardManager);
-        mySmartVault.initialize(assetGroupId);
-        accessControl.grantRole(ROLE_SMART_VAULT, address(mySmartVault));
-
-        mySmartVaultStrategies = new address[](3);
-        mySmartVaultStrategies[0] = address(strategyA);
-        mySmartVaultStrategies[1] = address(strategyB);
-        mySmartVaultStrategies[2] = address(strategyC);
-
-        uint256[] memory mySmartVaultStrategyAllocations = new uint256[](3);
-        mySmartVaultStrategyAllocations[0] = 600;
-        mySmartVaultStrategyAllocations[1] = 300;
-        mySmartVaultStrategyAllocations[2] = 100;
-
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
 
-        SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
-            assetGroupId: assetGroupId,
-            strategies: mySmartVaultStrategies,
-            strategyAllocations: mySmartVaultStrategyAllocations,
-            riskProvider: riskProvider
-        });
+        {
+            address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
+            SmartVaultFactory smartVaultFactory = new SmartVaultFactory(
+                smartVaultImplementation,
+                accessControl,
+                actionManager,
+                guardManager,
+                smartVaultManager,
+                assetGroupRegistry
+            );
+            accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(smartVaultFactory));
+            accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
 
-        smartVaultManager.registerSmartVault(address(mySmartVault), registrationForm);
+            mySmartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
+
+            mySmartVault = smartVaultFactory.deploySmartVault(
+                SmartVaultSpecification({
+                    smartVaultName: "MySmartVault",
+                    assetGroupId: assetGroupId,
+                    actions: new IAction[](0),
+                    actionRequestTypes: new RequestType[](0),
+                    guards: new GuardDefinition[][](0),
+                    guardRequestTypes: new RequestType[](0),
+                    strategies: mySmartVaultStrategies,
+                    strategyAllocations: Arrays.toArray(600, 300, 100),
+                    riskProvider: riskProvider
+                })
+            );
+        }
 
         priceFeedManager.setExchangeRate(address(tokenA), 1200 * 10 ** 26);
         priceFeedManager.setExchangeRate(address(tokenB), 16400 * 10 ** 26);
@@ -124,6 +134,8 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
     }
 
     function test_shouldBeAbleToDeposit() public {
+        bytes32 a = accessControl.getRoleAdmin(ROLE_SMART_VAULT);
+        console.logBytes32(a);
         // set initial state
         deal(address(tokenA), alice, 100 ether, true);
         deal(address(tokenB), alice, 10 ether, true);

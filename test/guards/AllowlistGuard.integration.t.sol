@@ -13,10 +13,12 @@ import "../../src/managers/StrategyRegistry.sol";
 import "../../src/managers/UsdPriceFeedManager.sol";
 import "../../src/MasterWallet.sol";
 import "../../src/SmartVault.sol";
+import "../../src/SmartVaultFactory.sol";
 import "../../src/Swapper.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
+import "../libraries/Arrays.sol";
 
 contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
     address private alice;
@@ -29,7 +31,7 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
 
     AllowlistGuard private allowlistGuard;
     GuardManager private guardManager;
-    SmartVault private smartVault;
+    ISmartVault private smartVault;
     SmartVaultManager private smartVaultManager;
     ISpoolAccessControl private accessControl;
 
@@ -65,11 +67,9 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
 
-        allowlistGuard = new AllowlistGuard(accessControl);
+        uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(token)));
 
-        address[] memory assetGroup = new address[](1);
-        assetGroup[0] = address(token);
-        uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+        (GuardDefinition[][] memory guards, RequestType[] memory guardRequestTypes) = setUpAllowlistGuard();
 
         MockStrategy strategy =
             new MockStrategy("Strategy", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
@@ -81,29 +81,39 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         }
 
         {
-            smartVault = new SmartVault("SmartVault", accessControl, guardManager);
-            smartVault.initialize(assetGroupId);
-            accessControl.grantRole(ROLE_SMART_VAULT, address(smartVault));
-            IAction[] memory actions = new IAction[](0);
-            RequestType[] memory actionsRequestTypes = new RequestType[](0);
-            actionManager.setActions(address(smartVault), actions, actionsRequestTypes);
-            address[] memory smartVaultStrategies = new address[](1);
-            smartVaultStrategies[0] = address(strategy);
-            uint256[] memory smartVaultStrategyAllocations = new uint256[](1);
-            smartVaultStrategyAllocations[0] = 1_000;
-            SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
-                assetGroupId: assetGroupId,
-                strategies: smartVaultStrategies,
-                strategyAllocations: smartVaultStrategyAllocations,
-                riskProvider: riskProvider
-            });
-            smartVaultManager.registerSmartVault(address(smartVault), registrationForm);
+            address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
+            SmartVaultFactory smartVaultFactory = new SmartVaultFactory(
+                smartVaultImplementation,
+                accessControl,
+                actionManager,
+                guardManager,
+                smartVaultManager,
+                assetGroupRegistry
+            );
+            accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(smartVaultFactory));
+            accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
+
+            smartVault = smartVaultFactory.deploySmartVault(
+                SmartVaultSpecification({
+                    smartVaultName: "SmartVault",
+                    assetGroupId: assetGroupId,
+                    actions: new IAction[](0),
+                    actionRequestTypes: new RequestType[](0),
+                    guards: guards,
+                    guardRequestTypes: guardRequestTypes,
+                    strategies: Arrays.toArray(address(strategy)),
+                    strategyAllocations: Arrays.toArray(1_000),
+                    riskProvider: riskProvider
+                })
+            );
         }
 
-        setUpAllowlistGuard();
+        setUpAllowlist();
     }
 
-    function setUpAllowlistGuard() private {
+    function setUpAllowlistGuard() private returns (GuardDefinition[][] memory, RequestType[] memory) {
+        allowlistGuard = new AllowlistGuard(accessControl);
+
         // Setup smart vault with three guards:
         // - check whether the person executing the deposit is on allowlist
         // - check whether the person owning the assets being deposited is on allowlist
@@ -176,9 +186,10 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         RequestType[] memory requestTypes = new RequestType[](1);
         requestTypes[0] = RequestType.Deposit;
 
-        // set guards for the smart vault
-        guardManager.setGuards(address(smartVault), guards, requestTypes);
+        return (guards, requestTypes);
+    }
 
+    function setUpAllowlist() private {
         // allow Alice to update allowlists for the smart vault
         accessControl.grantSmartVaultRole(address(smartVault), ROLE_GUARD_ALLOWLIST_MANAGER, alice);
 

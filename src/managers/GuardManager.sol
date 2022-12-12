@@ -62,7 +62,7 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
     function setGuards(address smartVaultId, GuardDefinition[][] calldata guards, RequestType[] calldata requestTypes)
         public
         hasNoGuards(smartVaultId)
-        onlyRole(ROLE_SPOOL_ADMIN, msg.sender)
+        onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)
     {
         for (uint256 i = 0; i < requestTypes.length; i++) {
             _writeGuards(smartVaultId, requestTypes[i], guards[i]);

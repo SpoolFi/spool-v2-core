@@ -20,6 +20,8 @@ contract ActionManagerTest is Test, SpoolAccessRoles {
         actionManager = new ActionManager(accessControl);
         mockAction = new MockAction();
         mockToken = new MockToken("MCK", "MCK");
+
+        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(this));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, smartVaultId);
     }
 

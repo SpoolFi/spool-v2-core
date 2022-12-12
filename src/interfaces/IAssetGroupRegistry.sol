@@ -42,6 +42,13 @@ interface IAssetGroupRegistry {
      */
     function assetGroupLength(uint256 assetGroupId) external view returns (uint256);
 
+    /**
+     * @notice Validates that provided ID represents an asset group.
+     * @dev Function reverts when ID does not represent an asset group.
+     * @param assetGroupId ID to validate.
+     */
+    function validateAssetGroup(uint256 assetGroupId) external view;
+
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     /**

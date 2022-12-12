@@ -6,6 +6,8 @@ import "forge-std/Test.sol";
 import "../../src/interfaces/IRiskManager.sol";
 
 contract MockRiskManager is IRiskManager {
+    function test_mock() external pure {}
+
     function registerRiskProvider(address riskProvider, bool isEnabled) external {
         revert("0");
     }

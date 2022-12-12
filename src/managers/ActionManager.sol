@@ -30,7 +30,7 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
      */
     function setActions(address smartVault, IAction[] calldata actions_, RequestType[] calldata requestTypes)
         external
-        onlyRole(ROLE_SPOOL_ADMIN, msg.sender)
+        onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)
         notInitialized(smartVault)
     {
         for (uint256 i; i < actions_.length; i++) {

@@ -12,6 +12,7 @@ import "../../src/managers/StrategyRegistry.sol";
 import "../../src/managers/UsdPriceFeedManager.sol";
 import "../../src/MasterWallet.sol";
 import "../../src/SmartVault.sol";
+import "../../src/SmartVaultFactory.sol";
 import "../../src/Swapper.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockNft.sol";
@@ -30,7 +31,7 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
     MockGuard private guard;
     MockToken private token;
     GuardManager private guardManager;
-    SmartVault private smartVault;
+    ISmartVault private smartVault;
     SmartVaultManager private smartVaultManager;
 
     function setUp() public {
@@ -68,24 +69,38 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
             strategyRegistry.registerStrategy(address(strategy));
         }
 
-        {
-            smartVault = new SmartVault("SmartVault", accessControl, guardManager);
-            smartVault.initialize(assetGroupId);
-            accessControl.grantRole(ROLE_SMART_VAULT, address(smartVault));
-            actionManager.setActions(address(smartVault), new IAction[](0), new RequestType[](0));
-            SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
-                assetGroupId: assetGroupId,
-                strategies: Arrays.toArray(address(strategy)),
-                strategyAllocations: Arrays.toArray(1_000),
-                riskProvider: riskProvider
-            });
-            smartVaultManager.registerSmartVault(address(smartVault), registrationForm);
-        }
+        (GuardDefinition[][] memory guards, RequestType[] memory guardRequestTypes) = setUpGuard();
 
-        setUpGuard();
+        {
+            address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
+            SmartVaultFactory smartVaultFactory = new SmartVaultFactory(
+                smartVaultImplementation,
+                accessControl,
+                actionManager,
+                guardManager,
+                smartVaultManager,
+                assetGroupRegistry
+            );
+            accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(smartVaultFactory));
+            accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
+
+            smartVault = smartVaultFactory.deploySmartVault(
+                SmartVaultSpecification({
+                    smartVaultName: "SmartVault",
+                    assetGroupId: assetGroupId,
+                    actions: new IAction[](0),
+                    actionRequestTypes: new RequestType[](0),
+                    guards: guards,
+                    guardRequestTypes: guardRequestTypes,
+                    strategies: Arrays.toArray(address(strategy)),
+                    strategyAllocations: Arrays.toArray(1_000),
+                    riskProvider: riskProvider
+                })
+            );
+        }
     }
 
-    function setUpGuard() private {
+    function setUpGuard() private view returns (GuardDefinition[][] memory, RequestType[] memory) {
         GuardDefinition[][] memory guards = new GuardDefinition[][](1);
         guards[0] = new GuardDefinition[](1);
 
@@ -110,8 +125,7 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
         RequestType[] memory requestTypes = new RequestType[](1);
         requestTypes[0] = RequestType.TransferNFT;
 
-        // set guards for the smart contract
-        guardManager.setGuards(address(smartVault), guards, requestTypes);
+        return (guards, requestTypes);
     }
 
     function test_transferNFT_timelockReverts() public {

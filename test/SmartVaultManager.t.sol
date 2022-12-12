@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import {console} from "forge-std/console.sol";
+import "@openzeppelin/proxy/Clones.sol";
 import "forge-std/Test.sol";
 import "../src/interfaces/RequestType.sol";
 import "../src/managers/ActionManager.sol";
@@ -52,6 +53,8 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
             actionManager,
             guardManager
         );
+        accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(this));
+        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(this));
         accessControl.grantRole(ROLE_SMART_VAULT, smartVault);
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
 
@@ -297,14 +300,10 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
 
     function _createVault(address[] memory strategies, uint256 assetGroupId) private returns (ISmartVault) {
         IGuardManager guardManager = new GuardManager(accessControl);
-        IActionManager actionManager = new ActionManager(accessControl);
-        SmartVault smartVault_ = new SmartVault(
-            "TestVault",
-            accessControl,
-            guardManager
-        );
 
-        smartVault_.initialize(assetGroupId);
+        address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
+        SmartVault smartVault_ = SmartVault(Clones.clone(smartVaultImplementation));
+        smartVault_.initialize("SmartVault", assetGroupId);
 
         uint256[] memory allocations = new uint256[](3);
         allocations[0] = 600; // A

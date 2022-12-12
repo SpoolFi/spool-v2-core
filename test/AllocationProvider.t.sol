@@ -8,6 +8,8 @@ import "../src/interfaces/IAllocationProvider.sol";
 import "../src/providers/AllocationProvider.sol";
 
 contract FixedRM is MockRiskManager {
+    function test_mock_() external pure {}
+
     function getRiskScores(address riskProvider, address[] memory strategy)
         external
         view

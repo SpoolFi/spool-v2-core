@@ -351,6 +351,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm)
         external
         onlyUnregisteredSmartVault(smartVault)
+        onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)
         onlyRole(ROLE_RISK_PROVIDER, registrationForm.riskProvider)
     {
         // TODO: should check if same asset group on strategies and smart vault

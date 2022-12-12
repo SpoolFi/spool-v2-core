@@ -3,6 +3,7 @@ pragma solidity ^0.8.17;
 
 import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
+import "@openzeppelin/proxy/Clones.sol";
 import "../src/managers/RewardManager.sol";
 import "../src/interfaces/IRewardManager.sol";
 import "./mocks/MockToken.sol";
@@ -34,8 +35,10 @@ contract RewardManagerTests is Test, SpoolAccessRoles {
         assetGroupRegistry = new AssetGroupRegistry();
 
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(underlying)));
-        SmartVault smartVault_ = new SmartVault("SmartVault", sac, new GuardManager(sac));
-        smartVault_.initialize(assetGroupId);
+
+        address smartVaultImplementation = address(new SmartVault(sac, new GuardManager(sac)));
+        SmartVault smartVault_ = SmartVault(Clones.clone(smartVaultImplementation));
+        smartVault_.initialize("SmartVault", assetGroupId);
 
         rewardManager = new RewardManager(sac, assetGroupRegistry);
         rewardDuration = SECONDS_IN_DAY * 10;

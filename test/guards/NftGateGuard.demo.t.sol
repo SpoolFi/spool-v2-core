@@ -12,11 +12,13 @@ import "../../src/managers/StrategyRegistry.sol";
 import "../../src/managers/UsdPriceFeedManager.sol";
 import "../../src/MasterWallet.sol";
 import "../../src/SmartVault.sol";
+import "../../src/SmartVaultFactory.sol";
 import "../../src/Swapper.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockNft.sol";
 import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
+import "../libraries/Arrays.sol";
 
 contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
     address private alice;
@@ -28,7 +30,7 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
     MockToken private token;
 
     GuardManager private guardManager;
-    SmartVault private smartVault;
+    ISmartVault private smartVault;
     SmartVaultManager private smartVaultManager;
 
     function setUp() public {
@@ -79,30 +81,37 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
             strategyRegistry.registerStrategy(address(strategy));
         }
 
-        {
-            smartVault = new SmartVault("SmartVault", accessControl, guardManager);
-            smartVault.initialize(assetGroupId);
-            accessControl.grantRole(ROLE_SMART_VAULT, address(smartVault));
-            IAction[] memory actions = new IAction[](0);
-            RequestType[] memory actionsRequestTypes = new RequestType[](0);
-            actionManager.setActions(address(smartVault), actions, actionsRequestTypes);
-            address[] memory smartVaultStrategies = new address[](1);
-            smartVaultStrategies[0] = address(strategy);
-            uint256[] memory smartVaultStrategyAllocations = new uint256[](1);
-            smartVaultStrategyAllocations[0] = 1_000;
-            SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
-                assetGroupId: assetGroupId,
-                strategies: smartVaultStrategies,
-                strategyAllocations: smartVaultStrategyAllocations,
-                riskProvider: riskProvider
-            });
-            smartVaultManager.registerSmartVault(address(smartVault), registrationForm);
-        }
+        (GuardDefinition[][] memory guards, RequestType[] memory guardRequestTypes) = setUpNftGateGuard();
 
-        setUpNftGateGuard();
+        {
+            SmartVaultFactory smartVaultFactory = new SmartVaultFactory(
+                address(new SmartVault(accessControl, guardManager)),
+                accessControl,
+                actionManager,
+                guardManager,
+                smartVaultManager,
+                assetGroupRegistry
+            );
+            accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(smartVaultFactory));
+            accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
+
+            smartVault = smartVaultFactory.deploySmartVault(
+                SmartVaultSpecification({
+                    smartVaultName: "SmartVault",
+                    assetGroupId: assetGroupId,
+                    actions: new IAction[](0),
+                    actionRequestTypes: new RequestType[](0),
+                    guards: guards,
+                    guardRequestTypes: guardRequestTypes,
+                    strategies: Arrays.toArray(address(strategy)),
+                    strategyAllocations: Arrays.toArray(1_000),
+                    riskProvider: riskProvider
+                })
+            );
+        }
     }
 
-    function setUpNftGateGuard() private {
+    function setUpNftGateGuard() private returns (GuardDefinition[][] memory, RequestType[] memory) {
         // Setup smart vault with one guard:
         // - check that the person receiving the deposit NFT has at least one selected NFT
         // The guard is implemented using the `balanceOf` function of the IERC721 contract.
@@ -130,13 +139,12 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
         RequestType[] memory requestTypes = new RequestType[](1);
         requestTypes[0] = RequestType.Deposit;
 
-        // set guards for the smart contract
-        guardManager.setGuards(address(smartVault), guards, requestTypes);
-
         // mint one NFT for Bob and two NFTs for Charlie
         nft.mint(bob);
         nft.mint(charlie);
         nft.mint(charlie);
+
+        return (guards, requestTypes);
     }
 
     function test() public {

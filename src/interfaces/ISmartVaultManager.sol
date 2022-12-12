@@ -57,7 +57,7 @@ error SmartVaultRegistrationZeroAllocation();
 struct SmartVaultRegistrationForm {
     uint256 assetGroupId;
     address[] strategies;
-    uint256[] strategyAllocations;
+    uint256[] strategyAllocations; // TODO: this should not be input but obtained from risk provider
     address riskProvider;
 }
 
