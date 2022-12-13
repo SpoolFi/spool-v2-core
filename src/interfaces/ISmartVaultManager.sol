@@ -85,6 +85,13 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
 
     function getLatestFlushIndex(address smartVault) external view returns (uint256);
 
+    /**
+     * @notice Retrieves an amount of SVT tokens.
+     * @param smartVault Smart Vault address.
+     * @param user User address.
+     * @return depositNTFIds An array of deposit NFT Ids.
+     */
+    function getUserSVTBalance(address smartVault, address user) external view returns (uint256);
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm) external;

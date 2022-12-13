@@ -36,6 +36,9 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
     // @notice Mapping from token ID => owner address
     mapping(uint256 => address) private _nftOwners;
 
+    // @notice Mapping from user to all of his current D-NFT IDs
+    mapping(address => uint256[]) private _usersDepositNFTIds;
+
     // @notice Deposit metadata registry
     mapping(uint256 => DepositMetadata) private _depositMetadata;
 
@@ -70,7 +73,12 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
-
+    /**
+      * @return depositNTFIds A list of Deposit NFT IDs
+     */
+    function getUserDepositNFTIDs(address userAddress) external view returns (uint256[] memory depositNTFIds) {
+        return _usersDepositNFTIds[userAddress];
+    }
     function vaultName() external view returns (string memory) {
         return _vaultName;
     }
@@ -208,6 +216,8 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         for (uint256 i = 0; i < ids.length; i++) {
             require(amounts[i] == 1, "SmartVault::_afterTokenTransfer: Invalid NFT amount");
             _nftOwners[ids[i]] = to;
+
+            _usersDepositNFTIds[to].push(ids[i]); // TODO: Check what happens on the NFT burn (and transfer).
         }
     }
 }

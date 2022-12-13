@@ -62,6 +62,11 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /**
+     * @return depositNTFIds Retrieves a list of Deposit NFTs for User.
+     */
+    function getUserDepositNFTIDs(address userAddress) external view returns (uint256[] memory depositNTFIds);
+
+    /**
      * @return asset group ID
      */
     function assetGroupId() external view returns (uint256);

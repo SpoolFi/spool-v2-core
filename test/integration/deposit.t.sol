@@ -229,6 +229,9 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
             35716280000000000000000000000000000000000000000000000000000000
         );
 
+        uint256 balance = smartVaultManager.getUserSVTBalance(address(mySmartVault), alice);
+        assertEq(balance, 35716280000000000000000000000000000000000000000000000000000000);
+
         // claim deposit
         vm.prank(alice);
         smartVaultManager.claimSmartVaultTokens(address(mySmartVault), aliceDepositNftId);

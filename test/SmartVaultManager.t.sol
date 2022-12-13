@@ -67,6 +67,18 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         token2 = new MockToken("Token2", "T2");
     }
 
+    function test_getUserSVTBalance_getsCurrentBalanceWithoutDepositNFT() public {
+        SmartVault testSmartVault = new SmartVault("SmartVault", accessControl, new GuardManager(accessControl));
+
+        uint256 amount = 1000;
+        address user = address(8888);
+        deal(address(testSmartVault), user, amount, true); // Depositing into a vault.
+
+        uint256 balance = smartVaultManager.getUserSVTBalance(address(testSmartVault), user);
+
+        assertEq(balance, amount);
+    }
+
     function test_registerSmartVault_shouldRegister() public {
         (address[] memory strategies, uint256 assetGroupId) = _createStrategies();
 
