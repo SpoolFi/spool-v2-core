@@ -193,17 +193,6 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         smartVaultManager.registerSmartVault(smartVault, registrationForm);
     }
 
-    function test_getDepositRatio() public {
-        (address[] memory strategies, uint256 assetGroupId) = _createStrategies();
-        ISmartVault smartVault_ = _createVault(strategies, assetGroupId);
-        _initializePriceFeeds();
-
-        uint256[] memory ratio = smartVaultManager.getDepositRatio(address(smartVault_));
-
-        assertEq(ratio[0], 3739334521644161);
-        assertEq(ratio[1], 253516953612242);
-    }
-
     function test_addDepositsAndFlush() public {
         (address[] memory strategies, uint256 assetGroupId) = _createStrategies();
         ISmartVault smartVault_ = _createVault(strategies, assetGroupId);

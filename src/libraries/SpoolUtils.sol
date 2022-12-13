@@ -6,17 +6,9 @@ import "../interfaces/IMasterWallet.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
+import "@openzeppelin/utils/math/Math.sol";
 
 library SpoolUtils {
-    function getStrategyRatios(address[] memory strategies_) public view returns (uint256[][] memory) {
-        uint256[][] memory ratios = new uint256[][](strategies_.length);
-        for (uint256 i = 0; i < strategies_.length; i++) {
-            ratios[i] = IStrategy(strategies_[i]).assetRatio();
-        }
-
-        return ratios;
-    }
-
     function getStrategyRatiosAtLastDhw(address[] memory strategies_, IStrategyRegistry strategyRegistry_)
         public
         view
@@ -64,12 +56,19 @@ library SpoolUtils {
         return abi.decode(_returnData, (string)); // all that remains is the revert string
     }
 
-    function getBalances(address[] memory tokens, address wallet) public view returns (uint256[] memory) {
-        uint256[] memory balances = new uint256[](tokens.length);
-        for (uint256 i = 0; i < tokens.length; i++) {
-            balances[i] = IERC20(tokens[i]).balanceOf(wallet);
+    function getVaultTotalUsdValue(address smartVault, address[] memory strategyAddresses)
+        public
+        view
+        returns (uint256)
+    {
+        uint256 totalUsdValue = 0;
+
+        for (uint256 i = 0; i < strategyAddresses.length; i++) {
+            IStrategy strategy = IStrategy(strategyAddresses[i]);
+            totalUsdValue = totalUsdValue
+                + Math.mulDiv(strategy.totalUsdValue(), strategy.balanceOf(smartVault), strategy.totalSupply());
         }
 
-        return balances;
+        return totalUsdValue;
     }
 }

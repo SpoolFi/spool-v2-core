@@ -121,9 +121,16 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         _mint(receiver, vaultShares);
     }
 
-    function burn(address owner, uint256 vaultShares) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
+    function burn(address owner, uint256 vaultShares, address[] memory strategies, uint256[] memory shares)
+        external
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+    {
         // burn withdrawn vault shares
         _burn(owner, vaultShares);
+
+        for (uint256 i = 0; i < strategies.length; i++) {
+            IERC20(strategies[i]).safeTransfer(strategies[i], shares[i]);
+        }
     }
 
     function burnNFT(address owner, uint256 nftId, RequestType type_)
@@ -146,15 +153,6 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
 
     function claimShares(address claimer, uint256 amount) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
         _transfer(address(this), claimer, amount);
-    }
-
-    function releaseStrategyShares(address[] memory strategies, uint256[] memory shares)
-        external
-        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
-    {
-        for (uint256 i = 0; i < strategies.length; i++) {
-            IERC20(strategies[i]).safeTransfer(strategies[i], shares[i]);
-        }
     }
 
     function mintDepositNFT(address receiver, DepositMetadata memory metadata)

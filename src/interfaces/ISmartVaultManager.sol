@@ -92,8 +92,6 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
 
     function getLatestFlushIndex(address smartVault) external view returns (uint256);
 
-    function getDepositRatio(address smartVault) external view returns (uint256[] memory);
-
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm) external;

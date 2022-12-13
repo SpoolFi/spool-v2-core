@@ -113,7 +113,7 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
 
     function mint(address receiver, uint256 vaultShares) external;
 
-    function burn(address owner, uint256 vaultShares) external;
+    function burn(address owner, uint256 vaultShares, address[] memory strategies, uint256[] memory shares) external;
 
     function mintWithdrawalNFT(address receiver, WithdrawalMetadata memory metadata)
         external
@@ -131,6 +131,4 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
      * @param amount Amount of shares to transfer.
      */
     function claimShares(address claimer, uint256 amount) external;
-
-    function releaseStrategyShares(address[] memory strategies, uint256[] memory shares) external;
 }
