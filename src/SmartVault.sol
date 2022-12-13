@@ -74,11 +74,12 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
     /**
-      * @return depositNTFIds A list of Deposit NFT IDs
+     * @return depositNTFIds A list of Deposit NFT IDs
      */
     function getUserDepositNFTIDs(address userAddress) external view returns (uint256[] memory depositNTFIds) {
         return _usersDepositNFTIds[userAddress];
     }
+
     function vaultName() external view returns (string memory) {
         return _vaultName;
     }

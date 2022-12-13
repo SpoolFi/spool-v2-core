@@ -151,8 +151,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== VIEW FUNCTIONS ========== */
     /**
-       * @notice Retrieves a Smart Vault Token Balance for user. Including the predicted balance from all current D-NFTs
-       * currently in holding.
+     * @notice Retrieves a Smart Vault Token Balance for user. Including the predicted balance from all current D-NFTs
+     * currently in holding.
      */
     function getUserSVTBalance(address smartVaultAddress, address userAddress) external view returns (uint256) {
         ISmartVault smartVault = ISmartVault(smartVaultAddress);
@@ -161,7 +161,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         uint256[] memory ids = smartVault.getUserDepositNFTIDs(userAddress);
 
-        for (uint256 i; i < ids.length ; i++) {
+        for (uint256 i; i < ids.length; i++) {
             DepositMetadata memory depositMetadata = smartVault.getDepositMetadata(ids[i]);
             uint256 balance = getClaimedVaultTokensPreview(smartVaultAddress, depositMetadata);
             currentBalance += balance;
@@ -169,9 +169,37 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return currentBalance;
     }
 
+    function getClaimedVaultTokensPreview(address smartVaultAddress, DepositMetadata memory data)
+        private
+        view
+        returns (uint256)
+    {
+        if (data.flushIndex >= _flushIndexesToSync[smartVaultAddress]) {
+            revert DepositNotSyncedYet();
+        }
+        uint256 depositedUsd;
+        uint256 totalDepositedUsd;
+        {
+            address[] memory assets = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVaultAddress]);
+            uint256[] memory totalDepositedAssets =
+                _vaultDeposits[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
+            uint256[] memory exchangeRates =
+                _flushExchangeRates[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
+
+            for (uint256 i = 0; i < data.assets.length; i++) {
+                depositedUsd += _priceFeedManager.assetToUsdCustomPrice(assets[i], data.assets[i], exchangeRates[i]);
+                totalDepositedUsd +=
+                    _priceFeedManager.assetToUsdCustomPrice(assets[i], totalDepositedAssets[i], exchangeRates[i]);
+            }
+        }
+        uint256 claimedVaultTokens =
+            Math.mulDiv(_mintedVaultShares[smartVaultAddress][data.flushIndex], depositedUsd, totalDepositedUsd);
+        return claimedVaultTokens;
+    }
     /**
      * @notice SmartVault strategies
      */
+
     function strategies(address smartVault) external view returns (address[] memory) {
         return _smartVaultStrategies[smartVault];
     }
@@ -300,29 +328,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return _depositAssets(smartVault, msg.sender, receiver, assets);
     }
 
-    function getClaimedVaultTokensPreview(address smartVaultAddress, DepositMetadata memory data) private view returns (uint256) {
-        if (data.flushIndex >= _flushIndexesToSync[smartVaultAddress]) {
-            revert DepositNotSyncedYet();
-        }
-        uint256 depositedUsd;
-        uint256 totalDepositedUsd;
-        {
-            address[] memory assets = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVaultAddress]);
-            uint256[] memory totalDepositedAssets =
-            _vaultDeposits[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
-            uint256[] memory exchangeRates =
-            _flushExchangeRates[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
-
-            for (uint256 i = 0; i < data.assets.length; i++) {
-                depositedUsd += _priceFeedManager.assetToUsdCustomPrice(assets[i], data.assets[i], exchangeRates[i]);
-                totalDepositedUsd +=
-                _priceFeedManager.assetToUsdCustomPrice(assets[i], totalDepositedAssets[i], exchangeRates[i]);
-            }
-        }
-        uint256 claimedVaultTokens =
-            Math.mulDiv(_mintedVaultShares[smartVaultAddress][data.flushIndex], depositedUsd, totalDepositedUsd);
-        return claimedVaultTokens;
-    }
     function claimSmartVaultTokens(address smartVaultAddress, uint256 depositNftId)
         external
         onlyRegisteredSmartVault(smartVaultAddress)
@@ -332,28 +337,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         smartVault.burnNFT(msg.sender, depositNftId, RequestType.Deposit);
         DepositMetadata memory data = smartVault.getDepositMetadata(depositNftId);
 
-//        if (data.flushIndex >= _flushIndexesToSync[smartVaultAddress]) {
-//            revert DepositNotSyncedYet();
-//        }
-
-//        uint256 depositedUsd;
-//        uint256 totalDepositedUsd;
-//        {
-//            address[] memory assets = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVaultAddress]);
-//            uint256[] memory totalDepositedAssets =
-//                _vaultDeposits[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
-//            uint256[] memory exchangeRates =
-//                _flushExchangeRates[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
-//
-//            for (uint256 i = 0; i < data.assets.length; i++) {
-//                depositedUsd += _priceFeedManager.assetToUsdCustomPrice(assets[i], data.assets[i], exchangeRates[i]);
-//                totalDepositedUsd +=
-//                    _priceFeedManager.assetToUsdCustomPrice(assets[i], totalDepositedAssets[i], exchangeRates[i]);
-//            }
-//        }
-
         uint256 claimedVaultTokens = getClaimedVaultTokensPreview(smartVaultAddress, data);
-//            Math.mulDiv(_mintedVaultShares[smartVaultAddress][data.flushIndex], depositedUsd, totalDepositedUsd);
         // there will be some dust after all users claim SVTs
         smartVault.claimShares(msg.sender, claimedVaultTokens);
 
