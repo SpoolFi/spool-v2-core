@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.17;
+pragma solidity 0.8.16;
 
 import {Test} from "forge-std/Test.sol";
 import {IAccessControlUpgradeable} from "@openzeppelin-upgradeable/access/IAccessControlUpgradeable.sol";
