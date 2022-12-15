@@ -11,7 +11,7 @@ contract MockAction is IAction {
 
     function actionType() external view {}
 
-    function executeAction(ActionContext calldata actionCtx) external {
+    function executeAction(ActionContext calldata) external view {
         console.log("MockAction.executeAction");
     }
 }
@@ -23,7 +23,7 @@ contract MockActionSetAmountTo100 is IAction {
 
     function actionType() external view {}
 
-    function executeAction(ActionContext calldata actionCtx) external {
+    function executeAction(ActionContext calldata) external view {
         console.log("MockActionSetAmountTo100.executeAction");
     }
 }

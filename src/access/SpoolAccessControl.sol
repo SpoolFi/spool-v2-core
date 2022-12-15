@@ -93,7 +93,7 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl, Sp
         }
     }
 
-    function _getSmartVaultRole(address smartVault, bytes32 role) internal view returns (bytes32) {
+    function _getSmartVaultRole(address smartVault, bytes32 role) internal pure returns (bytes32) {
         return keccak256(abi.encode(smartVault, role));
     }
 

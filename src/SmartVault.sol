@@ -71,9 +71,6 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
-    /**
-     * @return name Name of the vault
-     */
     function vaultName() external view returns (string memory) {
         return _vaultName;
     }
@@ -86,32 +83,13 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         return _withdrawalMetadata[withdrawalNftId];
     }
 
-    /**
-     * @dev Returns the total amount of the underlying asset that is “managed” by Vault.
-     *
-     * - SHOULD include any compounding that occurs from yield.
-     * - MUST be inclusive of any fees that are charged against assets in the Vault.
-     * - MUST NOT revert.
-     */
-    function totalAssets() external view returns (uint256[] memory) {
+    // TODO: implement or remove
+    function totalAssets() external pure returns (uint256[] memory) {
         revert("0");
     }
 
-    /**
-     * @dev Returns the amount of assets that the Vault would exchange for the amount of shares provided, in an ideal
-     * scenario where all the conditions are met.
-     * @param shares TODO
-     *
-     * - MUST NOT be inclusive of any fees that are charged against assets in the Vault.
-     * - MUST NOT show any variations depending on the caller.
-     * - MUST NOT reflect slippage or other on-chain conditions, when performing the actual exchange.
-     * - MUST NOT revert.
-     *
-     * NOTE: This calculation MAY NOT reflect the “per-user” price-per-share, and instead should reflect the
-     * “average-user’s” price-per-share, meaning what the average user should expect to see when exchanging to and
-     * from.
-     */
-    function convertToAssets(uint256 shares) external view returns (uint256[] memory) {
+    // TODO: implement or remove
+    function convertToAssets(uint256) external pure returns (uint256[] memory) {
         revert("0");
     }
 
@@ -187,7 +165,7 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override {
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal view override {
         // mint / burn
         if (from == address(0) || to == address(0)) {
             return;
@@ -206,9 +184,9 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         address from,
         address to,
         uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
-    ) internal virtual override {
+        uint256[] memory,
+        bytes memory
+    ) internal view override {
         // mint
         if (from == address(0)) {
             return;
@@ -226,7 +204,7 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory
-    ) internal virtual override {
+    ) internal override {
         for (uint256 i; i < ids.length; i++) {
             require(amounts[i] == 1, "SmartVault::_afterTokenTransfer: Invalid NFT amount");
             _nftOwners[ids[i]] = to;

@@ -30,7 +30,7 @@ contract MockGuard {
         return result == expectedValue;
     }
 
-    function checkTimelock(address smartVault, uint256[] calldata assets, uint256 timelock) external returns (bool) {
+    function checkTimelock(address smartVault, uint256[] calldata assets, uint256 timelock) external view returns (bool) {
         uint256 tokenID = assets[0];
         uint256 _maximalDepositId = 2 ** 255 - 1;
 

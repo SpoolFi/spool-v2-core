@@ -253,17 +253,19 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return assetsWithdrawn;
     }
 
+    // TODO: unused parameter
     function depositFor(
         address smartVault,
         uint256[] calldata assets,
         address receiver,
         address depositor,
-        address referral
+        address
     ) external onlyRegisteredSmartVault(smartVault) returns (uint256) {
         return _depositAssets(smartVault, depositor, receiver, assets);
     }
 
-    function deposit(address smartVault, uint256[] calldata assets, address receiver, address referral)
+    // TODO: unused parameter
+    function deposit(address smartVault, uint256[] calldata assets, address receiver, address)
         external
         onlyRegisteredSmartVault(smartVault)
         returns (uint256)
@@ -320,7 +322,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256 assetGroupID = _smartVaultAssetGroups[smartVaultAddress];
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupID);
         uint256[] memory withdrawnAssets =
-            _calculateWithdrawal(smartVaultAddress, withdrawalNftId, data, assetGroup.length);
+            _calculateWithdrawal(smartVaultAddress, data, assetGroup.length);
 
         _runActions(
             smartVaultAddress, msg.sender, receiver, msg.sender, withdrawnAssets, assetGroup, RequestType.Withdrawal
@@ -454,24 +456,24 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         // TODO: sync yields
         // TODO: sync deposits
 
-        address[] memory strategies = _smartVaultStrategies[smartVault];
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
 
         uint256 flushIndex = _flushIndexesToSync[smartVault];
         while (flushIndex < _flushIndexes[smartVault]) {
             // TODO: Check if all DHW indexes were processed for given flushIndex (here, not down the stack)
 
-            uint256[] memory indexes = _dhwIndexes[smartVault][flushIndex].toArray(strategies.length);
+            uint256[] memory indexes = _dhwIndexes[smartVault][flushIndex].toArray(strategies_.length);
 
-            for (uint256 i = 0; i < strategies.length; i++) {
+            for (uint256 i = 0; i < strategies_.length; i++) {
                 uint256 dhwIndex = indexes[i];
 
-                if (dhwIndex == _strategyRegistry.currentIndex(strategies[i])) {
-                    revert DhwNotRunYetForIndex(strategies[i], dhwIndex);
+                if (dhwIndex == _strategyRegistry.currentIndex(strategies_[i])) {
+                    revert DhwNotRunYetForIndex(strategies_[i], dhwIndex);
                 }
             }
 
-            _syncWithdrawals(smartVault, flushIndex, strategies, indexes);
-            _syncDeposits(smartVault, flushIndex, strategies, indexes);
+            _syncWithdrawals(smartVault, flushIndex, strategies_, indexes);
+            _syncDeposits(smartVault, flushIndex, strategies_, indexes);
 
             flushIndex++;
             _flushIndexesToSync[smartVault] = flushIndex;
@@ -554,7 +556,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     function _calculateWithdrawal(
         address smartVault,
-        uint256 withdrawalNftId,
         WithdrawalMetadata memory data,
         uint256 assetGroupLength
     ) internal view returns (uint256[] memory) {
@@ -572,15 +573,15 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function _syncWithdrawals(
         address smartVault,
         uint256 flushIndex,
-        address[] memory strategies,
-        uint256[] memory dhwIndexes
+        address[] memory strategies_,
+        uint256[] memory dhwIndexes_
     ) private {
         if (_withdrawnVaultShares[smartVault][flushIndex] == 0) {
             return;
         }
 
         uint256[] memory withdrawnAssets_ = _strategyRegistry.claimWithdrawals(
-            strategies, dhwIndexes, _withdrawnStrategyShares[smartVault][flushIndex].toArray(strategies.length)
+            strategies_, dhwIndexes_, _withdrawnStrategyShares[smartVault][flushIndex].toArray(strategies_.length)
         );
 
         _withdrawnAssets[smartVault][flushIndex].setValues(withdrawnAssets_);

@@ -8,80 +8,57 @@ import "../../src/interfaces/IRiskManager.sol";
 contract MockRiskManager is IRiskManager {
     function test_mock() external pure {}
 
-    function registerRiskProvider(address riskProvider, bool isEnabled) external {
+    function registerRiskProvider(address, bool) external pure {
         revert("0");
     }
 
-    function setRiskScores(address riskProvider, uint256[] memory riskScores) external {
+    function setRiskScores(address, uint256[] memory) external pure {
         revert("0");
     }
 
-    function setRiskProvider(address smartVault, address riskProvider_) external {
+    function setRiskProvider(address, address) external pure {
         revert("0");
     }
 
     function calculateAllocations(
-        address riskProvider,
-        address[] memory strategies,
-        uint8 riskTolerance,
-        uint256[] memory riskScores,
-        uint256[] memory strategyApys
-    ) external returns (uint256[][] memory) {
+        address,
+        address[] memory,
+        uint8,
+        uint256[] memory,
+        uint256[] memory
+    ) external pure returns (uint256[][] memory) {
         revert("0");
     }
 
-    /// TODO: where to put this? will pass to smart vault
-    function reallocate(address smartVault) external {
+    function reallocate(address) external pure {
         revert("0");
     }
 
-    function setAllocations(address smartVault, uint256[] memory allocations) external {
+    function setAllocations(address, uint256[] memory) external pure {
         revert("0");
     }
 
-    /**
-     * @notice TODO
-     */
-    function riskScores(address riskProvider) external view returns (uint256[] memory) {
+    function riskScores(address) external pure returns (uint256[] memory) {
         revert("0");
     }
 
-    /**
-     * @notice TODO
-     * @return riskTolerance
-     */
-    function riskTolerance(address smartVault) external view returns (int256 riskTolerance) {
+    function riskTolerance(address) external pure returns (int256) {
         revert("0");
     }
 
-    /**
-     * @notice TODO
-     * @return riskProviderAddress
-     */
-    function riskProvider(address smartVault) external view returns (address riskProviderAddress) {
+    function riskProvider(address) external pure returns (address) {
         revert("0");
     }
 
-    /**
-     * @notice TODO
-     */
-    function isRiskProvider(address riskProvider) external view returns (bool) {
+    function isRiskProvider(address) external pure returns (bool) {
         revert("0");
     }
 
-    /**
-     * @notice TODO
-     * @return allocations
-     */
-    function allocations(address smartVault) external view returns (uint256[] memory allocations) {
+    function allocations(address) external pure returns (uint256[] memory) {
         revert("0");
     }
 
-    /**
-     * @notice TODO
-     * @return riskScore
-     */
-    function getRiskScores(address riskProvider, address[] memory strategy)
+    function getRiskScores(address, address[] memory)
         external
         view
         virtual

@@ -57,7 +57,7 @@ library SmartVaultDeposits {
         uint256[] memory exchangeRates,
         uint256[] memory allocation,
         uint256[][] memory strategyRatios
-    ) public view {
+    ) public pure {
         if (deposit.length == 1) {
             return;
         }

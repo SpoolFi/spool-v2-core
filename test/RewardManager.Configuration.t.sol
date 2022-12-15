@@ -24,8 +24,7 @@ contract RewardManagerConfigurationTests is RewardManagerTests {
             uint32 configurationRewardsDuration,
             uint32 configurationPeriodFinish,
             uint192 configurationRewardRate, // rewards per second multiplied by accuracy
-            uint32 configurationLastUpdateTime,
-            uint224 configurationRewardPerTokenStored
+            ,
         ) = rewardManager.rewardConfiguration(smartVault, IERC20(rewardToken));
 
         assertEq(rewardDuration, configurationRewardsDuration);
@@ -52,10 +51,9 @@ contract RewardManagerConfigurationTests is RewardManagerTests {
         assertEq(address(r2Token), address(rewardManager.rewardTokens(smartVault, 1)));
         (
             uint32 configurationRewardsDuration,
-            uint32 configurationPeriodFinish,
+            ,
             uint192 configurationRewardRate, // rewards per second multiplied by accuracy
-            uint32 configurationLastUpdateTime,
-            uint224 configurationRewardPerTokenStored
+            ,
         ) = rewardManager.rewardConfiguration(smartVault, IERC20(rewardToken));
 
         assertEq(rewardDuration, configurationRewardsDuration);

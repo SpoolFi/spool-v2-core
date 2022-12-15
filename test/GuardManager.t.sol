@@ -24,7 +24,7 @@ contract GuardManagerTest is Test, GasHelpers, SpoolAccessRoles {
         guardManager.setGuards(smartVaultId, guards, requestTypes);
     }
 
-    function _createGuards() internal returns (GuardDefinition[][] memory, RequestType[] memory) {
+    function _createGuards() internal view returns (GuardDefinition[][] memory, RequestType[] memory) {
         bytes[] memory emptyBytes = new bytes[](0);
         GuardParamType[] memory paramTypes = new GuardParamType[](1);
         paramTypes[0] = GuardParamType.Executor;

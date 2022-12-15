@@ -58,7 +58,7 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
         address[] memory actions_ = actions[smartVault][uint8(actionCtx.requestType)];
 
         for (uint256 i; i < actions_.length; i++) {
-            _executeAction(smartVault, actions_[i], actionCtx);
+            _executeAction(actions_[i], actionCtx);
         }
     }
 
@@ -76,7 +76,8 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
 
     /* ========== PRIVATE FUNCTIONS ========== */
 
-    function _executeAction(address smartVault, address action_, ActionContext memory actionCtx) private {
+    // TODO: Question: should smart vault address be in action context?
+    function _executeAction(address action_, ActionContext memory actionCtx) private {
         IAction(action_).executeAction(actionCtx);
     }
 

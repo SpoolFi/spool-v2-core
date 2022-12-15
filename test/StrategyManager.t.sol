@@ -47,7 +47,7 @@ contract StrategyRegistryTest is Test {
 contract MockStrategy {
     function test_mock() external pure {}
 
-    function assetRatio() external returns (uint256[] memory) {
+    function assetRatio() external pure returns (uint256[] memory) {
         return Arrays.toArray(1, 2);
     }
 }

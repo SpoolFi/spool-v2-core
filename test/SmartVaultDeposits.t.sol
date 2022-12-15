@@ -46,7 +46,7 @@ contract SmartVaultDepositsTest is Test {
         assertEq(depositRatio[2], 12285914871975105);
     }
 
-    function test_checkDepositRatio_shouldPassIfDepositIsCloseEnough() public {
+    function test_checkDepositRatio_shouldPassIfDepositIsCloseEnough() public view {
         uint256[] memory deposit;
 
         deposit = Arrays.toArray(2799819944784511, 202623112855200, 12285914871975105);

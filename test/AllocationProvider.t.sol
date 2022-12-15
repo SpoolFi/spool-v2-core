@@ -12,7 +12,7 @@ contract FixedRM is MockRiskManager {
 
     function getRiskScores(address riskProvider, address[] memory strategy)
         external
-        view
+        pure
         override
         returns (uint256[] memory)
     {

@@ -62,7 +62,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
     function assetRatio() external view virtual returns (uint256[] memory);
 
-    function totalAssets() external view returns (uint256[] memory totalManagedAssets) {
+    // TODO: implement or remove
+    function totalAssets() external pure returns (uint256[] memory) {
         revert("0");
     }
 
@@ -151,15 +152,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         _transfer(address(this), claimer, amount);
     }
 
-    function convertToAssets(uint256 shares) external view returns (uint256[] memory assets) {
-        revert("0");
-    }
-
-    function deposit(uint256[] calldata assets, address receiver) external returns (uint256 receipt) {
-        revert("0");
-    }
-
-    function redeem(uint256 shares, address receiver, address owner) external virtual returns (uint256[] memory) {
+    // TODO: implement or remove
+    function convertToAssets(uint256) external pure returns (uint256[] memory) {
         revert("0");
     }
 

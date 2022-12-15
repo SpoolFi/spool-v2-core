@@ -28,7 +28,6 @@ contract RewardManagerEmissionTests is RewardManagerTests {
         rewardManager.updateRewardsOnVault(smartVault, user);
         deal(address(smartVault), user, rewardAmount, true); // Depositing into a vault.
 
-        uint256 userRewardTokenBalanceBefore = rewardToken.balanceOf(user);
         skip(rewardDuration * 2);
 
         vm.prank(smartVaultManager);
@@ -74,17 +73,12 @@ contract RewardManagerEmissionTests is RewardManagerTests {
 
         uint256 totalDeposit = userDeposit + user2Deposit;
 
-        uint256 userBalanceBefore = rewardToken.balanceOf(user);
-        uint256 user2BalanceBefore = rewardToken.balanceOf(user2);
         skip(rewardDuration * 2);
 
         vm.prank(smartVaultManager);
         rewardManager.claimRewardsFor(smartVault, user);
         vm.prank(smartVaultManager);
         rewardManager.claimRewardsFor(smartVault, user2);
-
-        uint256 userBalanceAfter = rewardToken.balanceOf(user);
-        uint256 user2BalanceAfter = rewardToken.balanceOf(user2);
 
         uint256 userGain = rewardAmount * userDeposit / totalDeposit;
         uint256 user2Gain = rewardAmount * user2Deposit / totalDeposit;

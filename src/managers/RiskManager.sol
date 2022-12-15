@@ -14,42 +14,32 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
 
     /* ========== VIEW FUNCTIONS ========== */
 
-    /**
-     * @notice TODO
-     */
     function riskScores(address riskProvider_) external view returns (uint256[] memory) {
         return _riskScores[riskProvider_];
     }
 
-    /**
-     * @notice TODO
-     */
-    function getRiskScores(address riskProvider, address[] memory strategy) external view returns (uint256[] memory) {
+    // TODO: implement
+    function getRiskScores(address, address[] memory) external pure returns (uint256[] memory) {
         revert("0");
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
-    /**
-     * @notice TODO
-     */
-    function setRiskScores(address riskProvider_, uint256[] memory riskScores)
+    function setRiskScores(address riskProvider_, uint256[] memory riskScores_)
         external
         onlyRole(ROLE_RISK_PROVIDER, riskProvider_)
     {
-        _riskScores[riskProvider_] = riskScores;
+        _riskScores[riskProvider_] = riskScores_;
     }
 
-    /**
-     * @notice TODO
-     */
+     // TODO: implement
     function calculateAllocations(
-        address riskProvider,
-        address[] memory strategies,
-        uint8 riskTolerance,
-        uint256[] memory riskScores,
-        uint256[] memory strategyApys
-    ) external returns (uint256[][] memory) {
+        address,
+        address[] memory,
+        uint8,
+        uint256[] memory,
+        uint256[] memory
+    ) external pure returns (uint256[][] memory) {
         revert("0");
     }
 }

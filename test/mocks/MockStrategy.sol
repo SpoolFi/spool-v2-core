@@ -38,23 +38,6 @@ contract MockStrategy is Strategy {
         return ratios;
     }
 
-    function redeem(uint256 shares, address receiver, address owner) external override returns (uint256[] memory) {
-        require(__withdrawnAssetsSet, "MockStrategy::dhw: Withdrawn assets not set.");
-
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
-
-        // withdraw from protocol
-        for (uint256 i = 0; i < assetGroup.length; i++) {
-            IERC20(assetGroup[i]).safeTransfer(receiver, __withdrawnAssets[i]);
-        }
-
-        // burn SSTs for withdrawal
-        _burn(address(this), shares);
-
-        __withdrawnAssetsSet = false;
-        return __withdrawnAssets;
-    }
-
     function setTotalUsdValue(uint256 totalUsdValue_) external {
         totalUsdValue = totalUsdValue_;
     }
@@ -75,6 +58,7 @@ contract MockStrategy is Strategy {
 
     function getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
         internal
+        view
         override
         returns (uint256)
     {
