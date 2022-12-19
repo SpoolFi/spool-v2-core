@@ -36,9 +36,10 @@ contract SpoolAccessRoles {
 contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl, SpoolAccessRoles {
     /* ========== CONSTRUCTOR ========== */
 
-    constructor() {
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    constructor() {}
 
+    function initialize() public initializer {
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setRoleAdmin(ROLE_SMART_VAULT, ADMIN_ROLE_SMART_VAULT);
     }
 
@@ -115,12 +116,12 @@ abstract contract SpoolAccessControllable is SpoolAccessRoles {
     /* ========== CONSTANTS ========== */
 
     /// @notice Access control manager
-    ISpoolAccessControl internal immutable _accessControl;
+    ISpoolAccessControl internal immutable accessControl;
 
     /* ========== CONSTRUCTOR ========== */
 
     constructor(ISpoolAccessControl accessControl_) {
-        _accessControl = accessControl_;
+        accessControl = accessControl_;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -129,7 +130,7 @@ abstract contract SpoolAccessControllable is SpoolAccessRoles {
      * @dev Revert with a standard message if `account` is missing `role`.
      */
     function _checkRole(bytes32 role, address account) internal view virtual {
-        if (!_accessControl.hasRole(role, account)) {
+        if (!accessControl.hasRole(role, account)) {
             revert MissingRole(role, account);
         }
     }
@@ -137,8 +138,8 @@ abstract contract SpoolAccessControllable is SpoolAccessRoles {
     /**
      * @dev Revert with a standard message if `account` is missing `role`.
      */
-    function _checkSmartVaultRole(address smartVault, bytes32 role, address account) internal view virtual {
-        if (!_accessControl.hasSmartVaultRole(smartVault, role, account)) {
+    function _checkSmartVaultRole(address smartVault, bytes32 role, address account) private view {
+        if (!accessControl.hasSmartVaultRole(smartVault, role, account)) {
             revert MissingRole(role, account);
         }
     }
@@ -165,7 +166,7 @@ abstract contract SpoolAccessControllable is SpoolAccessRoles {
      * @notice Reverts if account not admin or smart vault admin
      */
     modifier onlyAdminOrVaultAdmin(address smartVault, address account) {
-        _accessControl.checkIsAdminOrVaultAdmin(smartVault, account);
+        accessControl.checkIsAdminOrVaultAdmin(smartVault, account);
         _;
     }
 }

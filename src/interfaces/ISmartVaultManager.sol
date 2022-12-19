@@ -64,15 +64,15 @@ struct SmartVaultRegistrationForm {
 /* ========== INTERFACES ========== */
 
 interface ISmartVaultReallocator {
-    function allocations(address smartVault) external view returns (uint256[] memory allocations);
+    function allocations(address smartVault) external view returns (uint256[] memory allocations_);
 
     function strategies(address smartVault) external view returns (address[] memory);
 
-    function riskTolerance(address smartVault) external view returns (int256 riskTolerance);
+    function riskTolerance(address smartVault) external view returns (int256 riskTolerance_);
 
-    function riskProvider(address smartVault) external view returns (address riskProviderAddress);
+    function riskProvider(address smartVault) external view returns (address riskProviderAddress_);
 
-    function assetGroupId(address smartVault) external view returns (uint256 assetGroupId);
+    function assetGroupId(address smartVault) external view returns (uint256 assetGroupId_);
 
     function reallocate() external;
 }

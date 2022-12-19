@@ -35,7 +35,7 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
     StrategyRegistry private strategyRegistry;
     MasterWallet private masterWallet;
     AssetGroupRegistry private assetGroupRegistry;
-    ISpoolAccessControl accessControl;
+    SpoolAccessControl accessControl;
 
     function setUp() public {
         alice = address(0xa);
@@ -47,6 +47,7 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         tokenB = new MockToken("Token B", "TB");
 
         accessControl = new SpoolAccessControl();
+        accessControl.initialize();
         masterWallet = new MasterWallet(accessControl);
 
         address[] memory assetGroup = new address[](2);

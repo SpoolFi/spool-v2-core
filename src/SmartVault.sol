@@ -205,7 +205,7 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         uint256[] memory amounts,
         bytes memory
     ) internal override {
-        for (uint256 i; i < ids.length; i++) {
+        for (uint256 i = 0; i < ids.length; i++) {
             require(amounts[i] == 1, "SmartVault::_afterTokenTransfer: Invalid NFT amount");
             _nftOwners[ids[i]] = to;
         }

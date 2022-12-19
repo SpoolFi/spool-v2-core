@@ -36,7 +36,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
     StrategyRegistry private strategyRegistry;
     MasterWallet private masterWallet;
     AssetGroupRegistry private assetGroupRegistry;
-    ISpoolAccessControl accessControl;
+    SpoolAccessControl accessControl;
 
     function setUp() public {
         alice = address(0xa);
@@ -48,6 +48,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
         tokenC = new MockToken("Token C", "TC");
 
         accessControl = new SpoolAccessControl();
+        accessControl.initialize();
         masterWallet = new MasterWallet(accessControl);
 
         address[] memory assetGroup = new address[](3);

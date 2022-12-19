@@ -32,6 +32,7 @@ contract RewardManagerTests is Test, SpoolAccessRoles {
         underlying = new MockToken("U", "U");
 
         sac = new SpoolAccessControl();
+        sac.initialize();
         assetGroupRegistry = new AssetGroupRegistry();
 
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(underlying)));

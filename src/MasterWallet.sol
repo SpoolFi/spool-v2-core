@@ -5,13 +5,10 @@ import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IMasterWallet.sol";
 import "./access/SpoolAccessControl.sol";
 
-// TODO: Access control
 contract MasterWallet is IMasterWallet, SpoolAccessControllable {
     using SafeERC20 for IERC20;
 
-    mapping(address => bool) private _managerAllowlist;
-
-    constructor(ISpoolAccessControl accessControl) SpoolAccessControllable(accessControl) {}
+    constructor(ISpoolAccessControl accessControl_) SpoolAccessControllable(accessControl_) {}
 
     function approve(IERC20 token, address spender, uint256 amount)
         external

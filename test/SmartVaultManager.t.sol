@@ -21,7 +21,7 @@ import "./mocks/MockToken.sol";
 
 contract SmartVaultManagerTest is Test, SpoolAccessRoles {
     ISmartVaultManager smartVaultManager;
-    ISpoolAccessControl accessControl;
+    SpoolAccessControl accessControl;
     IStrategyRegistry strategyRegistry;
     MockPriceFeedManager priceFeedManager;
     IAssetGroupRegistry assetGroupRegistry;
@@ -35,6 +35,7 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
 
     function setUp() public {
         accessControl = new SpoolAccessControl();
+        accessControl.initialize();
         masterWallet = new MasterWallet(accessControl);
         assetGroupRegistry = new AssetGroupRegistry();
         priceFeedManager = new MockPriceFeedManager();

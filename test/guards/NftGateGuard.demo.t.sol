@@ -44,7 +44,8 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
         nft = new MockNft("Nft", "N");
         token = new MockToken("Token", "T");
 
-        ISpoolAccessControl accessControl = new SpoolAccessControl();
+        SpoolAccessControl accessControl = new SpoolAccessControl();
+        accessControl.initialize();
         ActionManager actionManager = new ActionManager(accessControl);
         AssetGroupRegistry assetGroupRegistry = new AssetGroupRegistry();
         guardManager = new GuardManager(accessControl);

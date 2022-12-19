@@ -5,15 +5,15 @@ interface IUsdPriceFeedManager {
     /**
      * @notice Gets number of decimals for an asset.
      * @param asset Address of the asset.
-     * @return assetDecimals Number of decimals for the asset.
+     * @return assetDecimals_ Number of decimals for the asset.
      */
-    function assetDecimals(address asset) external view returns (uint256 assetDecimals);
+    function assetDecimals(address asset) external view returns (uint256 assetDecimals_);
 
     /**
      * @notice Gets number of decimals for USD.
-     * @return usdDecimals Number of decimals for USD.
+     * @return usdDecimals_ Number of decimals for USD.
      */
-    function usdDecimals() external view returns (uint256 usdDecimals);
+    function usdDecimals() external view returns (uint256 usdDecimals_);
 
     /**
      * @notice Calculates asset value in USD using current price.

@@ -14,7 +14,8 @@ contract StrategyRegistryTest is Test {
     IStrategyRegistry strategyRegistry;
 
     function setUp() public {
-        ISpoolAccessControl accessControl = new SpoolAccessControl();
+        SpoolAccessControl accessControl = new SpoolAccessControl();
+        accessControl.initialize();
         strategyRegistry =
             new StrategyRegistry(new MasterWallet(accessControl), accessControl, new MockPriceFeedManager());
     }

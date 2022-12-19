@@ -86,7 +86,7 @@ interface IStrategy is IERC20Upgradeable {
      * “average-user’s” price-per-share, meaning what the average user should expect to see when exchanging to and
      * from.
      */
-    function convertToAssets(uint256 shares) external view returns (uint256[] memory assets);
+    function convertToAssets(uint256 shares) external view returns (uint256[] memory assets_);
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 

@@ -16,7 +16,9 @@ contract ActionManagerTest is Test, SpoolAccessRoles {
     address user = address(256);
 
     function setUp() public {
-        ISpoolAccessControl accessControl = new SpoolAccessControl();
+        SpoolAccessControl accessControl = new SpoolAccessControl();
+        accessControl.initialize();
+
         actionManager = new ActionManager(accessControl);
         mockAction = new MockAction();
         mockToken = new MockToken("MCK", "MCK");

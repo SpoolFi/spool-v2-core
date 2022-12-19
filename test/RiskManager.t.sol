@@ -7,12 +7,13 @@ import "../src/managers/RiskManager.sol";
 
 contract RiskManagerTest is Test, SpoolAccessRoles {
     IRiskManager riskManager;
-    ISpoolAccessControl accessControl;
+    SpoolAccessControl accessControl;
     address riskProvider = address(10);
     address smartVault = address(100);
 
     function setUp() public {
         accessControl = new SpoolAccessControl();
+        accessControl.initialize();
         riskManager = new RiskManager(accessControl);
     }
 

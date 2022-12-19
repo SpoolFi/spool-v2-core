@@ -14,7 +14,8 @@ contract GuardManagerTest is Test, GasHelpers, SpoolAccessRoles {
     address user = address(256);
 
     function setUp() public {
-        ISpoolAccessControl accessControl = new SpoolAccessControl();
+        SpoolAccessControl accessControl = new SpoolAccessControl();
+        accessControl.initialize();
         guardManager = new GuardManager(accessControl);
         mockGuard = new MockGuard();
 

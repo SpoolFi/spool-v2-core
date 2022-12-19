@@ -33,7 +33,7 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
     GuardManager private guardManager;
     ISmartVault private smartVault;
     SmartVaultManager private smartVaultManager;
-    ISpoolAccessControl private accessControl;
+    SpoolAccessControl private accessControl;
 
     function setUp() public {
         alice = address(0xa);
@@ -47,6 +47,7 @@ contract AllowlistGuardIntegrationTest is Test, SpoolAccessRoles {
         token = new MockToken("Token", "T");
 
         accessControl = new SpoolAccessControl();
+        accessControl.initialize();
         ActionManager actionManager = new ActionManager(accessControl);
         AssetGroupRegistry assetGroupRegistry = new AssetGroupRegistry();
         guardManager = new GuardManager(accessControl);

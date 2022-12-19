@@ -22,7 +22,8 @@ contract AllowlistGuardTest is Test, SpoolAccessRoles {
     address charlie;
 
     function setUp() public {
-        ISpoolAccessControl accessControl = new SpoolAccessControl();
+        SpoolAccessControl accessControl = new SpoolAccessControl();
+        accessControl.initialize();
         allowlistGuard = new AllowlistGuard(accessControl);
 
         alice = address(0xa);
