@@ -55,6 +55,7 @@ contract DepositSwapIntegrationTest is Test, SpoolAccessRoles {
         priceFeedManager = new MockPriceFeedManager();
         StrategyRegistry strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
         swapper = new Swapper();
+        IRiskManager riskManager = new RiskManager(accessControl);
         smartVaultManager = new SmartVaultManager(
             accessControl,
             strategyRegistry,
@@ -62,7 +63,8 @@ contract DepositSwapIntegrationTest is Test, SpoolAccessRoles {
             assetGroupRegistry,
             masterWallet,
             actionManager,
-            guardManager
+            guardManager,
+            riskManager
         );
 
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
@@ -100,6 +102,12 @@ contract DepositSwapIntegrationTest is Test, SpoolAccessRoles {
             accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(smartVaultFactory));
             accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
 
+            vm.mockCall(
+                address(riskManager),
+                abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+                abi.encode(Arrays.toArray(1_000))
+            );
+
             smartVault = smartVaultFactory.deploySmartVault(
                 SmartVaultSpecification({
                     smartVaultName: "SmartVault",
@@ -109,7 +117,7 @@ contract DepositSwapIntegrationTest is Test, SpoolAccessRoles {
                     guards: new GuardDefinition[][](0),
                     guardRequestTypes: new RequestType[](0),
                     strategies: Arrays.toArray(address(strategy)),
-                    strategyAllocations: Arrays.toArray(1_000),
+                    riskAppetite: 4,
                     riskProvider: riskProvider
                 })
             );

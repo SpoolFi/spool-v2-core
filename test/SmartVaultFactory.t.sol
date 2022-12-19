@@ -262,7 +262,7 @@ contract SmartVaultFactoryTest is Test, SpoolAccessRoles {
             smartVaultName: "MySmartVault",
             assetGroupId: 1,
             strategies: Arrays.toArray(address(0x6)),
-            strategyAllocations: Arrays.toArray(1_000),
+            riskAppetite: 4,
             riskProvider: address(0x7),
             actions: new IAction[](0),
             actionRequestTypes: new RequestType[](0),

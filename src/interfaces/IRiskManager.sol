@@ -2,24 +2,27 @@
 pragma solidity 0.8.16;
 
 interface IRiskManager {
-    function setRiskScores(address riskProvider, uint256[] memory riskScores) external;
-
-    function calculateAllocations(
-        address riskProvider,
-        address[] memory strategies,
-        uint8 riskTolerance,
-        uint256[] memory riskScores,
-        uint256[] memory strategyApys
-    ) external returns (uint256[][] memory);
+    /* ========== VIEW FUNCTIONS ========== */
 
     /**
-     * @notice TODO
+     * @notice Calculates allocation between strategies based on
+     * - risk scores of strategies
+     * - risk appetite
+     * @param riskProvider Risk provider to use.
+     * @param strategies Strategies.
+     * @param riskAppetite Risk appetite.
+     * @return allocation Calculated allocation.
      */
+    function calculateAllocation(address riskProvider, address[] calldata strategies, uint256 riskAppetite)
+        external
+        view
+        returns (uint256[] memory allocation);
+
     function riskScores(address riskProvider) external view returns (uint256[] memory);
 
-    /**
-     * @notice TODO
-     * @return riskScore
-     */
     function getRiskScores(address riskProvider, address[] memory strategy) external view returns (uint256[] memory);
+
+    /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
+
+    function setRiskScores(address riskProvider, uint256[] memory riskScores) external;
 }

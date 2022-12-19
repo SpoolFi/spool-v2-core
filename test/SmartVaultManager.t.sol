@@ -15,6 +15,7 @@ import "../src/managers/UsdPriceFeedManager.sol";
 import "../src/MasterWallet.sol";
 import "../src/SmartVault.sol";
 import "../src/Swapper.sol";
+import "./libraries/Arrays.sol";
 import "./mocks/MockPriceFeedManager.sol";
 import "./mocks/MockStrategy.sol";
 import "./mocks/MockToken.sol";
@@ -25,6 +26,7 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
     IStrategyRegistry strategyRegistry;
     MockPriceFeedManager priceFeedManager;
     IAssetGroupRegistry assetGroupRegistry;
+    IRiskManager riskManager;
 
     address riskProvider = address(10);
     address smartVault = address(100);
@@ -42,6 +44,7 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
         IGuardManager guardManager = new GuardManager(accessControl);
         IActionManager actionManager = new ActionManager(accessControl);
+        riskManager = new RiskManager(accessControl);
 
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
 
@@ -52,7 +55,8 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
             assetGroupRegistry,
             masterWallet,
             actionManager,
-            guardManager
+            guardManager,
+            riskManager
         );
         accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(this));
         accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(this));
@@ -66,15 +70,18 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
     function test_registerSmartVault_shouldRegister() public {
         (address[] memory strategies, uint256 assetGroupId) = _createStrategies();
 
-        uint256[] memory strategyAllocations = new uint256[](3);
-        strategyAllocations[0] = 100;
-        strategyAllocations[1] = 300;
-        strategyAllocations[2] = 600;
+        uint256[] memory strategyAllocations = Arrays.toArray(100, 300, 600);
+
+        vm.mockCall(
+            address(riskManager),
+            abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+            abi.encode(strategyAllocations)
+        );
 
         SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
             assetGroupId: assetGroupId,
             strategies: strategies,
-            strategyAllocations: strategyAllocations,
+            riskAppetite: 4,
             riskProvider: riskProvider
         });
         smartVaultManager.registerSmartVault(smartVault, registrationForm);
@@ -88,15 +95,18 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
     function test_registerSmartVault_shouldRevert() public {
         (address[] memory strategies, uint256 assetGroupId) = _createStrategies();
 
-        uint256[] memory strategyAllocations = new uint256[](3);
-        strategyAllocations[0] = 100;
-        strategyAllocations[1] = 300;
-        strategyAllocations[2] = 600;
+        uint256[] memory strategyAllocations = Arrays.toArray(100, 300, 600);
+
+        vm.mockCall(
+            address(riskManager),
+            abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+            abi.encode(strategyAllocations)
+        );
 
         SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
             assetGroupId: assetGroupId,
             strategies: strategies,
-            strategyAllocations: strategyAllocations,
+            riskAppetite: 4,
             riskProvider: riskProvider
         });
 
@@ -109,7 +119,7 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
             SmartVaultRegistrationForm memory _registrationForm = SmartVaultRegistrationForm({
                 assetGroupId: assetGroupId,
                 strategies: strategies,
-                strategyAllocations: strategyAllocations,
+                riskAppetite: 4,
                 riskProvider: address(0xabc)
             });
             vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_RISK_PROVIDER, address(0xabc)));
@@ -122,7 +132,7 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
             SmartVaultRegistrationForm memory _registrationForm = SmartVaultRegistrationForm({
                 assetGroupId: assetGroupId,
                 strategies: _strategies,
-                strategyAllocations: strategyAllocations,
+                riskAppetite: 4,
                 riskProvider: riskProvider
             });
             vm.expectRevert(SmartVaultRegistrationNoStrategies.selector);
@@ -136,55 +146,10 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
             SmartVaultRegistrationForm memory _registrationForm = SmartVaultRegistrationForm({
                 assetGroupId: assetGroupId,
                 strategies: _strategies,
-                strategyAllocations: strategyAllocations,
+                riskAppetite: 4,
                 riskProvider: riskProvider
             });
             vm.expectRevert(abi.encodeWithSelector(InvalidStrategy.selector, address(0xabc)));
-            smartVaultManager.registerSmartVault(smartVault, _registrationForm);
-        }
-
-        // when  allocations do not match strategies
-        {
-            uint256[] memory _strategyAllocations = new uint256[](2);
-            _strategyAllocations[0] = 400;
-            _strategyAllocations[1] = 600;
-            SmartVaultRegistrationForm memory _registrationForm = SmartVaultRegistrationForm({
-                assetGroupId: assetGroupId,
-                strategies: strategies,
-                strategyAllocations: _strategyAllocations,
-                riskProvider: riskProvider
-            });
-            vm.expectRevert(SmartVaultRegistrationIncorrectAllocationLength.selector);
-            smartVaultManager.registerSmartVault(smartVault, _registrationForm);
-
-            _strategyAllocations = new uint256[](4);
-            _strategyAllocations[0] = 100;
-            _strategyAllocations[1] = 200;
-            _strategyAllocations[2] = 300;
-            _strategyAllocations[3] = 400;
-            _registrationForm = SmartVaultRegistrationForm({
-                assetGroupId: assetGroupId,
-                strategies: strategies,
-                strategyAllocations: _strategyAllocations,
-                riskProvider: riskProvider
-            });
-            vm.expectRevert(SmartVaultRegistrationIncorrectAllocationLength.selector);
-            smartVaultManager.registerSmartVault(smartVault, _registrationForm);
-        }
-
-        // when allocation is zero
-        {
-            uint256[] memory _strategyAllocations = new uint256[](3);
-            _strategyAllocations[0] = 400;
-            _strategyAllocations[1] = 600;
-            _strategyAllocations[2] = 0;
-            SmartVaultRegistrationForm memory _registrationForm = SmartVaultRegistrationForm({
-                assetGroupId: assetGroupId,
-                strategies: strategies,
-                strategyAllocations: _strategyAllocations,
-                riskProvider: riskProvider
-            });
-            vm.expectRevert(SmartVaultRegistrationZeroAllocation.selector);
             smartVaultManager.registerSmartVault(smartVault, _registrationForm);
         }
 
@@ -295,16 +260,19 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
         SmartVault smartVault_ = SmartVault(Clones.clone(smartVaultImplementation));
         smartVault_.initialize("SmartVault", assetGroupId);
 
-        uint256[] memory allocations = new uint256[](3);
-        allocations[0] = 600; // A
-        allocations[1] = 300; // B
-        allocations[2] = 100; // C
+        uint256[] memory allocations = Arrays.toArray(600, 300, 100);
+
+        vm.mockCall(
+            address(riskManager),
+            abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+            abi.encode(allocations)
+        );
 
         accessControl.grantRole(ROLE_SMART_VAULT, address(smartVault_));
         SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
             assetGroupId: assetGroupId,
             strategies: strategies,
-            strategyAllocations: allocations,
+            riskAppetite: 4,
             riskProvider: riskProvider
         });
         smartVaultManager.registerSmartVault(address(smartVault_), registrationForm);

@@ -60,6 +60,7 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
         IActionManager actionManager = new ActionManager(accessControl);
         IGuardManager guardManager = new GuardManager(accessControl);
+        IRiskManager riskManager = new RiskManager(accessControl);
 
         smartVaultManager = new SmartVaultManager(
             accessControl,
@@ -68,7 +69,8 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
             assetGroupRegistry,
             masterWallet,
             new ActionManager(accessControl),
-            guardManager
+            guardManager,
+            riskManager
         );
 
         strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
@@ -104,6 +106,12 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
 
             mySmartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB));
 
+            vm.mockCall(
+                address(riskManager),
+                abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+                abi.encode(Arrays.toArray(400, 600))
+            );
+
             mySmartVault = smartVaultFactory.deploySmartVault(
                 SmartVaultSpecification({
                     smartVaultName: "MySmartVault",
@@ -113,7 +121,7 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
                     guards: new GuardDefinition[][](0),
                     guardRequestTypes: new RequestType[](0),
                     strategies: mySmartVaultStrategies,
-                    strategyAllocations: Arrays.toArray(400, 600),
+                    riskAppetite: 4,
                     riskProvider: riskProvider
                 })
             );

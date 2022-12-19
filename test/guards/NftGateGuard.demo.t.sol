@@ -32,6 +32,7 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
     GuardManager private guardManager;
     ISmartVault private smartVault;
     SmartVaultManager private smartVaultManager;
+    IRiskManager private riskManager;
 
     function setUp() public {
         alice = address(0xa);
@@ -52,6 +53,7 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
         MasterWallet masterWallet = new MasterWallet(accessControl);
         IUsdPriceFeedManager priceFeedManager = new MockPriceFeedManager();
         StrategyRegistry strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
+        riskManager = new RiskManager(accessControl);
         smartVaultManager = new SmartVaultManager(
             accessControl,
             strategyRegistry,
@@ -59,7 +61,8 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
             assetGroupRegistry,
             masterWallet,
             actionManager,
-            guardManager
+            guardManager,
+            riskManager
         );
 
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
@@ -96,6 +99,12 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
             accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(smartVaultFactory));
             accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
 
+            vm.mockCall(
+                address(riskManager),
+                abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+                abi.encode(Arrays.toArray(1_000))
+            );
+
             smartVault = smartVaultFactory.deploySmartVault(
                 SmartVaultSpecification({
                     smartVaultName: "SmartVault",
@@ -105,7 +114,7 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
                     guards: guards,
                     guardRequestTypes: guardRequestTypes,
                     strategies: Arrays.toArray(address(strategy)),
-                    strategyAllocations: Arrays.toArray(1_000),
+                    riskAppetite: 4,
                     riskProvider: riskProvider
                 })
             );

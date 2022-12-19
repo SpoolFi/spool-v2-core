@@ -7,12 +7,18 @@ import "../access/SpoolAccessControl.sol";
 contract RiskManager is IRiskManager, SpoolAccessControllable {
     /* ========== STATE VARIABLES ========== */
 
+    // TODO: this should probably be address(riskProvder) => address(strategy) => uint256(riskScore) instead
     /// @notice Risk score registry
     mapping(address => uint256[]) internal _riskScores;
 
     constructor(ISpoolAccessControl accessControl) SpoolAccessControllable(accessControl) {}
 
     /* ========== VIEW FUNCTIONS ========== */
+
+    // TODO: implement
+    function calculateAllocation(address, address[] calldata, uint256) external pure returns (uint256[] memory) {
+        revert("0");
+    }
 
     function riskScores(address riskProvider_) external view returns (uint256[] memory) {
         return _riskScores[riskProvider_];
@@ -25,21 +31,11 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
+    // TODO: check that caller can set risk scores for risk provider
     function setRiskScores(address riskProvider_, uint256[] memory riskScores_)
         external
         onlyRole(ROLE_RISK_PROVIDER, riskProvider_)
     {
         _riskScores[riskProvider_] = riskScores_;
-    }
-
-     // TODO: implement
-    function calculateAllocations(
-        address,
-        address[] memory,
-        uint8,
-        uint256[] memory,
-        uint256[] memory
-    ) external pure returns (uint256[][] memory) {
-        revert("0");
     }
 }

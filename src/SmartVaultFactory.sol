@@ -19,7 +19,7 @@ import {SmartVault} from "./SmartVault.sol";
  * @param smartVaultName Name of the smart vault.
  * @param assetGroupId ID of the asset group.
  * @param strategies Strategies used by the smart vault.
- * @param strategyAllocations Initial fund allocation between strategies.
+ * @param riskAppetite Risk appetite of the smart vault.
  * @param riskProvider Risk provider used by the smart vault.
  * @param actions Actions to register for the smart vault.
  * @param actionRequestTypes Request types for actions.
@@ -30,7 +30,7 @@ struct SmartVaultSpecification {
     string smartVaultName;
     uint256 assetGroupId;
     address[] strategies;
-    uint256[] strategyAllocations;
+    uint256 riskAppetite;
     address riskProvider;
     IAction[] actions;
     RequestType[] actionRequestTypes;
@@ -223,7 +223,7 @@ contract SmartVaultFactory is UpgradeableBeacon, SpoolAccessRoles {
             SmartVaultRegistrationForm({
                 assetGroupId: specification.assetGroupId,
                 strategies: specification.strategies,
-                strategyAllocations: specification.strategyAllocations,
+                riskAppetite: specification.riskAppetite,
                 riskProvider: specification.riskProvider
             })
         );

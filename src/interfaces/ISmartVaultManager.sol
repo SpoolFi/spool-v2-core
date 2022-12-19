@@ -38,27 +38,20 @@ error SmartVaultNotRegisteredYet();
  */
 error SmartVaultRegistrationNoStrategies();
 
-/**
- * @notice Used when length of allocation does not match length of strategies provided during smart vault registration.
- */
-error SmartVaultRegistrationIncorrectAllocationLength();
-
-/**
- * @notice Used when provided allocation for a strategy is zero during smart vault registration.
- */
-error SmartVaultRegistrationZeroAllocation();
-
 /* ========== STRUCTS ========== */
 
 /**
  * @notice Struct holding all data for registration of smart vault.
- *
+ * @param assetGroupId Underlying asset group of the smart vault.
+ * @param strategies Strategies used by the smart vault.
+ * @param riskProvider Risk provider used by the smart vault.
+ * @param riskAppetite Risk appetite of the smart vault.
  */
 struct SmartVaultRegistrationForm {
     uint256 assetGroupId;
     address[] strategies;
-    uint256[] strategyAllocations; // TODO: this should not be input but obtained from risk provider
     address riskProvider;
+    uint256 riskAppetite;
 }
 
 /* ========== INTERFACES ========== */

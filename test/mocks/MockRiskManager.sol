@@ -8,6 +8,10 @@ import "../../src/interfaces/IRiskManager.sol";
 contract MockRiskManager is IRiskManager {
     function test_mock() external pure {}
 
+    function calculateAllocation(address, address[] calldata, uint256) external pure returns (uint256[] memory) {
+        revert("0");
+    }
+
     function registerRiskProvider(address, bool) external pure {
         revert("0");
     }
@@ -17,16 +21,6 @@ contract MockRiskManager is IRiskManager {
     }
 
     function setRiskProvider(address, address) external pure {
-        revert("0");
-    }
-
-    function calculateAllocations(
-        address,
-        address[] memory,
-        uint8,
-        uint256[] memory,
-        uint256[] memory
-    ) external pure returns (uint256[][] memory) {
         revert("0");
     }
 
@@ -58,12 +52,7 @@ contract MockRiskManager is IRiskManager {
         revert("0");
     }
 
-    function getRiskScores(address, address[] memory)
-        external
-        view
-        virtual
-        returns (uint256[] memory)
-    {
+    function getRiskScores(address, address[] memory) external view virtual returns (uint256[] memory) {
         revert("0");
     }
 }

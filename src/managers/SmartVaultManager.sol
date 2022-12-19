@@ -46,6 +46,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /// @notice Master wallet
     IMasterWallet private immutable _masterWallet;
 
+    /// @notice Risk manager.
+    IRiskManager private immutable _riskManager;
+
     /* ========== STATE VARIABLES ========== */
 
     /// @notice Smart Vault registry
@@ -59,6 +62,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /// @notice Smart Vault risk provider registry
     mapping(address => address) internal _smartVaultRiskProviders;
+
+    /**
+     * @notice Risk appetite for given Smart Vault.
+     * @dev smart vault => risk appetite
+     */
+    mapping(address => uint256) internal _smartVaultRiskAppetite;
 
     /// @notice Smart Vault strategy allocations
     mapping(address => mapping(uint256 => uint256)) internal _smartVaultAllocations;
@@ -128,7 +137,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         IAssetGroupRegistry assetGroupRegistry_,
         IMasterWallet masterWallet_,
         IActionManager actionManager_,
-        IGuardManager guardManager_
+        IGuardManager guardManager_,
+        IRiskManager riskManager_
     ) SpoolAccessControllable(accessControl_) {
         _strategyRegistry = strategyRegistry_;
         _priceFeedManager = priceFeedManager_;
@@ -136,6 +146,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _masterWallet = masterWallet_;
         _actionManager = actionManager_;
         _guardManager = guardManager_;
+        _riskManager = riskManager_;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -254,13 +265,11 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     }
 
     // TODO: unused parameter
-    function depositFor(
-        address smartVault,
-        uint256[] calldata assets,
-        address receiver,
-        address depositor,
-        address
-    ) external onlyRegisteredSmartVault(smartVault) returns (uint256) {
+    function depositFor(address smartVault, uint256[] calldata assets, address receiver, address depositor, address)
+        external
+        onlyRegisteredSmartVault(smartVault)
+        returns (uint256)
+    {
         return _depositAssets(smartVault, depositor, receiver, assets);
     }
 
@@ -321,8 +330,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         uint256 assetGroupID = _smartVaultAssetGroups[smartVaultAddress];
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupID);
-        uint256[] memory withdrawnAssets =
-            _calculateWithdrawal(smartVaultAddress, data, assetGroup.length);
+        uint256[] memory withdrawnAssets = _calculateWithdrawal(smartVaultAddress, data, assetGroup.length);
 
         _runActions(
             smartVaultAddress, msg.sender, receiver, msg.sender, withdrawnAssets, assetGroup, RequestType.Withdrawal
@@ -363,22 +371,15 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         _smartVaultStrategies[smartVault] = registrationForm.strategies;
 
-        // set strategy allocations
-        // TODO: need to make sure all allocations add up to the ALLOC_PRECISION
-        if (registrationForm.strategyAllocations.length != registrationForm.strategies.length) {
-            revert SmartVaultRegistrationIncorrectAllocationLength();
-        }
-
-        for (uint256 i = 0; i < registrationForm.strategyAllocations.length; i++) {
-            if (registrationForm.strategyAllocations[i] == 0) {
-                revert SmartVaultRegistrationZeroAllocation();
-            }
-        }
-
-        _smartVaultAllocations[smartVault].setValues(registrationForm.strategyAllocations);
-
         // set risk provider
         _smartVaultRiskProviders[smartVault] = registrationForm.riskProvider;
+
+        // set allocation
+        _smartVaultAllocations[smartVault].setValues(
+            _riskManager.calculateAllocation(
+                registrationForm.riskProvider, registrationForm.strategies, registrationForm.riskAppetite
+            )
+        );
 
         // update registry
         _smartVaultRegistry[smartVault] = true;
@@ -554,11 +555,11 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return smartVault.mintWithdrawalNFT(receiver, WithdrawalMetadata(vaultShares, flushIndex));
     }
 
-    function _calculateWithdrawal(
-        address smartVault,
-        WithdrawalMetadata memory data,
-        uint256 assetGroupLength
-    ) internal view returns (uint256[] memory) {
+    function _calculateWithdrawal(address smartVault, WithdrawalMetadata memory data, uint256 assetGroupLength)
+        internal
+        view
+        returns (uint256[] memory)
+    {
         uint256[] memory withdrawnAssets = new uint256[](assetGroupLength);
 
         // loop over all assets
