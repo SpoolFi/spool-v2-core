@@ -4,6 +4,7 @@ pragma solidity 0.8.16;
 import "@openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
 import "../interfaces/ISpoolAccessControl.sol";
 
+// NOTE: make this a constant, not a contract?
 contract SpoolAccessRoles {
     bytes32 public constant ROLE_SPOOL_ADMIN = 0x00;
 

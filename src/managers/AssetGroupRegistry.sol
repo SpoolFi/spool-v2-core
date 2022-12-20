@@ -50,6 +50,7 @@ contract AssetGroupRegistry is IAssetGroupRegistry {
             revert NoAssetsProvided();
         }
 
+        // NOTE: verify the group doesn't exist (hash)
         _assetGroups.push(assets);
 
         return _assetGroups.length - 1;

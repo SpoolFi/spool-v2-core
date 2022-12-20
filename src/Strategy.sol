@@ -9,6 +9,7 @@ import "./interfaces/IMasterWallet.sol";
 import "./interfaces/IStrategy.sol";
 import "./interfaces/IStrategyRegistry.sol";
 import "./access/SpoolAccessControl.sol";
+import "forge-std/console2.sol";
 
 abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrategy {
     using SafeERC20 for IERC20;
@@ -83,7 +84,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
 
         // deposits
-        // - swap assets to correct ratio
+        // - swap assets to correct ratio 
+        // NOTE: how do we know the current amounts of tokens??
         swapAssets(tokens, swapInfo);
 
         // - get amount of assets available to deposit
@@ -100,16 +102,20 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         // - mint SSTs
         uint256 usdWorthDeposited = usdWorth1 - usdWorth0;
         uint256 sstsToMint;
+        console2.log("usdWorth0:", usdWorth0);
         if (usdWorth0 > 0) {
             sstsToMint = usdWorthDeposited * totalSupply() / usdWorth0;
         } else {
             sstsToMint = usdWorthDeposited * INITIAL_SHARE_MULTIPLIER;
         }
+        console2.log("sstsToMint:", sstsToMint);
         _mint(address(this), sstsToMint);
 
         // withdrawal
         // - redeem shares from protocol
+        console2.log("redeemFromProtocol:");
         redeemFromProtocol(tokens, withdrawnShares);
+        console2.log("_burn:");
         _burn(address(this), withdrawnShares);
         uint256 usdWorth2 = getUsdWorth(exchangeRates, priceFeedManager);
 

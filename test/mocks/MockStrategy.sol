@@ -3,6 +3,7 @@ pragma solidity 0.8.16;
 
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/utils/math/Math.sol";
 import "../../src/Strategy.sol";
 
 contract MockStrategy is Strategy {
@@ -80,7 +81,12 @@ contract MockStrategy is Strategy {
         }
 
         for (uint256 i = 0; i < tokens.length; i++) {
-            uint256 toWithdraw = IERC20(tokens[i]).balanceOf(address(protocol)) * ssts / totalSupply();
+            console2.log("i:", i);
+            console2.log("IERC20(tokens[i]).balanceOf(address(protocol)):", IERC20(tokens[i]).balanceOf(address(protocol)));
+            console2.log("ssts:", ssts);
+            console2.log("totalSupply()", totalSupply());
+            uint256 toWithdraw = Math.mulDiv(IERC20(tokens[i]).balanceOf(address(protocol)), ssts, totalSupply());
+            // uint256 toWithdraw = IERC20(tokens[i]).balanceOf(address(protocol)) * ssts / totalSupply();
             protocol.withdraw(tokens[i], toWithdraw);
         }
     }
