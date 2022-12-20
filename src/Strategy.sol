@@ -4,6 +4,7 @@ pragma solidity 0.8.16;
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/utils/math/Math.sol";
 import "./interfaces/IAssetGroupRegistry.sol";
 import "./interfaces/IMasterWallet.sol";
 import "./interfaces/IStrategy.sol";
@@ -104,7 +105,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         uint256 sstsToMint;
         console2.log("usdWorth0:", usdWorth0);
         if (usdWorth0 > 0) {
-            sstsToMint = usdWorthDeposited * totalSupply() / usdWorth0;
+            sstsToMint = Math.mulDiv(usdWorthDeposited, totalSupply(), usdWorth0);
+            // sstsToMint = usdWorthDeposited * totalSupply() / usdWorth0;
         } else {
             sstsToMint = usdWorthDeposited * INITIAL_SHARE_MULTIPLIER;
         }
