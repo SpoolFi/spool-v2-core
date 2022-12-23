@@ -609,7 +609,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             StrategyAtIndex memory atDhw = _strategyRegistry.strategyAtIndex(strategies_[i], dhwIndexes_[i]);
 
             uint256[] memory vaultDepositedAssets =
-                _vaultFlushedDeposits[smartVault][flushIndex][strategies_[i]].toArray(strategies_.length);
+                _vaultFlushedDeposits[smartVault][flushIndex][strategies_[i]].toArray(assetGroup.length);
             uint256 vaultDepositedUsd =
                 _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, vaultDepositedAssets, atDhw.exchangeRates);
             uint256 strategyDepositedUsd =
