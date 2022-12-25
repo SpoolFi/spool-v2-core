@@ -97,6 +97,10 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
         // - deposit assets
         uint256 usdWorth0 = getUsdWorth(exchangeRates, priceFeedManager);
+
+        // NOTE: probably compound before??
+        compound();
+
         depositToProtocol(tokens, assetsToDeposit);
         uint256 usdWorth1 = getUsdWorth(exchangeRates, priceFeedManager);
 
@@ -167,6 +171,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
+    function compound(/* TODO: ADD PARAMS */) internal virtual;
+    
     function swapAssets(address[] memory tokens, SwapInfo[] calldata swapInfo) internal virtual;
 
     function depositToProtocol(address[] memory tokens, uint256[] memory amounts) internal virtual;

@@ -43,6 +43,8 @@ contract MockStrategy is Strategy {
         totalUsdValue = totalUsdValue_;
     }
 
+    function compound() internal override {}
+
     function swapAssets(address[] memory tokens, SwapInfo[] calldata swapInfo) internal override {
         for (uint256 i = 0; i < tokens.length; i++) {
             IERC20(tokens[i]).safeTransfer(address(_swapper), IERC20(tokens[i]).balanceOf(address(this)));

@@ -42,6 +42,7 @@ contract RewardManagerTests is Test, SpoolAccessRoles {
         smartVault_.initialize("SmartVault", assetGroupId);
 
         rewardManager = new RewardManager(sac, assetGroupRegistry);
+        // NOTE: can use days keyword
         rewardDuration = SECONDS_IN_DAY * 10;
         smartVault = address(smartVault_);
 
