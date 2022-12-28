@@ -68,7 +68,7 @@ contract SmartVaultManagerTest is Test, SpoolAccessRoles {
     }
 
     function test_getUserSVTBalance_getsCurrentBalanceWithoutDepositNFT() public {
-        SmartVault testSmartVault = new SmartVault("SmartVault", accessControl, new GuardManager(accessControl));
+        SmartVault testSmartVault = new SmartVault(accessControl, new GuardManager(accessControl));
 
         uint256 amount = 1000;
         address user = address(8888);

@@ -156,12 +156,14 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      */
     function getUserSVTBalance(address smartVaultAddress, address userAddress) external view returns (uint256) {
         ISmartVault smartVault = ISmartVault(smartVaultAddress);
-
         uint256 currentBalance = smartVault.balanceOf(userAddress);
-
-        uint256[] memory ids = smartVault.getUserDepositNFTIDs(userAddress);
+        uint256[] memory ids = smartVault.activeUserNFTIds(userAddress);
 
         for (uint256 i; i < ids.length; i++) {
+            if (ids[i] > MAXIMAL_DEPOSIT_ID) {
+                continue;
+            }
+
             DepositMetadata memory depositMetadata = smartVault.getDepositMetadata(ids[i]);
             uint256 balance = getClaimedVaultTokensPreview(smartVaultAddress, depositMetadata);
             currentBalance += balance;

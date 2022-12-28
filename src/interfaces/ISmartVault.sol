@@ -56,15 +56,21 @@ struct WithdrawalMetadata {
     uint256 flushIndex;
 }
 
+// @notice Maximal value of deposit NFT ID.
+uint256 constant MAXIMAL_DEPOSIT_ID = 2 ** 255 - 1;
+
+// @notice Maximal value of withdrawal NFT ID.
+uint256 constant MAXIMAL_WITHDRAWAL_ID = 2 ** 256 - 1;
+
 /* ========== INTERFACES ========== */
 
 interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /**
-     * @return depositNTFIds Retrieves a list of Deposit NFTs for User.
+     * @notice Retrieves a list of active NFTs for User.
      */
-    function getUserDepositNFTIDs(address userAddress) external view returns (uint256[] memory depositNTFIds);
+    function activeUserNFTIds(address userAddress) external view returns (uint256[] memory);
 
     /**
      * @return asset group ID
