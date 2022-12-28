@@ -35,10 +35,12 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
     AssetGroupRegistry private assetGroupRegistry;
     SpoolAccessControl accessControl;
 
+    uint256 rewardsPerSecond;
+    
     function setUp() public {
         tokenA = new MockToken("Token A", "TA");
-        // rewardTokenA = new MockToken("Reward Token A", "RTA");
-        MockMasterChef masterChef = new MockMasterChef(address(tokenA), 0);
+        rewardsPerSecond = 1 ether;
+        MockMasterChef masterChef = new MockMasterChef(address(tokenA), rewardsPerSecond);
         masterChef.add(100, tokenA, true);
 
         alice = address(0xa);
@@ -113,7 +115,7 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
     }
 
     function test_dhwGenerateYield() public {
-        uint256 tokenAInitialBalanceAlice = 100 ether;
+        uint256 tokenAInitialBalanceAlice = 78 ether;
         
         // set initial state
         deal(address(tokenA), alice, tokenAInitialBalanceAlice, true);
@@ -138,6 +140,10 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
 
         strategyRegistry.doHardWork(mySmartVaultStrategies, dhwSwapInfo);
 
+        // skip 2 seconds to produce 2 * 10**18 yield, only does to alice
+        uint256 firstYieldSeconds = 2;
+        skip(firstYieldSeconds);
+
         // sync vault
         smartVaultManager.syncSmartVault(address(mySmartVault));
 
@@ -147,7 +153,7 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
 
         // ======================
 
-        uint256 tokenAInitialBalanceBob = 10 ether;
+        uint256 tokenAInitialBalanceBob = 20 ether;
         
         // set initial state
         deal(address(tokenA), bob, tokenAInitialBalanceBob, true);
@@ -170,7 +176,11 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
 
         strategyRegistry.doHardWork(mySmartVaultStrategies, dhwSwapInfo);
 
-        // // sync vault
+        // skip 2 seconds to produce 10**18 yield, distributes between alice and bob
+        uint256 secondYieldSeconds = 1;
+        skip(secondYieldSeconds);
+
+        // sync vault
         smartVaultManager.syncSmartVault(address(mySmartVault));
 
         // claim deposit
@@ -183,40 +193,58 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
         uint256 aliceShares = mySmartVault.balanceOf(alice);
         uint256 bobShares = mySmartVault.balanceOf(bob);
         console2.log("aliceShares Before:", aliceShares);
-
-        vm.prank(alice);
-        mySmartVault.approve(address(smartVaultManager), aliceShares);
-        vm.prank(bob);
-        mySmartVault.approve(address(smartVaultManager), bobShares);
-        uint256 aliceWithdrawalNftId = smartVaultManager.redeem(address(mySmartVault), aliceShares, alice, alice);
-        uint256 bobWithdrawalNftId = smartVaultManager.redeem(address(mySmartVault), bobShares, bob, bob);
-
-        console2.log("flushSmartVault");
-        smartVaultManager.flushSmartVault(address(mySmartVault));
-
-        // DHW - WITHDRAW
-        SwapInfo[][] memory dhwSwapInfoWithdraw = new SwapInfo[][](1);
-        dhwSwapInfoWithdraw[0] = new SwapInfo[](0);
-        console2.log("doHardWork");
-        strategyRegistry.doHardWork(mySmartVaultStrategies, dhwSwapInfo);
-
-        // sync vault
-        console2.log("syncSmartVault");
-        smartVaultManager.syncSmartVault(address(mySmartVault));
-
-        // claim withdrawal
-        console2.log("tokenA Before:", tokenA.balanceOf(alice));
-
-        vm.prank(alice);
-        console2.log("claimWithdrawal");
-        smartVaultManager.claimWithdrawal(address(mySmartVault), aliceWithdrawalNftId, alice);
-        vm.prank(bob);
-        smartVaultManager.claimWithdrawal(address(mySmartVault), bobWithdrawalNftId, bob);
-
-        console2.log("tokenA alice  After:", tokenA.balanceOf(alice));
-        console2.log("tokenA bob    After:", tokenA.balanceOf(bob));
         
-        assertApproxEqAbs(tokenA.balanceOf(alice), tokenAInitialBalanceAlice, 10);
-        assertApproxEqAbs(tokenA.balanceOf(bob), tokenAInitialBalanceBob, 10);
+        {
+            vm.prank(alice);
+            mySmartVault.approve(address(smartVaultManager), aliceShares);
+            vm.prank(bob);
+            mySmartVault.approve(address(smartVaultManager), bobShares);
+            uint256 aliceWithdrawalNftId = smartVaultManager.redeem(address(mySmartVault), aliceShares, alice, alice);
+            uint256 bobWithdrawalNftId = smartVaultManager.redeem(address(mySmartVault), bobShares, bob, bob);
+
+            console2.log("flushSmartVault");
+            smartVaultManager.flushSmartVault(address(mySmartVault));
+
+            // DHW - WITHDRAW
+            SwapInfo[][] memory dhwSwapInfoWithdraw = new SwapInfo[][](1);
+            dhwSwapInfoWithdraw[0] = new SwapInfo[](0);
+            console2.log("doHardWork");
+            strategyRegistry.doHardWork(mySmartVaultStrategies, dhwSwapInfo);
+
+            // sync vault
+            console2.log("syncSmartVault");
+            smartVaultManager.syncSmartVault(address(mySmartVault));
+
+            // claim withdrawal
+            console2.log("tokenA Before:", tokenA.balanceOf(alice));
+
+            vm.prank(alice);
+            console2.log("claimWithdrawal");
+            smartVaultManager.claimWithdrawal(address(mySmartVault), aliceWithdrawalNftId, alice);
+            vm.prank(bob);
+            smartVaultManager.claimWithdrawal(address(mySmartVault), bobWithdrawalNftId, bob);
+
+            console2.log("tokenA alice  After:", tokenA.balanceOf(alice));
+            console2.log("tokenA bob    After:", tokenA.balanceOf(bob));
+        }
+        
+        {
+            uint256 firstYield = rewardsPerSecond * firstYieldSeconds;
+            uint256 secondYield = rewardsPerSecond * secondYieldSeconds;
+
+            // first yield only belongs to alice
+            uint256 aliceAfterFirstYieldBalance = tokenAInitialBalanceAlice + firstYield;
+
+            // first yield only distributes to alice and bob
+            uint256 aliceAftersecondYieldBalance = aliceAfterFirstYieldBalance + (secondYield * aliceAfterFirstYieldBalance / (aliceAfterFirstYieldBalance + tokenAInitialBalanceBob));
+            uint256 bobAftersecondYieldBalance = tokenAInitialBalanceBob + (secondYield * tokenAInitialBalanceBob / (aliceAfterFirstYieldBalance + tokenAInitialBalanceBob));
+
+            console2.log("aliceAftersecondYieldBalance:", aliceAftersecondYieldBalance);
+            console2.log("bobAftersecondYieldBalance:", bobAftersecondYieldBalance);
+
+            // NOTE: check relative error size
+            assertApproxEqRel(tokenA.balanceOf(alice), aliceAftersecondYieldBalance, 10**9);
+            assertApproxEqRel(tokenA.balanceOf(bob), bobAftersecondYieldBalance, 10**9);
+        }
     }
 }

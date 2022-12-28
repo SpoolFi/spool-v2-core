@@ -22,7 +22,7 @@ struct UserInfo {
     //   pending reward = (user.amount * pool.accRewardPerShare) - user.rewardDebt
     //
     // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
-    //   1. The pool's `accRewardPerShare` (and `lastRewardBlock`) gets updated.
+    //   1. The pool's `accRewardPerShare` (and `lastRewardTime`) gets updated.
     //   2. User receives the pending reward sent to his/her address.
     //   3. User's `amount` gets updated.
     //   4. User's `rewardDebt` gets updated.
@@ -31,7 +31,7 @@ struct UserInfo {
 struct PoolInfo {
     IERC20 lpToken; // Address of LP token contract.
     uint256 allocPoint; // How many allocation points assigned to this pool. SUSHIs to distribute per block.
-    uint256 lastRewardBlock; // Last block number that SUSHIs distribution occurs.
+    uint256 lastRewardTime; // Last block number that SUSHIs distribution occurs.
     uint256 accRewardPerShare; // Accumulated SUSHIs per share, times 1e12. See below.
 }
 
@@ -41,7 +41,7 @@ contract MockMasterChef is Ownable {
     // The REWARD TOKEN!
     IERC20Mintable public rewardToken;
     // REWARD tokens created per block.
-    uint256 public rewardTokenPerBlock;
+    uint256 public rewardTokenPerTime;
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
@@ -49,7 +49,7 @@ contract MockMasterChef is Ownable {
     // Total allocation poitns. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
     // The block number when REWARD mining starts.
-    uint256 public startBlock;
+    uint256 public startTime;
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(
@@ -58,10 +58,10 @@ contract MockMasterChef is Ownable {
         uint256 amount
     );
 
-    constructor(address _rewardToken, uint256 _rewardTokenPerBlock) {
+    constructor(address _rewardToken, uint256 _rewardTokenPerTime) {
         rewardToken = IERC20Mintable(_rewardToken);
-        rewardTokenPerBlock = _rewardTokenPerBlock;
-        startBlock = block.number;
+        rewardTokenPerTime = _rewardTokenPerTime;
+        startTime = block.timestamp;
     }
 
     function poolLength() external view returns (uint256) {
@@ -78,15 +78,15 @@ contract MockMasterChef is Ownable {
         if (_withUpdate) {
             massUpdatePools();
         }
-        uint256 lastRewardBlock = block.number > startBlock
-            ? block.number
-            : startBlock;
+        uint256 lastRewardTime = block.timestamp > startTime
+            ? block.timestamp
+            : startTime;
         totalAllocPoint += _allocPoint;
         poolInfo.push(
             PoolInfo({
                 lpToken: _lpToken,
                 allocPoint: _allocPoint,
-                lastRewardBlock: lastRewardBlock,
+                lastRewardTime: lastRewardTime,
                 accRewardPerShare: 0
             })
         );
@@ -124,13 +124,13 @@ contract MockMasterChef is Ownable {
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accRewardPerShare = pool.accRewardPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
-        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
+        if (block.timestamp > pool.lastRewardTime && lpSupply != 0) {
             uint256 multiplier = getMultiplier(
-                pool.lastRewardBlock,
-                block.number
+                pool.lastRewardTime,
+                block.timestamp
             );
             uint256 reward = multiplier
-                * rewardTokenPerBlock
+                * rewardTokenPerTime
                 * pool.allocPoint
                 / totalAllocPoint;
             accRewardPerShare += (reward * 1e12) / lpSupply;
@@ -150,22 +150,22 @@ contract MockMasterChef is Ownable {
     // Update reward variables of the given pool to be up-to-date.
     function updatePool(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
-        if (block.number <= pool.lastRewardBlock) {
+        if (block.timestamp <= pool.lastRewardTime) {
             return;
         }
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (lpSupply == 0) {
-            pool.lastRewardBlock = block.number;
+            pool.lastRewardTime = block.timestamp;
             return;
         }
-        uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
+        uint256 multiplier = getMultiplier(pool.lastRewardTime, block.timestamp);
         uint256 reward = multiplier
-            * rewardTokenPerBlock
+            * rewardTokenPerTime
             * pool.allocPoint
             / totalAllocPoint;
         
         pool.accRewardPerShare += reward * 1e12 / lpSupply;
-        pool.lastRewardBlock = block.number;
+        pool.lastRewardTime = block.timestamp;
     }
 
     // Deposit LP tokens to MasterChef for reward allocation.

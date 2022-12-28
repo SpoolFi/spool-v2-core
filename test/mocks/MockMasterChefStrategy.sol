@@ -27,11 +27,26 @@ contract MockMasterChefStrategy is Strategy {
 
     function test_mock() external pure {}
 
-    function assetRatio() external view override returns (uint256[] memory) {}
+    // NOTE: looks wierd
+    function assetRatio() external pure override returns (uint256[] memory) {
+        uint256[] memory _assetRatio = new uint256[](1);
+        _assetRatio[0] = 1;
+        return _assetRatio;
+    }
 
     function swapAssets(address[] memory tokens, SwapInfo[] calldata swapInfo) internal override {}
 
-    function compound() internal override {}
+    function compound() internal override {
+        uint256 assetBalanceBefore = _getAssetBalanceBefore();
+        // claims rewards
+        masterChef.deposit(pid, 0);
+        uint256 assetBalanceAfter = _getAssetBalanceDiff(assetBalanceBefore);
+
+        // NOTE: as reward token is same as the deposit token, deposit the claimed amount
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        IERC20(assetGroup[0]).safeApprove(address(masterChef), assetBalanceAfter);
+        masterChef.deposit(pid, assetBalanceAfter);
+    }
 
     function depositToProtocol(address[] memory tokens, uint256[] memory amounts) internal override {
         if (amounts[0] > 0) {
@@ -56,7 +71,7 @@ contract MockMasterChefStrategy is Strategy {
         return usdWorth;
     }
 
-    function redeemFromProtocol(address[] memory tokens, uint256 ssts) internal override {
+    function redeemFromProtocol(address[] memory, uint256 ssts) internal override {
         if (ssts == 0) {
             return;
         }
@@ -66,5 +81,25 @@ contract MockMasterChefStrategy is Strategy {
         uint256 toWithdraw = Math.mulDiv(balance, ssts, totalSupply());
         
         masterChef.withdraw(pid, toWithdraw);
+    }
+
+    function _getAssetBalanceBefore() private view returns(uint256) {
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+
+        return IERC20(assetGroup[0]).balanceOf(address(this));
+    }
+
+    function _getAssetBalanceDiff(uint256 assetBalanceBefore) private view returns(uint256) {
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+
+        uint256 assetBalanceAfter = IERC20(assetGroup[0]).balanceOf(address(this));
+
+        if (assetBalanceAfter >= assetBalanceBefore) {
+            unchecked {
+                return assetBalanceAfter - assetBalanceBefore;
+            }
+        } else {
+            revert("MockMasterChefStrategy::_getAssetBalanceDiff: Balance after should be equal or higher");
+        }
     }
 }

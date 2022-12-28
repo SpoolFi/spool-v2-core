@@ -95,11 +95,11 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             assetsToDeposit[i] = IERC20(tokens[i]).balanceOf(address(this));
         }
 
+
+        compound();
+        
         // - deposit assets
         uint256 usdWorth0 = getUsdWorth(exchangeRates, priceFeedManager);
-
-        // NOTE: probably compound before??
-        compound();
 
         depositToProtocol(tokens, assetsToDeposit);
         uint256 usdWorth1 = getUsdWorth(exchangeRates, priceFeedManager);
