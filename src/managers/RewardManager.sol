@@ -8,7 +8,7 @@ import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../access/SpoolAccessControl.sol";
 import "../interfaces/IRewardManager.sol";
 import "../interfaces/ISmartVault.sol";
-import "../utils/Math.sol";
+import "../utils/MathUtils.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
 
 contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllable {
@@ -43,7 +43,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
     /* ========== VIEWS ========== */
 
     function lastTimeRewardApplicable(address smartVault, IERC20 token) public view returns (uint32) {
-        return uint32(Math.min(block.timestamp, rewardConfiguration[smartVault][token].periodFinish));
+        return uint32(MathUtils.min(block.timestamp, rewardConfiguration[smartVault][token].periodFinish));
     }
 
     /**

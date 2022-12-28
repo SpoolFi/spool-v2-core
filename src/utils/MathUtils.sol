@@ -6,7 +6,7 @@ import "@openzeppelin/utils/math/SafeCast.sol";
 /**
  * @notice A collection of custom math utils used throughout the system
  */
-library Math {
+library MathUtils {
     function min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a > b ? b : a;
     }
