@@ -144,7 +144,8 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
         token.approve(address(smartVaultManager), 2 ether);
         uint256[] memory depositAmounts = Arrays.toArray(1 ether);
         uint256 tokenId = smartVaultManager.deposit(address(smartVault), depositAmounts, alice, address(0));
-        DepositMetadata memory metadata = smartVault.getDepositMetadata(tokenId);
+        DepositMetadata memory metadata =
+            abi.decode(smartVault.getMetadata(Arrays.toArray(tokenId))[0], (DepositMetadata));
 
         assertEq(tokenId, 1);
         assertTrue(metadata.initiated > 0);
@@ -165,17 +166,20 @@ contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
 
         vm.prank(alice);
         uint256 tokenId = smartVaultManager.deposit(address(smartVault), depositAmounts, alice, address(0));
-        DepositMetadata memory metadata = smartVault.getDepositMetadata(tokenId);
+        DepositMetadata memory metadata =
+            abi.decode(smartVault.getMetadata(Arrays.toArray(tokenId))[0], (DepositMetadata));
 
         assertEq(tokenId, 1);
         assertTrue(metadata.initiated > 0);
 
         vm.startPrank(address(smartVaultManager));
 
+        uint256[] memory ids = Arrays.toArray(tokenId);
+        uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
-        smartVault.burnNFT(alice, tokenId, RequestType.Deposit);
+        smartVault.burnNFTs(alice, ids, amounts);
 
         vm.warp(block.timestamp + 60 * 60 * 24 + 1);
-        smartVault.burnNFT(alice, tokenId, RequestType.Deposit);
+        smartVault.burnNFTs(alice, ids, amounts);
     }
 }

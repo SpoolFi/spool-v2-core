@@ -156,8 +156,8 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         // - withdrawal NFTs are minted
         assertEq(aliceWithdrawalNftId, 2 ** 255 + 1, "4");
         assertEq(bobWithdrawalNftId, 2 ** 255 + 2, "5");
-        assertEq(mySmartVault.balanceOf(alice, aliceWithdrawalNftId), 1, "6");
-        assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 1, "7");
+        assertEq(mySmartVault.balanceOf(alice, aliceWithdrawalNftId), NFT_MINTED_SHARES, "6");
+        assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), NFT_MINTED_SHARES, "7");
 
         // flush
         smartVaultManager.flushSmartVault(address(mySmartVault));
@@ -198,11 +198,14 @@ contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
         // nothing to check
 
         // claim withdrawal
+        uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
+        uint256[] memory ids = Arrays.toArray(aliceWithdrawalNftId);
         vm.prank(alice);
-        smartVaultManager.claimWithdrawal(address(mySmartVault), aliceWithdrawalNftId, alice);
+        smartVaultManager.claimWithdrawal(address(mySmartVault), ids, amounts, alice);
 
+        ids = Arrays.toArray(bobWithdrawalNftId);
         vm.prank(bob);
-        smartVaultManager.claimWithdrawal(address(mySmartVault), bobWithdrawalNftId, bob);
+        smartVaultManager.claimWithdrawal(address(mySmartVault), ids, amounts, bob);
 
         // check state
         // - assets are transfered to withdrawers

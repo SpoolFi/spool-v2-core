@@ -3,6 +3,7 @@ pragma solidity 0.8.16;
 
 import {console} from "forge-std/console.sol";
 import "../../src/SmartVault.sol";
+import "../libraries/Arrays.sol";
 
 contract MockGuard {
     mapping(address => bool) whitelist;
@@ -43,7 +44,8 @@ contract MockGuard {
             revert("Not applicable");
         }
 
-        DepositMetadata memory metadata = SmartVault(smartVault).getDepositMetadata(tokenID);
+        DepositMetadata memory metadata =
+            abi.decode(SmartVault(smartVault).getMetadata(Arrays.toArray(tokenID))[0], (DepositMetadata));
         return (block.timestamp - metadata.initiated) > timelock;
     }
 }

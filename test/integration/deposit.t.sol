@@ -173,7 +173,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
         assertEq(tokenC.balanceOf(address(masterWallet)), 438.8 ether);
         // - deposit NFT was minted
         assertEq(aliceDepositNftId, 1);
-        assertEq(mySmartVault.balanceOf(alice, aliceDepositNftId), 1);
+        assertEq(mySmartVault.balanceOf(alice, aliceDepositNftId), NFT_MINTED_SHARES);
 
         // flush
         smartVaultManager.flushSmartVault(address(mySmartVault));
@@ -233,8 +233,10 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
         assertEq(balance, 35716280000000000000000000000000000000000000000000000000000000);
 
         // claim deposit
+        uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
+        uint256[] memory ids = Arrays.toArray(aliceDepositNftId);
         vm.prank(alice);
-        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), aliceDepositNftId);
+        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), ids, amounts);
 
         // check state
         // - vault tokens were claimed
