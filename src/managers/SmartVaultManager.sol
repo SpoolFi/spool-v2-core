@@ -353,6 +353,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         uint256 claimedVaultTokens = 0;
         for (uint256 i = 0; i < nftIDs.length; i++) {
+            if (nftIDs[i] > MAXIMAL_DEPOSIT_ID) {
+                revert InvalidDepositNftId(nftIDs[i]);
+            }
+
             claimedVaultTokens +=
                 _getClaimedVaultTokensPreview(smartVault, abi.decode(metadata[i], (DepositMetadata)), nftAmounts[i]);
         }
@@ -382,6 +386,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256[] memory withdrawnAssets = new uint256[](assetGroup.length);
 
         for (uint256 i = 0; i < nftIDs.length; i++) {
+            if (nftIDs[i] <= MAXIMAL_DEPOSIT_ID) {
+                revert InvalidWithdrawalNftId(nftIDs[i]);
+            }
+
             uint256[] memory withdrawnAssets_ =
                 _calculateWithdrawal(smartVault, abi.decode(metadata[i], (WithdrawalMetadata)), assetGroup.length);
             for (uint256 j = 0; j < assetGroup.length; j++) {
