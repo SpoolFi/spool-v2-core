@@ -62,6 +62,9 @@ uint256 constant MAXIMAL_DEPOSIT_ID = 2 ** 255 - 1;
 // @notice Maximal value of withdrawal NFT ID.
 uint256 constant MAXIMAL_WITHDRAWAL_ID = 2 ** 256 - 1;
 
+// @notice How many shares will be minted with a NFT
+uint256 constant NFT_MINTED_SHARES = 10 ** 6;
+
 /* ========== INTERFACES ========== */
 
 interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
@@ -82,19 +85,7 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
      */
     function vaultName() external view returns (string memory name);
 
-    /**
-     * @notice Gets metadata for a deposit NFT.
-     * @param depositNftId ID of the deposit NFT.
-     * @return Metadata of the deposit NFT.
-     */
-    function getDepositMetadata(uint256 depositNftId) external view returns (DepositMetadata memory);
-
-    /**
-     * @notice Gets metadata for a withdrawal NFT.
-     * @param withdrawalNftId ID of the withdrawal NFT.
-     * @return Metadata of the withdrawal NFT.
-     */
-    function getWithdrawalMetadata(uint256 withdrawalNftId) external view returns (WithdrawalMetadata memory);
+    function getMetadata(uint256[] calldata nftIds) external view returns (bytes[] memory);
 
     /**
      * @dev Returns the total amount of the underlying asset that is “managed” by Vault.
@@ -120,6 +111,8 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
      */
     function convertToAssets(uint256 shares) external view returns (uint256[] memory assets);
 
+    function balanceOfBatch(address account, uint256[] memory ids) external view returns (uint256[] memory);
+
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     function mint(address receiver, uint256 vaultShares) external;
@@ -130,7 +123,9 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
         external
         returns (uint256 receipt);
 
-    function burnNFT(address owner, uint256 nftId, RequestType type_) external;
+    function burnNFTs(address owner, uint256[] calldata nftIds, uint256[] calldata nftAmounts)
+        external
+        returns (bytes[] memory);
 
     function mintDepositNFT(address receiver, DepositMetadata memory metadata) external returns (uint256 receipt);
 

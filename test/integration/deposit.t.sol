@@ -173,7 +173,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
         assertEq(tokenC.balanceOf(address(masterWallet)), 438.8 ether);
         // - deposit NFT was minted
         assertEq(aliceDepositNftId, 1);
-        assertEq(mySmartVault.balanceOf(alice, aliceDepositNftId), 1);
+        assertEq(mySmartVault.balanceOf(alice, aliceDepositNftId), NFT_MINTED_SHARES);
 
         // flush
         smartVaultManager.flushSmartVault(address(mySmartVault));
@@ -233,14 +233,89 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
         assertEq(balance, 35716280000000000000000000000000000000000000000000000000000000);
 
         // claim deposit
+        uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
+        uint256[] memory ids = Arrays.toArray(aliceDepositNftId);
         vm.prank(alice);
-        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), aliceDepositNftId);
+        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), ids, amounts);
 
         // check state
         // - vault tokens were claimed
         assertEq(mySmartVault.balanceOf(address(alice)), 35716280000000000000000000000000000000000000000000000000000000);
         assertEq(mySmartVault.balanceOf(address(mySmartVault)), 0);
         // - deposit NFT was burned
+        assertEq(mySmartVault.balanceOf(alice, aliceDepositNftId), 0);
+    }
+
+    function test_claimSmartVaultTokensPartially() public {
+        bytes32 a = accessControl.getRoleAdmin(ROLE_SMART_VAULT);
+        console.logBytes32(a);
+        // set initial state
+        deal(address(tokenA), alice, 100 ether, true);
+        deal(address(tokenB), alice, 10 ether, true);
+        deal(address(tokenC), alice, 500 ether, true);
+
+        // Alice deposits
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        uint256 aliceDepositNftId = smartVaultManager.deposit(address(mySmartVault), depositAmounts, alice, address(0));
+
+        vm.stopPrank();
+
+        // flush
+        smartVaultManager.flushSmartVault(address(mySmartVault));
+
+        // DHW
+        SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
+        dhwSwapInfo[0] = new SwapInfo[](0);
+        dhwSwapInfo[1] = new SwapInfo[](0);
+        dhwSwapInfo[2] = new SwapInfo[](0);
+
+        strategyRegistry.doHardWork(mySmartVaultStrategies, dhwSwapInfo);
+
+        // sync vault
+        smartVaultManager.syncSmartVault(address(mySmartVault));
+
+        uint256 svtBalance = 35716280000000000000000000000000000000000000000000000000000000;
+
+        // - vault tokens were minted
+        assertEq(mySmartVault.totalSupply(), svtBalance);
+        assertEq(
+            mySmartVault.balanceOf(address(mySmartVault)),
+            svtBalance
+        );
+
+        uint256 balance = smartVaultManager.getUserSVTBalance(address(mySmartVault), alice);
+        assertEq(balance, svtBalance);
+
+        // burn half of NFT
+        uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES / 2);
+        uint256[] memory ids = Arrays.toArray(aliceDepositNftId);
+        vm.startPrank(alice);
+        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), ids, amounts);
+
+        // check state
+        // - vault tokens were partially claimed
+        assertEq(mySmartVault.balanceOf(address(alice)), svtBalance / 2);
+        assertEq(mySmartVault.balanceOf(address(mySmartVault)), svtBalance / 2);
+
+        // - deposit NFT was partially burned
+        assertEq(mySmartVault.balanceOf(alice, aliceDepositNftId), NFT_MINTED_SHARES / 2);
+
+        // burn remaining of NFT
+        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), ids, amounts);
+
+        // check state
+        // - vault tokens were claimed in full
+        assertEq(mySmartVault.balanceOf(address(alice)), svtBalance);
+        assertEq(mySmartVault.balanceOf(address(mySmartVault)), 0);
+
+        // - deposit NFT was burned in full
         assertEq(mySmartVault.balanceOf(alice, aliceDepositNftId), 0);
     }
 }

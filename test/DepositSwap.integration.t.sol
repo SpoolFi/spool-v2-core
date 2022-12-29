@@ -167,12 +167,13 @@ contract DepositSwapIntegrationTest is Test, SpoolAccessRoles {
         assertEq(tokenB.balanceOf(address(masterWallet)), 0.5 ether, "Token B - MasterWallet"); // swapped
         assertEq(tokenC.balanceOf(alice), 0.75 ether, "Token C - Alice"); // returned unswapped tokens
 
-        DepositMetadata memory depositMetadata = smartVault.getDepositMetadata(nftId);
+        DepositMetadata memory depositMetadata =
+            abi.decode(smartVault.getMetadata(Arrays.toArray(nftId))[0], (DepositMetadata));
 
         assertEq(depositMetadata.assets.length, 2, "assets length"); // check deposit
         assertEq(depositMetadata.assets[0], 2 ether, "assets 0");
         assertEq(depositMetadata.assets[1], 0.5 ether, "assets 1");
-        assertEq(smartVault.balanceOf(bob, nftId), 1, "NFT - Bob");
+        assertEq(smartVault.balanceOf(bob, nftId), NFT_MINTED_SHARES, "NFT - Bob");
     }
 
     function test_depositSwap_swapAndDeposit_shouldDoPartialSwapAndThenDeposit() public {
@@ -208,11 +209,12 @@ contract DepositSwapIntegrationTest is Test, SpoolAccessRoles {
         assertEq(tokenB.balanceOf(address(masterWallet)), 0.4 ether, "Token B - MasterWallet"); // swapped
         assertEq(tokenA.balanceOf(alice), 0 ether, "Token A - Alice");
 
-        DepositMetadata memory depositMetadata = smartVault.getDepositMetadata(nftId);
+        DepositMetadata memory depositMetadata =
+            abi.decode(smartVault.getMetadata(Arrays.toArray(nftId))[0], (DepositMetadata));
 
         assertEq(depositMetadata.assets.length, 2, "assets length"); // check deposit
         assertEq(depositMetadata.assets[0], 1.6 ether, "assets 0");
         assertEq(depositMetadata.assets[1], 0.4 ether, "assets 1");
-        assertEq(smartVault.balanceOf(bob, nftId), 1, "NFT - Bob");
+        assertEq(smartVault.balanceOf(bob, nftId), NFT_MINTED_SHARES, "NFT - Bob");
     }
 }

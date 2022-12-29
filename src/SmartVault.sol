@@ -32,6 +32,7 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
     // @notice Mapping from user to all of his current D-NFT IDs
     mapping(address => mapping(uint256 => uint256)) private _activeUserNFTIds;
 
+    // @notice Number of active (not burned) NFTs per address
     mapping(address => uint256) private _activeUserNFTCount;
 
     // @notice Deposit metadata registry
@@ -79,12 +80,19 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         return _vaultName;
     }
 
-    function getDepositMetadata(uint256 depositNftId) external view returns (DepositMetadata memory) {
-        return _depositMetadata[depositNftId];
-    }
+    /**
+     * @notice Get encoded metadata for given NFT ids (both withdrawal and deposit)
+     */
+    function getMetadata(uint256[] calldata nftIds) public view returns (bytes[] memory) {
+        bytes[] memory metadata = new bytes[](nftIds.length);
 
-    function getWithdrawalMetadata(uint256 withdrawalNftId) external view returns (WithdrawalMetadata memory) {
-        return _withdrawalMetadata[withdrawalNftId];
+        for (uint256 i = 0; i < nftIds.length; i++) {
+            metadata[i] = nftIds[i] >= MAXIMAL_DEPOSIT_ID
+                ? abi.encode(_withdrawalMetadata[nftIds[i]])
+                : abi.encode(_depositMetadata[nftIds[i]]);
+        }
+
+        return metadata;
     }
 
     // TODO: implement or remove
@@ -97,12 +105,34 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         revert("0");
     }
 
+    function balanceOfBatch(address account, uint256[] memory ids) public view returns (uint256[] memory) {
+        uint256[] memory batchBalances = new uint256[](ids.length);
+
+        for (uint256 i = 0; i < ids.length; ++i) {
+            batchBalances[i] = balanceOf(account, ids[i]);
+        }
+
+        return batchBalances;
+    }
+
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
+    /**
+     * @notice Mint ERC20 SVTs for given receiver address
+     * @param receiver Address to mint to
+     * @param vaultShares Amount of tokens to mint
+     */
     function mint(address receiver, uint256 vaultShares) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
         _mint(receiver, vaultShares);
     }
 
+    /**
+     * @notice Burn SVTs and release strategy shares back to strategies
+     * @param owner Address for which to burn SVTs
+     * @param vaultShares Amount of SVTs to burn
+     * @param strategies Strategies to which release the shares to
+     * @param shares Amount of strategy shares to release
+     */
     function burn(address owner, uint256 vaultShares, address[] memory strategies, uint256[] memory shares)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
@@ -115,28 +145,42 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         }
     }
 
-    function burnNFT(address owner, uint256 nftId, RequestType type_)
+    /**
+     * @notice Burn NFTs and return their metadata
+     * @param owner Owner of NFTs
+     * @param nftIds NFTs to burn
+     * @param nftAmounts NFT shares to burn (partial burn)
+     */
+    function burnNFTs(address owner, uint256[] calldata nftIds, uint256[] calldata nftAmounts)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+        returns (bytes[] memory)
     {
-        // check validity and ownership of the NFT
-        if (type_ == RequestType.Deposit && nftId > MAXIMAL_DEPOSIT_ID) {
-            revert InvalidDepositNftId(nftId);
-        }
-        if (type_ == RequestType.Withdrawal && nftId <= MAXIMAL_DEPOSIT_ID) {
-            revert InvalidWithdrawalNftId(nftId);
-        }
-        if (balanceOf(owner, nftId) != 1) {
-            revert InvalidNftBalance(balanceOf(owner, nftId));
+        for (uint256 i = 0; i < nftIds.length; i++) {
+            if (balanceOf(owner, nftIds[i]) < nftAmounts[i]) {
+                revert InvalidNftBalance(balanceOf(owner, nftIds[i]));
+            }
         }
 
-        _burn(owner, nftId, 1);
+        _burnBatch(owner, nftIds, nftAmounts);
+        return getMetadata(nftIds);
     }
 
+    /**
+     * @notice Claim SVTs
+     * @param claimer Address to receive SVTs
+     * @param amount Amount of SVTs to receive
+     */
     function claimShares(address claimer, uint256 amount) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
         _transfer(address(this), claimer, amount);
     }
 
+    /**
+     * @notice Mint a new Deposit NFT
+     * @dev Supply of minted NFT is NFT_MINTED_SHARES (for partial burning)
+     * @param receiver Address that will receive the NFT
+     * @param metadata Metadata to store for minted NFT
+     */
     function mintDepositNFT(address receiver, DepositMetadata memory metadata)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
@@ -147,11 +191,17 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         }
         _lastDepositId++;
         _depositMetadata[_lastDepositId] = metadata;
-        _mint(receiver, _lastDepositId, 1, "");
+        _mint(receiver, _lastDepositId, NFT_MINTED_SHARES, "");
 
         return _lastDepositId;
     }
 
+    /**
+     * @notice Mint a new Withdrawal NFT
+     * @dev Supply of minted NFT is NFT_MINTED_SHARES (for partial burning)
+     * @param receiver Address that will receive the NFT
+     * @param metadata Metadata to store for minted NFT
+     */
     function mintWithdrawalNFT(address receiver, WithdrawalMetadata memory metadata)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
@@ -162,7 +212,7 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         }
         _lastWithdrawalId++;
         _withdrawalMetadata[_lastWithdrawalId] = metadata;
-        _mint(receiver, _lastWithdrawalId, 1, "");
+        _mint(receiver, _lastWithdrawalId, NFT_MINTED_SHARES, "");
 
         return _lastWithdrawalId;
     }
@@ -228,8 +278,6 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
 
         // mint or transfer
         for (uint256 i = 0; i < ids.length; i++) {
-            require(amounts[i] == 1, "SmartVault::_afterTokenTransfer: Invalid NFT amount");
-
             _activeUserNFTIds[to][_activeUserNFTCount[to]] = ids[i];
             _activeUserNFTCount[to]++;
         }

@@ -128,14 +128,18 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
      * @dev Requirements:
      * - withdrawal NFT must be valid
      * @param smartVault Address of the smart vault that issued the withdrawal NFT.
-     * @param withdrawalNftId ID of withdrawal NFT to burn.
+     * @param nftIDs ID of withdrawal NFT to burn.
+     * @param nftAmounts amounts
      * @param receiver Receiver of claimed assets.
      * @return assetAmounts Amounts of assets claimed.
      * @return assetTokens Addresses of assets claimed.
      */
-    function claimWithdrawal(address smartVault, uint256 withdrawalNftId, address receiver)
-        external
-        returns (uint256[] memory, uint256);
+    function claimWithdrawal(
+        address smartVault,
+        uint256[] calldata nftIDs,
+        uint256[] calldata nftAmounts,
+        address receiver
+    ) external returns (uint256[] memory, uint256);
 
     /**
      * @notice Claims smart vault tokens by burning the deposit NFT.
@@ -143,10 +147,13 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
      * - deposit NFT must be valid
      * - flush must be synced
      * @param smartVaultAddress Address of the smart vault that issued the deposit NFT.
-     * @param depositNftId ID of the deposit NFT to burn.
+     * @param nftIDs ID of the deposit NFT to burn.
+     * @param nftAmounts amounts
      * @return Amount of smart vault tokens claimed.
      */
-    function claimSmartVaultTokens(address smartVaultAddress, uint256 depositNftId) external returns (uint256);
+    function claimSmartVaultTokens(address smartVaultAddress, uint256[] calldata nftIDs, uint256[] calldata nftAmounts)
+        external
+        returns (uint256);
 
     /**
      * @dev Burns exactly shares from owner and sends assets of underlying tokens to receiver.
