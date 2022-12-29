@@ -337,6 +337,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return _depositAssets(smartVault, msg.sender, receiver, assets);
     }
 
+    /**
+     * @notice Burn deposit NFTs to claim SVTs
+     * @param smartVault Vault address
+     * @param nftIDs NFTs to burn
+     * @param nftAmounts NFT amounts to burn
+     */
     function claimSmartVaultTokens(address smartVault, uint256[] calldata nftIDs, uint256[] calldata nftAmounts)
         public
         onlyRegisteredSmartVault(smartVault)
@@ -357,6 +363,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return claimedVaultTokens;
     }
 
+    /**
+     * @notice Burn withdrawal NFTs to claim assets
+     * @param smartVault Vault address
+     * @param nftIDs NFTs to burn
+     * @param nftAmounts NFT amounts to burn
+     * @param receiver Address to which to transfer claimed assets
+     */
     function claimWithdrawal(
         address smartVault,
         uint256[] calldata nftIDs,
