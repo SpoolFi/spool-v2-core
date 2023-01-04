@@ -61,6 +61,7 @@ contract DhwTest is Test, SpoolAccessRoles {
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
         IActionManager actionManager = new ActionManager(accessControl);
         IGuardManager guardManager = new GuardManager(accessControl);
+        IRiskManager riskManager = new RiskManager(accessControl);
 
         smartVaultManager = new SmartVaultManager(
             accessControl,
@@ -69,7 +70,8 @@ contract DhwTest is Test, SpoolAccessRoles {
             assetGroupRegistry,
             masterWallet,
             new ActionManager(accessControl),
-            guardManager
+            guardManager,
+            riskManager
         );
 
         strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
@@ -113,6 +115,12 @@ contract DhwTest is Test, SpoolAccessRoles {
 
             mySmartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
 
+            vm.mockCall(
+                address(riskManager),
+                abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+                abi.encode(Arrays.toArray(600, 300, 100))
+            );
+
             mySmartVault = smartVaultFactory.deploySmartVault(
                 SmartVaultSpecification({
                     smartVaultName: "MySmartVault",
@@ -122,7 +130,7 @@ contract DhwTest is Test, SpoolAccessRoles {
                     guards: new GuardDefinition[][](0),
                     guardRequestTypes: new RequestType[](0),
                     strategies: mySmartVaultStrategies,
-                    strategyAllocations: Arrays.toArray(600, 300, 100),
+                    riskAppetite: 4,
                     riskProvider: riskProvider
                 })
             );
@@ -153,6 +161,7 @@ contract DhwTest is Test, SpoolAccessRoles {
         tokenC.approve(address(smartVaultManager), depositAmounts[2]);
 
         uint256 aliceDepositNftId = smartVaultManager.deposit(address(mySmartVault), depositAmounts, alice, address(0));
+        console2.log("mySmartVault.balanceOf(alice, aliceDepositNftId):", mySmartVault.balanceOf(alice, aliceDepositNftId));
 
         vm.stopPrank();
 
@@ -171,9 +180,10 @@ contract DhwTest is Test, SpoolAccessRoles {
         smartVaultManager.syncSmartVault(address(mySmartVault));
 
         // claim deposit
-        vm.prank(alice);
-        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), aliceDepositNftId);
-
+        console2.log("mySmartVault.balanceOf(alice, aliceDepositNftId):", mySmartVault.balanceOf(alice, aliceDepositNftId));
+        vm.startPrank(alice);
+        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), Arrays.toArray(aliceDepositNftId), Arrays.toArray(NFT_MINTED_SHARES));
+        vm.stopPrank();
 
         // WITHDRAW
         uint256 aliceShares = mySmartVault.balanceOf(alice);
@@ -203,9 +213,10 @@ contract DhwTest is Test, SpoolAccessRoles {
         console2.log("tokenB Before:", tokenB.balanceOf(alice));
         console2.log("tokenC Before:", tokenC.balanceOf(alice));
 
-        vm.prank(alice);
+        vm.startPrank(alice);
         console2.log("claimWithdrawal");
-        smartVaultManager.claimWithdrawal(address(mySmartVault), aliceWithdrawalNftId, alice);
+        smartVaultManager.claimWithdrawal(address(mySmartVault), Arrays.toArray(aliceWithdrawalNftId), Arrays.toArray(NFT_MINTED_SHARES), alice);
+        vm.stopPrank();
 
         console2.log("tokenA After:", tokenA.balanceOf(alice));
         console2.log("tokenB After:", tokenB.balanceOf(alice));
