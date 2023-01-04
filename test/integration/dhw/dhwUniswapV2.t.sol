@@ -14,7 +14,7 @@ import "../../../src/SmartVault.sol";
 import "../../../src/SmartVaultFactory.sol";
 import "../../../src/Swapper.sol";
 import "../../libraries/Arrays.sol";
-import "../../libraries/UniswapV2Setup.sol";
+import "../../utils/UniswapV2Setup.sol";
 import "../../mocks/MockUniswapV2Strategy.sol";
 import "../../mocks/MockToken.sol";
 import "../../mocks/MockPriceFeedManager.sol";
