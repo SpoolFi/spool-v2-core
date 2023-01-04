@@ -46,7 +46,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         _assetGroupRegistry = assetGroupRegistry_;
     }
 
-    function initialize(uint256 assetGroupId_) public virtual initializer {
+    function __Strategy_init(uint256 assetGroupId_) internal onlyInitializing {
         _assetGroupId = assetGroupId_;
 
         __ERC20_init("Strategy Share Token", "SST");

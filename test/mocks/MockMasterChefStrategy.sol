@@ -27,6 +27,10 @@ contract MockMasterChefStrategy is Strategy {
 
     function test_mock() external pure {}
 
+    function initialize(uint256 assetGroupId_) external initializer {
+        __Strategy_init(assetGroupId_);
+    }
+
     // NOTE: looks wierd
     function assetRatio() external pure override returns (uint256[] memory) {
         uint256[] memory _assetRatio = new uint256[](1);

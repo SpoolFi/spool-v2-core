@@ -29,8 +29,8 @@ contract MockStrategy is Strategy {
 
     function test_mock() external pure {}
 
-    function initialize(uint256 assetGroupId_, uint256[] memory ratios_) public virtual {
-        super.initialize(assetGroupId_);
+    function initialize(uint256 assetGroupId_, uint256[] memory ratios_) external initializer {
+        __Strategy_init(assetGroupId_);
 
         ratios = ratios_;
     }
