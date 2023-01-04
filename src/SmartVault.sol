@@ -256,7 +256,7 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         address from,
         address to,
         uint256[] memory ids,
-        uint256[] memory amounts,
+        uint256[] memory,
         bytes memory
     ) internal override {
         // burn

@@ -22,7 +22,7 @@ struct DepositQueryBag1 {
 }
 
 library SmartVaultDeposits {
-    uint256 constant PRECISSION_MULTIPLIER = 10 ** 42;
+    uint256 constant PRECISION_MULTIPLIER = 10 ** 42;
     uint256 constant DEPOSIT_TOLERANCE = 50;
     uint256 constant FULL_PERCENT = 100_00;
 
@@ -105,7 +105,7 @@ library SmartVaultDeposits {
 
             // loop over assets
             for (uint256 j = 0; j < exchangeRates.length; j++) {
-                flushFactors[i][j] = allocation[i] * strategyRatios[i][j] * PRECISSION_MULTIPLIER / normalization;
+                flushFactors[i][j] = allocation[i] * strategyRatios[i][j] * PRECISION_MULTIPLIER / normalization;
             }
         }
 
