@@ -73,6 +73,7 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
         );
 
         strategyA = new MockMasterChefStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, masterChef, 0);
+        strategyA.initialize(assetGroupId);
         strategyRegistry.registerStrategy(address(strategyA));
 
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
