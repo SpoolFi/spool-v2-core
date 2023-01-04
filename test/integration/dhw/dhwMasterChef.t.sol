@@ -36,7 +36,7 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
     SpoolAccessControl accessControl;
 
     uint256 rewardsPerSecond;
-    
+
     function setUp() public {
         tokenA = new MockToken("Token A", "TA");
         rewardsPerSecond = 1 ether;
@@ -74,7 +74,8 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
             riskManager
         );
 
-        strategyA = new MockMasterChefStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, masterChef, 0);
+        strategyA =
+            new MockMasterChefStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, masterChef, 0);
         strategyA.initialize(assetGroupId);
         strategyRegistry.registerStrategy(address(strategyA));
 
@@ -125,7 +126,7 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
 
     function test_dhwGenerateYield() public {
         uint256 tokenAInitialBalanceAlice = 78 ether;
-        
+
         // set initial state
         deal(address(tokenA), alice, tokenAInitialBalanceAlice, true);
 
@@ -136,8 +137,11 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
 
         tokenA.approve(address(smartVaultManager), depositAmountsAlice[0]);
 
-        uint256 aliceDepositNftId = smartVaultManager.deposit(address(mySmartVault), depositAmountsAlice, alice, address(0));
-        console2.log("mySmartVault.balanceOf(alice, aliceDepositNftId):", mySmartVault.balanceOf(alice, aliceDepositNftId));
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(address(mySmartVault), depositAmountsAlice, alice, address(0));
+        console2.log(
+            "mySmartVault.balanceOf(alice, aliceDepositNftId):", mySmartVault.balanceOf(alice, aliceDepositNftId)
+        );
 
         vm.stopPrank();
 
@@ -159,13 +163,15 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
 
         // claim deposit
         vm.startPrank(alice);
-        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), Arrays.toArray(aliceDepositNftId), Arrays.toArray(NFT_MINTED_SHARES));
+        smartVaultManager.claimSmartVaultTokens(
+            address(mySmartVault), Arrays.toArray(aliceDepositNftId), Arrays.toArray(NFT_MINTED_SHARES)
+        );
         vm.stopPrank();
 
         // ======================
 
         uint256 tokenAInitialBalanceBob = 20 ether;
-        
+
         // set initial state
         deal(address(tokenA), bob, tokenAInitialBalanceBob, true);
 
@@ -196,7 +202,9 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
 
         // claim deposit
         vm.startPrank(bob);
-        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), Arrays.toArray(bobDepositNftId), Arrays.toArray(NFT_MINTED_SHARES));
+        smartVaultManager.claimSmartVaultTokens(
+            address(mySmartVault), Arrays.toArray(bobDepositNftId), Arrays.toArray(NFT_MINTED_SHARES)
+        );
         vm.stopPrank();
 
         // ======================
@@ -205,7 +213,7 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
         uint256 aliceShares = mySmartVault.balanceOf(alice);
         uint256 bobShares = mySmartVault.balanceOf(bob);
         console2.log("aliceShares Before:", aliceShares);
-        
+
         {
             vm.prank(alice);
             mySmartVault.approve(address(smartVaultManager), aliceShares);
@@ -232,16 +240,20 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
 
             vm.startPrank(alice);
             console2.log("claimWithdrawal");
-            smartVaultManager.claimWithdrawal(address(mySmartVault), Arrays.toArray(aliceWithdrawalNftId), Arrays.toArray(NFT_MINTED_SHARES), alice);
+            smartVaultManager.claimWithdrawal(
+                address(mySmartVault), Arrays.toArray(aliceWithdrawalNftId), Arrays.toArray(NFT_MINTED_SHARES), alice
+            );
             vm.stopPrank();
             vm.startPrank(bob);
-            smartVaultManager.claimWithdrawal(address(mySmartVault), Arrays.toArray(bobWithdrawalNftId), Arrays.toArray(NFT_MINTED_SHARES), bob);
+            smartVaultManager.claimWithdrawal(
+                address(mySmartVault), Arrays.toArray(bobWithdrawalNftId), Arrays.toArray(NFT_MINTED_SHARES), bob
+            );
             vm.stopPrank();
 
             console2.log("tokenA alice  After:", tokenA.balanceOf(alice));
             console2.log("tokenA bob    After:", tokenA.balanceOf(bob));
         }
-        
+
         {
             uint256 firstYield = rewardsPerSecond * firstYieldSeconds;
             uint256 secondYield = rewardsPerSecond * secondYieldSeconds;
@@ -250,15 +262,17 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
             uint256 aliceAfterFirstYieldBalance = tokenAInitialBalanceAlice + firstYield;
 
             // first yield only distributes to alice and bob
-            uint256 aliceAftersecondYieldBalance = aliceAfterFirstYieldBalance + (secondYield * aliceAfterFirstYieldBalance / (aliceAfterFirstYieldBalance + tokenAInitialBalanceBob));
-            uint256 bobAftersecondYieldBalance = tokenAInitialBalanceBob + (secondYield * tokenAInitialBalanceBob / (aliceAfterFirstYieldBalance + tokenAInitialBalanceBob));
+            uint256 aliceAftersecondYieldBalance = aliceAfterFirstYieldBalance
+                + (secondYield * aliceAfterFirstYieldBalance / (aliceAfterFirstYieldBalance + tokenAInitialBalanceBob));
+            uint256 bobAftersecondYieldBalance = tokenAInitialBalanceBob
+                + (secondYield * tokenAInitialBalanceBob / (aliceAfterFirstYieldBalance + tokenAInitialBalanceBob));
 
             console2.log("aliceAftersecondYieldBalance:", aliceAftersecondYieldBalance);
             console2.log("bobAftersecondYieldBalance:", bobAftersecondYieldBalance);
 
             // NOTE: check relative error size
-            assertApproxEqRel(tokenA.balanceOf(alice), aliceAftersecondYieldBalance, 10**9);
-            assertApproxEqRel(tokenA.balanceOf(bob), bobAftersecondYieldBalance, 10**9);
+            assertApproxEqRel(tokenA.balanceOf(alice), aliceAftersecondYieldBalance, 10 ** 9);
+            assertApproxEqRel(tokenA.balanceOf(bob), bobAftersecondYieldBalance, 10 ** 9);
         }
     }
 }

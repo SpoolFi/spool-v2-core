@@ -84,7 +84,9 @@ contract MockStrategy is Strategy {
 
         for (uint256 i = 0; i < tokens.length; i++) {
             console2.log("i:", i);
-            console2.log("IERC20(tokens[i]).balanceOf(address(protocol)):", IERC20(tokens[i]).balanceOf(address(protocol)));
+            console2.log(
+                "IERC20(tokens[i]).balanceOf(address(protocol)):", IERC20(tokens[i]).balanceOf(address(protocol))
+            );
             console2.log("ssts:", ssts);
             console2.log("totalSupply()", totalSupply());
             uint256 toWithdraw = Math.mulDiv(IERC20(tokens[i]).balanceOf(address(protocol)), ssts, totalSupply());

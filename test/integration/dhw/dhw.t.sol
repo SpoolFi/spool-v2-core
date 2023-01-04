@@ -145,7 +145,7 @@ contract DhwTest is Test, SpoolAccessRoles {
         uint256 tokenAInitialBalance = 100 ether;
         uint256 tokenBInitialBalance = 10 ether;
         uint256 tokenCInitialBalance = 500 ether;
-        
+
         // set initial state
         deal(address(tokenA), alice, tokenAInitialBalance, true);
         deal(address(tokenB), alice, tokenBInitialBalance, true);
@@ -161,7 +161,9 @@ contract DhwTest is Test, SpoolAccessRoles {
         tokenC.approve(address(smartVaultManager), depositAmounts[2]);
 
         uint256 aliceDepositNftId = smartVaultManager.deposit(address(mySmartVault), depositAmounts, alice, address(0));
-        console2.log("mySmartVault.balanceOf(alice, aliceDepositNftId):", mySmartVault.balanceOf(alice, aliceDepositNftId));
+        console2.log(
+            "mySmartVault.balanceOf(alice, aliceDepositNftId):", mySmartVault.balanceOf(alice, aliceDepositNftId)
+        );
 
         vm.stopPrank();
 
@@ -180,9 +182,13 @@ contract DhwTest is Test, SpoolAccessRoles {
         smartVaultManager.syncSmartVault(address(mySmartVault));
 
         // claim deposit
-        console2.log("mySmartVault.balanceOf(alice, aliceDepositNftId):", mySmartVault.balanceOf(alice, aliceDepositNftId));
+        console2.log(
+            "mySmartVault.balanceOf(alice, aliceDepositNftId):", mySmartVault.balanceOf(alice, aliceDepositNftId)
+        );
         vm.startPrank(alice);
-        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), Arrays.toArray(aliceDepositNftId), Arrays.toArray(NFT_MINTED_SHARES));
+        smartVaultManager.claimSmartVaultTokens(
+            address(mySmartVault), Arrays.toArray(aliceDepositNftId), Arrays.toArray(NFT_MINTED_SHARES)
+        );
         vm.stopPrank();
 
         // WITHDRAW
@@ -215,13 +221,15 @@ contract DhwTest is Test, SpoolAccessRoles {
 
         vm.startPrank(alice);
         console2.log("claimWithdrawal");
-        smartVaultManager.claimWithdrawal(address(mySmartVault), Arrays.toArray(aliceWithdrawalNftId), Arrays.toArray(NFT_MINTED_SHARES), alice);
+        smartVaultManager.claimWithdrawal(
+            address(mySmartVault), Arrays.toArray(aliceWithdrawalNftId), Arrays.toArray(NFT_MINTED_SHARES), alice
+        );
         vm.stopPrank();
 
         console2.log("tokenA After:", tokenA.balanceOf(alice));
         console2.log("tokenB After:", tokenB.balanceOf(alice));
         console2.log("tokenC After:", tokenC.balanceOf(alice));
-        
+
         assertEq(tokenA.balanceOf(alice), tokenAInitialBalance);
         assertEq(tokenB.balanceOf(alice), tokenBInitialBalance);
         assertEq(tokenC.balanceOf(alice), tokenCInitialBalance);

@@ -37,7 +37,7 @@ contract dhwUniswapV2 is Test, SpoolAccessRoles {
     MasterWallet private masterWallet;
     AssetGroupRegistry private assetGroupRegistry;
     SpoolAccessControl accessControl;
-    
+
     function setUp() public {
         tokenA = new MockToken("Token A", "TA");
         tokenB = new MockToken("Token B", "TB");
@@ -77,7 +77,8 @@ contract dhwUniswapV2 is Test, SpoolAccessRoles {
             riskManager
         );
 
-        strategyA = new MockUniswapV2Strategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, uniswapV2Setup.router());
+        strategyA =
+        new MockUniswapV2Strategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, uniswapV2Setup.router());
         strategyA.initialize(assetGroupId);
         strategyRegistry.registerStrategy(address(strategyA));
 
@@ -129,7 +130,7 @@ contract dhwUniswapV2 is Test, SpoolAccessRoles {
 
     function test_dhwUniswapV2() public {
         uint256[] memory tokenAliceInitial = Arrays.toArray(4000 ether, 4 ether);
-        
+
         // set initial state
         deal(address(tokenA), alice, tokenAliceInitial[0], true);
         deal(address(tokenB), alice, tokenAliceInitial[1], true);
@@ -142,7 +143,8 @@ contract dhwUniswapV2 is Test, SpoolAccessRoles {
         tokenA.approve(address(smartVaultManager), depositAmountsAlice[0]);
         tokenB.approve(address(smartVaultManager), depositAmountsAlice[1]);
 
-        uint256 aliceDepositNftId = smartVaultManager.deposit(address(mySmartVault), depositAmountsAlice, alice, address(0));
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(address(mySmartVault), depositAmountsAlice, alice, address(0));
 
         vm.stopPrank();
 
@@ -165,13 +167,15 @@ contract dhwUniswapV2 is Test, SpoolAccessRoles {
 
         // claim deposit
         vm.startPrank(alice);
-        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), Arrays.toArray(aliceDepositNftId), Arrays.toArray(NFT_MINTED_SHARES));
+        smartVaultManager.claimSmartVaultTokens(
+            address(mySmartVault), Arrays.toArray(aliceDepositNftId), Arrays.toArray(NFT_MINTED_SHARES)
+        );
         vm.stopPrank();
 
         // ======================
 
         uint256[] memory tokenBobInitial = Arrays.toArray(2000 ether, 2 ether);
-        
+
         // set initial state
         deal(address(tokenA), bob, tokenBobInitial[0], true);
         deal(address(tokenB), bob, tokenBobInitial[1], true);
@@ -204,7 +208,9 @@ contract dhwUniswapV2 is Test, SpoolAccessRoles {
 
         // claim deposit
         vm.startPrank(bob);
-        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), Arrays.toArray(bobDepositNftId), Arrays.toArray(NFT_MINTED_SHARES));
+        smartVaultManager.claimSmartVaultTokens(
+            address(mySmartVault), Arrays.toArray(bobDepositNftId), Arrays.toArray(NFT_MINTED_SHARES)
+        );
         vm.stopPrank();
 
         // ======================
@@ -213,7 +219,7 @@ contract dhwUniswapV2 is Test, SpoolAccessRoles {
         uint256 aliceShares = mySmartVault.balanceOf(alice);
         uint256 bobShares = mySmartVault.balanceOf(bob);
         console2.log("aliceShares Before:", aliceShares);
-        
+
         {
             vm.prank(alice);
             mySmartVault.approve(address(smartVaultManager), aliceShares);
@@ -240,10 +246,14 @@ contract dhwUniswapV2 is Test, SpoolAccessRoles {
 
             vm.startPrank(alice);
             console2.log("claimWithdrawal");
-            smartVaultManager.claimWithdrawal(address(mySmartVault), Arrays.toArray(aliceWithdrawalNftId), Arrays.toArray(NFT_MINTED_SHARES), alice);
+            smartVaultManager.claimWithdrawal(
+                address(mySmartVault), Arrays.toArray(aliceWithdrawalNftId), Arrays.toArray(NFT_MINTED_SHARES), alice
+            );
             vm.stopPrank();
             vm.startPrank(bob);
-            smartVaultManager.claimWithdrawal(address(mySmartVault), Arrays.toArray(bobWithdrawalNftId), Arrays.toArray(NFT_MINTED_SHARES), bob);
+            smartVaultManager.claimWithdrawal(
+                address(mySmartVault), Arrays.toArray(bobWithdrawalNftId), Arrays.toArray(NFT_MINTED_SHARES), bob
+            );
             vm.stopPrank();
 
             console2.log("tokenA alice  After:", roundUp(tokenA.balanceOf(alice)));
@@ -251,17 +261,23 @@ contract dhwUniswapV2 is Test, SpoolAccessRoles {
             console2.log("tokenB alice  After:", roundUp(tokenB.balanceOf(alice)));
             console2.log("tokenB bob    After:", roundUp(tokenB.balanceOf(bob)));
         }
-        
+
         {
             // first yield only belongs to alice
-            uint256 aliceAfterFirstYieldBalanceA = tokenAliceInitial[0] + tokenAliceInitial[0] * firstYieldPercentage / 100_00;
-            uint256 aliceAfterFirstYieldBalanceB = tokenAliceInitial[1] + tokenAliceInitial[1] * firstYieldPercentage / 100_00;
+            uint256 aliceAfterFirstYieldBalanceA =
+                tokenAliceInitial[0] + tokenAliceInitial[0] * firstYieldPercentage / 100_00;
+            uint256 aliceAfterFirstYieldBalanceB =
+                tokenAliceInitial[1] + tokenAliceInitial[1] * firstYieldPercentage / 100_00;
 
             // first yield only distributes to alice and bob
-            uint256 aliceAftersecondYieldBalanceA = aliceAfterFirstYieldBalanceA + aliceAfterFirstYieldBalanceA * secondYieldPercentage / 100_00;
-            uint256 aliceAftersecondYieldBalanceB = aliceAfterFirstYieldBalanceB + aliceAfterFirstYieldBalanceB * secondYieldPercentage / 100_00;
-            uint256 bobAftersecondYieldBalanceA = tokenBobInitial[0] + tokenBobInitial[0] * secondYieldPercentage / 100_00;
-            uint256 bobAftersecondYieldBalanceB = tokenBobInitial[1] + tokenBobInitial[1] * secondYieldPercentage / 100_00;
+            uint256 aliceAftersecondYieldBalanceA =
+                aliceAfterFirstYieldBalanceA + aliceAfterFirstYieldBalanceA * secondYieldPercentage / 100_00;
+            uint256 aliceAftersecondYieldBalanceB =
+                aliceAfterFirstYieldBalanceB + aliceAfterFirstYieldBalanceB * secondYieldPercentage / 100_00;
+            uint256 bobAftersecondYieldBalanceA =
+                tokenBobInitial[0] + tokenBobInitial[0] * secondYieldPercentage / 100_00;
+            uint256 bobAftersecondYieldBalanceB =
+                tokenBobInitial[1] + tokenBobInitial[1] * secondYieldPercentage / 100_00;
 
             console2.log("aliceAftersecondYieldBalanceA:", aliceAftersecondYieldBalanceA);
             console2.log("aliceAftersecondYieldBalanceB:", aliceAftersecondYieldBalanceB);
@@ -269,14 +285,14 @@ contract dhwUniswapV2 is Test, SpoolAccessRoles {
             console2.log("bobAftersecondYieldBalanceB:", bobAftersecondYieldBalanceB);
 
             // NOTE: check relative error size
-            assertApproxEqRel(tokenA.balanceOf(alice), aliceAftersecondYieldBalanceA, 10**9);
-            assertApproxEqRel(tokenB.balanceOf(alice), aliceAftersecondYieldBalanceB, 10**9);
-            assertApproxEqRel(tokenA.balanceOf(bob), bobAftersecondYieldBalanceA, 10**9);
-            assertApproxEqRel(tokenB.balanceOf(bob), bobAftersecondYieldBalanceB, 10**9);
+            assertApproxEqRel(tokenA.balanceOf(alice), aliceAftersecondYieldBalanceA, 10 ** 9);
+            assertApproxEqRel(tokenB.balanceOf(alice), aliceAftersecondYieldBalanceB, 10 ** 9);
+            assertApproxEqRel(tokenA.balanceOf(bob), bobAftersecondYieldBalanceA, 10 ** 9);
+            assertApproxEqRel(tokenB.balanceOf(bob), bobAftersecondYieldBalanceB, 10 ** 9);
         }
     }
 
-    function roundUp(uint256 x) private pure returns(uint) {
+    function roundUp(uint256 x) private pure returns (uint256) {
         return x + (1000 - (x % 1000));
     }
 }

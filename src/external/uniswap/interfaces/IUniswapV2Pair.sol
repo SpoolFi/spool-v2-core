@@ -25,14 +25,7 @@ interface IUniswapV2Pair is IUniswapV2ERC20 {
 
     function token1() external view returns (address);
 
-    function getReserves()
-        external
-        view
-        returns (
-            uint112 reserve0,
-            uint112 reserve1,
-            uint32 blockTimestampLast
-        );
+    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
 
     function price0CumulativeLast() external view returns (uint256);
 
@@ -44,12 +37,7 @@ interface IUniswapV2Pair is IUniswapV2ERC20 {
 
     function burn(address to) external returns (uint256 amount0, uint256 amount1);
 
-    function swap(
-        uint256 amount0Out,
-        uint256 amount1Out,
-        address to,
-        bytes calldata data
-    ) external;
+    function swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata data) external;
 
     function skim(address to) external;
 

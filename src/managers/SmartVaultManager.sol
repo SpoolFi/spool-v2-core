@@ -532,7 +532,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     function syncSmartVault(address smartVault) external {
         // TODO: sync yields
-        
+
         // NOTE: warning "This declaration has the same name as another declaration."
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
 

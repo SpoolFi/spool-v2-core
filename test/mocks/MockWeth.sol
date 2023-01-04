@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GNU
 
 /**
- *Submitted for verification at Etherscan.io on 2017-12-12
-*/
+ * Submitted for verification at Etherscan.io on 2017-12-12
+ */
 
 // Copyright (C) 2015, 2016, 2017 Dapphub
 
@@ -22,50 +22,49 @@
 pragma solidity 0.8.16;
 
 contract WETH9 {
-    string public name     = "Wrapped Ether";
-    string public symbol   = "WETH";
-    uint8  public decimals = 18;
+    string public name = "Wrapped Ether";
+    string public symbol = "WETH";
+    uint8 public decimals = 18;
 
-    event  Approval(address indexed src, address indexed guy, uint wad);
-    event  Transfer(address indexed src, address indexed dst, uint wad);
-    event  Deposit(address indexed dst, uint wad);
-    event  Withdrawal(address indexed src, uint wad);
+    event Approval(address indexed src, address indexed guy, uint256 wad);
+    event Transfer(address indexed src, address indexed dst, uint256 wad);
+    event Deposit(address indexed dst, uint256 wad);
+    event Withdrawal(address indexed src, uint256 wad);
 
-    mapping (address => uint)                       public  balanceOf;
-    mapping (address => mapping (address => uint))  public  allowance;
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
 
     receive() external payable {
         deposit();
     }
+
     function deposit() public payable {
         balanceOf[msg.sender] += msg.value;
         emit Deposit(msg.sender, msg.value);
     }
-    function withdraw(uint wad) public {
+
+    function withdraw(uint256 wad) public {
         require(balanceOf[msg.sender] >= wad);
         balanceOf[msg.sender] -= wad;
         payable(msg.sender).transfer(wad);
         emit Withdrawal(msg.sender, wad);
     }
 
-    function totalSupply() public view returns (uint) {
+    function totalSupply() public view returns (uint256) {
         return address(this).balance;
     }
 
-    function approve(address guy, uint wad) public returns (bool) {
+    function approve(address guy, uint256 wad) public returns (bool) {
         allowance[msg.sender][guy] = wad;
         emit Approval(msg.sender, guy, wad);
         return true;
     }
 
-    function transfer(address dst, uint wad) public returns (bool) {
+    function transfer(address dst, uint256 wad) public returns (bool) {
         return transferFrom(msg.sender, dst, wad);
     }
 
-    function transferFrom(address src, address dst, uint wad)
-        public
-        returns (bool)
-    {
+    function transferFrom(address src, address dst, uint256 wad) public returns (bool) {
         require(balanceOf[src] >= wad);
 
         if (src != msg.sender && allowance[src][msg.sender] != type(uint256).max) {
@@ -81,7 +80,6 @@ contract WETH9 {
         return true;
     }
 }
-
 
 /*
                     GNU GENERAL PUBLIC LICENSE
@@ -758,5 +756,4 @@ may consider it more useful to permit linking proprietary applications with
 the library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.  But first, please read
 <http://www.gnu.org/philosophy/why-not-lgpl.html>.
-
 */

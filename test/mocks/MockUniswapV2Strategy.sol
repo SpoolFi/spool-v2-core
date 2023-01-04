@@ -42,16 +42,13 @@ contract MockUniswapV2Strategy is Strategy {
 
         uniswapPair = IUniswapV2Pair(pairAddress);
     }
-    
+
     function assetRatio() external view override returns (uint256[] memory) {
         // NOTE: NOT OK, NEEDS SOME SLIPPAGES/CONSTRAINTS
-        (
-            uint112 reserve0,
-            uint112 reserve1,
-        ) = uniswapPair.getReserves();
+        (uint112 reserve0, uint112 reserve1,) = uniswapPair.getReserves();
 
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
-        (address tokenA, ) = UniswapV2Library.sortTokens(assetGroup[0], assetGroup[1]);
+        (address tokenA,) = UniswapV2Library.sortTokens(assetGroup[0], assetGroup[1]);
 
         if (tokenA != assetGroup[0]) {
             (reserve0, reserve1) = (reserve1, reserve0);
@@ -73,7 +70,7 @@ contract MockUniswapV2Strategy is Strategy {
     function depositToProtocol(address[] memory tokens, uint256[] memory amounts) internal override {
         // TODO: add reserves and tokens ratio check
 
-        if(amounts[0] > 0) {
+        if (amounts[0] > 0) {
             IERC20(tokens[0]).safeTransfer(address(uniswapPair), amounts[0]);
             IERC20(tokens[1]).safeTransfer(address(uniswapPair), amounts[1]);
 
@@ -94,7 +91,7 @@ contract MockUniswapV2Strategy is Strategy {
         }
 
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
-        (address tokenA, ) = UniswapV2Library.sortTokens(assetGroup[0], assetGroup[1]);
+        (address tokenA,) = UniswapV2Library.sortTokens(assetGroup[0], assetGroup[1]);
 
         (uint256 reserveA, uint256 reserveB,) = uniswapPair.getReserves();
 
@@ -102,13 +99,9 @@ contract MockUniswapV2Strategy is Strategy {
             (reserveA, reserveB) = (reserveB, reserveA);
         }
 
-        uint256 usdWorth = priceFeedManager.assetToUsdCustomPrice(
-            assetGroup[0], reserveA, exchangeRates[0]
-        );
+        uint256 usdWorth = priceFeedManager.assetToUsdCustomPrice(assetGroup[0], reserveA, exchangeRates[0]);
 
-        usdWorth += priceFeedManager.assetToUsdCustomPrice(
-            assetGroup[1], reserveB, exchangeRates[1]
-        );
+        usdWorth += priceFeedManager.assetToUsdCustomPrice(assetGroup[1], reserveB, exchangeRates[1]);
 
         return Math.mulDiv(usdWorth, lpBalance, uniswapPair.totalSupply());
     }
@@ -121,10 +114,10 @@ contract MockUniswapV2Strategy is Strategy {
         uint256 lpBalance = uniswapPair.balanceOf(address(this));
 
         uint256 toWithdraw = Math.mulDiv(lpBalance, ssts, totalSupply());
-        
+
         uniswapPair.transfer(address(uniswapPair), toWithdraw);
 
-        // NOTE: add slippage 
+        // NOTE: add slippage
         uniswapPair.burn(address(this));
     }
 }

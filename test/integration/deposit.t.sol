@@ -285,10 +285,7 @@ contract DepositIntegrationTest is Test, SpoolAccessRoles {
 
         // - vault tokens were minted
         assertEq(mySmartVault.totalSupply(), svtBalance);
-        assertEq(
-            mySmartVault.balanceOf(address(mySmartVault)),
-            svtBalance
-        );
+        assertEq(mySmartVault.balanceOf(address(mySmartVault)), svtBalance);
 
         uint256 balance = smartVaultManager.getUserSVTBalance(address(mySmartVault), alice);
         assertEq(balance, svtBalance);

@@ -11,7 +11,7 @@ import "../mocks/MockWeth.sol";
 import "../mocks/MockToken.sol";
 
 contract UniswapV2Setup is Test {
-    address constant private LIQUIDITY_PROVIDER = address(0x99);
+    address private constant LIQUIDITY_PROVIDER = address(0x99);
     UniswapV2Factory public factory;
     UniswapV2Router02 public router;
     WETH9 public weth;

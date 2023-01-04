@@ -85,7 +85,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
 
         // deposits
-        // - swap assets to correct ratio 
+        // - swap assets to correct ratio
         // NOTE: how do we know the current amounts of tokens??
         swapAssets(tokens, swapInfo);
 
@@ -95,9 +95,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             assetsToDeposit[i] = IERC20(tokens[i]).balanceOf(address(this));
         }
 
-
         compound();
-        
+
         // - deposit assets
         uint256 usdWorth0 = getUsdWorth(exchangeRates, priceFeedManager);
 
@@ -171,8 +170,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
-    function compound(/* TODO: ADD PARAMS */) internal virtual;
-    
+    function compound( /* TODO: ADD PARAMS */ ) internal virtual;
+
     function swapAssets(address[] memory tokens, SwapInfo[] calldata swapInfo) internal virtual;
 
     function depositToProtocol(address[] memory tokens, uint256[] memory amounts) internal virtual;

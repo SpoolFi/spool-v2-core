@@ -68,9 +68,7 @@ contract MockMasterChefStrategy is Strategy {
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
         (uint256 balance,) = masterChef.userInfo(pid, address(this));
 
-        uint256 usdWorth = priceFeedManager.assetToUsdCustomPrice(
-            assetGroup[0], balance, exchangeRates[0]
-        );
+        uint256 usdWorth = priceFeedManager.assetToUsdCustomPrice(assetGroup[0], balance, exchangeRates[0]);
 
         return usdWorth;
     }
@@ -83,17 +81,17 @@ contract MockMasterChefStrategy is Strategy {
         (uint256 balance,) = masterChef.userInfo(pid, address(this));
 
         uint256 toWithdraw = Math.mulDiv(balance, ssts, totalSupply());
-        
+
         masterChef.withdraw(pid, toWithdraw);
     }
 
-    function _getAssetBalanceBefore() private view returns(uint256) {
+    function _getAssetBalanceBefore() private view returns (uint256) {
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
 
         return IERC20(assetGroup[0]).balanceOf(address(this));
     }
 
-    function _getAssetBalanceDiff(uint256 assetBalanceBefore) private view returns(uint256) {
+    function _getAssetBalanceDiff(uint256 assetBalanceBefore) private view returns (uint256) {
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
 
         uint256 assetBalanceAfter = IERC20(assetGroup[0]).balanceOf(address(this));
