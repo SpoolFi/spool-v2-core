@@ -8,8 +8,8 @@ import "./IUsdPriceFeedManager.sol";
 
 /**
  * @notice Strict holding information how to swap the asset
- * @member slippage minumum output amount
- * @member path swap path, first byte represents an action (e.g. Uniswap V2 custom swap), rest is swap specific path
+ * @custom:member slippage minumum output amount
+ * @custom:member path swap path, first byte represents an action (e.g. Uniswap V2 custom swap), rest is swap specific path
  */
 struct SwapData {
     uint256 slippage; // min amount out
@@ -48,13 +48,13 @@ interface IStrategy is IERC20Upgradeable {
     /**
      * @notice
      */
-    function assetRatio() external view returns (uint256[] memory);
+    function assetRatio() external view returns (uint256[] memory ratio);
 
     /**
      * @notice Gets asset group used by the strategy.
-     * @return ID of the asset group.
+     * @return id ID of the asset group.
      */
-    function assetGroupId() external view returns (uint256);
+    function assetGroupId() external view returns (uint256 id);
 
     /**
      * @dev Returns the address of the underlying token used for the Vault for accounting, depositing, and withdrawing.

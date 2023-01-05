@@ -17,9 +17,9 @@ error GuardFailed(uint256 guardNum);
 error InvalidGuardParamType(uint256 paramType);
 
 /**
- * @param Receiver Receiver of receipt NFT.
- * @param Executor In case of deposit, executor of deposit action; in case of withdrawal, executor of redeem action.
- * @param Owner In case of deposit, owner of assets; in case of withdrawal, owner of vault shares.
+ * @custom:member Receiver Receiver of receipt NFT.
+ * @custom:member Executor In case of deposit, executor of deposit action; in case of withdrawal, executor of redeem action.
+ * @custom:member Owner In case of deposit, owner of assets; in case of withdrawal, owner of vault shares.
  */
 enum GuardParamType {
     VaultAddress,
@@ -43,9 +43,9 @@ struct GuardDefinition {
 }
 
 /**
- * @param receiver Receiver of receipt NFT.
- * @param executor In case of deposit, executor of deposit action; in case of withdrawal, executor of redeem action.
- * @param owner In case of deposit, owner of assets; in case of withdrawal, owner of vault shares.
+ * @custom:member receiver Receiver of receipt NFT.
+ * @custom:member executor In case of deposit, executor of deposit action; in case of withdrawal, executor of redeem action.
+ * @custom:member owner In case of deposit, owner of assets; in case of withdrawal, owner of vault shares.
  */
 struct RequestContext {
     address receiver;

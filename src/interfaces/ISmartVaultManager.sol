@@ -42,10 +42,10 @@ error SmartVaultRegistrationNoStrategies();
 
 /**
  * @notice Struct holding all data for registration of smart vault.
- * @param assetGroupId Underlying asset group of the smart vault.
- * @param strategies Strategies used by the smart vault.
- * @param riskProvider Risk provider used by the smart vault.
- * @param riskAppetite Risk appetite of the smart vault.
+ * @custom:member assetGroupId Underlying asset group of the smart vault.
+ * @custom:member strategies Strategies used by the smart vault.
+ * @custom:member riskProvider Risk provider used by the smart vault.
+ * @custom:member riskAppetite Risk appetite of the smart vault.
  */
 struct SmartVaultRegistrationForm {
     uint256 assetGroupId;
@@ -132,14 +132,14 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
      * @param nftAmounts amounts
      * @param receiver Receiver of claimed assets.
      * @return assetAmounts Amounts of assets claimed.
-     * @return assetTokens Addresses of assets claimed.
+     * @return assetGroupId ID of the asset group.
      */
     function claimWithdrawal(
         address smartVault,
         uint256[] calldata nftIDs,
         uint256[] calldata nftAmounts,
         address receiver
-    ) external returns (uint256[] memory, uint256);
+    ) external returns (uint256[] memory assetAmounts, uint256 assetGroupId);
 
     /**
      * @notice Claims smart vault tokens by burning the deposit NFT.
@@ -149,11 +149,11 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
      * @param smartVaultAddress Address of the smart vault that issued the deposit NFT.
      * @param nftIDs ID of the deposit NFT to burn.
      * @param nftAmounts amounts
-     * @return Amount of smart vault tokens claimed.
+     * @return claimedAmount Amount of smart vault tokens claimed.
      */
     function claimSmartVaultTokens(address smartVaultAddress, uint256[] calldata nftIDs, uint256[] calldata nftAmounts)
         external
-        returns (uint256);
+        returns (uint256 claimedAmount);
 
     /**
      * @dev Burns exactly shares from owner and sends assets of underlying tokens to receiver.

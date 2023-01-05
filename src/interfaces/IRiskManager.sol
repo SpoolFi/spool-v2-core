@@ -18,9 +18,12 @@ interface IRiskManager {
         view
         returns (uint256[] memory allocation);
 
-    function riskScores(address riskProvider) external view returns (uint256[] memory);
+    function riskScores(address riskProvider) external view returns (uint256[] memory riskScores);
 
-    function getRiskScores(address riskProvider, address[] memory strategy) external view returns (uint256[] memory);
+    function getRiskScores(address riskProvider, address[] memory strategy)
+        external
+        view
+        returns (uint256[] memory riskScores);
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 

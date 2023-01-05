@@ -41,12 +41,12 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
     /**
      * @notice Return persisted guards for given Smart Vault
      * @param smartVaultId Smart Vault address
-     * @return Array of guards
+     * @return guards Array of guards
      */
     function readGuards(address smartVaultId, RequestType requestType)
         external
         view
-        returns (GuardDefinition[] memory)
+        returns (GuardDefinition[] memory guards)
     {
         return _readGuards(smartVaultId, requestType);
     }

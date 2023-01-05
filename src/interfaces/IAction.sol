@@ -9,9 +9,9 @@ error ActionsInitialized(address smartVault);
 error ActionsNotInitialized(address smartVault);
 
 /**
- * @param recipient In case of deposit, recipient of deposit NFT; in case of withdrawal, recipient of assets.
- * @param executor In case of deposit, executor of deposit action; in case of withdrawal, executor of claimWithdrawal action.
- * @param owner In case of deposit, owner of assets; in case of withdrawal, owner of withdrawal NFT.
+ * @custom:member recipient In case of deposit, recipient of deposit NFT; in case of withdrawal, recipient of assets.
+ * @custom:member executor In case of deposit, executor of deposit action; in case of withdrawal, executor of claimWithdrawal action.
+ * @custom:member owner In case of deposit, owner of assets; in case of withdrawal, owner of withdrawal NFT.
  */
 struct ActionContext {
     address recipient;
