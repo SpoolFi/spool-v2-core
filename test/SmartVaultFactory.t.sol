@@ -10,7 +10,6 @@ import {RequestType} from "../src/interfaces/RequestType.sol";
 import {ISmartVault} from "../src/interfaces/ISmartVault.sol";
 import {ISmartVaultManager} from "../src/interfaces/ISmartVaultManager.sol";
 import {ISpoolAccessControl} from "../src/interfaces/ISpoolAccessControl.sol";
-import {SpoolAccessRoles} from "../src/access/SpoolAccessControl.sol";
 import {SmartVault} from "../src/SmartVault.sol";
 import {SmartVaultFactory, SmartVaultSpecification} from "../src/SmartVaultFactory.sol";
 import {Arrays} from "./libraries/Arrays.sol";
@@ -31,7 +30,7 @@ contract SmartVaultVariant is SmartVault {
     }
 }
 
-contract SmartVaultFactoryTest is Test, SpoolAccessRoles {
+contract SmartVaultFactoryTest is Test {
     event SmartVaultDeployed(address indexed smartVault, address indexed deployer);
 
     SmartVaultFactory private factory;

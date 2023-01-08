@@ -14,7 +14,7 @@ import "../src/SmartVault.sol";
 import "../src/managers/GuardManager.sol";
 import "./libraries/Arrays.sol";
 
-contract RewardManagerTests is Test, SpoolAccessRoles {
+contract RewardManagerTests is Test {
     SpoolAccessControl sac;
     RewardManager rewardManager;
     IAssetGroupRegistry assetGroupRegistry;

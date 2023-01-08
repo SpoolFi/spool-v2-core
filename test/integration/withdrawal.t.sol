@@ -19,7 +19,7 @@ import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
 
-contract WithdrawalIntegrationTest is Test, SpoolAccessRoles {
+contract WithdrawalIntegrationTest is Test {
     address private alice;
     address private bob;
 

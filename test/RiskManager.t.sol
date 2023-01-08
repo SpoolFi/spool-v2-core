@@ -5,7 +5,7 @@ import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
 import "../src/managers/RiskManager.sol";
 
-contract RiskManagerTest is Test, SpoolAccessRoles {
+contract RiskManagerTest is Test {
     IRiskManager riskManager;
     SpoolAccessControl accessControl;
     address riskProvider = address(10);

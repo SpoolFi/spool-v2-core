@@ -12,6 +12,10 @@ import "../libraries/ArrayMapping.sol";
 import "../libraries/SpoolUtils.sol";
 import "../access/SpoolAccessControl.sol";
 
+/**
+ * @dev Requires roles:
+ * - ROLE_MASTER_WALLET_MANAGER
+ */
 contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     using ArrayMapping for mapping(uint256 => uint256);
 

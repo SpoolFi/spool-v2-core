@@ -21,7 +21,7 @@ import "../mocks/MockPriceFeedManager.sol";
 import "../mocks/MockGuard.sol";
 import "../libraries/Arrays.sol";
 
-contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
+contract NftGateGuardDemoTest is Test {
     address private alice = address(0xa);
     address private bob = address(0xb);
     address private charlie = address(0xc);

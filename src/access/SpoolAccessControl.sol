@@ -3,38 +3,12 @@ pragma solidity 0.8.16;
 
 import "@openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
 import "../interfaces/ISpoolAccessControl.sol";
-
-// NOTE: make this a constant, not a contract?
-contract SpoolAccessRoles {
-    bytes32 public constant ROLE_SPOOL_ADMIN = 0x00;
-
-    /**
-     * @dev Grants persmission to manage ROLE_SMART_VAULT.
-     */
-    bytes32 public constant ADMIN_ROLE_SMART_VAULT = keccak256("ADMIN_SMART_VAULT");
-
-    /**
-     * @dev Marks a contract as a smart vault.
-     */
-    bytes32 public constant ROLE_SMART_VAULT = keccak256("SMART_VAULT");
-
-    /**
-     * @dev Grants permission to integrate new smart vault into SPOOL.
-     */
-    bytes32 public constant ROLE_SMART_VAULT_INTEGRATOR = keccak256("ROLE_SMART_VAULT_INTEGRATOR");
-
-    bytes32 public constant ROLE_SMART_VAULT_ADMIN = keccak256("SMART_VAULT_ADMIN");
-    bytes32 public constant ROLE_GUARD_ALLOWLIST_MANAGER = keccak256("GUARD_ALLOWLIST_MANAGER");
-    bytes32 public constant ROLE_STRATEGY_CLAIMER = keccak256("STRATEGY_CLAIMER");
-    bytes32 public constant ROLE_MASTER_WALLET_MANAGER = keccak256("MASTER_WALLET_MANAGER");
-    bytes32 public constant ROLE_SMART_VAULT_MANAGER = keccak256("SMART_VAULT_MANAGER");
-    bytes32 public constant ROLE_RISK_PROVIDER = keccak256("RISK_PROVIDER");
-}
+import "./Roles.sol";
 
 /**
  * @notice Spool access control management
  */
-contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl, SpoolAccessRoles {
+contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl {
     /* ========== CONSTRUCTOR ========== */
 
     constructor() {}
@@ -113,7 +87,7 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl, Sp
 /**
  * @notice Account access role verification middleware
  */
-abstract contract SpoolAccessControllable is SpoolAccessRoles {
+abstract contract SpoolAccessControllable {
     /* ========== CONSTANTS ========== */
 
     /// @notice Access control manager

@@ -19,7 +19,7 @@ import "../../mocks/MockMasterChefStrategy.sol";
 import "../../mocks/MockToken.sol";
 import "../../mocks/MockPriceFeedManager.sol";
 
-contract DhwMasterChefTest is Test, SpoolAccessRoles {
+contract DhwMasterChefTest is Test {
     address private alice;
     address private bob;
 

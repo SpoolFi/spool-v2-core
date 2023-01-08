@@ -7,7 +7,7 @@ import "../src/managers/GuardManager.sol";
 import {MockGuard} from "./mocks/MockGuard.sol";
 import "./utils/GasHelpers.sol";
 
-contract GuardManagerTest is Test, GasHelpers, SpoolAccessRoles {
+contract GuardManagerTest is Test, GasHelpers {
     IGuardManager guardManager;
     MockGuard mockGuard;
     address smartVaultId = address(1);

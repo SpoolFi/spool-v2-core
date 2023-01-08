@@ -9,7 +9,8 @@ import {IGuardManager, GuardDefinition} from "./interfaces/IGuardManager.sol";
 import {ISmartVault} from "./interfaces/ISmartVault.sol";
 import {ISmartVaultManager, SmartVaultRegistrationForm} from "./interfaces/ISmartVaultManager.sol";
 import {RequestType} from "./interfaces/RequestType.sol";
-import {ISpoolAccessControl, SpoolAccessRoles} from "./access/SpoolAccessControl.sol";
+import {ISpoolAccessControl} from "./access/SpoolAccessControl.sol";
+import {ROLE_SMART_VAULT} from "./access/Roles.sol";
 import {SmartVault} from "./SmartVault.sol";
 
 /* ========== STRUCTS ========== */
@@ -45,7 +46,7 @@ struct SmartVaultSpecification {
  * - ADMIN_ROLE_SMART_VAULT
  * - ROLE_SMART_VAULT_INTEGRATOR
  */
-contract SmartVaultFactory is UpgradeableBeacon, SpoolAccessRoles {
+contract SmartVaultFactory is UpgradeableBeacon {
     /* ========== EVENTS ========== */
 
     /**

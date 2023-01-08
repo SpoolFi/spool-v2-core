@@ -18,7 +18,7 @@ import "../../mocks/MockStrategy.sol";
 import "../../mocks/MockToken.sol";
 import "../../mocks/MockPriceFeedManager.sol";
 
-contract DhwSingleAssetTest is Test, SpoolAccessRoles {
+contract DhwSingleAssetTest is Test {
     address private alice;
     address private bob;
 

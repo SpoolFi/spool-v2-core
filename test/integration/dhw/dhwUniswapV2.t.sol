@@ -19,7 +19,7 @@ import "../../mocks/MockUniswapV2Strategy.sol";
 import "../../mocks/MockToken.sol";
 import "../../mocks/MockPriceFeedManager.sol";
 
-contract dhwUniswapV2 is Test, SpoolAccessRoles {
+contract dhwUniswapV2 is Test {
     address private alice;
     address private bob;
 
