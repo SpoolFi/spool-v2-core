@@ -19,7 +19,6 @@ import "../libraries/ArrayMapping.sol";
 import "../libraries/SmartVaultDeposits.sol";
 import "../access/SpoolAccessControl.sol";
 import "../interfaces/ISmartVaultManager.sol";
-import "forge-std/console2.sol";
 
 contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     using SafeERC20 for IERC20;
@@ -462,12 +461,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /* ========== BOOKKEEPING ========== */
 
     function flushSmartVault(address smartVault) external onlyRegisteredSmartVault(smartVault) {
-        console2.log("flushSmartVault:", smartVault);
         uint256 flushIndex = _flushIndexes[smartVault];
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
         uint256[] memory flushDhwIndexes;
 
-        console2.log("_vaultDeposits[smartVault][flushIndex][0]:", _vaultDeposits[smartVault][flushIndex][0]);
         if (_vaultDeposits[smartVault][flushIndex][0] > 0) {
             // handle deposits
             address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
@@ -475,9 +472,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             uint256[] memory deposits = _vaultDeposits[smartVault][flushIndex].toArray(tokens.length);
             uint256[] memory allocation = _smartVaultAllocations[smartVault].toArray(strategies_.length);
 
-            console2.log("setValues:");
             _flushExchangeRates[smartVault][flushIndex].setValues(exchangeRates);
-            console2.log("distributeDeposit:");
 
             uint256[][] memory distribution = SmartVaultDeposits.distributeDeposit(
                 DepositQueryBag1({
@@ -487,10 +482,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
                     strategyRatios: SpoolUtils.getStrategyRatiosAtLastDhw(strategies_, _strategyRegistry)
                 })
             );
-            console2.log("addDeposits:");
+
             flushDhwIndexes = _strategyRegistry.addDeposits(strategies_, distribution);
 
-            console2.log("for (uint256 i = 0; i < strategies_.length; i++)");
             for (uint256 i = 0; i < strategies_.length; i++) {
                 _vaultFlushedDeposits[smartVault][flushIndex][strategies_[i]].setValues(distribution[i]);
             }
@@ -498,24 +492,16 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         uint256 withdrawals = _withdrawnVaultShares[smartVault][flushIndex];
 
-        console2.log("withdrawals:", withdrawals);
         if (withdrawals > 0) {
             // handle withdrawals
             uint256[] memory strategyWithdrawals = new uint256[](strategies_.length);
             uint256 totalVaultShares = ISmartVault(smartVault).totalSupply();
 
             for (uint256 i = 0; i < strategies_.length; i++) {
-                console2.log("  i:", i);
                 uint256 strategyShares = IStrategy(strategies_[i]).balanceOf(smartVault);
-
-                console2.log("      strategyShares:", strategyShares);
-                console2.log("      withdrawals:", withdrawals);
-                console2.log("      totalVaultShares:", totalVaultShares);
                 strategyWithdrawals[i] = Math.mulDiv(strategyShares, withdrawals, totalVaultShares);
-                // strategyWithdrawals[i] = strategyShares * withdrawals / totalVaultShares;
             }
 
-            console2.log("burn:");
             ISmartVault(smartVault).burn(smartVault, withdrawals, strategies_, strategyWithdrawals);
             flushDhwIndexes = _strategyRegistry.addWithdrawals(strategies_, strategyWithdrawals);
 
