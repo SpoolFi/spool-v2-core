@@ -180,7 +180,7 @@ contract dhwUniswapV2 is Test, SpoolAccessRoles {
         deal(address(tokenA), bob, tokenBobInitial[0], true);
         deal(address(tokenB), bob, tokenBobInitial[1], true);
 
-        // Alice deposits
+        // Bob deposits
         vm.startPrank(bob);
 
         uint256[] memory depositAmountsBob = Arrays.toArray(tokenBobInitial[0], tokenBobInitial[1]);
@@ -269,7 +269,7 @@ contract dhwUniswapV2 is Test, SpoolAccessRoles {
             uint256 aliceAfterFirstYieldBalanceB =
                 tokenAliceInitial[1] + tokenAliceInitial[1] * firstYieldPercentage / 100_00;
 
-            // first yield only distributes to alice and bob
+            // second yield distributes to alice and bob
             uint256 aliceAftersecondYieldBalanceA =
                 aliceAfterFirstYieldBalanceA + aliceAfterFirstYieldBalanceA * secondYieldPercentage / 100_00;
             uint256 aliceAftersecondYieldBalanceB =

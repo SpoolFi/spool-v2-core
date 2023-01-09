@@ -181,7 +181,7 @@ contract DhwSingleAssetTest is Test, SpoolAccessRoles {
         // set initial state
         deal(address(tokenA), bob, tokenAInitialBalanceBob, true);
 
-        // Alice deposits
+        // Bob deposits
         vm.startPrank(bob);
 
         uint256[] memory depositAmountsBob = Arrays.toArray(tokenAInitialBalanceBob);

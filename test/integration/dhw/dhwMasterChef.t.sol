@@ -154,7 +154,7 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
 
         strategyRegistry.doHardWork(mySmartVaultStrategies, dhwSwapInfo);
 
-        // skip 2 seconds to produce 2 * 10**18 yield, only does to alice
+        // skip 2 seconds to produce 2 * 10**18 yield, only goes to alice
         uint256 firstYieldSeconds = 2;
         skip(firstYieldSeconds);
 
@@ -175,7 +175,7 @@ contract DhwMasterChefTest is Test, SpoolAccessRoles {
         // set initial state
         deal(address(tokenA), bob, tokenAInitialBalanceBob, true);
 
-        // Alice deposits
+        // Bob deposits
         vm.startPrank(bob);
 
         uint256[] memory depositAmountsBob = Arrays.toArray(tokenAInitialBalanceBob);
