@@ -5,10 +5,10 @@ import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/utils/math/Math.sol";
 import "../../src/Strategy.sol";
-import "../../src/external/uniswap/interfaces/IUniswapV2Factory.sol";
-import "../../src/external/uniswap/interfaces/IUniswapV2Router02.sol";
-import "../../src/external/uniswap/interfaces/IUniswapV2Pair.sol";
-import "../../src/external/uniswap/libraries/UniswapV2Library.sol";
+import "../external/uniswap/interfaces/IUniswapV2Factory.sol";
+import "../external/uniswap/interfaces/IUniswapV2Router02.sol";
+import "../external/uniswap/interfaces/IUniswapV2Pair.sol";
+import "../external/uniswap/libraries/UniswapV2Library.sol";
 
 contract MockUniswapV2Strategy is Strategy {
     using SafeERC20 for IERC20;
