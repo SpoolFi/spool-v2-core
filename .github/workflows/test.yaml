@@ -29,12 +29,16 @@ jobs:
         with:
           version: nightly
 
-      - name: Run Forge build and coverage
+      - name: Run Forge Fmt Check
         run: |
           forge --version
-          forge build --sizes > sizes_output.txt
-          forge coverage > coverage_output.txt
+          forge fmt --check
+        id: fmt_check
 
+      - name: Run Forge build
+        run: |
+          forge build --sizes
+          forge build --sizes > sizes_output.txt
         id: build
 
       - name: Run Forge tests
@@ -42,3 +46,10 @@ jobs:
           forge test -vvv
           forge test --json > test_output.txt
         id: test
+
+      - name: Run Forge coverage
+        run: |
+          forge coverage
+          forge coverage > coverage_output.txt
+
+        id: coverage
