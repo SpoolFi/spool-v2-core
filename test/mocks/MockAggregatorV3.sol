@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
-import "src/external/interfaces/chainlink/AggregatorV3Interface.sol";
+import "../../src/external/interfaces/chainlink/AggregatorV3Interface.sol";
 
 contract MockAggregatorV3 is AggregatorV3Interface {
     /* ========== STATE VARIABLES ========== */

@@ -16,7 +16,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
     /* ========== STATE VARIABLES ========== */
 
-    uint256 internal constant INITIAL_SHARE_MULTIPLIER = 1000000000000000000000000000000; // 10 ** 30
+    uint256 internal constant INITIAL_SHARE_MULTIPLIER = 1000;
 
     IStrategyRegistry internal immutable _strategyRegistry;
 
@@ -106,8 +106,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         uint256 usdWorthDeposited = usdWorth1 - usdWorth0;
         uint256 sstsToMint;
         if (usdWorth0 > 0) {
-            sstsToMint = Math.mulDiv(usdWorthDeposited, totalSupply(), usdWorth0);
-            // sstsToMint = usdWorthDeposited * totalSupply() / usdWorth0;
+            sstsToMint = usdWorthDeposited * totalSupply() / usdWorth0;
         } else {
             sstsToMint = usdWorthDeposited * INITIAL_SHARE_MULTIPLIER;
         }

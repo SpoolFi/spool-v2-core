@@ -248,10 +248,8 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
             }
 
             for (uint256 j = 0; j < totalWithdrawnAssets.length; j++) {
-                totalWithdrawnAssets[j] += Math.mulDiv(
-                    _assetsWithdrawn[strategy][dhwIndex][j], strategyShares[i], _sharesRedeemed[strategy][dhwIndex]
-                );
-                // _assetsWithdrawn[strategy][dhwIndex][j] * strategyShares[i] / _sharesRedeemed[strategy][dhwIndex];
+                totalWithdrawnAssets[j] +=
+                    _assetsWithdrawn[strategy][dhwIndex][j] * strategyShares[i] / _sharesRedeemed[strategy][dhwIndex];
                 // there will be dust left after all vaults sync
             }
         }

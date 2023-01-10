@@ -21,8 +21,6 @@ error NonPositivePrice(int256 price);
 contract UsdPriceFeedManager is IUsdPriceFeedManager {
     /* ========== STATE VARIABLES ========== */
 
-    uint256 private constant USD_DECIMALS = 26;
-
     mapping(address => uint256) public assetDecimals;
     mapping(address => uint256) public assetMultiplier;
     mapping(address => AggregatorV3Interface) public assetPriceAggregator;

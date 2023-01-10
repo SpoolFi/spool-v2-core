@@ -83,8 +83,7 @@ contract MockStrategy is Strategy {
         }
 
         for (uint256 i = 0; i < tokens.length; i++) {
-            uint256 toWithdraw = Math.mulDiv(IERC20(tokens[i]).balanceOf(address(protocol)), ssts, totalSupply());
-            // uint256 toWithdraw = IERC20(tokens[i]).balanceOf(address(protocol)) * ssts / totalSupply();
+            uint256 toWithdraw = IERC20(tokens[i]).balanceOf(address(protocol)) * ssts / totalSupply();
             protocol.withdraw(tokens[i], toWithdraw);
         }
     }

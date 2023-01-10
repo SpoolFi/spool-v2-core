@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
+/// @dev Number of decimals used for USD values.
+uint256 constant USD_DECIMALS = 18;
+
 interface IUsdPriceFeedManager {
     /**
      * @notice Gets number of decimals for an asset.

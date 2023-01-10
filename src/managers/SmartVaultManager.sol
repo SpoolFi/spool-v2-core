@@ -32,7 +32,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== CONSTANTS ========== */
 
-    uint256 internal constant INITIAL_SHARE_MULTIPLIER = 1000000000000000000000000000000; // 10 ** 30
+    uint256 internal constant INITIAL_SHARE_MULTIPLIER = 1000;
 
     // @notice Guard manager
     IGuardManager internal immutable _guardManager;
@@ -206,10 +206,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             }
         }
         uint256 claimedVaultTokens =
-            Math.mulDiv(_mintedVaultShares[smartVaultAddress][data.flushIndex], depositedUsd, totalDepositedUsd);
+            _mintedVaultShares[smartVaultAddress][data.flushIndex] * depositedUsd / totalDepositedUsd;
 
         // TODO: dust
-        return Math.mulDiv(claimedVaultTokens, nftShares, NFT_MINTED_SHARES);
+        return claimedVaultTokens * nftShares / NFT_MINTED_SHARES;
     }
 
     /**
@@ -399,7 +399,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             uint256[] memory withdrawnAssets_ =
                 _calculateWithdrawal(smartVault, abi.decode(metadata[i], (WithdrawalMetadata)), assetGroup.length);
             for (uint256 j = 0; j < assetGroup.length; j++) {
-                withdrawnAssets[j] += Math.mulDiv(withdrawnAssets_[j], nftAmounts[i], NFT_MINTED_SHARES);
+                withdrawnAssets[j] += withdrawnAssets_[j] * nftAmounts[i] / NFT_MINTED_SHARES;
             }
         }
 
@@ -505,7 +505,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
             for (uint256 i = 0; i < strategies_.length; i++) {
                 uint256 strategyShares = IStrategy(strategies_[i]).balanceOf(smartVault);
-                strategyWithdrawals[i] = Math.mulDiv(strategyShares, withdrawals, totalVaultShares);
+                strategyWithdrawals[i] = strategyShares * withdrawals / totalVaultShares;
             }
 
             ISmartVault(smartVault).burn(smartVault, withdrawals, strategies_, strategyWithdrawals);
@@ -633,11 +633,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         // loop over all assets
         for (uint256 i = 0; i < withdrawnAssets.length; i++) {
-            withdrawnAssets[i] = Math.mulDiv(
-                _withdrawnAssets[smartVault][data.flushIndex][i],
-                data.vaultShares,
-                _withdrawnVaultShares[smartVault][data.flushIndex]
-            );
+            withdrawnAssets[i] = _withdrawnAssets[smartVault][data.flushIndex][i] * data.vaultShares
+                / _withdrawnVaultShares[smartVault][data.flushIndex];
         }
 
         return withdrawnAssets;
@@ -687,7 +684,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             uint256 strategyDepositedUsd =
                 _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, atDhw.assetsDeposited, atDhw.exchangeRates);
 
-            uint256 vaultSstShare = Math.mulDiv(atDhw.sharesMinted, vaultDepositedUsd, strategyDepositedUsd);
+            uint256 vaultSstShare = atDhw.sharesMinted * vaultDepositedUsd / strategyDepositedUsd;
 
             IStrategy(strategies_[i]).claimShares(smartVault, vaultSstShare);
             // TODO: there might be dust left after all vaults are synced
@@ -699,7 +696,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         if (totalVaultValueBefore == 0) {
             svtsToMint = totalDepositedUsd * INITIAL_SHARE_MULTIPLIER;
         } else {
-            svtsToMint = Math.mulDiv(totalDepositedUsd, ISmartVault(smartVault).totalSupply(), totalVaultValueBefore);
+            svtsToMint = totalDepositedUsd * ISmartVault(smartVault).totalSupply() / totalVaultValueBefore;
         }
         ISmartVault(smartVault).mint(smartVault, svtsToMint);
         _mintedVaultShares[smartVault][flushIndex] = svtsToMint;

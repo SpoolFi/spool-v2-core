@@ -16,6 +16,7 @@ import "../src/MasterWallet.sol";
 import "../src/SmartVault.sol";
 import "../src/Swapper.sol";
 import "./libraries/Arrays.sol";
+import "./libraries/Constants.sol";
 import "./mocks/MockPriceFeedManager.sol";
 import "./mocks/MockStrategy.sol";
 import "./mocks/MockToken.sol";
@@ -293,7 +294,7 @@ contract SmartVaultManagerTest is Test {
     }
 
     function _initializePriceFeeds() private {
-        priceFeedManager.setExchangeRate(address(token1), 1336.61 * 10 ** 26);
-        priceFeedManager.setExchangeRate(address(token2), 19730.31 * 10 ** 26);
+        priceFeedManager.setExchangeRate(address(token1), USD_DECIMALS_MULTIPLIER * 1336_61 / 100);
+        priceFeedManager.setExchangeRate(address(token2), USD_DECIMALS_MULTIPLIER * 19730_31 / 100);
     }
 }

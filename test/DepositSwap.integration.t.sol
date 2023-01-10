@@ -16,6 +16,7 @@ import "../src/SmartVault.sol";
 import "../src/SmartVaultFactory.sol";
 import "../src/Swapper.sol";
 import "./libraries/Arrays.sol";
+import "./libraries/Constants.sol";
 import "./mocks/MockExchange.sol";
 import "./mocks/MockPriceFeedManager.sol";
 import "./mocks/MockStrategy.sol";
@@ -134,9 +135,9 @@ contract DepositSwapIntegrationTest is Test {
         tokenB.mint(address(exchangeBC), 1000 ether);
         tokenC.mint(address(exchangeBC), 1000 ether);
 
-        priceFeedManager.setExchangeRate(address(tokenA), 1 * 10 ** 26);
-        priceFeedManager.setExchangeRate(address(tokenB), 1 * 10 ** 26);
-        priceFeedManager.setExchangeRate(address(tokenC), 2 * 10 ** 26);
+        priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
+        priceFeedManager.setExchangeRate(address(tokenB), 1 * USD_DECIMALS_MULTIPLIER);
+        priceFeedManager.setExchangeRate(address(tokenC), 2 * USD_DECIMALS_MULTIPLIER);
 
         DepositSwap depositSwap = new DepositSwap(assetGroupRegistry, smartVaultManager, swapper);
 
@@ -183,8 +184,8 @@ contract DepositSwapIntegrationTest is Test {
         tokenA.mint(address(exchangeAB), 1000 ether);
         tokenB.mint(address(exchangeAB), 1000 ether);
 
-        priceFeedManager.setExchangeRate(address(tokenA), 1 * 10 ** 26);
-        priceFeedManager.setExchangeRate(address(tokenB), 1 * 10 ** 26);
+        priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
+        priceFeedManager.setExchangeRate(address(tokenB), 1 * USD_DECIMALS_MULTIPLIER);
 
         DepositSwap depositSwap = new DepositSwap(assetGroupRegistry, smartVaultManager, swapper);
 

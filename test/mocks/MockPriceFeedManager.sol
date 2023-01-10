@@ -6,7 +6,6 @@ import "@openzeppelin/token/ERC20/ERC20.sol";
 import "forge-std/console.sol";
 
 contract MockPriceFeedManager is IUsdPriceFeedManager {
-    uint256 private constant USD_DECIMALS = 26;
     mapping(address => uint256) public exchangeRates;
 
     constructor() {}

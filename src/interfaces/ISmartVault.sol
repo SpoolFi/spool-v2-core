@@ -56,13 +56,13 @@ struct WithdrawalMetadata {
     uint256 flushIndex;
 }
 
-// @notice Maximal value of deposit NFT ID.
+/// @dev Maximal value of deposit NFT ID.
 uint256 constant MAXIMAL_DEPOSIT_ID = 2 ** 255 - 1;
 
-// @notice Maximal value of withdrawal NFT ID.
+/// @dev Maximal value of withdrawal NFT ID.
 uint256 constant MAXIMAL_WITHDRAWAL_ID = 2 ** 256 - 1;
 
-// @notice How many shares will be minted with a NFT
+/// @dev How many shares will be minted with a NFT
 uint256 constant NFT_MINTED_SHARES = 10 ** 6;
 
 /* ========== INTERFACES ========== */

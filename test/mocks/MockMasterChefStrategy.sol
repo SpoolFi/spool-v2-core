@@ -80,7 +80,7 @@ contract MockMasterChefStrategy is Strategy {
 
         (uint256 balance,) = masterChef.userInfo(pid, address(this));
 
-        uint256 toWithdraw = Math.mulDiv(balance, ssts, totalSupply());
+        uint256 toWithdraw = balance * ssts / totalSupply();
 
         masterChef.withdraw(pid, toWithdraw);
     }

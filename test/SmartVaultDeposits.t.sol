@@ -4,6 +4,7 @@ pragma solidity 0.8.16;
 import "forge-std/Test.sol";
 import "../src/libraries/SmartVaultDeposits.sol";
 import "./libraries/Arrays.sol";
+import "./libraries/Constants.sol";
 
 contract SmartVaultDepositsTest is Test {
     uint256[] exchangeRates;
@@ -11,7 +12,9 @@ contract SmartVaultDepositsTest is Test {
     uint256[][] strategyRatios;
 
     function setUp() public {
-        exchangeRates = Arrays.toArray(1200 * 10 ** 26, 16400 * 10 ** 26, 270 * 10 ** 26);
+        exchangeRates = Arrays.toArray(
+            1200 * USD_DECIMALS_MULTIPLIER, 16400 * USD_DECIMALS_MULTIPLIER, 270 * USD_DECIMALS_MULTIPLIER
+        );
         allocation = Arrays.toArray(600, 300, 100);
 
         strategyRatios = new uint256[][](3);
@@ -24,26 +27,26 @@ contract SmartVaultDepositsTest is Test {
         uint256[][] memory flushFactors =
             SmartVaultDeposits.calculateFlushFactors(exchangeRates, allocation, strategyRatios);
 
-        assertEq(flushFactors[0][0], 1701934532251659);
-        assertEq(flushFactors[0][1], 120837351789867);
-        assertEq(flushFactors[0][2], 7318318488682135);
+        assertEq(flushFactors[0][0], 170193453225165938616894);
+        assertEq(flushFactors[0][1], 12083735178986781641799);
+        assertEq(flushFactors[0][2], 731831848868213536052646);
 
-        assertEq(flushFactors[1][0], 826765143581546);
-        assertEq(flushFactors[1][1], 61180620625034);
-        assertEq(flushFactors[1][2], 3720443146116959);
+        assertEq(flushFactors[1][0], 82676514358154660199525);
+        assertEq(flushFactors[1][1], 6118062062503444854764);
+        assertEq(flushFactors[1][2], 372044314611695970897866);
 
-        assertEq(flushFactors[2][0], 271120268951306);
-        assertEq(flushFactors[2][1], 20605140440299);
-        assertEq(flushFactors[2][2], 1247153237176011);
+        assertEq(flushFactors[2][0], 27112026895130679969634);
+        assertEq(flushFactors[2][1], 2060514044029931677692);
+        assertEq(flushFactors[2][2], 124715323717601127860318);
     }
 
     function test_calculateDepositRatio_shouldCalculateDepositRatio() public {
         uint256[] memory depositRatio =
             SmartVaultDeposits.calculateDepositRatio(exchangeRates, allocation, strategyRatios);
 
-        assertEq(depositRatio[0], 2799819944784511);
-        assertEq(depositRatio[1], 202623112855200);
-        assertEq(depositRatio[2], 12285914871975105);
+        assertEq(depositRatio[0], 279981994478451278786053);
+        assertEq(depositRatio[1], 20262311285520158174255);
+        assertEq(depositRatio[2], 1228591487197510634810830);
     }
 
     function test_checkDepositRatio_shouldPassIfDepositIsCloseEnough() public view {
@@ -103,11 +106,11 @@ contract SmartVaultDepositsTest is Test {
         );
 
         assertEq(distribution[0][0], 1701934532251659);
-        assertEq(distribution[0][1], 120837351789867);
+        assertEq(distribution[0][1], 120837351789868);
         assertEq(distribution[0][2], 7318318488682135);
 
         assertEq(distribution[1][0], 826765143581546);
-        assertEq(distribution[1][1], 61180620625034);
+        assertEq(distribution[1][1], 61180620625033);
         assertEq(distribution[1][2], 3720443146116959);
 
         assertEq(distribution[2][0], 271120268951306);
@@ -127,17 +130,17 @@ contract SmartVaultDepositsTest is Test {
             })
         );
 
-        assertEq(distribution[0][0], 607_872851046015715415);
-        assertEq(distribution[0][1], 44_131016972581648461);
-        assertEq(distribution[0][2], 2561_369652097728273882);
+        assertEq(distribution[0][0], 607_872851046015465177);
+        assertEq(distribution[0][1], 44_131016972581602124);
+        assertEq(distribution[0][2], 2561_369652097728119011);
 
-        assertEq(distribution[1][0], 295_292254461448317392);
-        assertEq(distribution[1][1], 22_343778369883672194);
-        assertEq(distribution[1][2], 1302_133841476884060407);
+        assertEq(distribution[1][0], 295_292254461448343841);
+        assertEq(distribution[1][1], 22_343778369883661585);
+        assertEq(distribution[1][2], 1302_133841476884165665);
 
-        assertEq(distribution[2][0], 96_834894492535967193);
-        assertEq(distribution[2][1], 7_525204657534679345);
-        assertEq(distribution[2][2], 436_496506425387665711);
+        assertEq(distribution[2][0], 96_834894492536190982);
+        assertEq(distribution[2][1], 7_525204657534736291);
+        assertEq(distribution[2][2], 436_496506425387715324);
     }
 
     function test_distributeDeposit_shouldDistributeRealDeposit_2() public {
@@ -152,16 +155,16 @@ contract SmartVaultDepositsTest is Test {
             })
         );
 
-        assertEq(distribution[0][0], 60_787285104601571542);
-        assertEq(distribution[0][1], 4_315894186899640405);
-        assertEq(distribution[0][2], 261_378837986158875949);
+        assertEq(distribution[0][0], 60_787285104601546518);
+        assertEq(distribution[0][1], 4_315894186899635873);
+        assertEq(distribution[0][2], 261_378837986158860145);
 
-        assertEq(distribution[1][0], 29_529225446144831739);
-        assertEq(distribution[1][1], 2_185161135984434265);
-        assertEq(distribution[1][2], 132_878216195362029234);
+        assertEq(distribution[1][0], 29_529225446144834384);
+        assertEq(distribution[1][1], 2_185161135984433228);
+        assertEq(distribution[1][2], 132_878216195362039975);
 
-        assertEq(distribution[2][0], 9_683489449253596719);
-        assertEq(distribution[2][1], 735944677115925330);
-        assertEq(distribution[2][2], 44_542945818479094817);
+        assertEq(distribution[2][0], 9_683489449253619098);
+        assertEq(distribution[2][1], 735944677115930899);
+        assertEq(distribution[2][2], 44_542945818479099880);
     }
 }

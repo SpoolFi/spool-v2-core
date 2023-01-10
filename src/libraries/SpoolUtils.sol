@@ -92,8 +92,8 @@ library SpoolUtils {
 
         for (uint256 i = 0; i < strategyAddresses_.length; i++) {
             IStrategy strategy = IStrategy(strategyAddresses_[i]);
-            totalUsdValue = totalUsdValue
-                + Math.mulDiv(strategy.totalUsdValue(), strategy.balanceOf(smartVault_), strategy.totalSupply());
+            totalUsdValue =
+                totalUsdValue + strategy.totalUsdValue() * strategy.balanceOf(smartVault_) / strategy.totalSupply();
         }
 
         return totalUsdValue;

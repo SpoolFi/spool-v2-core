@@ -103,7 +103,7 @@ contract MockUniswapV2Strategy is Strategy {
 
         usdWorth += priceFeedManager.assetToUsdCustomPrice(assetGroup[1], reserveB, exchangeRates[1]);
 
-        return Math.mulDiv(usdWorth, lpBalance, uniswapPair.totalSupply());
+        return usdWorth * lpBalance / uniswapPair.totalSupply();
     }
 
     function redeemFromProtocol(address[] memory, uint256 ssts) internal override {
@@ -113,7 +113,7 @@ contract MockUniswapV2Strategy is Strategy {
 
         uint256 lpBalance = uniswapPair.balanceOf(address(this));
 
-        uint256 toWithdraw = Math.mulDiv(lpBalance, ssts, totalSupply());
+        uint256 toWithdraw = lpBalance * ssts / totalSupply();
 
         uniswapPair.transfer(address(uniswapPair), toWithdraw);
 
