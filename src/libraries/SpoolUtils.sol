@@ -8,7 +8,18 @@ import "../interfaces/IStrategyRegistry.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/utils/math/Math.sol";
 
+/**
+ * @title Spool utility functions.
+ * @notice This library gathers various utility functions.
+ */
 library SpoolUtils {
+    /**
+     * @notice Gets asset ratios for strategies as recorded at their last DHW.
+     * Asset ratios are ordered according to each strategies asset group.
+     * @param strategies_ Addresses of strategies.
+     * @param strategyRegistry_ Strategy registry.
+     * @return strategyRatios Required asset ratio for strategies.
+     */
     function getStrategyRatiosAtLastDhw(address[] memory strategies_, IStrategyRegistry strategyRegistry_)
         public
         view
@@ -23,14 +34,22 @@ library SpoolUtils {
         return strategyRatios;
     }
 
-    function getExchangeRates(address[] memory tokens, IUsdPriceFeedManager _priceFeedManager)
+    /**
+     * @notice Gets USD exchange rates for tokens.
+     * The exchange rate is represented as a USD price for one token.
+     * @param tokens_ Addresses of tokens.
+     * @param priceFeedManager_ USD price feed mananger.
+     * @return exchangeRates Exchange rates for tokens.
+     */
+    function getExchangeRates(address[] memory tokens_, IUsdPriceFeedManager priceFeedManager_)
         public
         view
         returns (uint256[] memory)
     {
-        uint256[] memory exchangeRates = new uint256[](tokens.length);
-        for (uint256 i = 0; i < tokens.length; i++) {
-            exchangeRates[i] = _priceFeedManager.assetToUsd(tokens[i], 10 ** _priceFeedManager.assetDecimals(tokens[i]));
+        uint256[] memory exchangeRates = new uint256[](tokens_.length);
+        for (uint256 i = 0; i < tokens_.length; i++) {
+            exchangeRates[i] =
+                priceFeedManager_.assetToUsd(tokens_[i], 10 ** priceFeedManager_.assetDecimals(tokens_[i]));
         }
 
         return exchangeRates;
@@ -39,34 +58,42 @@ library SpoolUtils {
     /**
      * @dev Gets revert message when a low-level call reverts, so that it can
      * be bubbled-up to caller.
-     * @param _returnData Data returned from reverted low-level call.
-     * @return Revert message.
+     * @param returnData_ Data returned from reverted low-level call.
+     * @return revertMsg Original revert message if available, or default message otherwise.
      */
-    function getRevertMsg(bytes memory _returnData) public pure returns (string memory) {
+    function getRevertMsg(bytes memory returnData_) public pure returns (string memory) {
         // if the _res length is less than 68, then the transaction failed silently (without a revert message)
-        if (_returnData.length < 68) {
+        if (returnData_.length < 68) {
             return "SmartVaultManager::_getRevertMsg: Transaction reverted silently.";
         }
 
         assembly {
             // slice the sig hash
-            _returnData := add(_returnData, 0x04)
+            returnData_ := add(returnData_, 0x04)
         }
 
-        return abi.decode(_returnData, (string)); // all that remains is the revert string
+        return abi.decode(returnData_, (string)); // all that remains is the revert string
     }
 
-    function getVaultTotalUsdValue(address smartVault, address[] memory strategyAddresses)
+    /**
+     * @notice Gets total USD value of a smart vault.
+     * @dev Should be called with addresses of all strategies used by the smart vault,
+     * otherwise total USD value will be lower than it actually is.
+     * @param smartVault_ Address of the smart vault.
+     * @param strategyAddresses_ Addresses of smart vault's strategies.
+     * @return totalUsdValue Total USD value of the smart vault.
+     */
+    function getVaultTotalUsdValue(address smartVault_, address[] memory strategyAddresses_)
         public
         view
         returns (uint256)
     {
         uint256 totalUsdValue = 0;
 
-        for (uint256 i = 0; i < strategyAddresses.length; i++) {
-            IStrategy strategy = IStrategy(strategyAddresses[i]);
+        for (uint256 i = 0; i < strategyAddresses_.length; i++) {
+            IStrategy strategy = IStrategy(strategyAddresses_[i]);
             totalUsdValue = totalUsdValue
-                + Math.mulDiv(strategy.totalUsdValue(), strategy.balanceOf(smartVault), strategy.totalSupply());
+                + Math.mulDiv(strategy.totalUsdValue(), strategy.balanceOf(smartVault_), strategy.totalSupply());
         }
 
         return totalUsdValue;

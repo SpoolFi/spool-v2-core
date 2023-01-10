@@ -51,7 +51,7 @@ contract AllowlistGuard is SpoolAccessControllable {
      * @param smartVault Address of the smart vault.
      * @param allowlistId ID of the allowlist for the smart vault.
      * @param address_ Address to check.
-     * @return True when address is on the allowlist, false otherwise.
+     * @return allowed True when address is on the allowlist, false otherwise.
      */
     function isAllowed(address smartVault, uint256 allowlistId, address address_) external view returns (bool) {
         return allowlists[smartVault][allowlistId][address_];

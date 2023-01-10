@@ -23,24 +23,25 @@ interface IAssetGroupRegistry {
 
     /**
      * @notice Gets number of registered asset groups.
-     * @return Number of registered asset groups.
+     * @return count Number of registered asset groups.
      */
-    function numberOfAssetGroups() external view returns (uint256);
+    function numberOfAssetGroups() external view returns (uint256 count);
 
     /**
      * @notice Gets asset group by its ID.
      * @dev Requirements:
      * - must provide a valid ID for the asset group
-     * @return Array of assets in the asset group.
+     * @return assets Array of assets in the asset group.
      */
-    function listAssetGroup(uint256 assetGroupId) external view returns (address[] memory);
+    function listAssetGroup(uint256 assetGroupId) external view returns (address[] memory assets);
 
     /**
      * @notice Gets asset group length.
      * @dev Requirements:
      * - must provide a valid ID for the asset group
+     * @return length
      */
-    function assetGroupLength(uint256 assetGroupId) external view returns (uint256);
+    function assetGroupLength(uint256 assetGroupId) external view returns (uint256 length);
 
     /**
      * @notice Validates that provided ID represents an asset group.
@@ -56,7 +57,7 @@ interface IAssetGroupRegistry {
      * @dev Requirements:
      * - must provide at least one asset
      * @param assets Array of assets in the asset group.
-     * @return Sequential ID assigned to the asset group.
+     * @return id Sequential ID assigned to the asset group.
      */
-    function registerAssetGroup(address[] calldata assets) external returns (uint256);
+    function registerAssetGroup(address[] calldata assets) external returns (uint256 id);
 }

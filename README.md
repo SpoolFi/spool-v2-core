@@ -12,7 +12,7 @@
 - Define `@param`
 - Define `@return` with param name as the first word (e.g. `@return myVar Returning my variable value`).
 
-TO comment struct parameters use `@custom:member` followed by the parameter value (e.g. `@custom:member myVar My variable`).
+To comment struct parameters use `@custom:member` followed by the parameter value (e.g. `@custom:member myVar My variable`).
 
 
 **Important: Add NatSpec docs to all functions before merging.**

@@ -94,9 +94,9 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager {
     /**
      * @dev Gets latest asset price in USD from oracle.
      * @param asset Asset for price lookup.
-     * @return Latest asset price.
+     * @return assetPrice Latest asset price.
      */
-    function _getAssetPriceInUsd(address asset) private view returns (uint256) {
+    function _getAssetPriceInUsd(address asset) private view returns (uint256 assetPrice) {
         (
             /* uint80 roundId */
             ,

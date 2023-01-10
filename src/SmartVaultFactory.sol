@@ -16,15 +16,15 @@ import {SmartVault} from "./SmartVault.sol";
 
 /**
  * @notice Specification for smart vault deployment.
- * @param smartVaultName Name of the smart vault.
- * @param assetGroupId ID of the asset group.
- * @param strategies Strategies used by the smart vault.
- * @param riskAppetite Risk appetite of the smart vault.
- * @param riskProvider Risk provider used by the smart vault.
- * @param actions Actions to register for the smart vault.
- * @param actionRequestTypes Request types for actions.
- * @param guards Guards to register for the smart vault.
- * @param guardRequestTypes Request types for the smart vault.
+ * @custom:member smartVaultName Name of the smart vault.
+ * @custom:member assetGroupId ID of the asset group.
+ * @custom:member strategies Strategies used by the smart vault.
+ * @custom:member riskAppetite Risk appetite of the smart vault.
+ * @custom:member riskProvider Risk provider used by the smart vault.
+ * @custom:member actions Actions to register for the smart vault.
+ * @custom:member actionRequestTypes Request types for actions.
+ * @custom:member guards Guards to register for the smart vault.
+ * @custom:member guardRequestTypes Request types for the smart vault.
  */
 struct SmartVaultSpecification {
     string smartVaultName;
@@ -104,7 +104,7 @@ contract SmartVaultFactory is UpgradeableBeacon, SpoolAccessRoles {
     /**
      * @notice Deploys a new smart vault into the Spool ecosystem.
      * @param specification Specifications for the new smart vault.
-     * @return Deployed smart vault.
+     * @return smartVault Deployed smart vault.
      */
     function deploySmartVault(SmartVaultSpecification calldata specification) external returns (ISmartVault) {
         _validateSpecification(specification);
@@ -127,7 +127,7 @@ contract SmartVaultFactory is UpgradeableBeacon, SpoolAccessRoles {
      * @notice Deploys a new smart vault to a deterministic address.
      * @param specification Specifications for the new smart vault.
      * @param salt Salt for address determination.
-     * @return Deployed smart vault.
+     * @return smartVault Deployed smart vault.
      */
     function deploySmartVaultDeterministically(SmartVaultSpecification calldata specification, bytes32 salt)
         external
@@ -155,7 +155,7 @@ contract SmartVaultFactory is UpgradeableBeacon, SpoolAccessRoles {
      * @notice Predicts deployment address deterministically deployed smart vault.
      * @param specification Specifications for the new smart vault.
      * @param salt Salt for address determination.
-     * @return Predicted address.
+     * @return predictedAddress Predicted address.
      */
     function predictDeterministicAddress(SmartVaultSpecification calldata specification, bytes32 salt)
         external
@@ -196,7 +196,7 @@ contract SmartVaultFactory is UpgradeableBeacon, SpoolAccessRoles {
     /**
      * @notice Encodes calldata for smart vault initialization.
      * @param specification Specifications for the new smart vault.
-     * @return Enoded initialization calldata.
+     * @return initializationCalldata Enoded initialization calldata.
      */
     function _encodeInitializationCalldata(SmartVaultSpecification calldata specification)
         private

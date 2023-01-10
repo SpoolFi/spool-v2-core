@@ -17,9 +17,9 @@ error DhwNotRunYetForIndex(address strategy, uint256 strategyIndex);
 
 /**
  * @notice Represents change of state for a strategy during a DHW.
- * @param exchangeRates Exchange rates between assets and USD.
- * @param assetsDeposited Amount of assets deposited into the strategy.
- * @param sharesMinted Amount of strategy shares minted.
+ * @custom:member exchangeRates Exchange rates between assets and USD.
+ * @custom:member assetsDeposited Amount of assets deposited into the strategy.
+ * @custom:member sharesMinted Amount of strategy shares minted.
  */
 struct StrategyAtIndex {
     uint256[] exchangeRates;
@@ -59,11 +59,11 @@ interface IStrategyRegistry {
      * - must be called by SmartVaultManager
      * @param strategies_ Addresses of strategies from which to withdraw.
      * @param strategyShares Amount of strategy shares to be withdrawns.
-     * @return Current indexes for the strategies.
+     * @return strategyIndexes Current indexes for the strategies.
      */
     function addWithdrawals(address[] memory strategies_, uint256[] memory strategyShares)
         external
-        returns (uint256[] memory);
+        returns (uint256[] memory strategyIndexes);
 
     /**
      * @notice Instantly redeems strategy shares for assets.
@@ -84,11 +84,11 @@ interface IStrategyRegistry {
      * @param strategies_ Addresses if strategies from which to claim withdrawal.
      * @param dhwIndexes Indexes of strategies when withdrawal was made.
      * @param strategyShares Amount of strategy shares that was withdrawn.
-     * @return Amount of assets withdrawn from strategies.
+     * @return assetsWithdrawn Amount of assets withdrawn from strategies.
      */
     function claimWithdrawals(
         address[] memory strategies_,
         uint256[] memory dhwIndexes,
         uint256[] memory strategyShares
-    ) external view returns (uint256[] memory);
+    ) external view returns (uint256[] memory assetsWithdrawn);
 }

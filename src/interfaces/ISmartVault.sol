@@ -48,8 +48,8 @@ struct DepositMetadata {
 
 /**
  * @notice Holds metadata detailing the withdrawal behind the NFT.
- * @param vaultShares Vault shares withdrawn.
- * @param flushIndex Flush index into which withdrawal is included.
+ * @custom:member vaultShares Vault shares withdrawn.
+ * @custom:member flushIndex Flush index into which withdrawal is included.
  */
 struct WithdrawalMetadata {
     uint256 vaultShares;
@@ -73,19 +73,19 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
     /**
      * @notice Retrieves a list of active NFTs for User.
      */
-    function activeUserNFTIds(address userAddress) external view returns (uint256[] memory);
+    function activeUserNFTIds(address userAddress) external view returns (uint256[] memory nftIds);
 
     /**
-     * @return asset group ID
+     * @return id ID of the asset group.
      */
-    function assetGroupId() external view returns (uint256);
+    function assetGroupId() external view returns (uint256 id);
 
     /**
-     * @return name Name of the vault
+     * @return name Name of the vault.
      */
     function vaultName() external view returns (string memory name);
 
-    function getMetadata(uint256[] calldata nftIds) external view returns (bytes[] memory);
+    function getMetadata(uint256[] calldata nftIds) external view returns (bytes[] memory metadata);
 
     /**
      * @dev Returns the total amount of the underlying asset that is “managed” by Vault.
@@ -111,7 +111,7 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
      */
     function convertToAssets(uint256 shares) external view returns (uint256[] memory assets);
 
-    function balanceOfBatch(address account, uint256[] memory ids) external view returns (uint256[] memory);
+    function balanceOfBatch(address account, uint256[] memory ids) external view returns (uint256[] memory balances);
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
@@ -125,7 +125,7 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
 
     function burnNFTs(address owner, uint256[] calldata nftIds, uint256[] calldata nftAmounts)
         external
-        returns (bytes[] memory);
+        returns (bytes[] memory metadata);
 
     function mintDepositNFT(address receiver, DepositMetadata memory metadata) external returns (uint256 receipt);
 
