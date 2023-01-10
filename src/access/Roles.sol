@@ -4,7 +4,8 @@ pragma solidity 0.8.16;
 /**
  * @dev Grants permission to:
  * - acts as a default admin for other roles,
- * - can whitelist an action with action manager.
+ * - can whitelist an action with action manager,
+ * - can manage asset group registry.
  *
  * Is granted to the deployer of the SpoolAccessControl contract.
  *

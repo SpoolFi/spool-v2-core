@@ -27,6 +27,8 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
         WETH = _WETH;
     }
 
+    function test_mock() external pure {}
+
     receive() external payable {
         assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
     }

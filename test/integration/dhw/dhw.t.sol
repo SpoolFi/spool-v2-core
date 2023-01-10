@@ -54,7 +54,7 @@ contract DhwTest is Test {
         assetGroup[0] = address(tokenA);
         assetGroup[1] = address(tokenB);
         assetGroup[2] = address(tokenC);
-        assetGroupRegistry = new AssetGroupRegistry();
+        assetGroupRegistry = new AssetGroupRegistry(assetGroup, accessControl);
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
         MockPriceFeedManager priceFeedManager = new MockPriceFeedManager();

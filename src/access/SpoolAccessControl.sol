@@ -20,9 +20,6 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl {
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
-    /**
-     * @notice Check whether account was granted given role for given smart vault
-     */
     function hasSmartVaultRole(address smartVault, bytes32 role, address account) external view returns (bool) {
         return hasRole(_getSmartVaultRole(smartVault, role), account);
     }
@@ -33,9 +30,6 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl {
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
-    /**
-     * @notice Grant role to account for given smart vault
-     */
     function grantSmartVaultRole(address smartVault, bytes32 role, address account)
         external
         onlyAdminOrVaultAdmin(smartVault, msg.sender)
@@ -43,9 +37,6 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl {
         _grantRole(_getSmartVaultRole(smartVault, role), account);
     }
 
-    /**
-     * @notice Revoke specific role for given smart vault
-     */
     function revokeSmartVaultRole(address smartVault, bytes32 role, address account)
         external
         onlyAdminOrVaultAdmin(smartVault, msg.sender)
@@ -53,9 +44,6 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl {
         _revokeRole(_getSmartVaultRole(smartVault, role), account);
     }
 
-    /**
-     * @notice Renounce specific role for given smart vault
-     */
     function renounceSmartVaultRole(address smartVault, bytes32 role) external {
         renounceRole(_getSmartVaultRole(smartVault, role), msg.sender);
     }
@@ -75,9 +63,6 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl {
 
     /* ========== MODIFIERS ========== */
 
-    /**
-     * @notice Reverts if account not admin or smart vault admin
-     */
     modifier onlyAdminOrVaultAdmin(address smartVault, address account) {
         _onlyAdminOrVaultAdmin(smartVault, account);
         _;
@@ -90,31 +75,41 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl {
 abstract contract SpoolAccessControllable {
     /* ========== CONSTANTS ========== */
 
-    /// @notice Access control manager
-    ISpoolAccessControl internal immutable accessControl;
+    /**
+     * @dev Spool access control manager.
+     */
+    ISpoolAccessControl internal immutable _accessControl;
 
     /* ========== CONSTRUCTOR ========== */
 
+    /**
+     * @param accessControl_ Spool access control manager.
+     */
     constructor(ISpoolAccessControl accessControl_) {
-        accessControl = accessControl_;
+        _accessControl = accessControl_;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
     /**
-     * @dev Revert with a standard message if `account` is missing `role`.
+     * @dev Reverts if an account is missing a role.\
+     * @param role Role to check for.
+     * @param account Account to check.
      */
     function _checkRole(bytes32 role, address account) internal view virtual {
-        if (!accessControl.hasRole(role, account)) {
+        if (!_accessControl.hasRole(role, account)) {
             revert MissingRole(role, account);
         }
     }
 
     /**
-     * @dev Revert with a standard message if `account` is missing `role`.
+     * @dev Revert if an account is missing a role for a smartVault.
+     * @param smartVault Address of the smart vault.
+     * @param role Role to check for.
+     * @param account Account to check.
      */
     function _checkSmartVaultRole(address smartVault, bytes32 role, address account) private view {
-        if (!accessControl.hasSmartVaultRole(smartVault, role, account)) {
+        if (!_accessControl.hasSmartVaultRole(smartVault, role, account)) {
             revert MissingRole(role, account);
         }
     }
@@ -122,7 +117,10 @@ abstract contract SpoolAccessControllable {
     /* ========== MODIFIERS ========== */
 
     /**
-     * @notice Reverts if account was not granted specified role
+     * @notice Only allows accounts with granted role.
+     * @dev Reverts when the account fails check.
+     * @param role Role to check for.
+     * @param account Account to check.
      */
     modifier onlyRole(bytes32 role, address account) {
         _checkRole(role, account);
@@ -130,7 +128,11 @@ abstract contract SpoolAccessControllable {
     }
 
     /**
-     * @notice Reverts if account was not granted specified role for given smart vault
+     * @notice Only allows accounts with granted role for a smart vault.
+     * @dev Reverts when the account fails check.
+     * @param smartVault Address of the smart vault.
+     * @param role Role to check for.
+     * @param account Account to check.
      */
     modifier onlySmartVaultRole(address smartVault, bytes32 role, address account) {
         _checkSmartVaultRole(smartVault, role, account);
@@ -138,10 +140,13 @@ abstract contract SpoolAccessControllable {
     }
 
     /**
-     * @notice Reverts if account not admin or smart vault admin
+     * @notice Only allows accounts that are Spool admins or admins of a smart vault.
+     * @dev Reverts when the account fails check.
+     * @param smartVault Address of the smart vault.
+     * @param account Account to check.
      */
     modifier onlyAdminOrVaultAdmin(address smartVault, address account) {
-        accessControl.checkIsAdminOrVaultAdmin(smartVault, account);
+        _accessControl.checkIsAdminOrVaultAdmin(smartVault, account);
         _;
     }
 }

@@ -61,6 +61,8 @@ contract MockMasterChef is Ownable {
         startTime = block.timestamp;
     }
 
+    function test_mock() external pure {}
+
     function poolLength() external view returns (uint256) {
         return poolInfo.length;
     }

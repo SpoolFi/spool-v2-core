@@ -37,6 +37,8 @@ contract UniswapV2ERC20 is IUniswapV2ERC20 {
         );
     }
 
+    function test_mock() external pure {}
+
     function _mint(address to, uint256 value) internal {
         totalSupply = totalSupply.add(value);
         balanceOf[to] = balanceOf[to].add(value);

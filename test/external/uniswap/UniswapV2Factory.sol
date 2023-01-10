@@ -17,6 +17,8 @@ contract UniswapV2Factory is IUniswapV2Factory {
         feeToSetter = _feeToSetter;
     }
 
+    function test_mock() external pure {}
+
     function allPairsLength() external view override returns (uint256) {
         return allPairs.length;
     }

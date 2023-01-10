@@ -10,6 +10,8 @@ import "./UniSafeMath.sol";
 library UniswapV2Library {
     using UniSafeMath for uint256;
 
+    function test_lib() external pure {}
+
     // returns sorted token addresses, used to handle return values from pairs sorted in this order
     function sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
         require(tokenA != tokenB, "UniswapV2Library: IDENTICAL_ADDRESSES");

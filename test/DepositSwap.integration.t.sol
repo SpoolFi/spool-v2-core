@@ -50,7 +50,8 @@ contract DepositSwapIntegrationTest is Test {
         SpoolAccessControl accessControl = new SpoolAccessControl();
         accessControl.initialize();
         ActionManager actionManager = new ActionManager(accessControl);
-        assetGroupRegistry = new AssetGroupRegistry();
+        assetGroupRegistry =
+            new AssetGroupRegistry(Arrays.toArray(address(tokenA), address(tokenB), address(tokenC)), accessControl);
         GuardManager guardManager = new GuardManager(accessControl);
         masterWallet = new MasterWallet(accessControl);
         priceFeedManager = new MockPriceFeedManager();

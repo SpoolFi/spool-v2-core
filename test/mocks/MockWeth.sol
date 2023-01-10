@@ -38,6 +38,8 @@ contract WETH9 {
         deposit();
     }
 
+    function test_mock() external pure {}
+
     function deposit() public payable {
         balanceOf[msg.sender] += msg.value;
         emit Deposit(msg.sender, msg.value);

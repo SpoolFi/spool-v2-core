@@ -53,7 +53,7 @@ contract WithdrawalIntegrationTest is Test {
         address[] memory assetGroup = new address[](2);
         assetGroup[0] = address(tokenA);
         assetGroup[1] = address(tokenB);
-        assetGroupRegistry = new AssetGroupRegistry();
+        assetGroupRegistry = new AssetGroupRegistry(assetGroup, accessControl);
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
         IUsdPriceFeedManager priceFeedManager = new MockPriceFeedManager();

@@ -37,10 +37,13 @@ contract SmartVaultManagerTest is Test {
     MockToken token2;
 
     function setUp() public {
+        token1 = new MockToken("Token1", "T1");
+        token2 = new MockToken("Token2", "T2");
+
         accessControl = new SpoolAccessControl();
         accessControl.initialize();
         masterWallet = new MasterWallet(accessControl);
-        assetGroupRegistry = new AssetGroupRegistry();
+        assetGroupRegistry = new AssetGroupRegistry(Arrays.toArray(address(token1), address(token2)), accessControl);
         priceFeedManager = new MockPriceFeedManager();
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
         IGuardManager guardManager = new GuardManager(accessControl);
@@ -63,9 +66,6 @@ contract SmartVaultManagerTest is Test {
         accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(this));
         accessControl.grantRole(ROLE_SMART_VAULT, smartVault);
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
-
-        token1 = new MockToken("Token1", "T1");
-        token2 = new MockToken("Token2", "T2");
     }
 
     function test_getUserSVTBalance_getsCurrentBalanceWithoutDepositNFT() public {

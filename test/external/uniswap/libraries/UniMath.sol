@@ -5,6 +5,8 @@ pragma solidity 0.8.16;
 // a library for performing various math operations
 
 library UniMath {
+    function test_lib() external pure {}
+
     function min(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = x < y ? x : y;
     }

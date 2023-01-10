@@ -16,10 +16,43 @@ error InvalidAssetGroup(uint256 assetGroupId);
  */
 error NoAssetsProvided();
 
+/**
+ * @notice Used when token is not allowed to be used as an asset.
+ * @param token Address of the token that is not allowed.
+ */
+error TokenNotAllowed(address token);
+
+/**
+ * @notice Used when asset group already exists.
+ * @param assetGroupId ID of the already existing asset group.
+ */
+error AssetGroupAlreadyExists(uint256 assetGroupId);
+
 /* ========== INTERFACES ========== */
 
 interface IAssetGroupRegistry {
-    /* ========== EXTERNAL VIEW FUNCTIONS ========== */
+    /* ========== EVENTS ========== */
+
+    /**
+     * @notice Emitted when token is allowed to be used as an asset.
+     * @param token Address of newly allowed token.
+     */
+    event TokenAllowed(address indexed token);
+
+    /**
+     * @notice Emitted when asset group is registered.
+     * @param assetGroupId ID of the newly registered asset group.
+     */
+    event AssetGroupRegistered(uint256 indexed assetGroupId);
+
+    /* ========== VIEW FUNCTIONS ========== */
+
+    /**
+     * @notice Checks if token is allowed to be used as an asset.
+     * @param token Address of token to check.
+     * @return isAllowed True if token is allowed, false otherwise.
+     */
+    function isTokenAllowed(address token) external view returns (bool isAllowed);
 
     /**
      * @notice Gets number of registered asset groups.
@@ -50,12 +83,29 @@ interface IAssetGroupRegistry {
      */
     function validateAssetGroup(uint256 assetGroupId) external view;
 
-    /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
+    /**
+     * @notice Checks if asset group composed of assets already exists.
+     * @param assets Assets composing the asset group.
+     * @return Asset group ID if such asset group exists, 0 otherwise.
+     */
+    function checkAssetGroupExists(address[] calldata assets) external view returns (uint256);
+
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
+    /**
+     * @notice Allows a token to be used as an asset.
+     * @dev Requirements:
+     * - can only be valled by the ROLE_SPOOL_ADMIN
+     * @param token Address of token to be allowed.
+     */
+    function allowToken(address token) external;
 
     /**
      * @notice Registers a new asset group.
      * @dev Requirements:
      * - must provide at least one asset
+     * - all assets must be allowed
+     * - can only be called by the ROLE_SPOOL_ADMIN
      * @param assets Array of assets in the asset group.
      * @return id Sequential ID assigned to the asset group.
      */

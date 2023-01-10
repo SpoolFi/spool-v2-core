@@ -33,7 +33,7 @@ contract RewardManagerTests is Test {
 
         sac = new SpoolAccessControl();
         sac.initialize();
-        assetGroupRegistry = new AssetGroupRegistry();
+        assetGroupRegistry = new AssetGroupRegistry(Arrays.toArray(address(underlying)), sac);
 
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(underlying)));
 

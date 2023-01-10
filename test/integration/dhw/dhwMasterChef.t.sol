@@ -54,7 +54,7 @@ contract DhwMasterChefTest is Test {
 
         address[] memory assetGroup = new address[](1);
         assetGroup[0] = address(tokenA);
-        assetGroupRegistry = new AssetGroupRegistry();
+        assetGroupRegistry = new AssetGroupRegistry(assetGroup, accessControl);
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
         MockPriceFeedManager priceFeedManager = new MockPriceFeedManager();
