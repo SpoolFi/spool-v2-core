@@ -20,7 +20,7 @@ import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
 import "../libraries/Arrays.sol";
 
-contract NftGateGuardDemoTest is Test, SpoolAccessRoles {
+contract NftGateGuardDemoTest is Test {
     address private alice;
     address private bob;
     address private charlie;

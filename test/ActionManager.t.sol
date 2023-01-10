@@ -7,7 +7,7 @@ import "../src/managers/ActionManager.sol";
 import "./mocks/MockToken.sol";
 import {MockAction, MockActionSetAmountTo100} from "./mocks/MockAction.sol";
 
-contract ActionManagerTest is Test, SpoolAccessRoles {
+contract ActionManagerTest is Test {
     IActionManager actionManager;
     IAction mockAction;
     MockToken mockToken;

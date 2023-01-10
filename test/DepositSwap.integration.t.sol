@@ -21,7 +21,7 @@ import "./mocks/MockPriceFeedManager.sol";
 import "./mocks/MockStrategy.sol";
 import "./mocks/MockToken.sol";
 
-contract DepositSwapIntegrationTest is Test, SpoolAccessRoles {
+contract DepositSwapIntegrationTest is Test {
     address private alice;
     address private bob;
 

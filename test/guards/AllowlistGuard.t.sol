@@ -9,7 +9,7 @@ import "../../src/guards/AllowlistGuard.sol";
 
 contract SmartVaultFake {}
 
-contract AllowlistGuardTest is Test, SpoolAccessRoles {
+contract AllowlistGuardTest is Test {
     event AddedToAllowlist(address indexed smartVault, uint256 indexed allowlistId, address[] addresses);
     event RemovedFromAllowlist(address indexed smartVault, uint256 indexed allowlistId, address[] addresses);
 

@@ -20,6 +20,12 @@ import "../libraries/SmartVaultDeposits.sol";
 import "../access/SpoolAccessControl.sol";
 import "../interfaces/ISmartVaultManager.sol";
 
+/**
+ * @dev Requires roles:
+ * - ROLE_STRATEGY_CLAIMER
+ * - ROLE_MASTER_WALLET_MANAGER
+ * - ROLE_SMART_VAULT_MANAGER
+ */
 contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     using SafeERC20 for IERC20;
     using ArrayMapping for mapping(uint256 => uint256);
