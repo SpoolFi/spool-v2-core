@@ -238,14 +238,25 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         address from,
         address to,
         uint256[] memory ids,
-        uint256[] memory,
+        uint256[] memory amounts,
         bytes memory
     ) internal view override {
-        // mint
-        if (from == address(0)) {
+        // skip transfer checks when minting and burning
+        // they have their own checks made
+        if (from == address(0) || to == address(0)) {
             return;
         }
 
+        // check that only full NFT can be transfered
+        for (uint256 i = 0; i < ids.length; i++) {
+            if (amounts[i] != balanceOf(from, ids[i])) {
+                revert InvalidNftTransferAmount(amounts[i], balanceOf(from, ids[i]));
+            }
+        }
+
+        // NOTE:
+        // - here we are passing ids into the request context instead of amounts
+        // - here we passing empty array as tokens
         RequestContext memory context =
             RequestContext(to, operator, from, RequestType.TransferNFT, ids, new address[](0));
         _guardManager.runGuards(address(this), context);

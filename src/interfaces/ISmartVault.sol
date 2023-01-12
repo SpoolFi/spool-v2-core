@@ -38,6 +38,13 @@ error InvalidWithdrawalNftId(uint256 withdrawalNftId);
  */
 error InvalidNftBalance(uint256 balance);
 
+/**
+ * @notice Used when someone wants to transfer invalid NFT shares amount.
+ * @param transferAmount Amount of shares requested to be transfered.
+ * @param balance Full balance of NFT shares.
+ */
+error InvalidNftTransferAmount(uint256 transferAmount, uint256 balance);
+
 /* ========== STRUCTS ========== */
 
 struct DepositMetadata {

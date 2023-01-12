@@ -357,6 +357,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         ISmartVault vault = ISmartVault(smartVault);
         bytes[] memory metadata = vault.burnNFTs(msg.sender, nftIDs, nftAmounts);
 
+        {
+            // NOTE:
+            // - here we are passing ids into the request context instead of amounts
+            // - here we passing empty array as tokens
+            _runGuards(smartVault, msg.sender, msg.sender, msg.sender, nftIDs, new address[](0), RequestType.BurnNFT);
+        }
+
         uint256 claimedVaultTokens = 0;
         for (uint256 i = 0; i < nftIDs.length; i++) {
             if (nftIDs[i] > MAXIMAL_DEPOSIT_ID) {

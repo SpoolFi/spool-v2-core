@@ -5,5 +5,6 @@ enum RequestType {
     Deposit,
     Withdrawal,
     TransferNFT,
+    BurnNFT,
     TransferSVTs
 }
