@@ -25,6 +25,15 @@ library Arrays {
         return result;
     }
 
+    function toArray(uint256 x1, uint256 x2, uint256 x3, uint256 x4) public pure returns (uint256[] memory) {
+        uint256[] memory result = new uint256[](4);
+        result[0] = x1;
+        result[1] = x2;
+        result[2] = x3;
+        result[3] = x4;
+        return result;
+    }
+
     function toArray(address x1) public pure returns (address[] memory) {
         address[] memory result = new address[](1);
         result[0] = x1;

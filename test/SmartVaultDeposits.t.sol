@@ -6,7 +6,9 @@ import "../src/libraries/SmartVaultDeposits.sol";
 import "./libraries/Arrays.sol";
 import "./libraries/Constants.sol";
 
-contract SmartVaultDepositsTest is Test {
+contract SmartVaultDeposits3x3Test is Test {
+    // 3 assets, 3 strategies
+
     uint256[] exchangeRates;
     uint256[] allocation;
     uint256[][] strategyRatios;
@@ -166,5 +168,122 @@ contract SmartVaultDepositsTest is Test {
         assertEq(distribution[2][0], 9_683489449253619098);
         assertEq(distribution[2][1], 735944677115930899);
         assertEq(distribution[2][2], 44_542945818479099880);
+    }
+}
+
+contract SmartVaultDeposits2x3Test is Test {
+    // 2 assets, 3 strategies
+
+    uint256[] exchangeRates;
+    uint256[] allocation;
+    uint256[][] strategyRatios;
+
+    function setUp() public {
+        exchangeRates = Arrays.toArray(1200 * USD_DECIMALS_MULTIPLIER, 16400 * USD_DECIMALS_MULTIPLIER);
+        allocation = Arrays.toArray(600, 300, 100);
+
+        strategyRatios = new uint256[][](3);
+        strategyRatios[0] = Arrays.toArray(1000, 71);
+        strategyRatios[1] = Arrays.toArray(1000, 74);
+        strategyRatios[2] = Arrays.toArray(1000, 76);
+    }
+
+    function test_calculateFlushFactors_shouldCalculateFlushFactors() public {
+        uint256[][] memory flushFactors =
+            SmartVaultDeposits.calculateFlushFactors(exchangeRates, allocation, strategyRatios);
+
+        assertEq(flushFactors[0][0], 253764168499407883606834);
+        assertEq(flushFactors[0][1], 18017255963457959736085);
+
+        assertEq(flushFactors[1][0], 124295657938349353662578);
+        assertEq(flushFactors[1][1], 9197878687437852171030);
+
+        assertEq(flushFactors[2][0], 40876389797253106605624);
+        assertEq(flushFactors[2][1], 3106605624591236102027);
+    }
+
+    function test_calculateDepositRatio_shouldCalculateDepositRatio() public {
+        uint256[] memory depositRatio =
+            SmartVaultDeposits.calculateDepositRatio(exchangeRates, allocation, strategyRatios);
+
+        assertEq(depositRatio[0], 418936216235010343875036);
+        assertEq(depositRatio[1], 30321740275487048009142);
+    }
+
+    function test_checkDepositRatio_shouldPassIfDepositIsCloseEnough() public view {
+        uint256[] memory deposit;
+
+        deposit = Arrays.toArray(41_893621, 3_032174);
+        SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios);
+    }
+
+    function test_distributeDeposit_shouldDistributeIdealDeposit() public {
+        uint256[] memory deposit = Arrays.toArray(41_893621, 3_032174);
+
+        uint256[][] memory distribution = SmartVaultDeposits.distributeDeposit(
+            DepositQueryBag1({
+                deposit: deposit,
+                exchangeRates: exchangeRates,
+                allocation: allocation,
+                strategyRatios: strategyRatios
+            })
+        );
+
+        assertEq(distribution[0][0], 25_376418);
+        assertEq(distribution[0][1], 1_801727);
+
+        assertEq(distribution[1][0], 12_429565);
+        assertEq(distribution[1][1], 919787);
+
+        assertEq(distribution[2][0], 4_087638);
+        assertEq(distribution[2][1], 310660);
+    }
+}
+
+contract SmartVaultDeposits1x2Test is Test {
+    // 1 asset, 2 strategies
+
+    uint256[] exchangeRates;
+    uint256[] allocation;
+    uint256[][] strategyRatios;
+
+    function setUp() public {
+        exchangeRates = Arrays.toArray(1200 * USD_DECIMALS_MULTIPLIER);
+        allocation = Arrays.toArray(600, 400);
+
+        strategyRatios = new uint256[][](2);
+        strategyRatios[0] = Arrays.toArray(100_00);
+        strategyRatios[1] = Arrays.toArray(100_00);
+    }
+
+    function test_calculateDepositRatio_shouldCalculateDepositRatio() public {
+        uint256[] memory depositRatio =
+            SmartVaultDeposits.calculateDepositRatio(exchangeRates, allocation, strategyRatios);
+
+        assertEq(depositRatio[0], 1);
+    }
+
+    function test_checkDepositRatio_shouldPassIfDepositIsCloseEnough() public view {
+        uint256[] memory deposit;
+
+        deposit = Arrays.toArray(1_000000);
+        SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios);
+    }
+
+    function test_distributeDeposit_shouldDistributeIdealDeposit() public {
+        uint256[] memory deposit = Arrays.toArray(1_000000);
+
+        uint256[][] memory distribution = SmartVaultDeposits.distributeDeposit(
+            DepositQueryBag1({
+                deposit: deposit,
+                exchangeRates: exchangeRates,
+                allocation: allocation,
+                strategyRatios: strategyRatios
+            })
+        );
+
+        assertEq(distribution[0][0], 600000);
+
+        assertEq(distribution[1][0], 400000);
     }
 }
