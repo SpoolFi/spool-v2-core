@@ -70,21 +70,7 @@ interface ISmartVaultReallocator {
     function reallocate() external;
 }
 
-interface ISmartVaultSyncer {
-    /**
-     * @notice Syncs smart vault with strategies.
-     * @param smartVault Smart vault to sync.
-     */
-    function syncSmartVault(address smartVault) external;
-}
-
-interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
-    /* ========== EXTERNAL VIEW FUNCTIONS ========== */
-
-    function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint256[] memory);
-
-    function getLatestFlushIndex(address smartVault) external view returns (uint256);
-
+interface ISmartVaultBalance {
     /**
      * @notice Retrieves an amount of SVT tokens.
      * @param smartVault Smart Vault address.
@@ -92,6 +78,19 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
      * @return depositNTFIds An array of deposit NFT Ids.
      */
     function getUserSVTBalance(address smartVault, address user) external view returns (uint256);
+}
+
+interface ISmartVaultRegistry {
+    function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm) external;
+}
+
+interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISmartVaultRegistry {
+    /* ========== EXTERNAL VIEW FUNCTIONS ========== */
+
+    function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint256[] memory);
+
+    function getLatestFlushIndex(address smartVault) external view returns (uint256);
+
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm) external;
@@ -99,6 +98,12 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultSyncer {
     function flushSmartVault(address smartVault) external;
 
     function smartVaultDeposits(address smartVault, uint256 flushIdx) external returns (uint256[] memory);
+
+    /**
+     * @notice Syncs smart vault with strategies.
+     * @param smartVault Smart vault to sync.
+     */
+    function syncSmartVault(address smartVault) external;
 
     /**
      * @notice TODO

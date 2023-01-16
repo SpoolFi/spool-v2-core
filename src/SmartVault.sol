@@ -69,6 +69,64 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
+
+    /**
+     * @dev See {IERC1155-balanceOf}.
+     * Returns 1 if user has any balance, 0 otherwise.
+     *
+     * Requirements:
+     *
+     * - `account` cannot be the zero address.
+     */
+    function balanceOf(address account, uint256 id)
+        public
+        view
+        override(ERC1155Upgradeable, IERC1155Upgradeable)
+        returns (uint256)
+    {
+        return super.balanceOf(account, id) >= 1 ? 1 : 0;
+    }
+
+    /**
+     * @notice Fractional balance of a NFT (0 - NFT_MINTED_SHARES)
+     */
+    function balanceOfFractional(address account, uint256 id) public view returns (uint256) {
+        return super.balanceOf(account, id);
+    }
+
+    /**
+     * @notice Returns user's NFT balance
+     * @dev 1 if user has any balance, 0 otherwise.
+     */
+    function balanceOfBatch(address[] memory accounts, uint256[] memory ids)
+        public
+        view
+        override(ERC1155Upgradeable, IERC1155Upgradeable)
+        returns (uint256[] memory)
+    {
+        require(accounts.length == ids.length, "ERC1155: accounts and ids length mismatch");
+        uint256[] memory batchBalances = new uint256[](accounts.length);
+
+        for (uint256 i = 0; i < accounts.length; ++i) {
+            batchBalances[i] = balanceOf(accounts[i], ids[i]);
+        }
+
+        return batchBalances;
+    }
+
+    /**
+     * @notice Fractional balance of a NFT array (0 - NFT_MINTED_SHARES)
+     */
+    function balanceOfFractionalBatch(address account, uint256[] memory ids) public view returns (uint256[] memory) {
+        uint256[] memory batchBalances = new uint256[](ids.length);
+
+        for (uint256 i = 0; i < ids.length; ++i) {
+            batchBalances[i] = balanceOfFractional(account, ids[i]);
+        }
+
+        return batchBalances;
+    }
+
     /**
      * @return depositNTFIds A list of Deposit NFT IDs
      */
@@ -103,16 +161,6 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
     // TODO: implement or remove
     function convertToAssets(uint256) external pure returns (uint256[] memory) {
         revert("0");
-    }
-
-    function balanceOfBatch(address account, uint256[] memory ids) public view returns (uint256[] memory) {
-        uint256[] memory batchBalances = new uint256[](ids.length);
-
-        for (uint256 i = 0; i < ids.length; ++i) {
-            batchBalances[i] = balanceOf(account, ids[i]);
-        }
-
-        return batchBalances;
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
@@ -157,8 +205,8 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         returns (bytes[] memory)
     {
         for (uint256 i = 0; i < nftIds.length; i++) {
-            if (balanceOf(owner, nftIds[i]) < nftAmounts[i]) {
-                revert InvalidNftBalance(balanceOf(owner, nftIds[i]));
+            if (balanceOfFractional(owner, nftIds[i]) < nftAmounts[i]) {
+                revert InvalidNftBalance(balanceOfFractional(owner, nftIds[i]));
             }
         }
 
@@ -249,8 +297,8 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
 
         // check that only full NFT can be transfered
         for (uint256 i = 0; i < ids.length; i++) {
-            if (amounts[i] != balanceOf(from, ids[i])) {
-                revert InvalidNftTransferAmount(amounts[i], balanceOf(from, ids[i]));
+            if (amounts[i] != balanceOfFractional(from, ids[i])) {
+                revert InvalidNftTransferAmount(amounts[i], balanceOfFractional(from, ids[i]));
             }
         }
 

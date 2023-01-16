@@ -175,7 +175,7 @@ contract DepositSwapIntegrationTest is Test {
         assertEq(depositMetadata.assets.length, 2, "assets length"); // check deposit
         assertEq(depositMetadata.assets[0], 2 ether, "assets 0");
         assertEq(depositMetadata.assets[1], 0.5 ether, "assets 1");
-        assertEq(smartVault.balanceOf(bob, nftId), NFT_MINTED_SHARES, "NFT - Bob");
+        assertEq(smartVault.balanceOfFractional(bob, nftId), NFT_MINTED_SHARES, "NFT - Bob");
     }
 
     function test_depositSwap_swapAndDeposit_shouldDoPartialSwapAndThenDeposit() public {
@@ -217,6 +217,6 @@ contract DepositSwapIntegrationTest is Test {
         assertEq(depositMetadata.assets.length, 2, "assets length"); // check deposit
         assertEq(depositMetadata.assets[0], 1.6 ether, "assets 0");
         assertEq(depositMetadata.assets[1], 0.4 ether, "assets 1");
-        assertEq(smartVault.balanceOf(bob, nftId), NFT_MINTED_SHARES, "NFT - Bob");
+        assertEq(smartVault.balanceOfFractional(bob, nftId), NFT_MINTED_SHARES, "NFT - Bob");
     }
 }

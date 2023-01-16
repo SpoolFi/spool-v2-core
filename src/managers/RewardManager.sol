@@ -10,6 +10,7 @@ import "../interfaces/IRewardManager.sol";
 import "../interfaces/ISmartVault.sol";
 import "../utils/MathUtils.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
+import "../interfaces/ISmartVaultManager.sol";
 
 contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllable {
     using SafeERC20 for IERC20;
@@ -23,6 +24,9 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
     /// @notice Asset group registry
     IAssetGroupRegistry private _assetGroupRegistry;
 
+    /// @notice Smart vault balance viewer
+    ISmartVaultBalance private _smartVaultBalance;
+
     /// @notice Number of vault incentivized tokens
     mapping(address => uint8) public rewardTokensCount;
 
@@ -34,10 +38,13 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
 
     mapping(address => mapping(IERC20 => bool)) tokenBlacklist;
 
-    constructor(ISpoolAccessControl spoolAccessControl, IAssetGroupRegistry assetGroupRegistry_)
-        SpoolAccessControllable(spoolAccessControl)
-    {
+    constructor(
+        ISpoolAccessControl spoolAccessControl,
+        IAssetGroupRegistry assetGroupRegistry_,
+        ISmartVaultBalance smartVaultBalance_
+    ) SpoolAccessControllable(spoolAccessControl) {
         _assetGroupRegistry = assetGroupRegistry_;
+        _smartVaultBalance = smartVaultBalance_;
     }
 
     /* ========== VIEWS ========== */
@@ -377,7 +384,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
     }
 
     function _userDeposits(address smartVault, address account) private view returns (uint256) {
-        return IERC20(smartVault).balanceOf(account);
+        return _smartVaultBalance.getUserSVTBalance(smartVault, account);
     }
 
     /* ========== MODIFIERS ========== */

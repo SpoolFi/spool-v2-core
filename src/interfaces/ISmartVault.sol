@@ -78,6 +78,16 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /**
+     * @notice Fractional balance of a NFT (0 - NFT_MINTED_SHARES)
+     */
+    function balanceOfFractional(address account, uint256 id) external view returns (uint256);
+
+    /**
+     * @notice Fractional balance of a NFT array (0 - NFT_MINTED_SHARES)
+     */
+    function balanceOfFractionalBatch(address account, uint256[] memory ids) external view returns (uint256[] memory);
+
+    /**
      * @notice Retrieves a list of active NFTs for User.
      */
     function activeUserNFTIds(address userAddress) external view returns (uint256[] memory nftIds);
@@ -117,8 +127,6 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
      * from.
      */
     function convertToAssets(uint256 shares) external view returns (uint256[] memory assets);
-
-    function balanceOfBatch(address account, uint256[] memory ids) external view returns (uint256[] memory balances);
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 

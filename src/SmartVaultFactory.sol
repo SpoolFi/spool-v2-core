@@ -12,6 +12,7 @@ import {RequestType} from "./interfaces/RequestType.sol";
 import {ISpoolAccessControl} from "./access/SpoolAccessControl.sol";
 import {ROLE_SMART_VAULT} from "./access/Roles.sol";
 import {SmartVault} from "./SmartVault.sol";
+import {ISmartVaultRegistry} from "./interfaces/ISmartVaultManager.sol";
 
 /* ========== STRUCTS ========== */
 
@@ -76,7 +77,7 @@ contract SmartVaultFactory is UpgradeableBeacon {
     /**
      * @notice Smart vault manager contract.
      */
-    ISmartVaultManager immutable _smartVaultManager;
+    ISmartVaultRegistry immutable _smartVaultRegistry;
 
     /**
      * @notice Asset group registry contract.
@@ -90,13 +91,13 @@ contract SmartVaultFactory is UpgradeableBeacon {
         ISpoolAccessControl accessControl_,
         IActionManager actionManager_,
         IGuardManager guardManager_,
-        ISmartVaultManager smartVaultManager_,
+        ISmartVaultRegistry smartVaultRegistry_,
         IAssetGroupRegistry assetGroupRegistry_
     ) UpgradeableBeacon(implementation) {
         _accessControl = accessControl_;
         _actionManager = actionManager_;
         _guardManager = guardManager_;
-        _smartVaultManager = smartVaultManager_;
+        _smartVaultRegistry = smartVaultRegistry_;
         _assetGroupRegistry = assetGroupRegistry_;
     }
 
@@ -219,7 +220,7 @@ contract SmartVaultFactory is UpgradeableBeacon {
         _actionManager.setActions(smartVaultAddress, specification.actions, specification.actionRequestTypes);
         _guardManager.setGuards(smartVaultAddress, specification.guards, specification.guardRequestTypes);
 
-        _smartVaultManager.registerSmartVault(
+        _smartVaultRegistry.registerSmartVault(
             smartVaultAddress,
             SmartVaultRegistrationForm({
                 assetGroupId: specification.assetGroupId,

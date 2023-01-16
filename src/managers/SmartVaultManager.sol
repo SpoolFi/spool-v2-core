@@ -166,7 +166,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256[] memory nftIDs = smartVault.activeUserNFTIds(userAddress);
         bytes[] memory metadata = smartVault.getMetadata(nftIDs);
 
-        uint256[] memory balances = smartVault.balanceOfBatch(userAddress, nftIDs);
+        uint256[] memory balances = smartVault.balanceOfFractionalBatch(userAddress, nftIDs);
 
         for (uint256 i; i < nftIDs.length; i++) {
             if (nftIDs[i] > MAXIMAL_DEPOSIT_ID) {

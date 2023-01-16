@@ -58,9 +58,9 @@ contract SmartVaultTest is Test {
         smartVault.safeTransferFrom(alice, bob, withdrawalNftId, NFT_MINTED_SHARES, "");
 
         assertEq(smartVault.balanceOf(alice, depositNftId), 0);
-        assertEq(smartVault.balanceOf(bob, depositNftId), NFT_MINTED_SHARES);
+        assertEq(smartVault.balanceOfFractional(bob, depositNftId), NFT_MINTED_SHARES);
         assertEq(smartVault.balanceOf(alice, withdrawalNftId), 0);
-        assertEq(smartVault.balanceOf(bob, withdrawalNftId), NFT_MINTED_SHARES);
+        assertEq(smartVault.balanceOfFractional(bob, withdrawalNftId), NFT_MINTED_SHARES);
     }
 
     function test_transferNft_shouldRevertWhenTransferingPartialBalance() public {

@@ -156,8 +156,10 @@ contract WithdrawalIntegrationTest is Test {
         // - withdrawal NFTs are minted
         assertEq(aliceWithdrawalNftId, 2 ** 255 + 1, "4");
         assertEq(bobWithdrawalNftId, 2 ** 255 + 2, "5");
-        assertEq(mySmartVault.balanceOf(alice, aliceWithdrawalNftId), NFT_MINTED_SHARES, "6");
-        assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), NFT_MINTED_SHARES, "7");
+        assertEq(mySmartVault.balanceOfFractional(alice, aliceWithdrawalNftId), NFT_MINTED_SHARES, "6.1");
+        assertEq(mySmartVault.balanceOf(alice, aliceWithdrawalNftId), 1, "6.2");
+        assertEq(mySmartVault.balanceOfFractional(bob, bobWithdrawalNftId), NFT_MINTED_SHARES, "7.1");
+        assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 1, "7.2");
 
         // flush
         smartVaultManager.flushSmartVault(address(mySmartVault));
@@ -216,8 +218,9 @@ contract WithdrawalIntegrationTest is Test {
         assertEq(tokenA.balanceOf(address(masterWallet)), 0, "25");
         assertEq(tokenB.balanceOf(address(masterWallet)), 0, "26");
         // - withdrawal NFTs are burned
-        assertEq(mySmartVault.balanceOf(alice, aliceWithdrawalNftId), 0, "27");
-        assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 0, "28");
+        assertEq(mySmartVault.balanceOfFractional(alice, aliceWithdrawalNftId), 0, "27");
+        assertEq(mySmartVault.balanceOfFractional(bob, bobWithdrawalNftId), 0, "28.1");
+        assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 0, "28.2");
     }
 
     function test_shouldBeAbleToWithdrawFast() public {

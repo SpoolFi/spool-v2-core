@@ -174,7 +174,7 @@ contract DepositIntegrationTest is Test {
         assertEq(tokenC.balanceOf(address(masterWallet)), 438.8 ether);
         // - deposit NFT was minted
         assertEq(aliceDepositNftId, 1);
-        assertEq(mySmartVault.balanceOf(alice, aliceDepositNftId), NFT_MINTED_SHARES);
+        assertEq(mySmartVault.balanceOfFractional(alice, aliceDepositNftId), NFT_MINTED_SHARES);
 
         // flush
         smartVaultManager.flushSmartVault(address(mySmartVault));
@@ -235,7 +235,7 @@ contract DepositIntegrationTest is Test {
         assertEq(mySmartVault.balanceOf(address(alice)), 357162800000000000000000000);
         assertEq(mySmartVault.balanceOf(address(mySmartVault)), 0);
         // - deposit NFT was burned
-        assertEq(mySmartVault.balanceOf(alice, aliceDepositNftId), 0);
+        assertEq(mySmartVault.balanceOfFractional(alice, aliceDepositNftId), 0);
     }
 
     function test_claimSmartVaultTokensPartially() public {
@@ -294,7 +294,7 @@ contract DepositIntegrationTest is Test {
         assertEq(mySmartVault.balanceOf(address(mySmartVault)), svtBalance / 2);
 
         // - deposit NFT was partially burned
-        assertEq(mySmartVault.balanceOf(alice, aliceDepositNftId), NFT_MINTED_SHARES / 2);
+        assertEq(mySmartVault.balanceOfFractional(alice, aliceDepositNftId), NFT_MINTED_SHARES / 2);
 
         // burn remaining of NFT
         smartVaultManager.claimSmartVaultTokens(address(mySmartVault), ids, amounts);
@@ -305,6 +305,6 @@ contract DepositIntegrationTest is Test {
         assertEq(mySmartVault.balanceOf(address(mySmartVault)), 0);
 
         // - deposit NFT was burned in full
-        assertEq(mySmartVault.balanceOf(alice, aliceDepositNftId), 0);
+        assertEq(mySmartVault.balanceOfFractional(alice, aliceDepositNftId), 0);
     }
 }

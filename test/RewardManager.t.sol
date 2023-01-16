@@ -13,6 +13,7 @@ import "../src/managers/AssetGroupRegistry.sol";
 import "../src/SmartVault.sol";
 import "../src/managers/GuardManager.sol";
 import "./libraries/Arrays.sol";
+import "./mocks/MockSmartVaultBalance.sol";
 
 contract RewardManagerTests is Test {
     SpoolAccessControl sac;
@@ -41,7 +42,7 @@ contract RewardManagerTests is Test {
         SmartVault smartVault_ = SmartVault(Clones.clone(smartVaultImplementation));
         smartVault_.initialize("SmartVault", assetGroupId);
 
-        rewardManager = new RewardManager(sac, assetGroupRegistry);
+        rewardManager = new RewardManager(sac, assetGroupRegistry, new MockSmartVaultBalance());
         // NOTE: can use days keyword
         rewardDuration = SECONDS_IN_DAY * 10;
         smartVault = address(smartVault_);
