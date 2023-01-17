@@ -36,14 +36,13 @@ contract AssetGroupRegistryTest is Test {
         accessControl.initialize();
         vm.stopPrank();
 
-        assetGroupRegistry = new AssetGroupRegistry(Arrays.toArray(address(tokenA), address(tokenB)), accessControl);
+        assetGroupRegistry = new AssetGroupRegistry(accessControl);
+        assetGroupRegistry.initialize(Arrays.toArray(address(tokenA), address(tokenB)));
     }
 
     function test_constructor_shouldSetAllowedTokens() public {
-        AssetGroupRegistry anotherAssetGroupRegistry = new AssetGroupRegistry(
-            Arrays.toArray(address(tokenA), address(tokenB)),
-            accessControl
-        );
+        AssetGroupRegistry anotherAssetGroupRegistry = new AssetGroupRegistry(accessControl);
+        anotherAssetGroupRegistry.initialize(Arrays.toArray(address(tokenA), address(tokenB)));
 
         assertTrue(anotherAssetGroupRegistry.isTokenAllowed(address(tokenA)));
         assertTrue(anotherAssetGroupRegistry.isTokenAllowed(address(tokenB)));
@@ -51,15 +50,12 @@ contract AssetGroupRegistryTest is Test {
     }
 
     function test_constructor_shouldEmitTokenAllowedEvents() public {
+        AssetGroupRegistry registry = new AssetGroupRegistry(accessControl);
         vm.expectEmit(true, true, true, true);
         emit TokenAllowed(address(tokenA));
         vm.expectEmit(true, true, true, true);
         emit TokenAllowed(address(tokenB));
-
-        new AssetGroupRegistry(
-            Arrays.toArray(address(tokenA), address(tokenB)),
-            accessControl
-        );
+        registry.initialize(Arrays.toArray(address(tokenA), address(tokenB)));
     }
 
     function test_allowToken_shouldAllowToken() public {

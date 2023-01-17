@@ -57,7 +57,8 @@ contract dhwUniswapV2 is Test {
         address[] memory assetGroup = new address[](2);
         assetGroup[0] = address(tokenA);
         assetGroup[1] = address(tokenB);
-        assetGroupRegistry = new AssetGroupRegistry(assetGroup, accessControl);
+        assetGroupRegistry = new AssetGroupRegistry(accessControl);
+        assetGroupRegistry.initialize(assetGroup);
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
         MockPriceFeedManager priceFeedManager = new MockPriceFeedManager();

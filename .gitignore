@@ -2,5 +2,7 @@
 /cache/**
 /.idea/**
 /ffline/**
+/broadcast/*/31337/**
+/.env
 /lcov.info
 /lcov/**

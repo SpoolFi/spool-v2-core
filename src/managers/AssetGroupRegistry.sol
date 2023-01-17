@@ -7,7 +7,7 @@ import "../access/SpoolAccessControl.sol";
 
 /* ========== CONTRACTS ========== */
 
-contract AssetGroupRegistry is IAssetGroupRegistry, SpoolAccessControllable {
+contract AssetGroupRegistry is IAssetGroupRegistry, SpoolAccessControllable, Initializable {
     /* ========== STATE VARIABLES ========== */
 
     /**
@@ -29,9 +29,9 @@ contract AssetGroupRegistry is IAssetGroupRegistry, SpoolAccessControllable {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address[] memory allowedTokens_, ISpoolAccessControl accessControl_)
-        SpoolAccessControllable(accessControl_)
-    {
+    constructor(ISpoolAccessControl accessControl_) SpoolAccessControllable(accessControl_) {}
+
+    function initialize(address[] memory allowedTokens_) external initializer {
         for (uint256 i = 0; i < allowedTokens_.length; i++) {
             _allowToken(allowedTokens_[i]);
         }

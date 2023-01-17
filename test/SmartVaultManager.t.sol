@@ -26,7 +26,7 @@ contract SmartVaultManagerTest is Test {
     SpoolAccessControl accessControl;
     IStrategyRegistry strategyRegistry;
     MockPriceFeedManager priceFeedManager;
-    IAssetGroupRegistry assetGroupRegistry;
+    AssetGroupRegistry assetGroupRegistry;
     IRiskManager riskManager;
 
     address riskProvider = address(10);
@@ -43,7 +43,8 @@ contract SmartVaultManagerTest is Test {
         accessControl = new SpoolAccessControl();
         accessControl.initialize();
         masterWallet = new MasterWallet(accessControl);
-        assetGroupRegistry = new AssetGroupRegistry(Arrays.toArray(address(token1), address(token2)), accessControl);
+        assetGroupRegistry = new AssetGroupRegistry(accessControl);
+        assetGroupRegistry.initialize(Arrays.toArray(address(token1), address(token2)));
         priceFeedManager = new MockPriceFeedManager();
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
         IGuardManager guardManager = new GuardManager(accessControl);

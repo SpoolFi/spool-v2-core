@@ -18,7 +18,7 @@ import "./mocks/MockSmartVaultBalance.sol";
 contract RewardManagerTests is Test {
     SpoolAccessControl sac;
     RewardManager rewardManager;
-    IAssetGroupRegistry assetGroupRegistry;
+    AssetGroupRegistry assetGroupRegistry;
     uint256 rewardAmount = 100000 ether;
     uint32 rewardDuration;
     address vaultOwner = address(100);
@@ -34,7 +34,8 @@ contract RewardManagerTests is Test {
 
         sac = new SpoolAccessControl();
         sac.initialize();
-        assetGroupRegistry = new AssetGroupRegistry(Arrays.toArray(address(underlying)), sac);
+        assetGroupRegistry = new AssetGroupRegistry(sac);
+        assetGroupRegistry.initialize(Arrays.toArray(address(underlying)));
 
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(underlying)));
 

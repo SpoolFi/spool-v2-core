@@ -50,7 +50,8 @@ contract AllowlistGuardIntegrationTest is Test {
         accessControl = new SpoolAccessControl();
         accessControl.initialize();
         ActionManager actionManager = new ActionManager(accessControl);
-        AssetGroupRegistry assetGroupRegistry = new AssetGroupRegistry(Arrays.toArray(address(token)), accessControl);
+        AssetGroupRegistry assetGroupRegistry = new AssetGroupRegistry(accessControl);
+        assetGroupRegistry.initialize(Arrays.toArray(address(token)));
         guardManager = new GuardManager(accessControl);
         MasterWallet masterWallet = new MasterWallet(accessControl);
         IUsdPriceFeedManager priceFeedManager = new MockPriceFeedManager();
