@@ -130,19 +130,60 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
+    /**
+     * @notice Mint ERC20 SVTs for given receiver address
+     * @param receiver Address to mint to
+     * @param vaultShares Amount of tokens to mint
+     */
     function mint(address receiver, uint256 vaultShares) external;
 
+    /**
+     * @notice Burn SVTs and release strategy shares back to strategies
+     * @param owner Address for which to burn SVTs
+     * @param vaultShares Amount of SVTs to burn
+     * @param strategies Strategies to which release the shares to
+     * @param shares Amount of strategy shares to release
+     */
     function burn(address owner, uint256 vaultShares, address[] memory strategies, uint256[] memory shares) external;
 
+    /**
+     * @notice Mint a new Withdrawal NFT
+     * @dev Supply of minted NFT is NFT_MINTED_SHARES (for partial burning)
+     * @param receiver Address that will receive the NFT
+     * @param metadata Metadata to store for minted NFT
+     */
     function mintWithdrawalNFT(address receiver, WithdrawalMetadata memory metadata)
         external
         returns (uint256 receipt);
 
+    /**
+     * @notice Burn NFTs and return their metadata
+     * @param owner Owner of NFTs
+     * @param nftIds NFTs to burn
+     * @param nftAmounts NFT shares to burn (partial burn)
+     */
     function burnNFTs(address owner, uint256[] calldata nftIds, uint256[] calldata nftAmounts)
         external
         returns (bytes[] memory metadata);
 
+    /**
+     * @notice Mint a new Deposit NFT
+     * @dev Supply of minted NFT is NFT_MINTED_SHARES (for partial burning)
+     * @param receiver Address that will receive the NFT
+     * @param metadata Metadata to store for minted NFT
+     */
     function mintDepositNFT(address receiver, DepositMetadata memory metadata) external returns (uint256 receipt);
+
+    /**
+     * @notice Transfers smart vault tokens.
+     * @dev Requirements:
+     * - spender must have approprite allowance set
+     * @param from Address from which tokens will be transferred.
+     * @param to Address to which tokens will be transferred.
+     * @param amount Amount of tokens to transfer.
+     * @param spender Executor of transfer.
+     */
+    function transferFromSpender(address from, address to, uint256 amount, address spender) external returns (bool);
 
     /**
      * @notice Transfers unclaimed shares to claimer.

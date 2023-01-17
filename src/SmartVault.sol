@@ -165,22 +165,10 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
-    /**
-     * @notice Mint ERC20 SVTs for given receiver address
-     * @param receiver Address to mint to
-     * @param vaultShares Amount of tokens to mint
-     */
     function mint(address receiver, uint256 vaultShares) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
         _mint(receiver, vaultShares);
     }
 
-    /**
-     * @notice Burn SVTs and release strategy shares back to strategies
-     * @param owner Address for which to burn SVTs
-     * @param vaultShares Amount of SVTs to burn
-     * @param strategies Strategies to which release the shares to
-     * @param shares Amount of strategy shares to release
-     */
     function burn(address owner, uint256 vaultShares, address[] memory strategies, uint256[] memory shares)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
@@ -193,12 +181,6 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         }
     }
 
-    /**
-     * @notice Burn NFTs and return their metadata
-     * @param owner Owner of NFTs
-     * @param nftIds NFTs to burn
-     * @param nftAmounts NFT shares to burn (partial burn)
-     */
     function burnNFTs(address owner, uint256[] calldata nftIds, uint256[] calldata nftAmounts)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
@@ -214,21 +196,10 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         return getMetadata(nftIds);
     }
 
-    /**
-     * @notice Claim SVTs
-     * @param claimer Address to receive SVTs
-     * @param amount Amount of SVTs to receive
-     */
     function claimShares(address claimer, uint256 amount) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
         _transfer(address(this), claimer, amount);
     }
 
-    /**
-     * @notice Mint a new Deposit NFT
-     * @dev Supply of minted NFT is NFT_MINTED_SHARES (for partial burning)
-     * @param receiver Address that will receive the NFT
-     * @param metadata Metadata to store for minted NFT
-     */
     function mintDepositNFT(address receiver, DepositMetadata memory metadata)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
@@ -244,12 +215,6 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         return _lastDepositId;
     }
 
-    /**
-     * @notice Mint a new Withdrawal NFT
-     * @dev Supply of minted NFT is NFT_MINTED_SHARES (for partial burning)
-     * @param receiver Address that will receive the NFT
-     * @param metadata Metadata to store for minted NFT
-     */
     function mintWithdrawalNFT(address receiver, WithdrawalMetadata memory metadata)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
@@ -265,11 +230,23 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         return _lastWithdrawalId;
     }
 
+    function transferFromSpender(address from, address to, uint256 amount, address spender)
+        external
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+        returns (bool)
+    {
+        if (from != spender) {
+            _spendAllowance(from, spender, amount);
+        }
+        _transfer(from, to, amount);
+        return true;
+    }
+
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal view override {
-        // mint / burn
-        if (from == address(0) || to == address(0)) {
+        // mint / burn / redeem
+        if (from == address(0) || to == address(0) || to == address(this)) {
             return;
         }
 

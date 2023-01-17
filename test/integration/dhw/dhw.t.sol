@@ -197,7 +197,6 @@ contract DhwTest is Test {
         console2.log("aliceShares Before:", aliceShares);
 
         vm.prank(alice);
-        mySmartVault.approve(address(smartVaultManager), aliceShares);
         uint256 aliceWithdrawalNftId = smartVaultManager.redeem(address(mySmartVault), aliceShares, alice, alice);
 
         console2.log("flushSmartVault");

@@ -627,7 +627,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _withdrawnVaultShares[smartVaultAddress][flushIndex] += vaultShares;
 
         // transfer vault shares back to smart vault
-        smartVault.transferFrom(owner, smartVaultAddress, vaultShares);
+        smartVault.transferFromSpender(owner, smartVaultAddress, vaultShares, msg.sender);
         return smartVault.mintWithdrawalNFT(receiver, WithdrawalMetadata(vaultShares, flushIndex));
     }
 

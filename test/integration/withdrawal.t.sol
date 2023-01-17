@@ -142,11 +142,9 @@ contract WithdrawalIntegrationTest is Test {
 
         // request withdrawal
         vm.prank(alice);
-        mySmartVault.approve(address(smartVaultManager), 4_000_000);
         uint256 aliceWithdrawalNftId = smartVaultManager.redeem(address(mySmartVault), 3_000_000, alice, alice);
 
         vm.prank(bob);
-        mySmartVault.approve(address(smartVaultManager), 1_000_000);
         uint256 bobWithdrawalNftId = smartVaultManager.redeem(address(mySmartVault), 200_000, bob, bob);
 
         // check state
@@ -237,7 +235,6 @@ contract WithdrawalIntegrationTest is Test {
 
         // withdraw fast
         vm.startPrank(alice);
-        mySmartVault.approve(address(smartVaultManager), 4_000_000);
         uint256[] memory withdrawnAssets = smartVaultManager.redeemFast(address(mySmartVault), 3_000_000);
 
         // check return

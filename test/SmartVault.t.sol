@@ -10,7 +10,7 @@ import {
     WithdrawalMetadata,
     NFT_MINTED_SHARES
 } from "../src/interfaces/ISmartVault.sol";
-import {SpoolAccessControl} from "../src/access/SpoolAccessControl.sol";
+import {SpoolAccessControl, MissingRole} from "../src/access/SpoolAccessControl.sol";
 import {ROLE_SMART_VAULT_MANAGER} from "../src/access/Roles.sol";
 import {SmartVault} from "../src/SmartVault.sol";
 
@@ -101,6 +101,81 @@ contract SmartVaultTest is Test {
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
         vm.prank(alice);
         smartVault.safeTransferFrom(alice, bob, withdrawalNftId, NFT_MINTED_SHARES, "");
+    }
+
+    function test_transferFromSpender_shouldTransferWhenFromEqualsSpender() public {
+        // give Alice SVTs
+        deal(address(smartVault), alice, 1_000_000, true);
+
+        // Alice transfers her tokens to Bob
+        vm.prank(smartVaultManager);
+        smartVault.transferFromSpender(alice, bob, 1_000_000, alice);
+
+        assertEq(smartVault.balanceOf(alice), 0);
+        assertEq(smartVault.balanceOf(bob), 1_000_000);
+    }
+
+    function test_transferFromSpender_shouldTransferWhenAllowanceIsSetForSpender() public {
+        // give Alice SVTs
+        deal(address(smartVault), alice, 1_000_000, true);
+
+        // Alice approves Bob to spend her tokens
+        vm.prank(alice);
+        smartVault.approve(bob, 1_000_000);
+
+        // Bob transfers Alices tokens to Bob
+        vm.prank(smartVaultManager);
+        smartVault.transferFromSpender(alice, bob, 1_000_000, bob);
+
+        assertEq(smartVault.balanceOf(alice), 0);
+        assertEq(smartVault.balanceOf(bob), 1_000_000);
+        assertEq(smartVault.allowance(alice, bob), 0);
+    }
+
+    function test_transferFromSpender_shouldRevertWhenNotCalledBySmartVaultManager() public {
+        // give Alice SVTs
+        deal(address(smartVault), alice, 1_000_000, true);
+
+        // Alice tries transfers her tokens to Bob herself
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SMART_VAULT_MANAGER, alice));
+        vm.prank(alice);
+        smartVault.transferFromSpender(alice, bob, 1_000_000, alice);
+    }
+
+    function test_transferFromSpender_shouldRevertWhenAllowanceIsNotSetForSpender() public {
+        // give Alice SVTs
+        deal(address(smartVault), alice, 1_000_000, true);
+
+        // Bob transfers Alices tokens to Bob without approval
+        vm.expectRevert("ERC20: insufficient allowance");
+        vm.prank(smartVaultManager);
+        smartVault.transferFromSpender(alice, bob, 1_000_000, bob);
+    }
+
+    function test_transferFromSpender_shouldRevertWhenGuardsFail() public {
+        // give Alice SVTs
+        deal(address(smartVault), alice, 1_000_000, true);
+
+        guardManager.setShouldRevert(true);
+
+        // Alice tries to transfer her tokens to Bob
+        vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
+        vm.prank(smartVaultManager);
+        smartVault.transferFromSpender(alice, bob, 1_000_000, alice);
+    }
+
+    function test_transferFromSpender_shouldNotRevertWhenGuardsFailWhenToEqualsSmartVault() public {
+        // give Alice SVTs
+        deal(address(smartVault), alice, 1_000_000, true);
+
+        guardManager.setShouldRevert(true);
+
+        // Alice transfers her tokens to SmartVault as part of redeemal
+        vm.prank(smartVaultManager);
+        smartVault.transferFromSpender(alice, address(smartVault), 1_000_000, alice);
+
+        assertEq(smartVault.balanceOf(alice), 0);
+        assertEq(smartVault.balanceOf(address(smartVault)), 1_000_000);
     }
 }
 
