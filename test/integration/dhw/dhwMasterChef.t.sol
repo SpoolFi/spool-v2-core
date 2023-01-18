@@ -217,9 +217,12 @@ contract DhwMasterChefTest is Test {
 
         {
             vm.prank(alice);
-            uint256 aliceWithdrawalNftId = smartVaultManager.redeem(address(mySmartVault), aliceShares, alice, alice);
+            uint256 aliceWithdrawalNftId = smartVaultManager.redeem(
+                address(mySmartVault), aliceShares, alice, alice, new uint256[](0), new uint256[](0)
+            );
             vm.prank(bob);
-            uint256 bobWithdrawalNftId = smartVaultManager.redeem(address(mySmartVault), bobShares, bob, bob);
+            uint256 bobWithdrawalNftId =
+                smartVaultManager.redeem(address(mySmartVault), bobShares, bob, bob, new uint256[](0), new uint256[](0));
 
             console2.log("flushSmartVault");
             smartVaultManager.flushSmartVault(address(mySmartVault));

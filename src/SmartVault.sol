@@ -253,8 +253,14 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         uint256[] memory assets = new uint256[](1);
         assets[0] = amount;
 
-        RequestContext memory context =
-            RequestContext(to, msg.sender, from, RequestType.TransferSVTs, assets, new address[](0));
+        RequestContext memory context = RequestContext({
+            receiver: to,
+            executor: msg.sender,
+            owner: from,
+            requestType: RequestType.TransferSVTs,
+            assets: assets,
+            tokens: new address[](0)
+        });
         _guardManager.runGuards(address(this), context);
     }
 
@@ -282,8 +288,14 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
         // NOTE:
         // - here we are passing ids into the request context instead of amounts
         // - here we passing empty array as tokens
-        RequestContext memory context =
-            RequestContext(to, operator, from, RequestType.TransferNFT, ids, new address[](0));
+        RequestContext memory context = RequestContext({
+            receiver: to,
+            executor: operator,
+            owner: from,
+            requestType: RequestType.TransferNFT,
+            assets: ids,
+            tokens: new address[](0)
+        });
         _guardManager.runGuards(address(this), context);
     }
 

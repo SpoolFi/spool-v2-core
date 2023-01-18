@@ -126,7 +126,9 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
      * @param shares Amount of shares to redeem.
      * @return withdrawnAssets Amount of assets withdrawn.
      */
-    function redeemFast(address smartVault, uint256 shares) external returns (uint256[] memory withdrawnAssets);
+    function redeemFast(address smartVault, uint256 shares, uint256[] calldata nftIds, uint256[] calldata nftAmounts)
+        external
+        returns (uint256[] memory withdrawnAssets);
 
     /**
      * @notice Claims withdrawal of assets by burning withdrawal NFT.
@@ -172,9 +174,14 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
      * NOTE: some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
      * Those methods should be performed separately.
      */
-    function redeem(address smartVault, uint256 shares, address receiver, address owner)
-        external
-        returns (uint256 receipt);
+    function redeem(
+        address smartVault,
+        uint256 shares,
+        address receiver,
+        address owner,
+        uint256[] calldata nftIds,
+        uint256[] calldata nftAmounts
+    ) external returns (uint256 receipt);
 
     /**
      * @dev Mints shares Vault shares to receiver by depositing exactly amount of underlying tokens.

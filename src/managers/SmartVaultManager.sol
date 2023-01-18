@@ -274,47 +274,41 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== DEPOSIT/WITHDRAW ========== */
 
-    function redeem(address smartVault, uint256 shares, address receiver, address owner)
-        external
-        onlyRegisteredSmartVault(smartVault)
-        returns (uint256)
-    {
-        return _redeemShares(smartVault, shares, receiver, owner);
+    function redeem(
+        address smartVault,
+        uint256 shares,
+        address receiver,
+        address owner,
+        uint256[] calldata nftIds,
+        uint256[] calldata nftAmounts
+    ) external onlyRegisteredSmartVault(smartVault) returns (uint256) {
+        return _redeemShares(smartVault, shares, receiver, owner, nftIds, nftAmounts);
     }
 
-    function redeemFast(address smartVault, uint256 shares)
-        external
-        onlyRegisteredSmartVault(smartVault)
-        returns (uint256[] memory)
-    {
-        if (ISmartVault(smartVault).balanceOf(msg.sender) < shares) {
-            revert InsufficientBalance(ISmartVault(smartVault).balanceOf(msg.sender), shares);
-        }
-
-        {
-            // run guards
-            uint256[] memory assets = new uint256[](1);
-            assets[0] = shares;
-            address[] memory tokens = new address[](1);
-            tokens[0] = smartVault;
-            _runGuards(smartVault, msg.sender, msg.sender, msg.sender, assets, tokens, RequestType.Withdrawal);
-        }
+    function redeemFast(
+        address smartVaultAddress,
+        uint256 shares,
+        uint256[] calldata nftIds,
+        uint256[] calldata nftAmounts
+    ) external onlyRegisteredSmartVault(smartVaultAddress) returns (uint256[] memory) {
+        ISmartVault smartVault = ISmartVault(smartVaultAddress);
+        _validateRedeem(smartVault, msg.sender, msg.sender, msg.sender, nftIds, nftAmounts, shares);
 
         // figure out how much to redeem from each strategy
-        address[] memory strategies_ = _smartVaultStrategies[smartVault];
+        address[] memory strategies_ = _smartVaultStrategies[smartVaultAddress];
         uint256[] memory strategySharesToRedeem = new uint256[](strategies_.length);
         {
-            uint256 totalVaultShares = ISmartVault(smartVault).totalSupply();
+            uint256 totalVaultShares = smartVault.totalSupply();
             for (uint256 i = 0; i < strategies_.length; i++) {
-                uint256 strategyShares = IStrategy(strategies_[i]).balanceOf(smartVault);
+                uint256 strategyShares = IStrategy(strategies_[i]).balanceOf(smartVaultAddress);
 
                 strategySharesToRedeem[i] = strategyShares * shares / totalVaultShares;
             }
         }
 
         // redeem from strategies and burn
-        ISmartVault(smartVault).burn(msg.sender, shares, strategies_, strategySharesToRedeem);
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
+        smartVault.burn(msg.sender, shares, strategies_, strategySharesToRedeem);
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVaultAddress]);
         uint256[] memory assetsWithdrawn = _strategyRegistry.redeemFast(strategies_, strategySharesToRedeem, assetGroup);
 
         // transfer assets to the redeemer
@@ -354,15 +348,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         onlyRegisteredSmartVault(smartVault)
         returns (uint256)
     {
+        // NOTE:
+        // - here we are passing ids into the request context instead of amounts
+        // - here we passing empty array as tokens
+        _runGuards(smartVault, msg.sender, msg.sender, msg.sender, nftIDs, new address[](0), RequestType.BurnNFT);
+
         ISmartVault vault = ISmartVault(smartVault);
         bytes[] memory metadata = vault.burnNFTs(msg.sender, nftIDs, nftAmounts);
-
-        {
-            // NOTE:
-            // - here we are passing ids into the request context instead of amounts
-            // - here we passing empty array as tokens
-            _runGuards(smartVault, msg.sender, msg.sender, msg.sender, nftIDs, new address[](0), RequestType.BurnNFT);
-        }
 
         uint256 claimedVaultTokens = 0;
         for (uint256 i = 0; i < nftIDs.length; i++) {
@@ -606,21 +598,16 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return ISmartVault(smartVault).mintDepositNFT(receiver, metadata);
     }
 
-    function _redeemShares(address smartVaultAddress, uint256 vaultShares, address receiver, address owner)
-        internal
-        returns (uint256)
-    {
+    function _redeemShares(
+        address smartVaultAddress,
+        uint256 vaultShares,
+        address receiver,
+        address owner,
+        uint256[] calldata nftIds,
+        uint256[] calldata nftAmounts
+    ) internal returns (uint256) {
         ISmartVault smartVault = ISmartVault(smartVaultAddress);
-        if (smartVault.balanceOf(owner) < vaultShares) {
-            revert InsufficientBalance(smartVault.balanceOf(msg.sender), vaultShares);
-        }
-
-        // run guards
-        uint256[] memory assets = new uint256[](1);
-        assets[0] = vaultShares;
-        address[] memory tokens = new address[](1);
-        tokens[0] = smartVaultAddress;
-        _runGuards(smartVaultAddress, msg.sender, receiver, owner, assets, tokens, RequestType.Withdrawal);
+        _validateRedeem(smartVault, owner, msg.sender, receiver, nftIds, nftAmounts, vaultShares);
 
         // add withdrawal to be flushed
         uint256 flushIndex = _flushIndexes[smartVaultAddress];
@@ -629,6 +616,35 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         // transfer vault shares back to smart vault
         smartVault.transferFromSpender(owner, smartVaultAddress, vaultShares, msg.sender);
         return smartVault.mintWithdrawalNFT(receiver, WithdrawalMetadata(vaultShares, flushIndex));
+    }
+
+    function _validateRedeem(
+        ISmartVault smartVault,
+        address owner,
+        address executor,
+        address receiver,
+        uint256[] memory nftIds,
+        uint256[] memory nftAmounts,
+        uint256 shares
+    ) private {
+        for (uint256 i = 0; i < nftIds.length; i++) {
+            if (nftIds[i] > MAXIMAL_DEPOSIT_ID) {
+                revert InvalidDepositNftId(nftIds[i]);
+            }
+        }
+
+        _runGuards(address(smartVault), owner, owner, owner, nftIds, new address[](0), RequestType.BurnNFT);
+        smartVault.burnNFTs(owner, nftIds, nftAmounts);
+
+        if (smartVault.balanceOf(owner) < shares) {
+            revert InsufficientBalance(smartVault.balanceOf(owner), shares);
+        }
+
+        uint256[] memory assets = new uint256[](1);
+        assets[0] = shares;
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(smartVault);
+        _runGuards(address(smartVault), executor, receiver, owner, assets, tokens, RequestType.Withdrawal);
     }
 
     function _calculateWithdrawal(address smartVault, WithdrawalMetadata memory data, uint256 assetGroupLength)
