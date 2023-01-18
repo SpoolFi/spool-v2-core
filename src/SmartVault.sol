@@ -274,8 +274,8 @@ contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControll
 
         // check that only full NFT can be transfered
         for (uint256 i = 0; i < ids.length; i++) {
-            if (amounts[i] != balanceOfFractional(from, ids[i])) {
-                revert InvalidNftTransferAmount(amounts[i], balanceOfFractional(from, ids[i]));
+            if (amounts[i] != NFT_MINTED_SHARES) {
+                revert InvalidNftTransferAmount(amounts[i]);
             }
         }
 
