@@ -3,6 +3,7 @@ pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
 import "../src/interfaces/RequestType.sol";
+import "../src/DepositSwap.sol";
 import "../src/SmartVaultFactory.sol";
 import "../src/Swapper.sol";
 import "./libraries/Arrays.sol";
@@ -12,7 +13,7 @@ import "./mocks/MockPriceFeedManager.sol";
 import "./mocks/MockStrategy.sol";
 import "./mocks/MockToken.sol";
 import "./mocks/TestFixture.sol";
-import "../src/DepositSwap.sol";
+import "./mocks/MockWeth.sol";
 
 contract DepositSwapIntegrationTest is TestFixture {
     address private alice;
@@ -22,7 +23,11 @@ contract DepositSwapIntegrationTest is TestFixture {
     MockToken private tokenB;
     MockToken private tokenC;
 
+    IWETH9 private weth;
+
     Swapper private swapper;
+
+    DepositSwap depositSwap;
 
     function setUp() public {
         setUpBase();
@@ -40,6 +45,8 @@ contract DepositSwapIntegrationTest is TestFixture {
         assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(tokenA), address(tokenB), address(tokenC)));
 
         swapper = new Swapper();
+
+        weth = IWETH9(address(new WETH9()));
 
         uint256 assetGroupId;
         {
@@ -108,7 +115,7 @@ contract DepositSwapIntegrationTest is TestFixture {
         priceFeedManager.setExchangeRate(address(tokenB), 1 * USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenC), 2 * USD_DECIMALS_MULTIPLIER);
 
-        DepositSwap depositSwap = new DepositSwap(assetGroupRegistry, smartVaultManager, swapper);
+        depositSwap = new DepositSwap(weth, assetGroupRegistry, smartVaultManager, swapper);
 
         SwapInfo[] memory swapInfo = new SwapInfo[](2);
         swapInfo[0] = SwapInfo(
@@ -156,7 +163,7 @@ contract DepositSwapIntegrationTest is TestFixture {
         priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenB), 1 * USD_DECIMALS_MULTIPLIER);
 
-        DepositSwap depositSwap = new DepositSwap(assetGroupRegistry, smartVaultManager, swapper);
+        depositSwap = new DepositSwap(weth, assetGroupRegistry, smartVaultManager, swapper);
 
         SwapInfo[] memory swapInfo = new SwapInfo[](1);
         swapInfo[0] = SwapInfo(
@@ -186,5 +193,88 @@ contract DepositSwapIntegrationTest is TestFixture {
         assertEq(depositMetadata.assets[0], 1.6 ether, "assets 0");
         assertEq(depositMetadata.assets[1], 0.4 ether, "assets 1");
         assertEq(smartVault.balanceOfFractional(bob, nftId), NFT_MINTED_SHARES, "NFT - Bob");
+    }
+
+    function test_depositSwap_swapAndDeposit_shouldWrapEthSwapItAndThenDeposit() public {
+        vm.deal(alice, 3 ether);
+        vm.prank(alice);
+        weth.deposit{value: 1 ether}(); // Alice wraps 1 ether
+
+        MockExchange exchangeWethA = new MockExchange(IERC20(address(weth)), tokenA, priceFeedManager);
+        tokenA.mint(address(exchangeWethA), 1000 ether);
+        MockExchange exchangeWethB = new MockExchange(IERC20(address(weth)), tokenB, priceFeedManager);
+        tokenB.mint(address(exchangeWethB), 1000 ether);
+
+        priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
+        priceFeedManager.setExchangeRate(address(tokenB), 1 * USD_DECIMALS_MULTIPLIER);
+        priceFeedManager.setExchangeRate(address(weth), 1 * USD_DECIMALS_MULTIPLIER);
+
+        depositSwap = new DepositSwap(weth, assetGroupRegistry, smartVaultManager, swapper);
+
+        SwapInfo[] memory swapInfo = new SwapInfo[](2);
+        swapInfo[0] = SwapInfo(
+            address(exchangeWethA),
+            address(weth),
+            2 ether,
+            abi.encodeWithSelector(exchangeWethA.swap.selector, address(weth), 2 ether, address(depositSwap))
+        );
+        swapInfo[1] = SwapInfo(
+            address(exchangeWethB),
+            address(weth),
+            0.5 ether,
+            abi.encodeWithSelector(exchangeWethB.swap.selector, address(weth), 0.5 ether, address(depositSwap))
+        );
+
+        vm.startPrank(alice);
+        IERC20(address(weth)).approve(address(depositSwap), 1 ether);
+
+        uint256 nftId = depositSwap.swapAndDeposit{value: 2 ether}(
+            Arrays.toArray(address(weth)), Arrays.toArray(1 ether), swapInfo, address(smartVault), bob
+        ); // Alice sends in 2 ether and 1 wrapped ether
+        vm.stopPrank();
+
+        assertEq(nftId, 1, "NFT ID"); // deposit is made
+        assertEq(tokenA.balanceOf(address(masterWallet)), 2 ether, "Token A - MasterWallet"); // swapped
+        assertEq(tokenB.balanceOf(address(masterWallet)), 0.5 ether, "Token B - MasterWallet"); // swapped
+        assertEq(IERC20(address(weth)).balanceOf(alice), 0.5 ether, "WETH - Alice"); // unswapped
+
+        DepositMetadata memory depositMetadata =
+            abi.decode(smartVault.getMetadata(Arrays.toArray(nftId))[0], (DepositMetadata));
+
+        assertEq(depositMetadata.assets.length, 2, "assets length"); // check deposit
+        assertEq(depositMetadata.assets[0], 2 ether, "assets 0");
+        assertEq(depositMetadata.assets[1], 0.5 ether, "assets 1");
+        assertEq(smartVault.balanceOfFractional(bob, nftId), NFT_MINTED_SHARES, "NFT - Bob");
+    }
+
+    function test_depositSwap_swapAndDeposit_shouldWrapAndReturnItEvenWhenNotInInTokens() public {
+        vm.deal(alice, 2 ether);
+        tokenA.mint(alice, 2 ether);
+        tokenB.mint(alice, 0.5 ether);
+
+        priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
+        priceFeedManager.setExchangeRate(address(tokenB), 1 * USD_DECIMALS_MULTIPLIER);
+
+        depositSwap = new DepositSwap(weth, assetGroupRegistry, smartVaultManager, swapper);
+
+        SwapInfo[] memory swapInfo = new SwapInfo[](0);
+
+        vm.startPrank(alice);
+        IERC20(address(tokenA)).approve(address(depositSwap), 2 ether);
+        IERC20(address(tokenB)).approve(address(depositSwap), 0.5 ether);
+
+        uint256 nftId = depositSwap.swapAndDeposit{value: 2 ether}(
+            Arrays.toArray(address(tokenA), address(tokenB)),
+            Arrays.toArray(2 ether, 0.5 ether),
+            swapInfo,
+            address(smartVault),
+            bob
+        ); // Alice sends in 2 ether but it is not used
+        vm.stopPrank();
+
+        assertEq(nftId, 1, "NFT ID"); // deposit is made
+        assertEq(tokenA.balanceOf(address(masterWallet)), 2 ether, "Token A - MasterWallet"); // deposited
+        assertEq(tokenB.balanceOf(address(masterWallet)), 0.5 ether, "Token B - MasterWallet"); // deposited
+        assertEq(IERC20(address(weth)).balanceOf(alice), 2 ether, "WETH - Alice"); // returned
     }
 }

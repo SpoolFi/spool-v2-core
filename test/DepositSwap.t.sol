@@ -9,10 +9,15 @@ import "../src/interfaces/ISwapper.sol";
 import "./libraries/Arrays.sol";
 
 contract DepositSwapTest is Test {
-    function setUp() public {}
+    IWETH9 weth;
+
+    function setUp() public {
+        weth = IWETH9(address(0x1));
+    }
 
     function test_swapAndDeposit_shouldRevertWhenArraysMissmatch() public {
         DepositSwap depositSwap = new DepositSwap(
+            weth,
             IAssetGroupRegistry(address(0x1)),
             ISmartVaultManager(address(0x2)),
             ISwapper(address(0x3))

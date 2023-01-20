@@ -7,6 +7,9 @@ interface IDepositSwap {
     /**
      * @notice Swaps tokens input tokens based on provided swap info and
      * deposits swapped tokens into the smart vault.
+     *
+     * When sent eth, it will wrap it into WETH. After wrapping, WETH can be swapped
+     * if it is included in inTokens parameter.
      * @dev Unswapped tokens are transferred back to the caller.
      * Requirements:
      * - caller must set approval for this contract on input tokens in input amount
@@ -23,5 +26,5 @@ interface IDepositSwap {
         SwapInfo[] calldata swapInfo,
         address smartVault,
         address receiver
-    ) external returns (uint256 depositNftId);
+    ) external payable returns (uint256 depositNftId);
 }

@@ -2,6 +2,7 @@
 pragma solidity 0.8.16;
 
 import "forge-std/Script.sol";
+import {IWETH9} from "../src/external/interfaces/weth/WETH9.sol";
 import "../src/access/Roles.sol";
 import {SpoolAccessControl} from "../src/access/SpoolAccessControl.sol";
 import {AllowlistGuard} from "../src/guards/AllowlistGuard.sol";
@@ -120,7 +121,8 @@ contract DeploySpool is Script {
         spoolAccessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
         spoolAccessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
 
-        DepositSwap depositSwapImpl = new DepositSwap(assetGroupRegistry, smartVaultManager, swapper);
+        DepositSwap depositSwapImpl =
+            new DepositSwap(IWETH9(vm.envAddress("WETH_ADDRESS")), assetGroupRegistry, smartVaultManager, swapper);
         proxy = new TransparentUpgradeableProxy(address(depositSwapImpl), address(proxyAdmin), "");
         depositSwap = DepositSwap(address(proxy));
 
