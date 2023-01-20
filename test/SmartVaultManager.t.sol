@@ -22,7 +22,7 @@ import "./mocks/MockStrategy.sol";
 import "./mocks/MockToken.sol";
 import "./mocks/TestFixture.sol";
 
-contract SmartVaultManagerTest is TestFixture, Test {
+contract SmartVaultManagerTest is TestFixture {
     address mySmartVault = address(100);
 
     MockToken token1;

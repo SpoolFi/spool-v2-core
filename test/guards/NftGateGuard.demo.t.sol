@@ -21,7 +21,7 @@ import "../mocks/MockPriceFeedManager.sol";
 import "../libraries/Arrays.sol";
 import "../mocks/TestFixture.sol";
 
-contract NftGateGuardDemoTest is TestFixture, Test {
+contract NftGateGuardDemoTest is TestFixture {
     address private alice;
     address private bob;
     address private charlie;

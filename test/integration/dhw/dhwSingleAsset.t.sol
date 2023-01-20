@@ -19,7 +19,7 @@ import "../../mocks/MockToken.sol";
 import "../../mocks/MockPriceFeedManager.sol";
 import "../../mocks/TestFixture.sol";
 
-contract DhwSingleAssetTest is TestFixture, Test {
+contract DhwSingleAssetTest is TestFixture {
     address private alice;
     address private bob;
 

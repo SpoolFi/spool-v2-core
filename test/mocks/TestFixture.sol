@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
+import "forge-std/Test.sol";
 import "./MockGuard.sol";
 import "./MockToken.sol";
 import "../../src/managers/GuardManager.sol";
@@ -15,7 +16,7 @@ import "../integration/withdrawal.t.sol";
 import "../../src/managers/DepositManager.sol";
 import "../../src/managers/WithdrawalManager.sol";
 
-contract TestFixture {
+contract TestFixture is Test {
     address internal riskProvider = address(0x1);
 
     MockGuard internal guard;

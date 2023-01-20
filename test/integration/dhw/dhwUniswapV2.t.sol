@@ -20,7 +20,7 @@ import "../../mocks/MockToken.sol";
 import "../../mocks/MockPriceFeedManager.sol";
 import "../../mocks/TestFixture.sol";
 
-contract dhwUniswapV2 is TestFixture, Test {
+contract dhwUniswapV2 is TestFixture {
     address private alice;
     address private bob;
 

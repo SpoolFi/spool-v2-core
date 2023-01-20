@@ -20,7 +20,7 @@ import "../../mocks/MockToken.sol";
 import "../../mocks/MockPriceFeedManager.sol";
 import "../../mocks/TestFixture.sol";
 
-contract DhwMasterChefTest is TestFixture, Test {
+contract DhwMasterChefTest is TestFixture {
     address private alice;
     address private bob;
 

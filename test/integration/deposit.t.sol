@@ -21,7 +21,7 @@ import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
 import "../mocks/TestFixture.sol";
 
-contract DepositIntegrationTest is TestFixture, Test {
+contract DepositIntegrationTest is TestFixture {
     address private alice;
 
     MockToken tokenA;
