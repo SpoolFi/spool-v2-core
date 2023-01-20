@@ -20,19 +20,11 @@ import "./libraries/Constants.sol";
 import "./mocks/MockPriceFeedManager.sol";
 import "./mocks/MockStrategy.sol";
 import "./mocks/MockToken.sol";
+import "./mocks/BaseTestContracts.sol";
 
-contract SmartVaultManagerTest is Test {
-    ISmartVaultManager smartVaultManager;
-    SpoolAccessControl accessControl;
-    IStrategyRegistry strategyRegistry;
-    MockPriceFeedManager priceFeedManager;
-    AssetGroupRegistry assetGroupRegistry;
-    IRiskManager riskManager;
+contract SmartVaultManagerTest is BaseTestContracts, Test {
+    address mySmartVault = address(100);
 
-    address riskProvider = address(10);
-    address smartVault = address(100);
-
-    IMasterWallet masterWallet;
     MockToken token1;
     MockToken token2;
 
@@ -40,33 +32,14 @@ contract SmartVaultManagerTest is Test {
         token1 = new MockToken("Token1", "T1");
         token2 = new MockToken("Token2", "T2");
 
-        accessControl = new SpoolAccessControl();
-        accessControl.initialize();
-        masterWallet = new MasterWallet(accessControl);
-        assetGroupRegistry = new AssetGroupRegistry(accessControl);
-        assetGroupRegistry.initialize(Arrays.toArray(address(token1), address(token2)));
-        priceFeedManager = new MockPriceFeedManager();
-        strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
-        IGuardManager guardManager = new GuardManager(accessControl);
-        IActionManager actionManager = new ActionManager(accessControl);
-        riskManager = new RiskManager(accessControl);
+        setUpBase();
 
-        accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
+        assetGroupRegistry.allowToken(address(token1));
+        assetGroupRegistry.allowToken(address(token2));
 
-        smartVaultManager = new SmartVaultManager(
-            accessControl,
-            strategyRegistry,
-            priceFeedManager,
-            assetGroupRegistry,
-            masterWallet,
-            actionManager,
-            guardManager,
-            riskManager
-        );
         accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(this));
         accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(this));
-        accessControl.grantRole(ROLE_SMART_VAULT, smartVault);
-        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
+        accessControl.grantRole(ROLE_SMART_VAULT, mySmartVault);
     }
 
     function test_getUserSVTBalance_getsCurrentBalanceWithoutDepositNFT() public {
@@ -98,12 +71,12 @@ contract SmartVaultManagerTest is Test {
             riskAppetite: 4,
             riskProvider: riskProvider
         });
-        smartVaultManager.registerSmartVault(smartVault, registrationForm);
+        smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
 
-        assertEq(smartVaultManager.assetGroupId(smartVault), assetGroupId);
-        assertEq(smartVaultManager.strategies(smartVault), strategies);
-        assertEq(smartVaultManager.allocations(smartVault), strategyAllocations);
-        assertEq(smartVaultManager.riskProvider(smartVault), riskProvider);
+        assertEq(smartVaultManager.assetGroupId(mySmartVault), assetGroupId);
+        assertEq(smartVaultManager.strategies(mySmartVault), strategies);
+        assertEq(smartVaultManager.allocations(mySmartVault), strategyAllocations);
+        assertEq(smartVaultManager.riskProvider(mySmartVault), riskProvider);
     }
 
     function test_registerSmartVault_shouldRevert() public {
@@ -137,7 +110,7 @@ contract SmartVaultManagerTest is Test {
                 riskProvider: address(0xabc)
             });
             vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_RISK_PROVIDER, address(0xabc)));
-            smartVaultManager.registerSmartVault(smartVault, _registrationForm);
+            smartVaultManager.registerSmartVault(mySmartVault, _registrationForm);
         }
 
         // when no strategy
@@ -150,7 +123,7 @@ contract SmartVaultManagerTest is Test {
                 riskProvider: riskProvider
             });
             vm.expectRevert(SmartVaultRegistrationNoStrategies.selector);
-            smartVaultManager.registerSmartVault(smartVault, _registrationForm);
+            smartVaultManager.registerSmartVault(mySmartVault, _registrationForm);
         }
 
         // when not strategy
@@ -164,13 +137,13 @@ contract SmartVaultManagerTest is Test {
                 riskProvider: riskProvider
             });
             vm.expectRevert(abi.encodeWithSelector(InvalidStrategy.selector, address(0xabc)));
-            smartVaultManager.registerSmartVault(smartVault, _registrationForm);
+            smartVaultManager.registerSmartVault(mySmartVault, _registrationForm);
         }
 
         // when smart vault already registered
-        smartVaultManager.registerSmartVault(smartVault, registrationForm);
+        smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
         vm.expectRevert(SmartVaultAlreadyRegistered.selector);
-        smartVaultManager.registerSmartVault(smartVault, registrationForm);
+        smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
     }
 
     function test_addDepositsAndFlush() public {
@@ -187,10 +160,10 @@ contract SmartVaultManagerTest is Test {
         assets[1] = 6.779734526152375133 ether;
 
         vm.prank(user);
-        token1.approve(address(smartVaultManager), 100 ether);
+        token1.approve(address(depositManager), 100 ether);
 
         vm.prank(user);
-        token2.approve(address(smartVaultManager), 100 ether);
+        token2.approve(address(depositManager), 100 ether);
 
         vm.prank(user);
         smartVaultManager.deposit(address(smartVault_), assets, user, address(0));

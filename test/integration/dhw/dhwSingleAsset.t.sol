@@ -17,8 +17,9 @@ import "../../libraries/Arrays.sol";
 import "../../mocks/MockStrategy.sol";
 import "../../mocks/MockToken.sol";
 import "../../mocks/MockPriceFeedManager.sol";
+import "../../mocks/BaseTestContracts.sol";
 
-contract DhwSingleAssetTest is Test {
+contract DhwSingleAssetTest is BaseTestContracts, Test {
     address private alice;
     address private bob;
 
@@ -27,49 +28,19 @@ contract DhwSingleAssetTest is Test {
     MockStrategy strategyA;
     MockStrategy strategyB;
     MockStrategy strategyC;
-    address[] mySmartVaultStrategies;
-
-    ISmartVault private mySmartVault;
-    SmartVaultManager private smartVaultManager;
-    StrategyRegistry private strategyRegistry;
-    MasterWallet private masterWallet;
-    AssetGroupRegistry private assetGroupRegistry;
-    SpoolAccessControl accessControl;
+    address[] smartVaultStrategies;
 
     function setUp() public {
+        setUpBase();
+
         alice = address(0xa);
         bob = address(0xb);
 
-        address riskProvider = address(0x1);
-
         tokenA = new MockToken("Token A", "TA");
 
-        accessControl = new SpoolAccessControl();
-        accessControl.initialize();
-        masterWallet = new MasterWallet(accessControl);
-
-        address[] memory assetGroup = new address[](1);
-        assetGroup[0] = address(tokenA);
-        assetGroupRegistry = new AssetGroupRegistry(accessControl);
-        assetGroupRegistry.initialize(assetGroup);
+        address[] memory assetGroup = Arrays.toArray(address(tokenA));
+        assetGroupRegistry.allowToken(address(tokenA));
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-
-        MockPriceFeedManager priceFeedManager = new MockPriceFeedManager();
-        strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
-        IActionManager actionManager = new ActionManager(accessControl);
-        IGuardManager guardManager = new GuardManager(accessControl);
-        IRiskManager riskManager = new RiskManager(accessControl);
-
-        smartVaultManager = new SmartVaultManager(
-            accessControl,
-            strategyRegistry,
-            priceFeedManager,
-            assetGroupRegistry,
-            masterWallet,
-            new ActionManager(accessControl),
-            guardManager,
-            riskManager
-        );
 
         strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
         uint256[] memory strategyRatios = new uint256[](3);
@@ -110,7 +81,7 @@ contract DhwSingleAssetTest is Test {
             accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(smartVaultFactory));
             accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
 
-            mySmartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
+            smartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
 
             vm.mockCall(
                 address(riskManager),
@@ -118,7 +89,7 @@ contract DhwSingleAssetTest is Test {
                 abi.encode(Arrays.toArray(600, 300, 100))
             );
 
-            mySmartVault = smartVaultFactory.deploySmartVault(
+            smartVault = smartVaultFactory.deploySmartVault(
                 SmartVaultSpecification({
                     smartVaultName: "MySmartVault",
                     assetGroupId: assetGroupId,
@@ -126,7 +97,7 @@ contract DhwSingleAssetTest is Test {
                     actionRequestTypes: new RequestType[](0),
                     guards: new GuardDefinition[][](0),
                     guardRequestTypes: new RequestType[](0),
-                    strategies: mySmartVaultStrategies,
+                    strategies: smartVaultStrategies,
                     riskAppetite: 4,
                     riskProvider: riskProvider
                 })
@@ -147,15 +118,15 @@ contract DhwSingleAssetTest is Test {
 
         uint256[] memory depositAmountsAlice = Arrays.toArray(tokenAInitialBalanceAlice);
 
-        tokenA.approve(address(smartVaultManager), depositAmountsAlice[0]);
+        tokenA.approve(address(depositManager), depositAmountsAlice[0]);
 
         uint256 aliceDepositNftId =
-            smartVaultManager.deposit(address(mySmartVault), depositAmountsAlice, alice, address(0));
+            smartVaultManager.deposit(address(smartVault), depositAmountsAlice, alice, address(0));
 
         vm.stopPrank();
 
         // flush
-        smartVaultManager.flushSmartVault(address(mySmartVault));
+        smartVaultManager.flushSmartVault(address(smartVault));
 
         // DHW - DEPOSIT
         SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
@@ -163,15 +134,15 @@ contract DhwSingleAssetTest is Test {
         dhwSwapInfo[1] = new SwapInfo[](0);
         dhwSwapInfo[2] = new SwapInfo[](0);
 
-        strategyRegistry.doHardWork(mySmartVaultStrategies, dhwSwapInfo);
+        strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
 
         // sync vault
-        smartVaultManager.syncSmartVault(address(mySmartVault));
+        smartVaultManager.syncSmartVault(address(smartVault));
 
         // claim deposit
         vm.startPrank(alice);
         smartVaultManager.claimSmartVaultTokens(
-            address(mySmartVault), Arrays.toArray(aliceDepositNftId), Arrays.toArray(NFT_MINTED_SHARES)
+            address(smartVault), Arrays.toArray(aliceDepositNftId), Arrays.toArray(NFT_MINTED_SHARES)
         );
         vm.stopPrank();
 
@@ -187,46 +158,45 @@ contract DhwSingleAssetTest is Test {
 
         uint256[] memory depositAmountsBob = Arrays.toArray(tokenAInitialBalanceBob);
 
-        tokenA.approve(address(smartVaultManager), depositAmountsBob[0]);
+        tokenA.approve(address(depositManager), depositAmountsBob[0]);
 
-        uint256 bobDepositNftId = smartVaultManager.deposit(address(mySmartVault), depositAmountsBob, bob, address(0));
+        uint256 bobDepositNftId = smartVaultManager.deposit(address(smartVault), depositAmountsBob, bob, address(0));
 
         vm.stopPrank();
 
         // flush
-        smartVaultManager.flushSmartVault(address(mySmartVault));
+        smartVaultManager.flushSmartVault(address(smartVault));
 
         // DHW - DEPOSIT
 
-        strategyRegistry.doHardWork(mySmartVaultStrategies, dhwSwapInfo);
+        strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
 
         // // sync vault
-        smartVaultManager.syncSmartVault(address(mySmartVault));
+        smartVaultManager.syncSmartVault(address(smartVault));
 
         // claim deposit
         vm.startPrank(bob);
         smartVaultManager.claimSmartVaultTokens(
-            address(mySmartVault), Arrays.toArray(bobDepositNftId), Arrays.toArray(NFT_MINTED_SHARES)
+            address(smartVault), Arrays.toArray(bobDepositNftId), Arrays.toArray(NFT_MINTED_SHARES)
         );
         vm.stopPrank();
 
         // ======================
 
         // WITHDRAW
-        uint256 aliceShares = mySmartVault.balanceOf(alice);
-        uint256 bobShares = mySmartVault.balanceOf(bob);
+        uint256 aliceShares = smartVault.balanceOf(alice);
+        uint256 bobShares = smartVault.balanceOf(bob);
         console2.log("aliceShares Before:", aliceShares);
 
         vm.prank(alice);
-        uint256 aliceWithdrawalNftId = smartVaultManager.redeem(
-            address(mySmartVault), aliceShares, alice, alice, new uint256[](0), new uint256[](0)
-        );
+        uint256 aliceWithdrawalNftId =
+            smartVaultManager.redeem(address(smartVault), aliceShares, alice, alice, new uint256[](0), new uint256[](0));
         vm.prank(bob);
         uint256 bobWithdrawalNftId =
-            smartVaultManager.redeem(address(mySmartVault), bobShares, bob, bob, new uint256[](0), new uint256[](0));
+            smartVaultManager.redeem(address(smartVault), bobShares, bob, bob, new uint256[](0), new uint256[](0));
 
         console2.log("flushSmartVault");
-        smartVaultManager.flushSmartVault(address(mySmartVault));
+        smartVaultManager.flushSmartVault(address(smartVault));
 
         // DHW - WITHDRAW
         SwapInfo[][] memory dhwSwapInfoWithdraw = new SwapInfo[][](3);
@@ -234,11 +204,11 @@ contract DhwSingleAssetTest is Test {
         dhwSwapInfoWithdraw[1] = new SwapInfo[](0);
         dhwSwapInfoWithdraw[2] = new SwapInfo[](0);
         console2.log("doHardWork");
-        strategyRegistry.doHardWork(mySmartVaultStrategies, dhwSwapInfo);
+        strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
 
         // sync vault
         console2.log("syncSmartVault");
-        smartVaultManager.syncSmartVault(address(mySmartVault));
+        smartVaultManager.syncSmartVault(address(smartVault));
 
         // claim withdrawal
         console2.log("tokenA Before:", tokenA.balanceOf(alice));
@@ -246,12 +216,12 @@ contract DhwSingleAssetTest is Test {
         vm.startPrank(alice);
         console2.log("claimWithdrawal");
         smartVaultManager.claimWithdrawal(
-            address(mySmartVault), Arrays.toArray(aliceWithdrawalNftId), Arrays.toArray(NFT_MINTED_SHARES), alice
+            address(smartVault), Arrays.toArray(aliceWithdrawalNftId), Arrays.toArray(NFT_MINTED_SHARES), alice
         );
         vm.stopPrank();
         vm.startPrank(bob);
         smartVaultManager.claimWithdrawal(
-            address(mySmartVault), Arrays.toArray(bobWithdrawalNftId), Arrays.toArray(NFT_MINTED_SHARES), bob
+            address(smartVault), Arrays.toArray(bobWithdrawalNftId), Arrays.toArray(NFT_MINTED_SHARES), bob
         );
         vm.stopPrank();
 

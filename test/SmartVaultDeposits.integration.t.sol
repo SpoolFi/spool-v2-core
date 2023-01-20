@@ -4,12 +4,12 @@ pragma solidity 0.8.16;
 import "forge-std/Test.sol";
 import "../src/external/interfaces/chainlink/AggregatorV3Interface.sol";
 import "../src/libraries/SpoolUtils.sol";
-import "../src/libraries/SmartVaultDeposits.sol";
 import "../src/managers/UsdPriceFeedManager.sol";
 import "./libraries/Arrays.sol";
 import "./mocks/MockAggregatorV3.sol";
+import "../src/managers/DepositManager.sol";
 
-contract SmartVaultDepositsIntegrationTest is Test {
+contract depositManagerIntegrationTest is Test {
     uint256 daiDecimals = 18;
     uint256 usdcDecimals = 6;
 
@@ -21,7 +21,17 @@ contract SmartVaultDepositsIntegrationTest is Test {
 
     UsdPriceFeedManager usdPriceFeedManager;
 
+    DepositManager depositManager;
+
     function setUp() public {
+        depositManager = new DepositManager(
+            IStrategyRegistry(address(0)),
+            IUsdPriceFeedManager(address(0)),
+            IMasterWallet(address(0)),
+            IGuardManager(address(0)),
+            IActionManager(address(0))
+        );
+
         usdPriceFeedManager = new UsdPriceFeedManager();
 
         daiUsdPriceAggregator = new MockAggregatorV3(8, "Dai-Usd", 1);
@@ -58,10 +68,10 @@ contract SmartVaultDepositsIntegrationTest is Test {
         uint256[] memory deposit = Arrays.toArray(10 * (10 ** daiDecimals), 10 * (10 ** usdcDecimals));
 
         // first check if deposit ratio is OK
-        SmartVaultDeposits.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios);
+        depositManager.checkDepositRatio(deposit, exchangeRates, allocation, strategyRatios);
 
         // now distribute the deposit
-        uint256[][] memory distribution = SmartVaultDeposits.distributeDeposit(
+        uint256[][] memory distribution = depositManager.distributeDeposit(
             DepositQueryBag1({
                 deposit: deposit,
                 exchangeRates: exchangeRates,

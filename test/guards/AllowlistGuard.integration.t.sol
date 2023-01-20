@@ -19,58 +19,25 @@ import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
 import "../libraries/Arrays.sol";
+import "../mocks/BaseTestContracts.sol";
 
-contract AllowlistGuardIntegrationTest is Test {
+contract AllowlistGuardIntegrationTest is BaseTestContracts, Test {
     address private alice;
     address private bob;
     address private charlie;
     address private dave;
     address private eve;
 
-    MockToken private token;
-
     AllowlistGuard private allowlistGuard;
-    GuardManager private guardManager;
-    ISmartVault private smartVault;
-    SmartVaultManager private smartVaultManager;
-    SpoolAccessControl private accessControl;
-    IRiskManager private riskManager;
 
     function setUp() public {
+        setUpBase();
+
         alice = address(0xa);
         bob = address(0xb);
         charlie = address(0xc);
         dave = address(0xd);
         eve = address(0xe);
-
-        address riskProvider = address(0x1);
-
-        token = new MockToken("Token", "T");
-
-        accessControl = new SpoolAccessControl();
-        accessControl.initialize();
-        ActionManager actionManager = new ActionManager(accessControl);
-        AssetGroupRegistry assetGroupRegistry = new AssetGroupRegistry(accessControl);
-        assetGroupRegistry.initialize(Arrays.toArray(address(token)));
-        guardManager = new GuardManager(accessControl);
-        MasterWallet masterWallet = new MasterWallet(accessControl);
-        IUsdPriceFeedManager priceFeedManager = new MockPriceFeedManager();
-        StrategyRegistry strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
-        riskManager = new RiskManager(accessControl);
-        smartVaultManager = new SmartVaultManager(
-            accessControl,
-            strategyRegistry,
-            priceFeedManager,
-            assetGroupRegistry,
-            masterWallet,
-            actionManager,
-            guardManager,
-            riskManager
-        );
-
-        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
-        accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
-        accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
 
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(token)));
 
@@ -224,9 +191,9 @@ contract AllowlistGuardIntegrationTest is Test {
         token.mint(eve, 1 ether);
 
         vm.prank(charlie);
-        token.approve(address(smartVaultManager), 2 ether);
+        token.approve(address(depositManager), 2 ether);
         vm.prank(eve);
-        token.approve(address(smartVaultManager), 1 ether);
+        token.approve(address(depositManager), 1 ether);
 
         uint256[] memory depositAmounts = new uint256[](1);
         depositAmounts[0] = 1 ether;

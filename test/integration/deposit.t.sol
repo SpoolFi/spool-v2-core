@@ -19,8 +19,9 @@ import "../libraries/Constants.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
+import "../mocks/BaseTestContracts.sol";
 
-contract DepositIntegrationTest is Test {
+contract DepositIntegrationTest is BaseTestContracts, Test {
     address private alice;
 
     MockToken tokenA;
@@ -30,52 +31,22 @@ contract DepositIntegrationTest is Test {
     MockStrategy strategyA;
     MockStrategy strategyB;
     MockStrategy strategyC;
-    address[] mySmartVaultStrategies;
-
-    ISmartVault private mySmartVault;
-    SmartVaultManager private smartVaultManager;
-    StrategyRegistry private strategyRegistry;
-    MasterWallet private masterWallet;
-    AssetGroupRegistry private assetGroupRegistry;
-    SpoolAccessControl accessControl;
+    address[] smartVaultStrategies;
 
     function setUp() public {
+        setUpBase();
         alice = address(0xa);
-
-        address riskProvider = address(0x1);
 
         tokenA = new MockToken("Token A", "TA");
         tokenB = new MockToken("Token B", "TB");
         tokenC = new MockToken("Token C", "TC");
 
-        accessControl = new SpoolAccessControl();
-        accessControl.initialize();
-        masterWallet = new MasterWallet(accessControl);
+        address[] memory assetGroup = Arrays.toArray(address(tokenA), address(tokenB), address(tokenC));
+        assetGroupRegistry.allowToken(address(tokenA));
+        assetGroupRegistry.allowToken(address(tokenB));
+        assetGroupRegistry.allowToken(address(tokenC));
 
-        address[] memory assetGroup = new address[](3);
-        assetGroup[0] = address(tokenA);
-        assetGroup[1] = address(tokenB);
-        assetGroup[2] = address(tokenC);
-        assetGroupRegistry = new AssetGroupRegistry(accessControl);
-        assetGroupRegistry.initialize(assetGroup);
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-
-        MockPriceFeedManager priceFeedManager = new MockPriceFeedManager();
-        strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
-        IActionManager actionManager = new ActionManager(accessControl);
-        IGuardManager guardManager = new GuardManager(accessControl);
-        IRiskManager riskManager = new RiskManager(accessControl);
-
-        smartVaultManager = new SmartVaultManager(
-            accessControl,
-            strategyRegistry,
-            priceFeedManager,
-            assetGroupRegistry,
-            masterWallet,
-            new ActionManager(accessControl),
-            guardManager,
-            riskManager
-        );
 
         strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
         uint256[] memory strategyRatios = new uint256[](3);
@@ -99,8 +70,6 @@ contract DepositIntegrationTest is Test {
 
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
-        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
-        accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
 
         {
@@ -116,7 +85,7 @@ contract DepositIntegrationTest is Test {
             accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(smartVaultFactory));
             accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
 
-            mySmartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
+            smartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
 
             vm.mockCall(
                 address(riskManager),
@@ -124,7 +93,7 @@ contract DepositIntegrationTest is Test {
                 abi.encode(Arrays.toArray(600, 300, 100))
             );
 
-            mySmartVault = smartVaultFactory.deploySmartVault(
+            smartVault = smartVaultFactory.deploySmartVault(
                 SmartVaultSpecification({
                     smartVaultName: "MySmartVault",
                     assetGroupId: assetGroupId,
@@ -132,7 +101,7 @@ contract DepositIntegrationTest is Test {
                     actionRequestTypes: new RequestType[](0),
                     guards: new GuardDefinition[][](0),
                     guardRequestTypes: new RequestType[](0),
-                    strategies: mySmartVaultStrategies,
+                    strategies: smartVaultStrategies,
                     riskAppetite: 4,
                     riskProvider: riskProvider
                 })
@@ -157,11 +126,11 @@ contract DepositIntegrationTest is Test {
 
         uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
-        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
-        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
-        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+        tokenA.approve(address(depositManager), depositAmounts[0]);
+        tokenB.approve(address(depositManager), depositAmounts[1]);
+        tokenC.approve(address(depositManager), depositAmounts[2]);
 
-        uint256 aliceDepositNftId = smartVaultManager.deposit(address(mySmartVault), depositAmounts, alice, address(0));
+        uint256 aliceDepositNftId = smartVaultManager.deposit(address(smartVault), depositAmounts, alice, address(0));
 
         vm.stopPrank();
 
@@ -175,10 +144,10 @@ contract DepositIntegrationTest is Test {
         assertEq(tokenC.balanceOf(address(masterWallet)), 438.8 ether);
         // - deposit NFT was minted
         assertEq(aliceDepositNftId, 1);
-        assertEq(mySmartVault.balanceOfFractional(alice, aliceDepositNftId), NFT_MINTED_SHARES);
+        assertEq(smartVault.balanceOfFractional(alice, aliceDepositNftId), NFT_MINTED_SHARES);
 
         // flush
-        smartVaultManager.flushSmartVault(address(mySmartVault));
+        smartVaultManager.flushSmartVault(address(smartVault));
 
         // DHW
         SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
@@ -186,7 +155,7 @@ contract DepositIntegrationTest is Test {
         dhwSwapInfo[1] = new SwapInfo[](0);
         dhwSwapInfo[2] = new SwapInfo[](0);
 
-        strategyRegistry.doHardWork(mySmartVaultStrategies, dhwSwapInfo);
+        strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
 
         // check state
         // - tokens were routed to the protocol
@@ -208,35 +177,35 @@ contract DepositIntegrationTest is Test {
         assertEq(strategyC.totalSupply(), 35716275414794966628800000);
 
         // sync vault
-        smartVaultManager.syncSmartVault(address(mySmartVault));
+        smartVaultManager.syncSmartVault(address(smartVault));
 
         // check state
         // - strategy tokens were claimed
-        assertEq(strategyA.balanceOf(address(mySmartVault)), 214297693046938776377950000);
-        assertEq(strategyB.balanceOf(address(mySmartVault)), 107148831538266256993250000);
-        assertEq(strategyC.balanceOf(address(mySmartVault)), 35716275414794966628800000);
+        assertEq(strategyA.balanceOf(address(smartVault)), 214297693046938776377950000);
+        assertEq(strategyB.balanceOf(address(smartVault)), 107148831538266256993250000);
+        assertEq(strategyC.balanceOf(address(smartVault)), 35716275414794966628800000);
         assertEq(strategyA.balanceOf(address(strategyA)), 0);
         assertEq(strategyB.balanceOf(address(strategyB)), 0);
         assertEq(strategyB.balanceOf(address(strategyB)), 0);
         // - vault tokens were minted
-        assertEq(mySmartVault.totalSupply(), 357162800000000000000000000);
-        assertEq(mySmartVault.balanceOf(address(mySmartVault)), 357162800000000000000000000);
+        assertEq(smartVault.totalSupply(), 357162800000000000000000000);
+        assertEq(smartVault.balanceOf(address(smartVault)), 357162800000000000000000000);
 
-        uint256 balance = smartVaultManager.getUserSVTBalance(address(mySmartVault), alice);
+        uint256 balance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
         assertEq(balance, 357162800000000000000000000);
 
         // claim deposit
         uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
         uint256[] memory ids = Arrays.toArray(aliceDepositNftId);
         vm.prank(alice);
-        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), ids, amounts);
+        smartVaultManager.claimSmartVaultTokens(address(smartVault), ids, amounts);
 
         // check state
         // - vault tokens were claimed
-        assertEq(mySmartVault.balanceOf(address(alice)), 357162800000000000000000000);
-        assertEq(mySmartVault.balanceOf(address(mySmartVault)), 0);
+        assertEq(smartVault.balanceOf(address(alice)), 357162800000000000000000000);
+        assertEq(smartVault.balanceOf(address(smartVault)), 0);
         // - deposit NFT was burned
-        assertEq(mySmartVault.balanceOfFractional(alice, aliceDepositNftId), 0);
+        assertEq(smartVault.balanceOfFractional(alice, aliceDepositNftId), 0);
     }
 
     function test_claimSmartVaultTokensPartially() public {
@@ -252,16 +221,16 @@ contract DepositIntegrationTest is Test {
 
         uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
-        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
-        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
-        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+        tokenA.approve(address(depositManager), depositAmounts[0]);
+        tokenB.approve(address(depositManager), depositAmounts[1]);
+        tokenC.approve(address(depositManager), depositAmounts[2]);
 
-        uint256 aliceDepositNftId = smartVaultManager.deposit(address(mySmartVault), depositAmounts, alice, address(0));
+        uint256 aliceDepositNftId = smartVaultManager.deposit(address(smartVault), depositAmounts, alice, address(0));
 
         vm.stopPrank();
 
         // flush
-        smartVaultManager.flushSmartVault(address(mySmartVault));
+        smartVaultManager.flushSmartVault(address(smartVault));
 
         // DHW
         SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
@@ -269,43 +238,43 @@ contract DepositIntegrationTest is Test {
         dhwSwapInfo[1] = new SwapInfo[](0);
         dhwSwapInfo[2] = new SwapInfo[](0);
 
-        strategyRegistry.doHardWork(mySmartVaultStrategies, dhwSwapInfo);
+        strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
 
         // sync vault
-        smartVaultManager.syncSmartVault(address(mySmartVault));
+        smartVaultManager.syncSmartVault(address(smartVault));
 
         uint256 svtBalance = 357162800000000000000000000;
 
         // - vault tokens were minted
-        assertEq(mySmartVault.totalSupply(), svtBalance);
-        assertEq(mySmartVault.balanceOf(address(mySmartVault)), svtBalance);
+        assertEq(smartVault.totalSupply(), svtBalance);
+        assertEq(smartVault.balanceOf(address(smartVault)), svtBalance);
 
-        uint256 balance = smartVaultManager.getUserSVTBalance(address(mySmartVault), alice);
+        uint256 balance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
         assertEq(balance, svtBalance);
 
         // burn half of NFT
         uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES / 2);
         uint256[] memory ids = Arrays.toArray(aliceDepositNftId);
         vm.startPrank(alice);
-        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), ids, amounts);
+        smartVaultManager.claimSmartVaultTokens(address(smartVault), ids, amounts);
 
         // check state
         // - vault tokens were partially claimed
-        assertEq(mySmartVault.balanceOf(address(alice)), svtBalance / 2);
-        assertEq(mySmartVault.balanceOf(address(mySmartVault)), svtBalance / 2);
+        assertEq(smartVault.balanceOf(address(alice)), svtBalance / 2);
+        assertEq(smartVault.balanceOf(address(smartVault)), svtBalance / 2);
 
         // - deposit NFT was partially burned
-        assertEq(mySmartVault.balanceOfFractional(alice, aliceDepositNftId), NFT_MINTED_SHARES / 2);
+        assertEq(smartVault.balanceOfFractional(alice, aliceDepositNftId), NFT_MINTED_SHARES / 2);
 
         // burn remaining of NFT
-        smartVaultManager.claimSmartVaultTokens(address(mySmartVault), ids, amounts);
+        smartVaultManager.claimSmartVaultTokens(address(smartVault), ids, amounts);
 
         // check state
         // - vault tokens were claimed in full
-        assertEq(mySmartVault.balanceOf(address(alice)), svtBalance);
-        assertEq(mySmartVault.balanceOf(address(mySmartVault)), 0);
+        assertEq(smartVault.balanceOf(address(alice)), svtBalance);
+        assertEq(smartVault.balanceOf(address(smartVault)), 0);
 
         // - deposit NFT was burned in full
-        assertEq(mySmartVault.balanceOfFractional(alice, aliceDepositNftId), 0);
+        assertEq(smartVault.balanceOfFractional(alice, aliceDepositNftId), 0);
     }
 }
