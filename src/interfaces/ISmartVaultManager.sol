@@ -198,5 +198,58 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
         external
         returns (uint256 receipt);
 
-    event SmartVaultFlushed(address smartVault, uint256 flushIdx);
+    /* ========== EVENTS ========== */
+
+    event RiskProviderSet(address indexed smartVault, address riskProvider_);
+
+    event SmartVaultFlushed(address indexed smartVault, uint256 flushIdx);
+
+    event SmartVaultSynced(address indexed smartVault, uint256 flushIndex);
+
+    event SmartVaultTokensClaimed(
+        address indexed smartVault,
+        address indexed claimer,
+        uint256 claimedVaultTokens,
+        uint256[] nftIDs,
+        uint256[] nftAmounts
+    );
+
+    event WithdrawalClaimed(
+        address indexed smartVault,
+        address indexed claimer,
+        uint256 assetGroupId,
+        uint256[] nftIDs,
+        uint256[] nftAmounts,
+        uint256[] withdrawnAssets
+    );
+
+    event DepositInitiated(
+        address indexed smartVault,
+        address indexed receiver,
+        uint256 indexed depositId,
+        uint256 flushIndex,
+        uint256 assetGroupId,
+        uint256[] assets,
+        address executor,
+        address referral
+    );
+
+    event RedeemInitiated(
+        address indexed smartVault,
+        address indexed owner,
+        uint256 indexed redeemId,
+        uint256 flushIndex,
+        uint256 shares,
+        address receiver
+    );
+
+    event FastRedeemInitiated(
+        address indexed smartVault,
+        address indexed redeemer,
+        uint256 assetGroupId,
+        uint256 shares,
+        uint256[] nftIds,
+        uint256[] nftAmounts,
+        uint256[] assetsWithdrawn
+    );
 }
