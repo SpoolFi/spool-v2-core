@@ -76,19 +76,6 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
     /// @notice Master wallet
     IMasterWallet private immutable _masterWallet;
 
-    constructor(
-        IStrategyRegistry strategyRegistry_,
-        IUsdPriceFeedManager priceFeedManager_,
-        IMasterWallet masterWallet_,
-        IGuardManager guardManager_,
-        IActionManager actionManager_,
-        ISpoolAccessControl accessControl_
-    ) ActionsAndGuards(guardManager_, actionManager_) SpoolAccessControllable(accessControl_) {
-        _strategyRegistry = strategyRegistry_;
-        _priceFeedManager = priceFeedManager_;
-        _masterWallet = masterWallet_;
-    }
-
     /**
      * @notice Exchange rates for vault, at given flush index
      * @dev smart vault => flush index => exchange rates
@@ -113,6 +100,19 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
      * @dev smart vault => flush index => assets deposited
      */
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _vaultDeposits;
+
+    constructor(
+        IStrategyRegistry strategyRegistry_,
+        IUsdPriceFeedManager priceFeedManager_,
+        IMasterWallet masterWallet_,
+        IGuardManager guardManager_,
+        IActionManager actionManager_,
+        ISpoolAccessControl accessControl_
+    ) ActionsAndGuards(guardManager_, actionManager_) SpoolAccessControllable(accessControl_) {
+        _strategyRegistry = strategyRegistry_;
+        _priceFeedManager = priceFeedManager_;
+        _masterWallet = masterWallet_;
+    }
 
     function smartVaultDeposits(address smartVault, uint256 flushIdx, uint256 assetGroupLength)
         external
