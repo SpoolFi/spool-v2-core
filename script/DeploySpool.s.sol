@@ -92,22 +92,24 @@ contract DeploySpool is Script {
 
         spoolAccessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
 
-        DepositManager depositManager =
+        DepositManager depositManagerImpl =
         new DepositManager(strategyRegistry, usdPriceFeedManager, masterWallet, guardManager, actionManager, spoolAccessControl);
+        proxy = new TransparentUpgradeableProxy(address(depositManagerImpl), address(proxyAdmin), "");
+        DepositManager depositManager = DepositManager(address(proxy));
 
-        WithdrawalManager withdrawalManager =
+        WithdrawalManager withdrawalManagerImpl =
         new WithdrawalManager(strategyRegistry, usdPriceFeedManager, masterWallet, guardManager, actionManager, spoolAccessControl);
+        proxy = new TransparentUpgradeableProxy(address(withdrawalManagerImpl), address(proxyAdmin), "");
+        WithdrawalManager withdrawalManager = WithdrawalManager(address(proxy));
 
-        {
-            smartVaultManager = new SmartVaultManager(
-                spoolAccessControl,
-                assetGroupRegistry,
-                riskManager,
-                depositManager,
-                withdrawalManager,
-                strategyRegistry
-            );
-        }
+        smartVaultManager = new SmartVaultManager(
+            spoolAccessControl,
+            assetGroupRegistry,
+            riskManager,
+            depositManager,
+            withdrawalManager,
+            strategyRegistry
+        );
 
         RewardManager rewardManagerImpl = new RewardManager(spoolAccessControl, assetGroupRegistry, smartVaultManager);
         proxy = new TransparentUpgradeableProxy(address(rewardManagerImpl), address(proxyAdmin), "");

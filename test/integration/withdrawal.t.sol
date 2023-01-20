@@ -71,16 +71,14 @@ contract WithdrawalIntegrationTest is Test {
         withdrawalManager =
         new WithdrawalManager(strategyRegistry, priceFeedManager, masterWallet, guardManager, actionManager, accessControl);
 
-        {
-            smartVaultManager = new SmartVaultManager(
-                accessControl,
-                assetGroupRegistry,
-                riskManager,
-                depositManager,
-                withdrawalManager,
-                strategyRegistry
-            );
-        }
+        smartVaultManager = new SmartVaultManager(
+            accessControl,
+            assetGroupRegistry,
+            riskManager,
+            depositManager,
+            withdrawalManager,
+            strategyRegistry
+        );
 
         strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
         uint256[] memory strategyRatios = new uint256[](2);
