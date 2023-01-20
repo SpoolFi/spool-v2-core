@@ -163,13 +163,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function getUserSVTBalance(address smartVaultAddress, address userAddress) external view returns (uint256) {
         ISmartVault smartVault = ISmartVault(smartVaultAddress);
         uint256 currentBalance = smartVault.balanceOf(userAddress);
-        uint256[] memory nftIDs = smartVault.activeUserNFTIds(userAddress);
-        bytes[] memory metadata = smartVault.getMetadata(nftIDs);
+        uint256[] memory nftIds = smartVault.activeUserNFTIds(userAddress);
+        bytes[] memory metadata = smartVault.getMetadata(nftIds);
 
-        uint256[] memory balances = smartVault.balanceOfFractionalBatch(userAddress, nftIDs);
+        uint256[] memory balances = smartVault.balanceOfFractionalBatch(userAddress, nftIds);
 
-        for (uint256 i; i < nftIDs.length; i++) {
-            if (nftIDs[i] > MAXIMAL_DEPOSIT_ID) {
+        for (uint256 i; i < nftIds.length; i++) {
+            if (nftIds[i] > MAXIMAL_DEPOSIT_ID) {
                 continue;
             }
 
@@ -350,10 +350,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /**
      * @notice Burn deposit NFTs to claim SVTs
      * @param smartVault Vault address
-     * @param nftIDs NFTs to burn
+     * @param nftIds NFTs to burn
      * @param nftAmounts NFT amounts to burn
      */
-    function claimSmartVaultTokens(address smartVault, uint256[] calldata nftIDs, uint256[] calldata nftAmounts)
+    function claimSmartVaultTokens(address smartVault, uint256[] calldata nftIds, uint256[] calldata nftAmounts)
         public
         onlyRegisteredSmartVault(smartVault)
         returns (uint256)
@@ -361,15 +361,15 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         // NOTE:
         // - here we are passing ids into the request context instead of amounts
         // - here we passing empty array as tokens
-        _runGuards(smartVault, msg.sender, msg.sender, msg.sender, nftIDs, new address[](0), RequestType.BurnNFT);
+        _runGuards(smartVault, msg.sender, msg.sender, msg.sender, nftIds, new address[](0), RequestType.BurnNFT);
 
         ISmartVault vault = ISmartVault(smartVault);
-        bytes[] memory metadata = vault.burnNFTs(msg.sender, nftIDs, nftAmounts);
+        bytes[] memory metadata = vault.burnNFTs(msg.sender, nftIds, nftAmounts);
 
         uint256 claimedVaultTokens = 0;
-        for (uint256 i = 0; i < nftIDs.length; i++) {
-            if (nftIDs[i] > MAXIMAL_DEPOSIT_ID) {
-                revert InvalidDepositNftId(nftIDs[i]);
+        for (uint256 i = 0; i < nftIds.length; i++) {
+            if (nftIds[i] > MAXIMAL_DEPOSIT_ID) {
+                revert InvalidDepositNftId(nftIds[i]);
             }
 
             claimedVaultTokens +=
@@ -379,7 +379,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         // there will be some dust after all users claim SVTs
         vault.claimShares(msg.sender, claimedVaultTokens);
 
-        emit SmartVaultTokensClaimed(smartVault, msg.sender, claimedVaultTokens, nftIDs, nftAmounts);
+        emit SmartVaultTokensClaimed(smartVault, msg.sender, claimedVaultTokens, nftIds, nftAmounts);
 
         return claimedVaultTokens;
     }
@@ -387,24 +387,24 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /**
      * @notice Burn withdrawal NFTs to claim assets
      * @param smartVault Vault address
-     * @param nftIDs NFTs to burn
+     * @param nftIds NFTs to burn
      * @param nftAmounts NFT amounts to burn
      * @param receiver Address to which to transfer claimed assets
      */
     function claimWithdrawal(
         address smartVault,
-        uint256[] calldata nftIDs,
+        uint256[] calldata nftIds,
         uint256[] calldata nftAmounts,
         address receiver
     ) public onlyRegisteredSmartVault(smartVault) returns (uint256[] memory, uint256) {
         uint256 assetGroupId_ = _smartVaultAssetGroups[smartVault];
-        bytes[] memory metadata = ISmartVault(smartVault).burnNFTs(msg.sender, nftIDs, nftAmounts);
+        bytes[] memory metadata = ISmartVault(smartVault).burnNFTs(msg.sender, nftIds, nftAmounts);
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId_);
         uint256[] memory withdrawnAssets = new uint256[](assetGroup.length);
 
-        for (uint256 i = 0; i < nftIDs.length; i++) {
-            if (nftIDs[i] <= MAXIMAL_DEPOSIT_ID) {
-                revert InvalidWithdrawalNftId(nftIDs[i]);
+        for (uint256 i = 0; i < nftIds.length; i++) {
+            if (nftIds[i] <= MAXIMAL_DEPOSIT_ID) {
+                revert InvalidWithdrawalNftId(nftIds[i]);
             }
 
             uint256[] memory withdrawnAssets_ =
@@ -421,7 +421,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             _masterWallet.transfer(IERC20(assetGroup[i]), receiver, withdrawnAssets[i]);
         }
 
-        emit WithdrawalClaimed(smartVault, msg.sender, assetGroupId_, nftIDs, nftAmounts, withdrawnAssets);
+        emit WithdrawalClaimed(smartVault, msg.sender, assetGroupId_, nftIds, nftAmounts, withdrawnAssets);
 
         return (withdrawnAssets, assetGroupId_);
     }

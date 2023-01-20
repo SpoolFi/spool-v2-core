@@ -135,7 +135,7 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
      * @dev Requirements:
      * - withdrawal NFT must be valid
      * @param smartVault Address of the smart vault that issued the withdrawal NFT.
-     * @param nftIDs ID of withdrawal NFT to burn.
+     * @param nftIds ID of withdrawal NFT to burn.
      * @param nftAmounts amounts
      * @param receiver Receiver of claimed assets.
      * @return assetAmounts Amounts of assets claimed.
@@ -143,7 +143,7 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
      */
     function claimWithdrawal(
         address smartVault,
-        uint256[] calldata nftIDs,
+        uint256[] calldata nftIds,
         uint256[] calldata nftAmounts,
         address receiver
     ) external returns (uint256[] memory assetAmounts, uint256 assetGroupId);
@@ -154,11 +154,11 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
      * - deposit NFT must be valid
      * - flush must be synced
      * @param smartVaultAddress Address of the smart vault that issued the deposit NFT.
-     * @param nftIDs ID of the deposit NFT to burn.
+     * @param nftIds ID of the deposit NFT to burn.
      * @param nftAmounts amounts
      * @return claimedAmount Amount of smart vault tokens claimed.
      */
-    function claimSmartVaultTokens(address smartVaultAddress, uint256[] calldata nftIDs, uint256[] calldata nftAmounts)
+    function claimSmartVaultTokens(address smartVaultAddress, uint256[] calldata nftIds, uint256[] calldata nftAmounts)
         external
         returns (uint256 claimedAmount);
 
@@ -200,29 +200,71 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
 
     /* ========== EVENTS ========== */
 
-    event RiskProviderSet(address indexed smartVault, address riskProvider_);
+    /**
+     * @notice Smart vault risk provider set
+     * @param smartVault Smart vault address
+     * @param riskProvider_ New risk provider address
+     */
+    event RiskProviderSet(address indexed smartVault, address indexed riskProvider_);
 
-    event SmartVaultFlushed(address indexed smartVault, uint256 flushIdx);
+    /**
+     * @notice Smart vault has been flushed
+     * @param smartVault Smart vault address
+     * @param flushIndex Flush index
+     */
+    event SmartVaultFlushed(address indexed smartVault, uint256 flushIndex);
 
+    /**
+     * @notice Smart vault has been synced
+     * @param smartVault Smart vault address
+     * @param flushIndex Flush index
+     */
     event SmartVaultSynced(address indexed smartVault, uint256 flushIndex);
 
+    /**
+     * @notice User redeemed deposit NFTs for SVTs
+     * @param smartVault Smart vault address
+     * @param claimer Claimer address
+     * @param claimedVaultTokens Amount of SVTs claimed
+     * @param nftIds NFTs to burn
+     * @param nftAmounts NFT shares to burn
+     */
     event SmartVaultTokensClaimed(
         address indexed smartVault,
         address indexed claimer,
         uint256 claimedVaultTokens,
-        uint256[] nftIDs,
+        uint256[] nftIds,
         uint256[] nftAmounts
     );
 
+    /**
+     * @notice User redeemed withdrawal NFTs for underlying assets
+     * @param smartVault Smart vault address
+     * @param claimer Claimer address
+     * @param nftIds NFTs to burn
+     * @param nftAmounts NFT shares to burn
+     * @param withdrawnAssets Amount of underlying assets withdrawn
+     */
     event WithdrawalClaimed(
         address indexed smartVault,
         address indexed claimer,
         uint256 assetGroupId,
-        uint256[] nftIDs,
+        uint256[] nftIds,
         uint256[] nftAmounts,
         uint256[] withdrawnAssets
     );
 
+    /**
+     * @notice A deposit has been initiated
+     * @param smartVault Smart vault address
+     * @param receiver Beneficiary of the deposit
+     * @param depositId Deposit NFT ID for this deposit
+     * @param flushIndex Flush index the deposit was scheduled for
+     * @param assetGroupId Asset group ID of the given smart vault
+     * @param assets Amount of assets to deposit
+     * @param executor Address that initiated the deposit
+     * @param referral Referral address
+     */
     event DepositInitiated(
         address indexed smartVault,
         address indexed receiver,
@@ -234,6 +276,15 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
         address referral
     );
 
+    /**
+     * @notice A deposit has been initiated
+     * @param smartVault Smart vault address
+     * @param owner Owner of shares to be redeemed
+     * @param redeemId Withdrawal NFT ID for this redeemal
+     * @param flushIndex Flush index the redeem was scheduled for
+     * @param shares Amount of vault shares to redeem
+     * @param receiver Beneficiary that will be able to claim the underlying assets
+     */
     event RedeemInitiated(
         address indexed smartVault,
         address indexed owner,
@@ -243,6 +294,16 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
         address receiver
     );
 
+    /**
+     * @notice A deposit has been initiated
+     * @param smartVault Smart vault address
+     * @param redeemer Redeemal initiator and owner of shares
+     * @param assetGroupId Asset group ID of the given smart vault
+     * @param shares Amount of vault shares to redeem
+     * @param nftIds NFTs to burn
+     * @param nftAmounts NFT shares to burn
+     * @param assetsWithdrawn Amount of underlying assets withdrawn
+     */
     event FastRedeemInitiated(
         address indexed smartVault,
         address indexed redeemer,
