@@ -93,9 +93,7 @@ interface IWithdrawalManager {
         external
         returns (uint256[] memory);
 
-    function claimWithdrawal(
-        WithdrawalClaimBag memory bag
-    ) external returns (uint256[] memory, uint256);
+    function claimWithdrawal(WithdrawalClaimBag memory bag) external returns (uint256[] memory, uint256);
 
     function syncWithdrawals(
         address smartVault,
