@@ -18,9 +18,9 @@ import "../../mocks/MockMasterChef.sol";
 import "../../mocks/MockMasterChefStrategy.sol";
 import "../../mocks/MockToken.sol";
 import "../../mocks/MockPriceFeedManager.sol";
-import "../../mocks/BaseTestContracts.sol";
+import "../../mocks/TestFixture.sol";
 
-contract DhwMasterChefTest is BaseTestContracts, Test {
+contract DhwMasterChefTest is TestFixture, Test {
     address private alice;
     address private bob;
 

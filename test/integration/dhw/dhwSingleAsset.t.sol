@@ -17,9 +17,9 @@ import "../../libraries/Arrays.sol";
 import "../../mocks/MockStrategy.sol";
 import "../../mocks/MockToken.sol";
 import "../../mocks/MockPriceFeedManager.sol";
-import "../../mocks/BaseTestContracts.sol";
+import "../../mocks/TestFixture.sol";
 
-contract DhwSingleAssetTest is BaseTestContracts, Test {
+contract DhwSingleAssetTest is TestFixture, Test {
     address private alice;
     address private bob;
 
@@ -65,7 +65,6 @@ contract DhwSingleAssetTest is BaseTestContracts, Test {
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
-        accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
 
         {

@@ -11,8 +11,11 @@ import "../../src/MasterWallet.sol";
 import "../../src/managers/StrategyRegistry.sol";
 import "./MockPriceFeedManager.sol";
 import "../../src/managers/RiskManager.sol";
+import "../integration/withdrawal.t.sol";
+import "../../src/managers/DepositManager.sol";
+import "../../src/managers/WithdrawalManager.sol";
 
-contract BaseTestContracts {
+contract TestFixture {
     address internal riskProvider = address(0x1);
 
     MockGuard internal guard;
@@ -21,6 +24,7 @@ contract BaseTestContracts {
     ISmartVault internal smartVault;
     SmartVaultManager internal smartVaultManager;
     IDepositManager internal depositManager;
+    IWithdrawalManager internal withdrawalManager;
     SpoolAccessControl internal accessControl;
     IRiskManager internal riskManager;
     AssetGroupRegistry internal assetGroupRegistry;
@@ -46,21 +50,25 @@ contract BaseTestContracts {
         depositManager =
             new DepositManager(strategyRegistry, priceFeedManager, masterWallet, guardManager, actionManager);
 
+        withdrawalManager =
+            new WithdrawalManager(strategyRegistry, priceFeedManager, masterWallet, guardManager, actionManager);
+
         smartVaultManager = new SmartVaultManager(
             accessControl,
-            strategyRegistry,
             assetGroupRegistry,
-            masterWallet,
-            actionManager,
-            guardManager,
             riskManager,
-            depositManager
+            depositManager,
+            withdrawalManager,
+            strategyRegistry
         );
 
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(depositManager));
-        accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
+        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(withdrawalManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(depositManager));
+        accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(withdrawalManager));
+        accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
+        accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(withdrawalManager));
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
     }
 }

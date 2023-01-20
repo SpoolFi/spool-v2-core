@@ -17,9 +17,9 @@ import "../../libraries/Arrays.sol";
 import "../../mocks/MockStrategy.sol";
 import "../../mocks/MockToken.sol";
 import "../../mocks/MockPriceFeedManager.sol";
-import "../../mocks/BaseTestContracts.sol";
+import "../../mocks/TestFixture.sol";
 
-contract DhwTest is BaseTestContracts, Test {
+contract DhwTest is TestFixture, Test {
     address private alice;
 
     MockToken tokenA;

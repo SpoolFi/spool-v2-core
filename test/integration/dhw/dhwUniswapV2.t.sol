@@ -18,9 +18,9 @@ import "../../utils/UniswapV2Setup.sol";
 import "../../mocks/MockUniswapV2Strategy.sol";
 import "../../mocks/MockToken.sol";
 import "../../mocks/MockPriceFeedManager.sol";
-import "../../mocks/BaseTestContracts.sol";
+import "../../mocks/TestFixture.sol";
 
-contract dhwUniswapV2 is BaseTestContracts, Test {
+contract dhwUniswapV2 is TestFixture, Test {
     address private alice;
     address private bob;
 

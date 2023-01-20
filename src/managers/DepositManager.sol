@@ -19,6 +19,9 @@ import "../libraries/ArrayMapping.sol";
 import "../access/SpoolAccessControl.sol";
 import "../interfaces/ISmartVaultManager.sol";
 import "../libraries/SpoolUtils.sol";
+import "./ActionsAndGuards.sol";
+import "../interfaces/IDepositManager.sol";
+import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @notice Used when deposit is not made in correct asset ratio.
@@ -39,46 +42,10 @@ struct DepositQueryBag1 {
     uint256[][] strategyRatios;
 }
 
-abstract contract ActionsAndGuards {
-    // @notice Guard manager
-    IGuardManager internal immutable _guardManager;
-
-    // @notice Action manager
-    IActionManager internal immutable _actionManager;
-
-    constructor(IGuardManager guardManager_, IActionManager actionManager_) {
-        _guardManager = guardManager_;
-        _actionManager = actionManager_;
-    }
-
-    function _runGuards(
-        address smartVault,
-        address executor,
-        address receiver,
-        address owner,
-        uint256[] memory assets,
-        address[] memory assetGroup,
-        RequestType requestType
-    ) internal view {
-        RequestContext memory context = RequestContext(receiver, executor, owner, requestType, assets, assetGroup);
-        _guardManager.runGuards(smartVault, context);
-    }
-
-    function _runActions(
-        address smartVault,
-        address executor,
-        address recipient,
-        address owner,
-        uint256[] memory assets,
-        address[] memory assetGroup,
-        RequestType requestType
-    ) internal {
-        ActionContext memory context = ActionContext(recipient, executor, owner, requestType, assetGroup, assets);
-        _actionManager.runActions(smartVault, context);
-    }
-}
-
 contract DepositManager is ActionsAndGuards, IDepositManager {
+    using SafeERC20 for IERC20;
+    using ArrayMapping for mapping(uint256 => uint256);
+
     uint256 constant INITIAL_SHARE_MULTIPLIER = 1000;
 
     /**
@@ -99,9 +66,6 @@ contract DepositManager is ActionsAndGuards, IDepositManager {
      * - 1 -> 0.01%
      */
     uint256 constant FULL_PERCENT = 100_00;
-
-    using SafeERC20 for IERC20;
-    using ArrayMapping for mapping(uint256 => uint256);
 
     IStrategyRegistry private immutable _strategyRegistry;
     IUsdPriceFeedManager private immutable _priceFeedManager;
@@ -177,6 +141,46 @@ contract DepositManager is ActionsAndGuards, IDepositManager {
 
         // TODO: dust
         return claimedVaultTokens * nftShares / NFT_MINTED_SHARES;
+    }
+
+    /**
+     * @notice Burn deposit NFTs to claim SVTs
+     * @param smartVault Vault address
+     * @param nftIds NFTs to burn
+     * @param nftAmounts NFT amounts to burn
+     */
+    function claimSmartVaultTokens(
+        address smartVault,
+        uint256[] calldata nftIds,
+        uint256[] calldata nftAmounts,
+        address[] memory tokens,
+        address executor
+    ) external returns (uint256) {
+        // NOTE:
+        // - here we are passing ids into the request context instead of amounts
+        // - here we passing empty array as tokens
+        _runGuards(smartVault, executor, executor, executor, nftIds, new address[](0), RequestType.BurnNFT);
+
+        ISmartVault vault = ISmartVault(smartVault);
+        bytes[] memory metadata = vault.burnNFTs(executor, nftIds, nftAmounts);
+
+        uint256 claimedVaultTokens = 0;
+        for (uint256 i = 0; i < nftIds.length; i++) {
+            if (nftIds[i] > MAXIMAL_DEPOSIT_ID) {
+                revert InvalidDepositNftId(nftIds[i]);
+            }
+
+            claimedVaultTokens += getClaimedVaultTokensPreview(
+                smartVault, abi.decode(metadata[i], (DepositMetadata)), nftAmounts[i], tokens
+            );
+        }
+
+        // there will be some dust after all users claim SVTs
+        vault.claimShares(executor, claimedVaultTokens);
+
+        emit SmartVaultTokensClaimed(smartVault, executor, claimedVaultTokens, nftIds, nftAmounts);
+
+        return claimedVaultTokens;
     }
 
     function flushSmartVault(

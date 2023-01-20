@@ -19,9 +19,9 @@ import "../mocks/MockNft.sol";
 import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
 import "../libraries/Arrays.sol";
-import "../mocks/BaseTestContracts.sol";
+import "../mocks/TestFixture.sol";
 
-contract NftGateGuardDemoTest is BaseTestContracts, Test {
+contract NftGateGuardDemoTest is TestFixture, Test {
     address private alice;
     address private bob;
     address private charlie;

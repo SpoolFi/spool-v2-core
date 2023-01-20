@@ -20,9 +20,9 @@ import "./libraries/Constants.sol";
 import "./mocks/MockPriceFeedManager.sol";
 import "./mocks/MockStrategy.sol";
 import "./mocks/MockToken.sol";
-import "./mocks/BaseTestContracts.sol";
+import "./mocks/TestFixture.sol";
 
-contract SmartVaultManagerTest is BaseTestContracts, Test {
+contract SmartVaultManagerTest is TestFixture, Test {
     address mySmartVault = address(100);
 
     MockToken token1;

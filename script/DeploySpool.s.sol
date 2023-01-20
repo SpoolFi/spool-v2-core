@@ -10,7 +10,7 @@ import {AssetGroupRegistry} from "../src/managers/AssetGroupRegistry.sol";
 import {GuardManager} from "../src/managers/GuardManager.sol";
 import {RewardManager} from "../src/managers/RewardManager.sol";
 import {RiskManager} from "../src/managers/RiskManager.sol";
-import {SmartVaultManager, DepositManager} from "../src/managers/SmartVaultManager.sol";
+import {SmartVaultManager} from "../src/managers/SmartVaultManager.sol";
 import {StrategyRegistry} from "../src/managers/StrategyRegistry.sol";
 import {UsdPriceFeedManager} from "../src/managers/UsdPriceFeedManager.sol";
 import {DepositSwap} from "../src/DepositSwap.sol";
@@ -20,6 +20,8 @@ import {SmartVaultFactory} from "../src/SmartVaultFactory.sol";
 import {Swapper} from "../src/Swapper.sol";
 import "@openzeppelin/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "../src/managers/DepositManager.sol";
+import "../src/managers/WithdrawalManager.sol";
 
 contract DeploySpool is Script {
     ProxyAdmin proxyAdmin;
@@ -93,17 +95,18 @@ contract DeploySpool is Script {
         DepositManager depositManager =
             new DepositManager(strategyRegistry, usdPriceFeedManager, masterWallet, guardManager, actionManager);
 
+        WithdrawalManager withdrawalManager =
+            new WithdrawalManager(strategyRegistry, usdPriceFeedManager, masterWallet, guardManager, actionManager);
+
         {
             smartVaultManager = new SmartVaultManager(
-            spoolAccessControl,
-            strategyRegistry,
-            assetGroupRegistry,
-            masterWallet,
-            actionManager,
-            guardManager,
-            riskManager,
-            depositManager
-        );
+                spoolAccessControl,
+                assetGroupRegistry,
+                riskManager,
+                depositManager,
+                withdrawalManager,
+                strategyRegistry
+            );
         }
 
         RewardManager rewardManagerImpl = new RewardManager(spoolAccessControl, assetGroupRegistry, smartVaultManager);

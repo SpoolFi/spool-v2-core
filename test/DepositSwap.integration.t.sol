@@ -3,16 +3,6 @@ pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
 import "../src/interfaces/RequestType.sol";
-import "../src/managers/ActionManager.sol";
-import "../src/managers/AssetGroupRegistry.sol";
-import "../src/managers/GuardManager.sol";
-import "../src/managers/RiskManager.sol";
-import "../src/managers/SmartVaultManager.sol";
-import "../src/managers/StrategyRegistry.sol";
-import "../src/managers/UsdPriceFeedManager.sol";
-import "../src/DepositSwap.sol";
-import "../src/MasterWallet.sol";
-import "../src/SmartVault.sol";
 import "../src/SmartVaultFactory.sol";
 import "../src/Swapper.sol";
 import "./libraries/Arrays.sol";
@@ -21,9 +11,10 @@ import "./mocks/MockExchange.sol";
 import "./mocks/MockPriceFeedManager.sol";
 import "./mocks/MockStrategy.sol";
 import "./mocks/MockToken.sol";
-import "./mocks/BaseTestContracts.sol";
+import "./mocks/TestFixture.sol";
+import "../src/DepositSwap.sol";
 
-contract DepositSwapIntegrationTest is BaseTestContracts, Test {
+contract DepositSwapIntegrationTest is TestFixture, Test {
     address private alice;
     address private bob;
 

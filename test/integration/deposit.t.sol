@@ -19,9 +19,9 @@ import "../libraries/Constants.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
-import "../mocks/BaseTestContracts.sol";
+import "../mocks/TestFixture.sol";
 
-contract DepositIntegrationTest is BaseTestContracts, Test {
+contract DepositIntegrationTest is TestFixture, Test {
     address private alice;
 
     MockToken tokenA;

@@ -8,6 +8,7 @@ import "./interfaces/IAssetGroupRegistry.sol";
 import "./interfaces/IDepositSwap.sol";
 import "./interfaces/ISmartVaultManager.sol";
 import "./interfaces/ISwapper.sol";
+import "./interfaces/IDepositManager.sol";
 
 contract DepositSwap is IDepositSwap {
     using SafeERC20 for IERC20;

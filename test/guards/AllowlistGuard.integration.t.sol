@@ -19,9 +19,9 @@ import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
 import "../libraries/Arrays.sol";
-import "../mocks/BaseTestContracts.sol";
+import "../mocks/TestFixture.sol";
 
-contract AllowlistGuardIntegrationTest is BaseTestContracts, Test {
+contract AllowlistGuardIntegrationTest is TestFixture, Test {
     address private alice;
     address private bob;
     address private charlie;

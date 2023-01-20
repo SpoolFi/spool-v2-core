@@ -20,9 +20,9 @@ import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
 import "../mocks/MockGuard.sol";
 import "../libraries/Arrays.sol";
-import "../mocks/BaseTestContracts.sol";
+import "../mocks/TestFixture.sol";
 
-contract TimelockGuardDemoTest is Test, BaseTestContracts {
+contract TimelockGuardDemoTest is Test, TestFixture {
     address private alice = address(0xa);
     address private bob = address(0xb);
     address private charlie = address(0xc);
