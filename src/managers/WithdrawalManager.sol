@@ -12,8 +12,9 @@ import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/ISmartVault.sol";
+import "../access/SpoolAccessControl.sol";
 
-contract WithdrawalManager is ActionsAndGuards, IWithdrawalManager {
+contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdrawalManager {
     using SafeERC20 for IERC20;
     using ArrayMapping for mapping(uint256 => uint256);
 
@@ -35,8 +36,13 @@ contract WithdrawalManager is ActionsAndGuards, IWithdrawalManager {
      */
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _withdrawnAssets;
 
+    /// @notice Strategy registry
     IStrategyRegistry private immutable _strategyRegistry;
+
+    /// @notice Price feed manager
     IUsdPriceFeedManager private immutable _priceFeedManager;
+
+    /// @notice Master wallet
     IMasterWallet private immutable _masterWallet;
 
     constructor(
@@ -44,8 +50,9 @@ contract WithdrawalManager is ActionsAndGuards, IWithdrawalManager {
         IUsdPriceFeedManager priceFeedManager_,
         IMasterWallet masterWallet_,
         IGuardManager guardManager_,
-        IActionManager actionManager_
-    ) ActionsAndGuards(guardManager_, actionManager_) {
+        IActionManager actionManager_,
+        ISpoolAccessControl accessControl_
+    ) ActionsAndGuards(guardManager_, actionManager_) SpoolAccessControllable(accessControl_) {
         _strategyRegistry = strategyRegistry_;
         _priceFeedManager = priceFeedManager_;
         _masterWallet = masterWallet_;
@@ -53,6 +60,7 @@ contract WithdrawalManager is ActionsAndGuards, IWithdrawalManager {
 
     function flushSmartVault(address smartVault, uint256 flushIndex, address[] memory strategies)
         external
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256[] memory)
     {
         uint256[] memory flushDhwIndexes;
@@ -93,40 +101,47 @@ contract WithdrawalManager is ActionsAndGuards, IWithdrawalManager {
         return withdrawnAssets;
     }
 
-    function claimWithdrawal(
-        address smartVault,
-        uint256[] calldata nftIds,
-        uint256[] calldata nftAmounts,
-        address receiver,
-        address executor,
-        uint256 assetGroupId,
-        address[] memory assetGroup
-    ) public returns (uint256[] memory, uint256) {
-        uint256[] memory withdrawnAssets = new uint256[](assetGroup.length);
-        bytes[] memory metadata = ISmartVault(smartVault).burnNFTs(executor, nftIds, nftAmounts);
+    function claimWithdrawal(WithdrawalClaimBag memory bag)
+        public
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+        returns (uint256[] memory, uint256)
+    {
+        uint256[] memory withdrawnAssets = new uint256[](bag.assetGroup.length);
+        bytes[] memory metadata = ISmartVault(bag.smartVault).burnNFTs(bag.executor, bag.nftIds, bag.nftAmounts);
 
-        for (uint256 i = 0; i < nftIds.length; i++) {
-            if (nftIds[i] <= MAXIMAL_DEPOSIT_ID) {
-                revert InvalidWithdrawalNftId(nftIds[i]);
+        for (uint256 i = 0; i < bag.nftIds.length; i++) {
+            if (bag.nftIds[i] <= MAXIMAL_DEPOSIT_ID) {
+                revert InvalidWithdrawalNftId(bag.nftIds[i]);
             }
 
-            uint256[] memory withdrawnAssets_ =
-                _calculateWithdrawal(smartVault, abi.decode(metadata[i], (WithdrawalMetadata)), assetGroup.length);
-            for (uint256 j = 0; j < assetGroup.length; j++) {
-                withdrawnAssets[j] += withdrawnAssets_[j] * nftAmounts[i] / NFT_MINTED_SHARES;
+            uint256[] memory withdrawnAssets_ = _calculateWithdrawal(
+                bag.smartVault, abi.decode(metadata[i], (WithdrawalMetadata)), bag.assetGroup.length
+            );
+            for (uint256 j = 0; j < bag.assetGroup.length; j++) {
+                withdrawnAssets[j] += withdrawnAssets_[j] * bag.nftAmounts[i] / NFT_MINTED_SHARES;
             }
         }
 
-        _runActions(smartVault, executor, receiver, executor, withdrawnAssets, assetGroup, RequestType.Withdrawal);
+        _runActions(
+            bag.smartVault,
+            bag.executor,
+            bag.receiver,
+            bag.executor,
+            withdrawnAssets,
+            bag.assetGroup,
+            RequestType.Withdrawal
+        );
 
-        for (uint256 i = 0; i < assetGroup.length; i++) {
+        for (uint256 i = 0; i < bag.assetGroup.length; i++) {
             // TODO-Q: should this be done by an action, since there might be a swap?
-            _masterWallet.transfer(IERC20(assetGroup[i]), receiver, withdrawnAssets[i]);
+            _masterWallet.transfer(IERC20(bag.assetGroup[i]), bag.receiver, withdrawnAssets[i]);
         }
 
-        emit WithdrawalClaimed(smartVault, executor, assetGroupId, nftIds, nftAmounts, withdrawnAssets);
+        emit WithdrawalClaimed(
+            bag.smartVault, bag.executor, bag.assetGroupId, bag.nftIds, bag.nftAmounts, withdrawnAssets
+            );
 
-        return (withdrawnAssets, assetGroupId);
+        return (withdrawnAssets, bag.assetGroupId);
     }
 
     function syncWithdrawals(
@@ -134,7 +149,7 @@ contract WithdrawalManager is ActionsAndGuards, IWithdrawalManager {
         uint256 flushIndex,
         address[] memory strategies,
         uint256[] memory dhwIndexes_
-    ) external {
+    ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
         if (_withdrawnVaultShares[smartVault][flushIndex] == 0) {
             return;
         }
@@ -146,7 +161,7 @@ contract WithdrawalManager is ActionsAndGuards, IWithdrawalManager {
         _withdrawnAssets[smartVault][flushIndex].setValues(withdrawnAssets_);
     }
 
-    function redeem(RedeemBag memory bag) external returns (uint256) {
+    function redeem(RedeemBag memory bag) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (uint256) {
         ISmartVault smartVault = ISmartVault(bag.smartVaultAddress);
         _validateRedeem(smartVault, bag.owner, bag.executor, bag.receiver, bag.nftIds, bag.nftAmounts, bag.vaultShares);
 
@@ -162,7 +177,11 @@ contract WithdrawalManager is ActionsAndGuards, IWithdrawalManager {
         return redeemId;
     }
 
-    function redeemFast(RedeemFastBag memory bag) external returns (uint256[] memory) {
+    function redeemFast(RedeemFastBag memory bag)
+        external
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+        returns (uint256[] memory)
+    {
         ISmartVault smartVault = ISmartVault(bag.smartVaultAddress);
         _validateRedeem(smartVault, bag.executor, bag.executor, bag.executor, bag.nftIds, bag.nftAmounts, bag.shares);
 

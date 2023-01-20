@@ -23,6 +23,16 @@ struct RedeemBag {
     uint256 flushIndex;
 }
 
+struct WithdrawalClaimBag {
+    address smartVault;
+    uint256[] nftIds;
+    uint256[] nftAmounts;
+    address receiver;
+    address executor;
+    uint256 assetGroupId;
+    address[] assetGroup;
+}
+
 interface IWithdrawalManager {
     /**
      * @notice User redeemed withdrawal NFTs for underlying assets
@@ -84,13 +94,7 @@ interface IWithdrawalManager {
         returns (uint256[] memory);
 
     function claimWithdrawal(
-        address smartVault,
-        uint256[] calldata nftIds,
-        uint256[] calldata nftAmounts,
-        address receiver,
-        address executor,
-        uint256 assetGroupId,
-        address[] memory assetGroup
+        WithdrawalClaimBag memory bag
     ) external returns (uint256[] memory, uint256);
 
     function syncWithdrawals(

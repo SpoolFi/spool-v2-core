@@ -93,10 +93,10 @@ contract DeploySpool is Script {
         spoolAccessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
 
         DepositManager depositManager =
-            new DepositManager(strategyRegistry, usdPriceFeedManager, masterWallet, guardManager, actionManager);
+        new DepositManager(strategyRegistry, usdPriceFeedManager, masterWallet, guardManager, actionManager, spoolAccessControl);
 
         WithdrawalManager withdrawalManager =
-            new WithdrawalManager(strategyRegistry, usdPriceFeedManager, masterWallet, guardManager, actionManager);
+        new WithdrawalManager(strategyRegistry, usdPriceFeedManager, masterWallet, guardManager, actionManager, spoolAccessControl);
 
         {
             smartVaultManager = new SmartVaultManager(

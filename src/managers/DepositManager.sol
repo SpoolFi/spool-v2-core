@@ -42,7 +42,7 @@ struct DepositQueryBag1 {
     uint256[][] strategyRatios;
 }
 
-contract DepositManager is ActionsAndGuards, IDepositManager {
+contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositManager {
     using SafeERC20 for IERC20;
     using ArrayMapping for mapping(uint256 => uint256);
 
@@ -67,8 +67,13 @@ contract DepositManager is ActionsAndGuards, IDepositManager {
      */
     uint256 constant FULL_PERCENT = 100_00;
 
+    /// @notice Strategy registry
     IStrategyRegistry private immutable _strategyRegistry;
+
+    /// @notice Price feed manager
     IUsdPriceFeedManager private immutable _priceFeedManager;
+
+    /// @notice Master wallet
     IMasterWallet private immutable _masterWallet;
 
     constructor(
@@ -76,8 +81,9 @@ contract DepositManager is ActionsAndGuards, IDepositManager {
         IUsdPriceFeedManager priceFeedManager_,
         IMasterWallet masterWallet_,
         IGuardManager guardManager_,
-        IActionManager actionManager_
-    ) ActionsAndGuards(guardManager_, actionManager_) {
+        IActionManager actionManager_,
+        ISpoolAccessControl accessControl_
+    ) ActionsAndGuards(guardManager_, actionManager_) SpoolAccessControllable(accessControl_) {
         _strategyRegistry = strategyRegistry_;
         _priceFeedManager = priceFeedManager_;
         _masterWallet = masterWallet_;
@@ -155,7 +161,7 @@ contract DepositManager is ActionsAndGuards, IDepositManager {
         uint256[] calldata nftAmounts,
         address[] memory tokens,
         address executor
-    ) external returns (uint256) {
+    ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (uint256) {
         // NOTE:
         // - here we are passing ids into the request context instead of amounts
         // - here we passing empty array as tokens
@@ -189,7 +195,7 @@ contract DepositManager is ActionsAndGuards, IDepositManager {
         address[] memory strategies_,
         uint256[] memory allocation,
         address[] memory tokens
-    ) external returns (uint256[] memory) {
+    ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (uint256[] memory) {
         uint256[] memory flushDhwIndexes;
 
         if (_vaultDeposits[smartVault][flushIndex][0] > 0) {
@@ -224,7 +230,7 @@ contract DepositManager is ActionsAndGuards, IDepositManager {
         address[] memory strategies_,
         uint256[] memory dhwIndexes_,
         address[] memory assetGroup
-    ) external {
+    ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
         // skip if there were no deposits made
         if (_vaultDeposits[smartVault][flushIndex][0] == 0) {
             return;
@@ -262,7 +268,11 @@ contract DepositManager is ActionsAndGuards, IDepositManager {
         _mintedVaultShares[smartVault][flushIndex] = svtsToMint;
     }
 
-    function depositAssets(DepositBag memory bag) external returns (uint256) {
+    function depositAssets(DepositBag memory bag)
+        external
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+        returns (uint256)
+    {
         // run guards and actions
         _runGuards(bag.smartVault, bag.executor, bag.receiver, bag.owner, bag.assets, bag.tokens, RequestType.Deposit);
         _runActions(bag.smartVault, bag.executor, bag.receiver, bag.owner, bag.assets, bag.tokens, RequestType.Deposit);

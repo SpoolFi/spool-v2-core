@@ -276,7 +276,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     ) public onlyRegisteredSmartVault(smartVault) returns (uint256[] memory, uint256) {
         uint256 assetGroupId_ = _smartVaultAssetGroups[smartVault];
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId_);
-        return _withdrawalManager.claimWithdrawal(smartVault, nftIds, nftAmounts, receiver, msg.sender, assetGroupId_, assetGroup);
+        return _withdrawalManager.claimWithdrawal(
+            WithdrawalClaimBag(smartVault, nftIds, nftAmounts, receiver, msg.sender, assetGroupId_, assetGroup)
+        );
     }
 
     /* ========== REGISTRY ========== */
