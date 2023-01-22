@@ -3,16 +3,6 @@ pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
 import "../src/interfaces/RequestType.sol";
-import "../src/managers/ActionManager.sol";
-import "../src/managers/AssetGroupRegistry.sol";
-import "../src/managers/GuardManager.sol";
-import "../src/managers/RiskManager.sol";
-import "../src/managers/SmartVaultManager.sol";
-import "../src/managers/StrategyRegistry.sol";
-import "../src/managers/UsdPriceFeedManager.sol";
-import "../src/DepositSwap.sol";
-import "../src/MasterWallet.sol";
-import "../src/SmartVault.sol";
 import "../src/SmartVaultFactory.sol";
 import "../src/Swapper.sol";
 import "./libraries/Arrays.sol";
@@ -21,8 +11,10 @@ import "./mocks/MockExchange.sol";
 import "./mocks/MockPriceFeedManager.sol";
 import "./mocks/MockStrategy.sol";
 import "./mocks/MockToken.sol";
+import "./mocks/TestFixture.sol";
+import "../src/DepositSwap.sol";
 
-contract DepositSwapIntegrationTest is Test {
+contract DepositSwapIntegrationTest is TestFixture {
     address private alice;
     address private bob;
 
@@ -30,48 +22,24 @@ contract DepositSwapIntegrationTest is Test {
     MockToken private tokenB;
     MockToken private tokenC;
 
-    AssetGroupRegistry private assetGroupRegistry;
-    MasterWallet private masterWallet;
-    MockPriceFeedManager private priceFeedManager;
-    ISmartVault private smartVault;
-    SmartVaultManager private smartVaultManager;
     Swapper private swapper;
 
     function setUp() public {
+        setUpBase();
+
         alice = address(0xa);
         bob = address(0xb);
-
-        address riskProvider = address(0x1);
 
         tokenA = new MockToken("Token A", "TA");
         tokenB = new MockToken("Token B", "TB");
         tokenC = new MockToken("Token C", "TC");
 
-        SpoolAccessControl accessControl = new SpoolAccessControl();
-        accessControl.initialize();
-        ActionManager actionManager = new ActionManager(accessControl);
-        assetGroupRegistry = new AssetGroupRegistry(accessControl);
-        assetGroupRegistry.initialize(Arrays.toArray(address(tokenA), address(tokenB), address(tokenC)));
-        GuardManager guardManager = new GuardManager(accessControl);
-        masterWallet = new MasterWallet(accessControl);
-        priceFeedManager = new MockPriceFeedManager();
-        StrategyRegistry strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
-        swapper = new Swapper();
-        IRiskManager riskManager = new RiskManager(accessControl);
-        smartVaultManager = new SmartVaultManager(
-            accessControl,
-            strategyRegistry,
-            priceFeedManager,
-            assetGroupRegistry,
-            masterWallet,
-            actionManager,
-            guardManager,
-            riskManager
-        );
+        assetGroupRegistry.allowToken(address(tokenA));
+        assetGroupRegistry.allowToken(address(tokenB));
+        assetGroupRegistry.allowToken(address(tokenC));
+        assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(tokenA), address(tokenB), address(tokenC)));
 
-        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
-        accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
-        accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
+        swapper = new Swapper();
 
         uint256 assetGroupId;
         {
@@ -140,7 +108,7 @@ contract DepositSwapIntegrationTest is Test {
         priceFeedManager.setExchangeRate(address(tokenB), 1 * USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenC), 2 * USD_DECIMALS_MULTIPLIER);
 
-        DepositSwap depositSwap = new DepositSwap(assetGroupRegistry, smartVaultManager, swapper);
+        DepositSwap depositSwap = new DepositSwap(assetGroupRegistry, smartVaultManager, swapper, depositManager);
 
         SwapInfo[] memory swapInfo = new SwapInfo[](2);
         swapInfo[0] = SwapInfo(
@@ -188,7 +156,7 @@ contract DepositSwapIntegrationTest is Test {
         priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenB), 1 * USD_DECIMALS_MULTIPLIER);
 
-        DepositSwap depositSwap = new DepositSwap(assetGroupRegistry, smartVaultManager, swapper);
+        DepositSwap depositSwap = new DepositSwap(assetGroupRegistry, smartVaultManager, swapper, depositManager);
 
         SwapInfo[] memory swapInfo = new SwapInfo[](1);
         swapInfo[0] = SwapInfo(

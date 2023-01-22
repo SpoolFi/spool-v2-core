@@ -20,48 +20,16 @@ import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
 import "../mocks/MockGuard.sol";
 import "../libraries/Arrays.sol";
+import "../mocks/TestFixture.sol";
 
-contract NftGateGuardDemoTest is Test {
+contract TimelockGuardDemoTest is Test, TestFixture {
     address private alice = address(0xa);
     address private bob = address(0xb);
     address private charlie = address(0xc);
     address private eve = address(0xe);
-    address private riskProvider = address(0x1);
-
-    MockGuard private guard;
-    MockToken private token;
-    GuardManager private guardManager;
-    ISmartVault private smartVault;
-    SmartVaultManager private smartVaultManager;
 
     function setUp() public {
-        token = new MockToken("Token", "T");
-        guard = new MockGuard();
-
-        SpoolAccessControl accessControl = new SpoolAccessControl();
-        accessControl.initialize();
-        ActionManager actionManager = new ActionManager(accessControl);
-        AssetGroupRegistry assetGroupRegistry = new AssetGroupRegistry(accessControl);
-        assetGroupRegistry.initialize(Arrays.toArray(address(token)));
-        guardManager = new GuardManager(accessControl);
-        MasterWallet masterWallet = new MasterWallet(accessControl);
-        IUsdPriceFeedManager priceFeedManager = new MockPriceFeedManager();
-        StrategyRegistry strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
-        IRiskManager riskManager = new RiskManager(accessControl);
-        smartVaultManager = new SmartVaultManager(
-            accessControl,
-            strategyRegistry,
-            priceFeedManager,
-            assetGroupRegistry,
-            masterWallet,
-            actionManager,
-            guardManager,
-            riskManager
-        );
-
-        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
-        accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
-        accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
+        setUpBase();
 
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(token)));
         MockStrategy strategy =
@@ -142,7 +110,7 @@ contract NftGateGuardDemoTest is Test {
         token.mint(alice, 2 ether);
 
         vm.startPrank(alice);
-        token.approve(address(smartVaultManager), 2 ether);
+        token.approve(address(depositManager), 2 ether);
         uint256[] memory depositAmounts = Arrays.toArray(1 ether);
         uint256 tokenId = smartVaultManager.deposit(address(smartVault), depositAmounts, alice, address(0));
         DepositMetadata memory metadata =

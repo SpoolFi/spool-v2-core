@@ -16,9 +16,11 @@ import "../interfaces/IAction.sol";
 import "../interfaces/RequestType.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
 import "../libraries/ArrayMapping.sol";
-import "../libraries/SmartVaultDeposits.sol";
+import "../libraries/SpoolUtils.sol";
 import "../access/SpoolAccessControl.sol";
 import "../interfaces/ISmartVaultManager.sol";
+import "../interfaces/IDepositManager.sol";
+import "../interfaces/IWithdrawalManager.sol";
 
 /**
  * @dev Requires roles:
@@ -27,30 +29,20 @@ import "../interfaces/ISmartVaultManager.sol";
  * - ROLE_SMART_VAULT_MANAGER
  */
 contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
+    /* ========== CONSTANTS ========== */
+
     using SafeERC20 for IERC20;
     using ArrayMapping for mapping(uint256 => uint256);
 
-    /* ========== CONSTANTS ========== */
+    IDepositManager private immutable _depositManager;
 
-    uint256 internal constant INITIAL_SHARE_MULTIPLIER = 1000;
-
-    // @notice Guard manager
-    IGuardManager internal immutable _guardManager;
-
-    // @notice Action manager
-    IActionManager internal immutable _actionManager;
+    IWithdrawalManager private immutable _withdrawalManager;
 
     /// @notice Strategy registry
     IStrategyRegistry private immutable _strategyRegistry;
 
-    /// @notice Price Feed Manager
-    IUsdPriceFeedManager private immutable _priceFeedManager;
-
     /// @notice Asset Group registry
     IAssetGroupRegistry private immutable _assetGroupRegistry;
-
-    /// @notice Master wallet
-    IMasterWallet private immutable _masterWallet;
 
     /// @notice Risk manager.
     IRiskManager private immutable _riskManager;
@@ -93,66 +85,19 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      */
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _dhwIndexes;
 
-    /**
-     * @notice Vault deposits at given flush index
-     * @dev smart vault => flush index => assets deposited
-     */
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _vaultDeposits;
-
-    /**
-     * @notice Flushed deposits for vault, at given flush index
-     * @dev smart vault => flush index => strategy => assets deposited
-     */
-    mapping(address => mapping(uint256 => mapping(address => mapping(uint256 => uint256)))) internal
-        _vaultFlushedDeposits;
-
-    /**
-     * @notice Minted vault shares at given flush index
-     * @dev smart vault => flush index => vault shares minted
-     */
-    mapping(address => mapping(uint256 => uint256)) internal _mintedVaultShares;
-
-    /**
-     * @notice Withdrawn vault shares at given flush index
-     * @dev smart vault => flush index => vault shares withdrawn
-     */
-    mapping(address => mapping(uint256 => uint256)) internal _withdrawnVaultShares;
-
-    /**
-     * @notice Withdrawn strategy shares for vault, at given flush index
-     * @dev smart vault => flush index => strategy shares withdrawn
-     */
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _withdrawnStrategyShares;
-
-    /**
-     * @notice Withdrawn assets for vault, at given flush index
-     * @dev smart vault => flush index => assets withdrawn
-     */
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _withdrawnAssets;
-
-    /**
-     * @notice Exchange rates for vault, at given flush index
-     * @dev smart vault => flush index => exchange rates
-     */
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _flushExchangeRates;
-
     constructor(
         ISpoolAccessControl accessControl_,
-        IStrategyRegistry strategyRegistry_,
-        IUsdPriceFeedManager priceFeedManager_,
         IAssetGroupRegistry assetGroupRegistry_,
-        IMasterWallet masterWallet_,
-        IActionManager actionManager_,
-        IGuardManager guardManager_,
-        IRiskManager riskManager_
+        IRiskManager riskManager_,
+        IDepositManager depositManager_,
+        IWithdrawalManager withdrawalManager_,
+        IStrategyRegistry strategyRegistry_
     ) SpoolAccessControllable(accessControl_) {
-        _strategyRegistry = strategyRegistry_;
-        _priceFeedManager = priceFeedManager_;
         _assetGroupRegistry = assetGroupRegistry_;
-        _masterWallet = masterWallet_;
-        _actionManager = actionManager_;
-        _guardManager = guardManager_;
         _riskManager = riskManager_;
+        _depositManager = depositManager_;
+        _withdrawalManager = withdrawalManager_;
+        _strategyRegistry = strategyRegistry_;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -164,52 +109,31 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         ISmartVault smartVault = ISmartVault(smartVaultAddress);
         uint256 currentBalance = smartVault.balanceOf(userAddress);
         uint256[] memory nftIds = smartVault.activeUserNFTIds(userAddress);
-        bytes[] memory metadata = smartVault.getMetadata(nftIds);
 
-        uint256[] memory balances = smartVault.balanceOfFractionalBatch(userAddress, nftIds);
+        if (nftIds.length > 0) {
+            bytes[] memory metadata = smartVault.getMetadata(nftIds);
+            uint256[] memory balances = smartVault.balanceOfFractionalBatch(userAddress, nftIds);
+            address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVaultAddress]);
 
-        for (uint256 i; i < nftIds.length; i++) {
-            if (nftIds[i] > MAXIMAL_DEPOSIT_ID) {
-                continue;
+            for (uint256 i; i < nftIds.length; i++) {
+                if (nftIds[i] > MAXIMAL_DEPOSIT_ID) {
+                    continue;
+                }
+
+                DepositMetadata memory depositMetadata = abi.decode(metadata[i], (DepositMetadata));
+
+                if (depositMetadata.flushIndex >= _flushIndexesToSync[smartVaultAddress]) {
+                    revert DepositNotSyncedYet();
+                }
+
+                uint256 balance = _depositManager.getClaimedVaultTokensPreview(
+                    smartVaultAddress, depositMetadata, balances[i], tokens
+                );
+                currentBalance += balance;
             }
-
-            DepositMetadata memory depositMetadata = abi.decode(metadata[i], (DepositMetadata));
-            uint256 balance = _getClaimedVaultTokensPreview(smartVaultAddress, depositMetadata, balances[i]);
-            currentBalance += balance;
         }
 
         return currentBalance;
-    }
-
-    function _getClaimedVaultTokensPreview(address smartVaultAddress, DepositMetadata memory data, uint256 nftShares)
-        private
-        view
-        returns (uint256)
-    {
-        if (data.flushIndex >= _flushIndexesToSync[smartVaultAddress]) {
-            revert DepositNotSyncedYet();
-        }
-
-        uint256 depositedUsd;
-        uint256 totalDepositedUsd;
-        {
-            address[] memory assets = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVaultAddress]);
-            uint256[] memory totalDepositedAssets =
-                _vaultDeposits[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
-            uint256[] memory exchangeRates =
-                _flushExchangeRates[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
-
-            for (uint256 i = 0; i < data.assets.length; i++) {
-                depositedUsd += _priceFeedManager.assetToUsdCustomPrice(assets[i], data.assets[i], exchangeRates[i]);
-                totalDepositedUsd +=
-                    _priceFeedManager.assetToUsdCustomPrice(assets[i], totalDepositedAssets[i], exchangeRates[i]);
-            }
-        }
-        uint256 claimedVaultTokens =
-            _mintedVaultShares[smartVaultAddress][data.flushIndex] * depositedUsd / totalDepositedUsd;
-
-        // TODO: dust
-        return claimedVaultTokens * nftShares / NFT_MINTED_SHARES;
     }
 
     /**
@@ -259,7 +183,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      */
     function smartVaultDeposits(address smartVault, uint256 flushIdx) external view returns (uint256[] memory) {
         uint256 assetGroupLength = _assetGroupRegistry.assetGroupLength(_smartVaultAssetGroups[smartVault]);
-        return _vaultDeposits[smartVault][flushIdx].toArray(assetGroupLength);
+        return _depositManager.smartVaultDeposits(smartVault, flushIdx, assetGroupLength);
     }
 
     /**
@@ -282,7 +206,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256[] calldata nftIds,
         uint256[] calldata nftAmounts
     ) external onlyRegisteredSmartVault(smartVault) returns (uint256) {
-        return _redeemShares(smartVault, shares, receiver, owner, nftIds, nftAmounts);
+        uint256 flushIndex = _flushIndexes[smartVault];
+        return _withdrawalManager.redeem(
+            RedeemBag(smartVault, shares, msg.sender, receiver, owner, nftIds, nftAmounts, flushIndex)
+        );
     }
 
     function redeemFast(
@@ -291,42 +218,14 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256[] calldata nftIds,
         uint256[] calldata nftAmounts
     ) external onlyRegisteredSmartVault(smartVaultAddress) returns (uint256[] memory) {
-        ISmartVault smartVault = ISmartVault(smartVaultAddress);
-        _validateRedeem(smartVault, msg.sender, msg.sender, msg.sender, nftIds, nftAmounts, shares);
-
-        // figure out how much to redeem from each strategy
         address[] memory strategies_ = _smartVaultStrategies[smartVaultAddress];
-        uint256[] memory strategySharesToRedeem = new uint256[](strategies_.length);
-        {
-            uint256 totalVaultShares = smartVault.totalSupply();
-            for (uint256 i = 0; i < strategies_.length; i++) {
-                uint256 strategyShares = IStrategy(strategies_[i]).balanceOf(smartVaultAddress);
-
-                strategySharesToRedeem[i] = strategyShares * shares / totalVaultShares;
-            }
-
-            // redeem from strategies and burn
-            smartVault.burn(msg.sender, shares, strategies_, strategySharesToRedeem);
-        }
-
         uint256 assetGroupId_ = _smartVaultAssetGroups[smartVaultAddress];
-        uint256[] memory assetsWithdrawn;
-
-        {
-            address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId_);
-            assetsWithdrawn = _strategyRegistry.redeemFast(strategies_, strategySharesToRedeem, assetGroup);
-
-            // transfer assets to the redeemer
-            for (uint256 i = 0; i < assetGroup.length; i++) {
-                _masterWallet.transfer(IERC20(assetGroup[i]), msg.sender, assetsWithdrawn[i]);
-            }
-        }
-
-        emit FastRedeemInitiated(
-            smartVaultAddress, msg.sender, assetGroupId_, shares, nftIds, nftAmounts, assetsWithdrawn
-            );
-
-        return assetsWithdrawn;
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId_);
+        return _withdrawalManager.redeemFast(
+            RedeemFastBag(
+                smartVaultAddress, shares, nftIds, nftAmounts, strategies_, assetGroup, assetGroupId_, msg.sender
+            )
+        );
     }
 
     function depositFor(
@@ -358,30 +257,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         onlyRegisteredSmartVault(smartVault)
         returns (uint256)
     {
-        // NOTE:
-        // - here we are passing ids into the request context instead of amounts
-        // - here we passing empty array as tokens
-        _runGuards(smartVault, msg.sender, msg.sender, msg.sender, nftIds, new address[](0), RequestType.BurnNFT);
-
-        ISmartVault vault = ISmartVault(smartVault);
-        bytes[] memory metadata = vault.burnNFTs(msg.sender, nftIds, nftAmounts);
-
-        uint256 claimedVaultTokens = 0;
-        for (uint256 i = 0; i < nftIds.length; i++) {
-            if (nftIds[i] > MAXIMAL_DEPOSIT_ID) {
-                revert InvalidDepositNftId(nftIds[i]);
-            }
-
-            claimedVaultTokens +=
-                _getClaimedVaultTokensPreview(smartVault, abi.decode(metadata[i], (DepositMetadata)), nftAmounts[i]);
-        }
-
-        // there will be some dust after all users claim SVTs
-        vault.claimShares(msg.sender, claimedVaultTokens);
-
-        emit SmartVaultTokensClaimed(smartVault, msg.sender, claimedVaultTokens, nftIds, nftAmounts);
-
-        return claimedVaultTokens;
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
+        return _depositManager.claimSmartVaultTokens(smartVault, nftIds, nftAmounts, tokens, msg.sender);
     }
 
     /**
@@ -398,32 +275,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address receiver
     ) public onlyRegisteredSmartVault(smartVault) returns (uint256[] memory, uint256) {
         uint256 assetGroupId_ = _smartVaultAssetGroups[smartVault];
-        bytes[] memory metadata = ISmartVault(smartVault).burnNFTs(msg.sender, nftIds, nftAmounts);
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId_);
-        uint256[] memory withdrawnAssets = new uint256[](assetGroup.length);
-
-        for (uint256 i = 0; i < nftIds.length; i++) {
-            if (nftIds[i] <= MAXIMAL_DEPOSIT_ID) {
-                revert InvalidWithdrawalNftId(nftIds[i]);
-            }
-
-            uint256[] memory withdrawnAssets_ =
-                _calculateWithdrawal(smartVault, abi.decode(metadata[i], (WithdrawalMetadata)), assetGroup.length);
-            for (uint256 j = 0; j < assetGroup.length; j++) {
-                withdrawnAssets[j] += withdrawnAssets_[j] * nftAmounts[i] / NFT_MINTED_SHARES;
-            }
-        }
-
-        _runActions(smartVault, msg.sender, receiver, msg.sender, withdrawnAssets, assetGroup, RequestType.Withdrawal);
-
-        for (uint256 i = 0; i < assetGroup.length; i++) {
-            // TODO-Q: should this be done by an action, since there might be a swap?
-            _masterWallet.transfer(IERC20(assetGroup[i]), receiver, withdrawnAssets[i]);
-        }
-
-        emit WithdrawalClaimed(smartVault, msg.sender, assetGroupId_, nftIds, nftAmounts, withdrawnAssets);
-
-        return (withdrawnAssets, assetGroupId_);
+        return _withdrawalManager.claimWithdrawal(
+            WithdrawalClaimBag(smartVault, nftIds, nftAmounts, receiver, msg.sender, assetGroupId_, assetGroup)
+        );
     }
 
     /* ========== REGISTRY ========== */
@@ -483,49 +338,16 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function flushSmartVault(address smartVault) external onlyRegisteredSmartVault(smartVault) {
         uint256 flushIndex = _flushIndexes[smartVault];
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
-        uint256[] memory flushDhwIndexes;
 
-        if (_vaultDeposits[smartVault][flushIndex][0] > 0) {
-            // handle deposits
-            address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-            uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(tokens, _priceFeedManager);
-            uint256[] memory deposits = _vaultDeposits[smartVault][flushIndex].toArray(tokens.length);
-            uint256[] memory allocation = _smartVaultAllocations[smartVault].toArray(strategies_.length);
+        // handle deposits
+        uint256[] memory allocation = _smartVaultAllocations[smartVault].toArray(strategies_.length);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
+        uint256[] memory flushDhwIndexes =
+            _depositManager.flushSmartVault(smartVault, flushIndex, strategies_, allocation, tokens);
 
-            _flushExchangeRates[smartVault][flushIndex].setValues(exchangeRates);
-
-            uint256[][] memory distribution = SmartVaultDeposits.distributeDeposit(
-                DepositQueryBag1({
-                    deposit: deposits,
-                    exchangeRates: exchangeRates,
-                    allocation: allocation,
-                    strategyRatios: SpoolUtils.getStrategyRatiosAtLastDhw(strategies_, _strategyRegistry)
-                })
-            );
-
-            flushDhwIndexes = _strategyRegistry.addDeposits(strategies_, distribution);
-
-            for (uint256 i = 0; i < strategies_.length; i++) {
-                _vaultFlushedDeposits[smartVault][flushIndex][strategies_[i]].setValues(distribution[i]);
-            }
-        }
-
-        uint256 withdrawals = _withdrawnVaultShares[smartVault][flushIndex];
-
-        if (withdrawals > 0) {
-            // handle withdrawals
-            uint256[] memory strategyWithdrawals = new uint256[](strategies_.length);
-            uint256 totalVaultShares = ISmartVault(smartVault).totalSupply();
-
-            for (uint256 i = 0; i < strategies_.length; i++) {
-                uint256 strategyShares = IStrategy(strategies_[i]).balanceOf(smartVault);
-                strategyWithdrawals[i] = strategyShares * withdrawals / totalVaultShares;
-            }
-
-            ISmartVault(smartVault).burn(smartVault, withdrawals, strategies_, strategyWithdrawals);
-            flushDhwIndexes = _strategyRegistry.addWithdrawals(strategies_, strategyWithdrawals);
-
-            _withdrawnStrategyShares[smartVault][flushIndex].setValues(strategyWithdrawals);
+        uint256[] memory flushDhwIndexes2 = _withdrawalManager.flushSmartVault(smartVault, flushIndex, strategies_);
+        if (flushDhwIndexes.length == 0) {
+            flushDhwIndexes = flushDhwIndexes2;
         }
 
         if (flushDhwIndexes.length == 0) revert NothingToFlush();
@@ -541,6 +363,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         // NOTE: warning "This declaration has the same name as another declaration."
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
 
         uint256 flushIndex = _flushIndexesToSync[smartVault];
         while (flushIndex < _flushIndexes[smartVault]) {
@@ -556,8 +379,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
                 }
             }
 
-            _syncWithdrawals(smartVault, flushIndex, strategies_, indexes);
-            _syncDeposits(smartVault, flushIndex, strategies_, indexes);
+            _withdrawalManager.syncWithdrawals(smartVault, flushIndex, strategies_, indexes);
+            _depositManager.syncDeposits(smartVault, flushIndex, strategies_, indexes, assetGroup);
 
             emit SmartVaultSynced(smartVault, flushIndex);
 
@@ -593,190 +416,24 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         if (tokens.length != assets.length) {
             revert InvalidAssetLengths();
         }
-
-        // run guards and actions
-        _runGuards(smartVault, msg.sender, receiver, owner, assets, tokens, RequestType.Deposit);
-        _runActions(smartVault, msg.sender, receiver, owner, assets, tokens, RequestType.Deposit);
-
-        // check if assets are in correct ratio
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
-        SmartVaultDeposits.checkDepositRatio(
-            assets,
-            SpoolUtils.getExchangeRates(tokens, _priceFeedManager),
-            _smartVaultAllocations[smartVault].toArray(strategies_.length),
-            SpoolUtils.getStrategyRatiosAtLastDhw(strategies_, _strategyRegistry)
-        );
-
-        // transfer tokens from user to master wallet
+        uint256[] memory allocations_ = _smartVaultAllocations[smartVault].toArray(strategies_.length);
         uint256 flushIndex = _flushIndexes[smartVault];
-        for (uint256 i = 0; i < tokens.length; i++) {
-            IERC20(tokens[i]).safeTransferFrom(owner, address(_masterWallet), assets[i]);
-            _vaultDeposits[smartVault][flushIndex][i] = assets[i];
-        }
-
-        // mint deposit NFT
-        DepositMetadata memory metadata = DepositMetadata(assets, block.timestamp, flushIndex);
-        uint256 depositId = ISmartVault(smartVault).mintDepositNFT(receiver, metadata);
-
-        emit DepositInitiated(smartVault, receiver, depositId, flushIndex, assetGroupId_, assets, msg.sender, referral);
-
-        return depositId;
-    }
-
-    function _redeemShares(
-        address smartVaultAddress,
-        uint256 vaultShares,
-        address receiver,
-        address owner,
-        uint256[] calldata nftIds,
-        uint256[] calldata nftAmounts
-    ) internal returns (uint256) {
-        ISmartVault smartVault = ISmartVault(smartVaultAddress);
-        _validateRedeem(smartVault, owner, msg.sender, receiver, nftIds, nftAmounts, vaultShares);
-
-        // add withdrawal to be flushed
-        uint256 flushIndex = _flushIndexes[smartVaultAddress];
-        _withdrawnVaultShares[smartVaultAddress][flushIndex] += vaultShares;
-
-        // transfer vault shares back to smart vault
-        smartVault.transferFromSpender(owner, smartVaultAddress, vaultShares, msg.sender);
-        uint256 redeemId = smartVault.mintWithdrawalNFT(receiver, WithdrawalMetadata(vaultShares, flushIndex));
-        emit RedeemInitiated(smartVaultAddress, owner, redeemId, flushIndex, vaultShares, receiver);
-
-        return redeemId;
-    }
-
-    function _validateRedeem(
-        ISmartVault smartVault,
-        address owner,
-        address executor,
-        address receiver,
-        uint256[] memory nftIds,
-        uint256[] memory nftAmounts,
-        uint256 shares
-    ) private {
-        for (uint256 i = 0; i < nftIds.length; i++) {
-            if (nftIds[i] > MAXIMAL_DEPOSIT_ID) {
-                revert InvalidDepositNftId(nftIds[i]);
-            }
-        }
-
-        _runGuards(address(smartVault), owner, owner, owner, nftIds, new address[](0), RequestType.BurnNFT);
-        smartVault.burnNFTs(owner, nftIds, nftAmounts);
-
-        if (smartVault.balanceOf(owner) < shares) {
-            revert InsufficientBalance(smartVault.balanceOf(owner), shares);
-        }
-
-        uint256[] memory assets = new uint256[](1);
-        assets[0] = shares;
-        address[] memory tokens = new address[](1);
-        tokens[0] = address(smartVault);
-        _runGuards(address(smartVault), executor, receiver, owner, assets, tokens, RequestType.Withdrawal);
-    }
-
-    function _calculateWithdrawal(address smartVault, WithdrawalMetadata memory data, uint256 assetGroupLength)
-        internal
-        view
-        returns (uint256[] memory)
-    {
-        uint256[] memory withdrawnAssets = new uint256[](assetGroupLength);
-
-        // loop over all assets
-        for (uint256 i = 0; i < withdrawnAssets.length; i++) {
-            withdrawnAssets[i] = _withdrawnAssets[smartVault][data.flushIndex][i] * data.vaultShares
-                / _withdrawnVaultShares[smartVault][data.flushIndex];
-        }
-
-        return withdrawnAssets;
-    }
-
-    function _syncWithdrawals(
-        address smartVault,
-        uint256 flushIndex,
-        address[] memory strategies_,
-        uint256[] memory dhwIndexes_
-    ) private {
-        if (_withdrawnVaultShares[smartVault][flushIndex] == 0) {
-            return;
-        }
-
-        uint256[] memory withdrawnAssets_ = _strategyRegistry.claimWithdrawals(
-            strategies_, dhwIndexes_, _withdrawnStrategyShares[smartVault][flushIndex].toArray(strategies_.length)
+        return _depositManager.depositAssets(
+            DepositBag(
+                smartVault,
+                owner,
+                receiver,
+                msg.sender,
+                assets,
+                tokens,
+                strategies_,
+                allocations_,
+                flushIndex,
+                assetGroupId_,
+                referral
+            )
         );
-
-        _withdrawnAssets[smartVault][flushIndex].setValues(withdrawnAssets_);
-    }
-
-    function _syncDeposits(
-        address smartVault,
-        uint256 flushIndex,
-        address[] memory strategies_,
-        uint256[] memory dhwIndexes_
-    ) private {
-        // skip if there were no deposits made
-        if (_vaultDeposits[smartVault][flushIndex][0] == 0) {
-            return;
-        }
-
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-
-        // get vault's USD value before claiming SSTs
-        uint256 totalVaultValueBefore = _getVaultTotalUsdValue(smartVault);
-
-        // claim SSTs from each strategy
-        for (uint256 i = 0; i < strategies_.length; i++) {
-            StrategyAtIndex memory atDhw = _strategyRegistry.strategyAtIndex(strategies_[i], dhwIndexes_[i]);
-
-            uint256[] memory vaultDepositedAssets =
-                _vaultFlushedDeposits[smartVault][flushIndex][strategies_[i]].toArray(assetGroup.length);
-            uint256 vaultDepositedUsd =
-                _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, vaultDepositedAssets, atDhw.exchangeRates);
-            uint256 strategyDepositedUsd =
-                _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, atDhw.assetsDeposited, atDhw.exchangeRates);
-
-            uint256 vaultSstShare = atDhw.sharesMinted * vaultDepositedUsd / strategyDepositedUsd;
-
-            IStrategy(strategies_[i]).claimShares(smartVault, vaultSstShare);
-            // TODO: there might be dust left after all vaults are synced
-        }
-
-        // mint SVTs based on USD value of claimed SSTs
-        uint256 totalDepositedUsd = _getVaultTotalUsdValue(smartVault) - totalVaultValueBefore;
-        uint256 svtsToMint;
-        if (totalVaultValueBefore == 0) {
-            svtsToMint = totalDepositedUsd * INITIAL_SHARE_MULTIPLIER;
-        } else {
-            svtsToMint = totalDepositedUsd * ISmartVault(smartVault).totalSupply() / totalVaultValueBefore;
-        }
-        ISmartVault(smartVault).mint(smartVault, svtsToMint);
-        _mintedVaultShares[smartVault][flushIndex] = svtsToMint;
-    }
-
-    function _runGuards(
-        address smartVault,
-        address executor,
-        address receiver,
-        address owner,
-        uint256[] memory assets,
-        address[] memory assetGroup,
-        RequestType requestType
-    ) internal view {
-        RequestContext memory context = RequestContext(receiver, executor, owner, requestType, assets, assetGroup);
-        _guardManager.runGuards(smartVault, context);
-    }
-
-    function _runActions(
-        address smartVault,
-        address executor,
-        address recipient,
-        address owner,
-        uint256[] memory assets,
-        address[] memory assetGroup,
-        RequestType requestType
-    ) internal {
-        ActionContext memory context = ActionContext(recipient, executor, owner, requestType, assetGroup, assets);
-        _actionManager.runActions(smartVault, context);
     }
 
     function _onlyUnregisteredSmartVault(address smartVault) internal view {

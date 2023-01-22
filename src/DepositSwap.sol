@@ -8,6 +8,7 @@ import "./interfaces/IAssetGroupRegistry.sol";
 import "./interfaces/IDepositSwap.sol";
 import "./interfaces/ISmartVaultManager.sol";
 import "./interfaces/ISwapper.sol";
+import "./interfaces/IDepositManager.sol";
 
 contract DepositSwap is IDepositSwap {
     using SafeERC20 for IERC20;
@@ -17,13 +18,20 @@ contract DepositSwap is IDepositSwap {
     IAssetGroupRegistry private immutable _assetGroupRegistry;
     ISmartVaultManager private immutable _smartVaultManager;
     ISwapper private immutable _swapper;
+    IDepositManager private immutable _depositManager;
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(IAssetGroupRegistry assetGroupRegistry_, ISmartVaultManager smartVaultManager_, ISwapper swapper_) {
+    constructor(
+        IAssetGroupRegistry assetGroupRegistry_,
+        ISmartVaultManager smartVaultManager_,
+        ISwapper swapper_,
+        IDepositManager depositManager_
+    ) {
         _assetGroupRegistry = assetGroupRegistry_;
         _smartVaultManager = smartVaultManager_;
         _swapper = swapper_;
+        _depositManager = depositManager_;
     }
 
     /* ========== EXTERNAL FUNCTIONS ========== */
@@ -49,7 +57,7 @@ contract DepositSwap is IDepositSwap {
         // Figure out how much we got out of the swap.
         for (uint256 i = 0; i < outTokens.length; i++) {
             outAmounts[i] = IERC20(outTokens[i]).balanceOf(address(this));
-            IERC20(outTokens[i]).safeApprove(address(_smartVaultManager), outAmounts[i]);
+            IERC20(outTokens[i]).safeApprove(address(_depositManager), outAmounts[i]);
         }
 
         // Deposit into the smart vault.

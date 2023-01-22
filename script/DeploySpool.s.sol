@@ -20,6 +20,8 @@ import {SmartVaultFactory} from "../src/SmartVaultFactory.sol";
 import {Swapper} from "../src/Swapper.sol";
 import "@openzeppelin/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "../src/managers/DepositManager.sol";
+import "../src/managers/WithdrawalManager.sol";
 
 contract DeploySpool is Script {
     ProxyAdmin proxyAdmin;
@@ -90,15 +92,23 @@ contract DeploySpool is Script {
 
         spoolAccessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
 
+        DepositManager depositManagerImpl =
+        new DepositManager(strategyRegistry, usdPriceFeedManager, masterWallet, guardManager, actionManager, spoolAccessControl);
+        proxy = new TransparentUpgradeableProxy(address(depositManagerImpl), address(proxyAdmin), "");
+        DepositManager depositManager = DepositManager(address(proxy));
+
+        WithdrawalManager withdrawalManagerImpl =
+        new WithdrawalManager(strategyRegistry, usdPriceFeedManager, masterWallet, guardManager, actionManager, spoolAccessControl);
+        proxy = new TransparentUpgradeableProxy(address(withdrawalManagerImpl), address(proxyAdmin), "");
+        WithdrawalManager withdrawalManager = WithdrawalManager(address(proxy));
+
         smartVaultManager = new SmartVaultManager(
             spoolAccessControl,
-            strategyRegistry,
-            usdPriceFeedManager,
             assetGroupRegistry,
-            masterWallet,
-            actionManager,
-            guardManager,
-            riskManager
+            riskManager,
+            depositManager,
+            withdrawalManager,
+            strategyRegistry
         );
 
         RewardManager rewardManagerImpl = new RewardManager(spoolAccessControl, assetGroupRegistry, smartVaultManager);
@@ -109,7 +119,7 @@ contract DeploySpool is Script {
         spoolAccessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
         spoolAccessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
 
-        DepositSwap depositSwapImpl = new DepositSwap(assetGroupRegistry, smartVaultManager, swapper);
+        DepositSwap depositSwapImpl = new DepositSwap(assetGroupRegistry, smartVaultManager, swapper, depositManager);
         proxy = new TransparentUpgradeableProxy(address(depositSwapImpl), address(proxyAdmin), "");
         depositSwap = DepositSwap(address(proxy));
 
