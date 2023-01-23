@@ -415,13 +415,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256[] memory assets,
         address referral
     ) internal returns (uint256) {
-        // check assets length
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-        if (tokens.length != assets.length) {
-            revert InvalidAssetLengths();
-        }
-
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
+
         (uint256[] memory deposits, uint256 depositId) = _depositManager.depositAssets(
             DepositBag({
                 smartVault: smartVault,

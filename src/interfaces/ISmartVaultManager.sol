@@ -16,11 +16,6 @@ error DepositNotSyncedYet();
 error InsufficientBalance(uint256 available, uint256 required);
 
 /**
- * @notice Used when deposited assets are not the same length as underlying assets.
- */
-error InvalidAssetLengths();
-
-/**
  * @notice Used when there is nothing to flush.
  */
 error NothingToFlush();

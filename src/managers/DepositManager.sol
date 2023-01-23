@@ -268,6 +268,10 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256[] memory, uint256)
     {
+        if (bag.tokens.length != bag.assets.length) {
+            revert InvalidAssetLengths();
+        }
+
         // run guards and actions
         _runGuards(bag.smartVault, bag.executor, bag.receiver, bag.owner, bag.assets, bag.tokens, RequestType.Deposit);
         _runActions(bag.smartVault, bag.executor, bag.receiver, bag.owner, bag.assets, bag.tokens, RequestType.Deposit);

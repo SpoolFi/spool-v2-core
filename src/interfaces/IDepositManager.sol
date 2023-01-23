@@ -3,6 +3,11 @@ pragma solidity 0.8.16;
 
 import "./ISmartVault.sol";
 
+/**
+ * @notice Used when deposited assets are not the same length as underlying assets.
+ */
+error InvalidAssetLengths();
+
 struct DepositBag {
     address smartVault;
     address owner;
