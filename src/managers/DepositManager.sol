@@ -73,9 +73,6 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
     /// @notice Price feed manager
     IUsdPriceFeedManager private immutable _priceFeedManager;
 
-    /// @notice Master wallet
-    IMasterWallet private immutable _masterWallet;
-
     /**
      * @notice Exchange rates for vault, at given flush index
      * @dev smart vault => flush index => exchange rates
@@ -104,14 +101,12 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
     constructor(
         IStrategyRegistry strategyRegistry_,
         IUsdPriceFeedManager priceFeedManager_,
-        IMasterWallet masterWallet_,
         IGuardManager guardManager_,
         IActionManager actionManager_,
         ISpoolAccessControl accessControl_
     ) ActionsAndGuards(guardManager_, actionManager_) SpoolAccessControllable(accessControl_) {
         _strategyRegistry = strategyRegistry_;
         _priceFeedManager = priceFeedManager_;
-        _masterWallet = masterWallet_;
     }
 
     function smartVaultDeposits(address smartVault, uint256 flushIdx, uint256 assetGroupLength)
@@ -271,7 +266,7 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
     function depositAssets(DepositBag memory bag)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
-        returns (uint256)
+        returns (uint256[] memory, uint256)
     {
         // run guards and actions
         _runGuards(bag.smartVault, bag.executor, bag.receiver, bag.owner, bag.assets, bag.tokens, RequestType.Deposit);
@@ -287,7 +282,6 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
 
         // transfer tokens from user to master wallet
         for (uint256 i = 0; i < bag.tokens.length; i++) {
-            IERC20(bag.tokens[i]).safeTransferFrom(bag.owner, address(_masterWallet), bag.assets[i]);
             _vaultDeposits[bag.smartVault][bag.flushIndex][i] = bag.assets[i];
         }
 
@@ -296,17 +290,10 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         uint256 depositId = ISmartVault(bag.smartVault).mintDepositNFT(bag.receiver, metadata);
 
         emit DepositInitiated(
-            bag.smartVault,
-            bag.receiver,
-            depositId,
-            bag.flushIndex,
-            bag.assetGroupId,
-            bag.assets,
-            bag.executor,
-            bag.referral
+            bag.smartVault, bag.receiver, depositId, bag.flushIndex, bag.assets, bag.executor, bag.referral
             );
 
-        return depositId;
+        return (_vaultDeposits[bag.smartVault][bag.flushIndex].toArray(bag.tokens.length), depositId);
     }
 
     /**

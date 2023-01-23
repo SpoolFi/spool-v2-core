@@ -160,10 +160,10 @@ contract SmartVaultManagerTest is TestFixture {
         assets[1] = 6.779734526152375133 ether;
 
         vm.prank(user);
-        token1.approve(address(depositManager), 100 ether);
+        token1.approve(address(smartVaultManager), 100 ether);
 
         vm.prank(user);
-        token2.approve(address(depositManager), 100 ether);
+        token2.approve(address(smartVaultManager), 100 ether);
 
         vm.prank(user);
         smartVaultManager.deposit(address(smartVault_), assets, user, address(0));

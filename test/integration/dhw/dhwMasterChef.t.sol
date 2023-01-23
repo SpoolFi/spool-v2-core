@@ -98,7 +98,7 @@ contract DhwMasterChefTest is TestFixture {
 
         uint256[] memory depositAmountsAlice = Arrays.toArray(tokenInitialBalanceAlice);
 
-        token.approve(address(depositManager), depositAmountsAlice[0]);
+        token.approve(address(smartVaultManager), depositAmountsAlice[0]);
 
         uint256 aliceDepositNftId =
             smartVaultManager.deposit(address(smartVault), depositAmountsAlice, alice, address(0));
@@ -141,7 +141,7 @@ contract DhwMasterChefTest is TestFixture {
 
         uint256[] memory depositAmountsBob = Arrays.toArray(tokenInitialBalanceBob);
 
-        token.approve(address(depositManager), depositAmountsBob[0]);
+        token.approve(address(smartVaultManager), depositAmountsBob[0]);
 
         uint256 bobDepositNftId = smartVaultManager.deposit(address(smartVault), depositAmountsBob, bob, address(0));
 

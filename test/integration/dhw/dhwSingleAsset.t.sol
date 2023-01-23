@@ -117,7 +117,7 @@ contract DhwSingleAssetTest is TestFixture {
 
         uint256[] memory depositAmountsAlice = Arrays.toArray(tokenAInitialBalanceAlice);
 
-        tokenA.approve(address(depositManager), depositAmountsAlice[0]);
+        tokenA.approve(address(smartVaultManager), depositAmountsAlice[0]);
 
         uint256 aliceDepositNftId =
             smartVaultManager.deposit(address(smartVault), depositAmountsAlice, alice, address(0));
@@ -157,7 +157,7 @@ contract DhwSingleAssetTest is TestFixture {
 
         uint256[] memory depositAmountsBob = Arrays.toArray(tokenAInitialBalanceBob);
 
-        tokenA.approve(address(depositManager), depositAmountsBob[0]);
+        tokenA.approve(address(smartVaultManager), depositAmountsBob[0]);
 
         uint256 bobDepositNftId = smartVaultManager.deposit(address(smartVault), depositAmountsBob, bob, address(0));
 

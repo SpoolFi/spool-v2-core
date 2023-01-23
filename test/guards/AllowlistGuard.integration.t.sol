@@ -191,9 +191,9 @@ contract AllowlistGuardIntegrationTest is TestFixture {
         token.mint(eve, 1 ether);
 
         vm.prank(charlie);
-        token.approve(address(depositManager), 2 ether);
+        token.approve(address(smartVaultManager), 2 ether);
         vm.prank(eve);
-        token.approve(address(depositManager), 1 ether);
+        token.approve(address(smartVaultManager), 1 ether);
 
         uint256[] memory depositAmounts = new uint256[](1);
         depositAmounts[0] = 1 ether;

@@ -47,6 +47,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /// @notice Risk manager.
     IRiskManager private immutable _riskManager;
 
+    /// @notice Master wallet
+    IMasterWallet private immutable _masterWallet;
+
     /* ========== STATE VARIABLES ========== */
 
     /// @notice Smart Vault registry
@@ -91,13 +94,15 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         IRiskManager riskManager_,
         IDepositManager depositManager_,
         IWithdrawalManager withdrawalManager_,
-        IStrategyRegistry strategyRegistry_
+        IStrategyRegistry strategyRegistry_,
+        IMasterWallet masterWallet_
     ) SpoolAccessControllable(accessControl_) {
         _assetGroupRegistry = assetGroupRegistry_;
         _riskManager = riskManager_;
         _depositManager = depositManager_;
         _withdrawalManager = withdrawalManager_;
         _strategyRegistry = strategyRegistry_;
+        _masterWallet = masterWallet_;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -411,29 +416,32 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address referral
     ) internal returns (uint256) {
         // check assets length
-        uint256 assetGroupId_ = _smartVaultAssetGroups[smartVault];
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
         if (tokens.length != assets.length) {
             revert InvalidAssetLengths();
         }
+
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
-        uint256[] memory allocations_ = _smartVaultAllocations[smartVault].toArray(strategies_.length);
-        uint256 flushIndex = _flushIndexes[smartVault];
-        return _depositManager.depositAssets(
-            DepositBag(
-                smartVault,
-                owner,
-                receiver,
-                msg.sender,
-                assets,
-                tokens,
-                strategies_,
-                allocations_,
-                flushIndex,
-                assetGroupId_,
-                referral
-            )
+        (uint256[] memory deposits, uint256 depositId) = _depositManager.depositAssets(
+            DepositBag({
+                smartVault: smartVault,
+                owner: owner,
+                receiver: receiver,
+                executor: msg.sender,
+                assets: assets,
+                tokens: tokens,
+                allocations: _smartVaultAllocations[smartVault].toArray(strategies_.length),
+                strategies: strategies_,
+                flushIndex: _flushIndexes[smartVault],
+                referral: referral
+            })
         );
+
+        for (uint256 i = 0; i < deposits.length; i++) {
+            IERC20(tokens[i]).safeTransferFrom(owner, address(_masterWallet), deposits[i]);
+        }
+
+        return depositId;
     }
 
     function _onlyUnregisteredSmartVault(address smartVault) internal view {

@@ -13,7 +13,6 @@ struct DepositBag {
     address[] strategies;
     uint256[] allocations;
     uint256 flushIndex;
-    uint256 assetGroupId;
     address referral;
 }
 
@@ -40,7 +39,6 @@ interface IDepositManager {
      * @param receiver Beneficiary of the deposit
      * @param depositId Deposit NFT ID for this deposit
      * @param flushIndex Flush index the deposit was scheduled for
-     * @param assetGroupId Asset group ID of the given smart vault
      * @param assets Amount of assets to deposit
      * @param executor Address that initiated the deposit
      * @param referral Referral address
@@ -50,13 +48,12 @@ interface IDepositManager {
         address indexed receiver,
         uint256 indexed depositId,
         uint256 flushIndex,
-        uint256 assetGroupId,
         uint256[] assets,
         address executor,
         address referral
     );
 
-    function depositAssets(DepositBag memory bag) external returns (uint256);
+    function depositAssets(DepositBag memory bag) external returns (uint256[] memory, uint256);
 
     function syncDeposits(
         address smartVault,

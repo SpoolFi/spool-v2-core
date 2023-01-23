@@ -27,7 +27,6 @@ contract depositManagerIntegrationTest is Test {
         depositManager = new DepositManager(
             IStrategyRegistry(address(0)),
             IUsdPriceFeedManager(address(0)),
-            IMasterWallet(address(0)),
             IGuardManager(address(0)),
             IActionManager(address(0)),
             ISpoolAccessControl(address(0))

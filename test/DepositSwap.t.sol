@@ -15,8 +15,7 @@ contract DepositSwapTest is Test {
         DepositSwap depositSwap = new DepositSwap(
             IAssetGroupRegistry(address(0x1)),
             ISmartVaultManager(address(0x2)),
-            ISwapper(address(0x3)),
-            IDepositManager(address(0x4))
+            ISwapper(address(0x3))
         );
 
         address[] memory inTokens = Arrays.toArray(address(0x4), address(0x5));

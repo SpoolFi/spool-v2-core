@@ -67,7 +67,7 @@ contract WithdrawalIntegrationTest is Test {
         IGuardManager guardManager = new GuardManager(accessControl);
         IRiskManager riskManager = new RiskManager(accessControl);
         depositManager =
-        new DepositManager(strategyRegistry, priceFeedManager, masterWallet, guardManager, actionManager, accessControl);
+            new DepositManager(strategyRegistry, priceFeedManager, guardManager, actionManager, accessControl);
         withdrawalManager =
         new WithdrawalManager(strategyRegistry, priceFeedManager, masterWallet, guardManager, actionManager, accessControl);
 
@@ -77,7 +77,8 @@ contract WithdrawalIntegrationTest is Test {
             riskManager,
             depositManager,
             withdrawalManager,
-            strategyRegistry
+            strategyRegistry,
+            masterWallet
         );
 
         strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());

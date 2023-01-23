@@ -49,7 +49,7 @@ contract TestFixture is Test {
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
         riskManager = new RiskManager(accessControl);
         depositManager =
-        new DepositManager(strategyRegistry, priceFeedManager, masterWallet, guardManager, actionManager, accessControl);
+            new DepositManager(strategyRegistry, priceFeedManager, guardManager, actionManager, accessControl);
 
         withdrawalManager =
         new WithdrawalManager(strategyRegistry, priceFeedManager, masterWallet, guardManager, actionManager, accessControl);
@@ -60,7 +60,8 @@ contract TestFixture is Test {
             riskManager,
             depositManager,
             withdrawalManager,
-            strategyRegistry
+            strategyRegistry,
+            masterWallet
         );
 
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));

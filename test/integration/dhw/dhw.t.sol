@@ -128,9 +128,9 @@ contract DhwTest is TestFixture {
 
         uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
-        tokenA.approve(address(depositManager), depositAmounts[0]);
-        tokenB.approve(address(depositManager), depositAmounts[1]);
-        tokenC.approve(address(depositManager), depositAmounts[2]);
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
 
         uint256 aliceDepositNftId = smartVaultManager.deposit(address(smartVault), depositAmounts, alice, address(0));
         console2.log("smartVault.balanceOf(alice, aliceDepositNftId):", smartVault.balanceOf(alice, aliceDepositNftId));

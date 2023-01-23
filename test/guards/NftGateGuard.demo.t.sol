@@ -131,7 +131,7 @@ contract NftGateGuardDemoTest is TestFixture {
         token.mint(alice, 2 ether);
 
         vm.prank(alice);
-        token.approve(address(depositManager), 2 ether);
+        token.approve(address(smartVaultManager), 2 ether);
 
         uint256[] memory depositAmounts = new uint256[](1);
         depositAmounts[0] = 1 ether;

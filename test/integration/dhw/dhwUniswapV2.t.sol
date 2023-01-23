@@ -111,8 +111,8 @@ contract dhwUniswapV2 is TestFixture {
 
         uint256[] memory depositAmountsAlice = Arrays.toArray(tokenAliceInitial[0], tokenAliceInitial[1]);
 
-        tokenA.approve(address(depositManager), depositAmountsAlice[0]);
-        tokenB.approve(address(depositManager), depositAmountsAlice[1]);
+        tokenA.approve(address(smartVaultManager), depositAmountsAlice[0]);
+        tokenB.approve(address(smartVaultManager), depositAmountsAlice[1]);
 
         uint256 aliceDepositNftId =
             smartVaultManager.deposit(address(smartVault), depositAmountsAlice, alice, address(0));
@@ -156,8 +156,8 @@ contract dhwUniswapV2 is TestFixture {
 
         uint256[] memory depositAmountsBob = Arrays.toArray(tokenBobInitial[0], tokenBobInitial[1]);
 
-        tokenA.approve(address(depositManager), depositAmountsBob[0]);
-        tokenB.approve(address(depositManager), depositAmountsBob[1]);
+        tokenA.approve(address(smartVaultManager), depositAmountsBob[0]);
+        tokenB.approve(address(smartVaultManager), depositAmountsBob[1]);
 
         uint256 bobDepositNftId = smartVaultManager.deposit(address(smartVault), depositAmountsBob, bob, address(0));
 
