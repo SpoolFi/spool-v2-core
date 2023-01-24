@@ -21,6 +21,7 @@ import "../access/SpoolAccessControl.sol";
 import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IDepositManager.sol";
 import "../interfaces/IWithdrawalManager.sol";
+import "../interfaces/IWithdrawalManager.sol";
 
 /**
  * @dev Requires roles:
@@ -203,48 +204,35 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== DEPOSIT/WITHDRAW ========== */
 
-    function redeem(
-        address smartVault,
-        uint256 shares,
-        address receiver,
-        address owner,
-        uint256[] calldata nftIds,
-        uint256[] calldata nftAmounts
-    ) external onlyRegisteredSmartVault(smartVault) returns (uint256) {
-        uint256 flushIndex = _flushIndexes[smartVault];
-        return _withdrawalManager.redeem(
-            RedeemBag(smartVault, shares, msg.sender, receiver, owner, nftIds, nftAmounts, flushIndex)
-        );
-    }
-
-    function redeemFast(
-        address smartVaultAddress,
-        uint256 shares,
-        uint256[] calldata nftIds,
-        uint256[] calldata nftAmounts
-    ) external onlyRegisteredSmartVault(smartVaultAddress) returns (uint256[] memory) {
-        address[] memory strategies_ = _smartVaultStrategies[smartVaultAddress];
-        uint256 assetGroupId_ = _smartVaultAssetGroups[smartVaultAddress];
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId_);
-        return _withdrawalManager.redeemFast(
-            RedeemFastBag(
-                smartVaultAddress, shares, nftIds, nftAmounts, strategies_, assetGroup, assetGroupId_, msg.sender
-            )
-        );
-    }
-
-    function depositFor(
-        Deposit calldata bag,
-        address owner
-    ) external onlyRegisteredSmartVault(bag.smartVault) returns (uint256) {
-        return _depositAssets(bag, owner);
-    }
-
-    function deposit(Deposit calldata bag)
+    function redeem(RedeemBag calldata bag, address receiver, address owner)
         external
         onlyRegisteredSmartVault(bag.smartVault)
         returns (uint256)
     {
+        uint256 flushIndex = _flushIndexes[bag.smartVault];
+        return _withdrawalManager.redeem(bag, RedeemExtras(msg.sender, receiver, owner, flushIndex));
+    }
+
+    function redeemFast(RedeemBag calldata bag)
+        external
+        onlyRegisteredSmartVault(bag.smartVault)
+        returns (uint256[] memory)
+    {
+        address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
+        uint256 assetGroupId_ = _smartVaultAssetGroups[bag.smartVault];
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId_);
+        return _withdrawalManager.redeemFast(bag, RedeemFastExtras(strategies_, assetGroup, assetGroupId_, msg.sender));
+    }
+
+    function depositFor(DepositBag calldata bag, address owner)
+        external
+        onlyRegisteredSmartVault(bag.smartVault)
+        returns (uint256)
+    {
+        return _depositAssets(bag, owner);
+    }
+
+    function deposit(DepositBag calldata bag) external onlyRegisteredSmartVault(bag.smartVault) returns (uint256) {
         return _depositAssets(bag, msg.sender);
     }
 
@@ -405,10 +393,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return SpoolUtils.getVaultTotalUsdValue(smartVault, _smartVaultStrategies[smartVault]);
     }
 
-    function _depositAssets(
-        Deposit calldata bag,
-        address owner
-    ) internal returns (uint256) {
+    function _depositAssets(DepositBag calldata bag, address owner) internal returns (uint256) {
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
         address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
 

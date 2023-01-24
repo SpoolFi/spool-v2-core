@@ -130,7 +130,8 @@ contract DepositIntegrationTest is TestFixture {
         tokenB.approve(address(smartVaultManager), depositAmounts[1]);
         tokenC.approve(address(smartVaultManager), depositAmounts[2]);
 
-        uint256 aliceDepositNftId = smartVaultManager.deposit(Deposit(address(smartVault), depositAmounts, alice, address(0)));
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0)));
 
         vm.stopPrank();
 
@@ -225,7 +226,8 @@ contract DepositIntegrationTest is TestFixture {
         tokenB.approve(address(smartVaultManager), depositAmounts[1]);
         tokenC.approve(address(smartVaultManager), depositAmounts[2]);
 
-        uint256 aliceDepositNftId = smartVaultManager.deposit(Deposit(address(smartVault), depositAmounts, alice, address(0)));
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0)));
 
         vm.stopPrank();
 

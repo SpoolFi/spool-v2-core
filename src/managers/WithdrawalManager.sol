@@ -161,61 +161,56 @@ contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdr
         _withdrawnAssets[smartVault][flushIndex].setValues(withdrawnAssets_);
     }
 
-    function redeem(RedeemBag memory bag) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (uint256) {
-        ISmartVault smartVault = ISmartVault(bag.smartVaultAddress);
-        _validateRedeem(smartVault, bag.owner, bag.executor, bag.receiver, bag.nftIds, bag.nftAmounts, bag.vaultShares);
+    function redeem(RedeemBag calldata bag, RedeemExtras memory bag2)
+        external
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+        returns (uint256)
+    {
+        ISmartVault smartVault = ISmartVault(bag.smartVault);
+        _validateRedeem(smartVault, bag2.owner, bag2.executor, bag2.receiver, bag.nftIds, bag.nftAmounts, bag.shares);
 
         // add withdrawal to be flushed
-        _withdrawnVaultShares[bag.smartVaultAddress][bag.flushIndex] += bag.vaultShares;
+        _withdrawnVaultShares[bag.smartVault][bag2.flushIndex] += bag.shares;
 
         // transfer vault shares back to smart vault
-        smartVault.transferFromSpender(bag.owner, bag.smartVaultAddress, bag.vaultShares, bag.executor);
-        uint256 redeemId =
-            smartVault.mintWithdrawalNFT(bag.receiver, WithdrawalMetadata(bag.vaultShares, bag.flushIndex));
-        emit RedeemInitiated(bag.smartVaultAddress, bag.owner, redeemId, bag.flushIndex, bag.vaultShares, bag.receiver);
+        smartVault.transferFromSpender(bag2.owner, bag.smartVault, bag.shares, bag2.executor);
+        uint256 redeemId = smartVault.mintWithdrawalNFT(bag2.receiver, WithdrawalMetadata(bag.shares, bag2.flushIndex));
+        emit RedeemInitiated(bag.smartVault, bag2.owner, redeemId, bag2.flushIndex, bag.shares, bag2.receiver);
 
         return redeemId;
     }
 
-    function redeemFast(RedeemFastBag memory bag)
+    function redeemFast(RedeemBag calldata bag, RedeemFastExtras memory bag2)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256[] memory)
     {
-        ISmartVault smartVault = ISmartVault(bag.smartVaultAddress);
-        _validateRedeem(smartVault, bag.executor, bag.executor, bag.executor, bag.nftIds, bag.nftAmounts, bag.shares);
+        ISmartVault smartVault = ISmartVault(bag.smartVault);
+        _validateRedeem(smartVault, bag2.executor, bag2.executor, bag2.executor, bag.nftIds, bag.nftAmounts, bag.shares);
 
         // figure out how much to redeem from each strategy
-        uint256[] memory strategySharesToRedeem = new uint256[](bag.strategies.length);
+        uint256[] memory strategySharesToRedeem = new uint256[](bag2.strategies.length);
         {
             uint256 totalVaultShares = smartVault.totalSupply();
-            for (uint256 i = 0; i < bag.strategies.length; i++) {
-                uint256 strategyShares = IStrategy(bag.strategies[i]).balanceOf(bag.smartVaultAddress);
+            for (uint256 i = 0; i < bag2.strategies.length; i++) {
+                uint256 strategyShares = IStrategy(bag2.strategies[i]).balanceOf(bag.smartVault);
 
                 strategySharesToRedeem[i] = strategyShares * bag.shares / totalVaultShares;
             }
 
             // redeem from strategies and burn
-            smartVault.burn(bag.executor, bag.shares, bag.strategies, strategySharesToRedeem);
+            smartVault.burn(bag2.executor, bag.shares, bag2.strategies, strategySharesToRedeem);
         }
 
         uint256[] memory assetsWithdrawn =
-            _strategyRegistry.redeemFast(bag.strategies, strategySharesToRedeem, bag.assetGroup);
+            _strategyRegistry.redeemFast(bag2.strategies, strategySharesToRedeem, bag2.assetGroup);
 
         // transfer assets to the redeemer
-        for (uint256 i = 0; i < bag.assetGroup.length; i++) {
-            _masterWallet.transfer(IERC20(bag.assetGroup[i]), bag.executor, assetsWithdrawn[i]);
+        for (uint256 i = 0; i < bag2.assetGroup.length; i++) {
+            _masterWallet.transfer(IERC20(bag2.assetGroup[i]), bag2.executor, assetsWithdrawn[i]);
         }
 
-        emit FastRedeemInitiated(
-            bag.smartVaultAddress,
-            bag.executor,
-            bag.assetGroupId,
-            bag.shares,
-            bag.nftIds,
-            bag.nftAmounts,
-            assetsWithdrawn
-            );
+        emit FastRedeemInitiated(bag.smartVault, bag2.executor, bag.shares, bag.nftIds, bag.nftAmounts, assetsWithdrawn);
 
         return assetsWithdrawn;
     }

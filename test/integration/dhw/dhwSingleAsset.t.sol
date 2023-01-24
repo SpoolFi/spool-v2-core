@@ -120,7 +120,7 @@ contract DhwSingleAssetTest is TestFixture {
         tokenA.approve(address(smartVaultManager), depositAmountsAlice[0]);
 
         uint256 aliceDepositNftId =
-            smartVaultManager.deposit(Deposit(address(smartVault), depositAmountsAlice, alice, address(0)));
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmountsAlice, alice, address(0)));
 
         vm.stopPrank();
 
@@ -159,7 +159,8 @@ contract DhwSingleAssetTest is TestFixture {
 
         tokenA.approve(address(smartVaultManager), depositAmountsBob[0]);
 
-        uint256 bobDepositNftId = smartVaultManager.deposit(Deposit(address(smartVault), depositAmountsBob, bob, address(0)));
+        uint256 bobDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmountsBob, bob, address(0)));
 
         vm.stopPrank();
 
@@ -188,11 +189,13 @@ contract DhwSingleAssetTest is TestFixture {
         console2.log("aliceShares Before:", aliceShares);
 
         vm.prank(alice);
-        uint256 aliceWithdrawalNftId =
-            smartVaultManager.redeem(address(smartVault), aliceShares, alice, alice, new uint256[](0), new uint256[](0));
+        uint256 aliceWithdrawalNftId = smartVaultManager.redeem(
+            RedeemBag(address(smartVault), aliceShares, new uint256[](0), new uint256[](0)), alice, alice
+        );
         vm.prank(bob);
-        uint256 bobWithdrawalNftId =
-            smartVaultManager.redeem(address(smartVault), bobShares, bob, bob, new uint256[](0), new uint256[](0));
+        uint256 bobWithdrawalNftId = smartVaultManager.redeem(
+            RedeemBag(address(smartVault), bobShares, new uint256[](0), new uint256[](0)), bob, bob
+        );
 
         console2.log("flushSmartVault");
         smartVaultManager.flushSmartVault(address(smartVault));

@@ -3,6 +3,7 @@ pragma solidity 0.8.16;
 
 import "./ISmartVault.sol";
 import "./IDepositManager.sol";
+import "./IWithdrawalManager.sol";
 
 /* ========== ERRORS ========== */
 
@@ -105,24 +106,15 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
 
     /**
      * @notice TODO
-     * @param bag TODO
-     * @param owner TODO
      * @return depositNFTId TODO
      */
-    function depositFor(
-        Deposit calldata bag,
-        address owner
-    ) external returns (uint256 depositNFTId);
+    function depositFor(DepositBag calldata bag, address owner) external returns (uint256 depositNFTId);
 
     /**
      * @notice Instantly redeems smart vault shares for assets.
-     * @param smartVault Address of the smart vault.
-     * @param shares Amount of shares to redeem.
      * @return withdrawnAssets Amount of assets withdrawn.
      */
-    function redeemFast(address smartVault, uint256 shares, uint256[] calldata nftIds, uint256[] calldata nftAmounts)
-        external
-        returns (uint256[] memory withdrawnAssets);
+    function redeemFast(RedeemBag calldata bag) external returns (uint256[] memory withdrawnAssets);
 
     /**
      * @notice Claims withdrawal of assets by burning withdrawal NFT.
@@ -168,14 +160,7 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
      * NOTE: some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
      * Those methods should be performed separately.
      */
-    function redeem(
-        address smartVault,
-        uint256 shares,
-        address receiver,
-        address owner,
-        uint256[] calldata nftIds,
-        uint256[] calldata nftAmounts
-    ) external returns (uint256 receipt);
+    function redeem(RedeemBag calldata bag, address receiver, address owner) external returns (uint256 receipt);
 
     /**
      * @dev Mints shares Vault shares to receiver by depositing exactly amount of underlying tokens.
@@ -188,9 +173,7 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
-    function deposit(Deposit calldata bag)
-        external
-        returns (uint256 receipt);
+    function deposit(DepositBag calldata bag) external returns (uint256 receipt);
 
     /* ========== EVENTS ========== */
 

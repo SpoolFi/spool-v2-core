@@ -152,12 +152,14 @@ contract WithdrawalIntegrationTest is Test {
 
         // request withdrawal
         vm.prank(alice);
-        uint256 aliceWithdrawalNftId =
-            smartVaultManager.redeem(address(mySmartVault), 3_000_000, alice, alice, new uint256[](0), new uint256[](0));
+        uint256 aliceWithdrawalNftId = smartVaultManager.redeem(
+            RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0)), alice, alice
+        );
 
         vm.prank(bob);
-        uint256 bobWithdrawalNftId =
-            smartVaultManager.redeem(address(mySmartVault), 200_000, bob, bob, new uint256[](0), new uint256[](0));
+        uint256 bobWithdrawalNftId = smartVaultManager.redeem(
+            RedeemBag(address(mySmartVault), 200_000, new uint256[](0), new uint256[](0)), bob, bob
+        );
 
         // check state
         // - vault tokens are returned to vault
@@ -247,8 +249,9 @@ contract WithdrawalIntegrationTest is Test {
 
         // withdraw fast
         vm.startPrank(alice);
-        uint256[] memory withdrawnAssets =
-            smartVaultManager.redeemFast(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0));
+        uint256[] memory withdrawnAssets = smartVaultManager.redeemFast(
+            RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0))
+        );
 
         // check return
         assertEq(withdrawnAssets, Arrays.toArray(30 ether, 2.034 ether));

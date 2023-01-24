@@ -132,7 +132,8 @@ contract DhwTest is TestFixture {
         tokenB.approve(address(smartVaultManager), depositAmounts[1]);
         tokenC.approve(address(smartVaultManager), depositAmounts[2]);
 
-        uint256 aliceDepositNftId = smartVaultManager.deposit(Deposit(address(smartVault), depositAmounts, alice, address(0)));
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0)));
         console2.log("smartVault.balanceOf(alice, aliceDepositNftId):", smartVault.balanceOf(alice, aliceDepositNftId));
 
         vm.stopPrank();
@@ -164,8 +165,9 @@ contract DhwTest is TestFixture {
         console2.log("aliceShares Before:", aliceShares);
 
         vm.prank(alice);
-        uint256 aliceWithdrawalNftId =
-            smartVaultManager.redeem(address(smartVault), aliceShares, alice, alice, new uint256[](0), new uint256[](0));
+        uint256 aliceWithdrawalNftId = smartVaultManager.redeem(
+            RedeemBag(address(smartVault), aliceShares, new uint256[](0), new uint256[](0)), alice, alice
+        );
 
         console2.log("flushSmartVault");
         smartVaultManager.flushSmartVault(address(smartVault));

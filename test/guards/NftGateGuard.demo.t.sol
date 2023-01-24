@@ -138,13 +138,13 @@ contract NftGateGuardDemoTest is TestFixture {
 
         vm.prank(alice);
         // deposit for Bob who has one NFT, should pass
-        smartVaultManager.deposit(Deposit(address(smartVault), depositAmounts, bob, address(0)));
+        smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, bob, address(0)));
         vm.prank(alice);
         // deposit for Charlie who has two NFTs, should pass
-        smartVaultManager.deposit(Deposit(address(smartVault), depositAmounts, charlie, address(0)));
+        smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, charlie, address(0)));
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
         // deposit for Eve who doesn't have any NFT, should fail
-        smartVaultManager.deposit(Deposit(address(smartVault), depositAmounts, eve, address(0)));
+        smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, eve, address(0)));
     }
 }

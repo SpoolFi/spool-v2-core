@@ -263,7 +263,7 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         _mintedVaultShares[smartVault][flushIndex] = svtsToMint;
     }
 
-    function depositAssets(Deposit calldata bag, DepositExtras memory bag2)
+    function depositAssets(DepositBag calldata bag, DepositExtras memory bag2)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256[] memory, uint256)
@@ -273,8 +273,12 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         }
 
         // run guards and actions
-        _runGuards(bag.smartVault, bag2.executor, bag.receiver, bag2.owner, bag.assets, bag2.tokens, RequestType.Deposit);
-        _runActions(bag.smartVault, bag2.executor, bag.receiver, bag2.owner, bag.assets, bag2.tokens, RequestType.Deposit);
+        _runGuards(
+            bag.smartVault, bag2.executor, bag.receiver, bag2.owner, bag.assets, bag2.tokens, RequestType.Deposit
+        );
+        _runActions(
+            bag.smartVault, bag2.executor, bag.receiver, bag2.owner, bag.assets, bag2.tokens, RequestType.Deposit
+        );
 
         // check if assets are in correct ratio
         checkDepositRatio(
