@@ -2,6 +2,7 @@
 pragma solidity 0.8.16;
 
 import "./ISmartVault.sol";
+import "./IDepositManager.sol";
 
 /* ========== ERRORS ========== */
 
@@ -104,17 +105,13 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
 
     /**
      * @notice TODO
-     * @param assets TODO
-     * @param receiver TODO
-     * @param depositor TODO
+     * @param bag TODO
+     * @param owner TODO
      * @return depositNFTId TODO
      */
     function depositFor(
-        address smartVault,
-        uint256[] calldata assets,
-        address receiver,
-        address depositor,
-        address referral
+        Deposit calldata bag,
+        address owner
     ) external returns (uint256 depositNFTId);
 
     /**
@@ -191,7 +188,7 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
-    function deposit(address smartVault, uint256[] calldata assets, address receiver, address referral)
+    function deposit(Deposit calldata bag)
         external
         returns (uint256 receipt);
 

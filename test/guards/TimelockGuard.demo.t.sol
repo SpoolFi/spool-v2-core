@@ -112,7 +112,7 @@ contract TimelockGuardDemoTest is Test, TestFixture {
         vm.startPrank(alice);
         token.approve(address(smartVaultManager), 2 ether);
         uint256[] memory depositAmounts = Arrays.toArray(1 ether);
-        uint256 tokenId = smartVaultManager.deposit(address(smartVault), depositAmounts, alice, address(0));
+        uint256 tokenId = smartVaultManager.deposit(Deposit(address(smartVault), depositAmounts, alice, address(0)));
         DepositMetadata memory metadata =
             abi.decode(smartVault.getMetadata(Arrays.toArray(tokenId))[0], (DepositMetadata));
 

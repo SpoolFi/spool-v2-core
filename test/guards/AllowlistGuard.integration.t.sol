@@ -199,18 +199,18 @@ contract AllowlistGuardIntegrationTest is TestFixture {
         depositAmounts[0] = 1 ether;
         // deposit as Bob using Charlies assets with Dave set as receiver, should pass
         vm.prank(bob);
-        smartVaultManager.depositFor(address(smartVault), depositAmounts, dave, charlie, address(0));
+        smartVaultManager.depositFor(Deposit(address(smartVault), depositAmounts, dave, address(0)), charlie);
         // deposit as Eve using Charlies assets with Dave set as receiver, should fail
         vm.prank(eve);
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
-        smartVaultManager.depositFor(address(smartVault), depositAmounts, dave, charlie, address(0));
+        smartVaultManager.depositFor(Deposit(address(smartVault), depositAmounts, dave, address(0)), charlie);
         // deposit as Bob using Eve assets with Dave set as receiver, should fail
         vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 1));
-        smartVaultManager.depositFor(address(smartVault), depositAmounts, dave, eve, address(0));
+        smartVaultManager.depositFor(Deposit(address(smartVault), depositAmounts, dave, address(0)), eve);
         // deposit as Bob using Charlies assets with Eve set as receiver, should fail
         vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 2));
-        smartVaultManager.depositFor(address(smartVault), depositAmounts, eve, charlie, address(0));
+        smartVaultManager.depositFor(Deposit(address(smartVault), depositAmounts, eve, address(0)), charlie);
     }
 }

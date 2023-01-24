@@ -8,17 +8,20 @@ import "./ISmartVault.sol";
  */
 error InvalidAssetLengths();
 
-struct DepositBag {
+struct Deposit {
     address smartVault;
-    address owner;
-    address receiver;
-    address executor;
     uint256[] assets;
+    address receiver;
+    address referral;
+}
+
+struct DepositExtras {
+    address executor;
+    address owner;
     address[] tokens;
     address[] strategies;
     uint256[] allocations;
     uint256 flushIndex;
-    address referral;
 }
 
 interface IDepositManager {
@@ -58,7 +61,7 @@ interface IDepositManager {
         address referral
     );
 
-    function depositAssets(DepositBag memory bag) external returns (uint256[] memory, uint256);
+    function depositAssets(Deposit calldata bag, DepositExtras memory bag2) external returns (uint256[] memory, uint256);
 
     function syncDeposits(
         address smartVault,

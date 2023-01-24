@@ -263,41 +263,41 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         _mintedVaultShares[smartVault][flushIndex] = svtsToMint;
     }
 
-    function depositAssets(DepositBag memory bag)
+    function depositAssets(Deposit calldata bag, DepositExtras memory bag2)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256[] memory, uint256)
     {
-        if (bag.tokens.length != bag.assets.length) {
+        if (bag2.tokens.length != bag.assets.length) {
             revert InvalidAssetLengths();
         }
 
         // run guards and actions
-        _runGuards(bag.smartVault, bag.executor, bag.receiver, bag.owner, bag.assets, bag.tokens, RequestType.Deposit);
-        _runActions(bag.smartVault, bag.executor, bag.receiver, bag.owner, bag.assets, bag.tokens, RequestType.Deposit);
+        _runGuards(bag.smartVault, bag2.executor, bag.receiver, bag2.owner, bag.assets, bag2.tokens, RequestType.Deposit);
+        _runActions(bag.smartVault, bag2.executor, bag.receiver, bag2.owner, bag.assets, bag2.tokens, RequestType.Deposit);
 
         // check if assets are in correct ratio
         checkDepositRatio(
             bag.assets,
-            SpoolUtils.getExchangeRates(bag.tokens, _priceFeedManager),
-            bag.allocations,
-            SpoolUtils.getStrategyRatiosAtLastDhw(bag.strategies, _strategyRegistry)
+            SpoolUtils.getExchangeRates(bag2.tokens, _priceFeedManager),
+            bag2.allocations,
+            SpoolUtils.getStrategyRatiosAtLastDhw(bag2.strategies, _strategyRegistry)
         );
 
         // transfer tokens from user to master wallet
-        for (uint256 i = 0; i < bag.tokens.length; i++) {
-            _vaultDeposits[bag.smartVault][bag.flushIndex][i] = bag.assets[i];
+        for (uint256 i = 0; i < bag2.tokens.length; i++) {
+            _vaultDeposits[bag.smartVault][bag2.flushIndex][i] = bag.assets[i];
         }
 
         // mint deposit NFT
-        DepositMetadata memory metadata = DepositMetadata(bag.assets, block.timestamp, bag.flushIndex);
+        DepositMetadata memory metadata = DepositMetadata(bag.assets, block.timestamp, bag2.flushIndex);
         uint256 depositId = ISmartVault(bag.smartVault).mintDepositNFT(bag.receiver, metadata);
 
         emit DepositInitiated(
-            bag.smartVault, bag.receiver, depositId, bag.flushIndex, bag.assets, bag.executor, bag.referral
+            bag.smartVault, bag.receiver, depositId, bag2.flushIndex, bag.assets, bag2.executor, bag.referral
             );
 
-        return (_vaultDeposits[bag.smartVault][bag.flushIndex].toArray(bag.tokens.length), depositId);
+        return (_vaultDeposits[bag.smartVault][bag2.flushIndex].toArray(bag2.tokens.length), depositId);
     }
 
     /**

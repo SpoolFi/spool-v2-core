@@ -234,21 +234,18 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     }
 
     function depositFor(
-        address smartVault,
-        uint256[] calldata assets,
-        address receiver,
-        address depositor,
-        address referral
-    ) external onlyRegisteredSmartVault(smartVault) returns (uint256) {
-        return _depositAssets(smartVault, depositor, receiver, assets, referral);
+        Deposit calldata bag,
+        address owner
+    ) external onlyRegisteredSmartVault(bag.smartVault) returns (uint256) {
+        return _depositAssets(bag, owner);
     }
 
-    function deposit(address smartVault, uint256[] calldata assets, address receiver, address referral)
+    function deposit(Deposit calldata bag)
         external
-        onlyRegisteredSmartVault(smartVault)
+        onlyRegisteredSmartVault(bag.smartVault)
         returns (uint256)
     {
-        return _depositAssets(smartVault, msg.sender, receiver, assets, referral);
+        return _depositAssets(bag, msg.sender);
     }
 
     /**
@@ -409,27 +406,21 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     }
 
     function _depositAssets(
-        address smartVault,
-        address owner,
-        address receiver,
-        uint256[] memory assets,
-        address referral
+        Deposit calldata bag,
+        address owner
     ) internal returns (uint256) {
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-        address[] memory strategies_ = _smartVaultStrategies[smartVault];
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
+        address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
 
         (uint256[] memory deposits, uint256 depositId) = _depositManager.depositAssets(
-            DepositBag({
-                smartVault: smartVault,
+            bag,
+            DepositExtras({
                 owner: owner,
-                receiver: receiver,
                 executor: msg.sender,
-                assets: assets,
                 tokens: tokens,
-                allocations: _smartVaultAllocations[smartVault].toArray(strategies_.length),
+                allocations: _smartVaultAllocations[bag.smartVault].toArray(strategies_.length),
                 strategies: strategies_,
-                flushIndex: _flushIndexes[smartVault],
-                referral: referral
+                flushIndex: _flushIndexes[bag.smartVault]
             })
         );
 
