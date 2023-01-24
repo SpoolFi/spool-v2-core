@@ -22,6 +22,7 @@ import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IDepositManager.sol";
 import "../interfaces/IWithdrawalManager.sol";
 import "../interfaces/IWithdrawalManager.sol";
+import "../interfaces/IRewardManager.sol";
 
 /**
  * @dev Requires roles:
@@ -50,6 +51,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /// @notice Master wallet
     IMasterWallet private immutable _masterWallet;
+
+    /// @notice Reward manager
+    IRewardManager private immutable _rewardManager;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -96,7 +100,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         IDepositManager depositManager_,
         IWithdrawalManager withdrawalManager_,
         IStrategyRegistry strategyRegistry_,
-        IMasterWallet masterWallet_
+        IMasterWallet masterWallet_,
+        IRewardManager rewardManager_
     ) SpoolAccessControllable(accessControl_) {
         _assetGroupRegistry = assetGroupRegistry_;
         _riskManager = riskManager_;
@@ -104,6 +109,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _withdrawalManager = withdrawalManager_;
         _strategyRegistry = strategyRegistry_;
         _masterWallet = masterWallet_;
+        _rewardManager = rewardManager_;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -209,6 +215,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         onlyRegisteredSmartVault(bag.smartVault)
         returns (uint256)
     {
+        _rewardManager.updateRewardsOnVault(bag.smartVault, receiver);
         uint256 flushIndex = _flushIndexes[bag.smartVault];
         return _withdrawalManager.redeem(bag, RedeemExtras(msg.sender, receiver, owner, flushIndex));
     }
@@ -218,6 +225,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         onlyRegisteredSmartVault(bag.smartVault)
         returns (uint256[] memory)
     {
+        _rewardManager.updateRewardsOnVault(bag.smartVault, msg.sender);
         address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
         uint256 assetGroupId_ = _smartVaultAssetGroups[bag.smartVault];
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId_);
@@ -394,6 +402,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     }
 
     function _depositAssets(DepositBag calldata bag, address owner) internal returns (uint256) {
+        _rewardManager.updateRewardsOnVault(bag.smartVault, bag.receiver);
+
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
         address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
 

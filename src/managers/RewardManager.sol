@@ -321,8 +321,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
     /**
      * @notice Syncs rewards across all tokens of the system
      *
-     * This function is meant to be invoked every time the instant deposit
-     * of a user changes.
+     * @dev This function should be invoked every time user's vault share changes
      */
     function updateRewardsOnVault(address smartVault, address account)
         public
@@ -391,11 +390,6 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
 
     modifier updateReward(address smartVault, IERC20 token, address account) {
         _updateReward(smartVault, token, account);
-        _;
-    }
-
-    modifier updateRewards(address smartVault) {
-        _updateRewards(smartVault, msg.sender);
         _;
     }
 

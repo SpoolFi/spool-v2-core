@@ -20,6 +20,7 @@ import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
 import "../../src/managers/WithdrawalManager.sol";
 import "../../src/managers/DepositManager.sol";
+import "../../src/managers/RewardManager.sol";
 
 contract WithdrawalIntegrationTest is Test {
     address private alice;
@@ -71,6 +72,10 @@ contract WithdrawalIntegrationTest is Test {
         withdrawalManager =
         new WithdrawalManager(strategyRegistry, priceFeedManager, masterWallet, guardManager, actionManager, accessControl);
 
+        address managerAddress = computeCreateAddress(address(this), 1);
+        IRewardManager rewardManager =
+            new RewardManager(accessControl, assetGroupRegistry, ISmartVaultBalance(managerAddress));
+
         smartVaultManager = new SmartVaultManager(
             accessControl,
             assetGroupRegistry,
@@ -78,7 +83,8 @@ contract WithdrawalIntegrationTest is Test {
             depositManager,
             withdrawalManager,
             strategyRegistry,
-            masterWallet
+            masterWallet,
+            rewardManager
         );
 
         strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());

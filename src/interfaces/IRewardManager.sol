@@ -30,6 +30,12 @@ interface IRewardManager {
     function claimRewardsFor(address smartVault, address account) external;
     function tokenBlacklisted(address smartVault, IERC20 token) external view returns (bool);
 
+    /**
+     * @notice Syncs rewards across all tokens of the system
+     * @dev This function should be invoked every time user's vault share changes
+     */
+    function updateRewardsOnVault(address smartVault, address account) external;
+
     /* ========== EVENTS ========== */
 
     event RewardPaid(address smartVault, IERC20 token, address indexed user, uint256 reward);

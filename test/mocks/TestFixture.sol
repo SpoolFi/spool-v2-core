@@ -54,6 +54,10 @@ contract TestFixture is Test {
         withdrawalManager =
         new WithdrawalManager(strategyRegistry, priceFeedManager, masterWallet, guardManager, actionManager, accessControl);
 
+        address managerAddress = computeCreateAddress(address(this), 1);
+        IRewardManager rewardManager =
+            new RewardManager(accessControl, assetGroupRegistry, ISmartVaultBalance(managerAddress));
+
         smartVaultManager = new SmartVaultManager(
             accessControl,
             assetGroupRegistry,
@@ -61,7 +65,8 @@ contract TestFixture is Test {
             depositManager,
             withdrawalManager,
             strategyRegistry,
-            masterWallet
+            masterWallet,
+            rewardManager
         );
 
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));

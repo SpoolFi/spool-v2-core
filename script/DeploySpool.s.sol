@@ -40,11 +40,14 @@ contract DeploySpool is Script {
     DepositSwap depositSwap;
     SmartVaultFactory smartVaultFactory;
     AllowlistGuard allowlistGuard;
+    DepositManager depositManager;
+    WithdrawalManager withdrawalManager;
 
     function run() public {
         console.log("Deploy Spool...");
 
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.addr(deployerPrivateKey);
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -93,29 +96,39 @@ contract DeploySpool is Script {
 
         spoolAccessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
 
-        DepositManager depositManagerImpl =
+        {
+            DepositManager depositManagerImpl =
             new DepositManager(strategyRegistry, usdPriceFeedManager, guardManager, actionManager, spoolAccessControl);
-        proxy = new TransparentUpgradeableProxy(address(depositManagerImpl), address(proxyAdmin), "");
-        DepositManager depositManager = DepositManager(address(proxy));
+            proxy = new TransparentUpgradeableProxy(address(depositManagerImpl), address(proxyAdmin), "");
+            depositManager = DepositManager(address(proxy));
 
-        WithdrawalManager withdrawalManagerImpl =
-        new WithdrawalManager(strategyRegistry, usdPriceFeedManager, masterWallet, guardManager, actionManager, spoolAccessControl);
-        proxy = new TransparentUpgradeableProxy(address(withdrawalManagerImpl), address(proxyAdmin), "");
-        WithdrawalManager withdrawalManager = WithdrawalManager(address(proxy));
+            WithdrawalManager withdrawalManagerImpl =
+            new WithdrawalManager(strategyRegistry, usdPriceFeedManager, masterWallet, guardManager, actionManager, spoolAccessControl);
+            proxy = new TransparentUpgradeableProxy(address(withdrawalManagerImpl), address(proxyAdmin), "");
+            withdrawalManager = WithdrawalManager(address(proxy));
+        }
 
-        smartVaultManager = new SmartVaultManager(
+        address rewardManagerProxyAddress = computeCreateAddress(deployer, vm.getNonce(deployer) + 3);
+
+        ISmartVaultManager smartVaultManagerImpl = new SmartVaultManager(
             spoolAccessControl,
             assetGroupRegistry,
             riskManager,
             depositManager,
             withdrawalManager,
             strategyRegistry,
-            masterWallet
+            masterWallet,
+            RewardManager(rewardManagerProxyAddress)
         );
+
+        proxy = new TransparentUpgradeableProxy(address(smartVaultManagerImpl), address(proxyAdmin), "");
+        smartVaultManager = SmartVaultManager(address(proxy));
 
         RewardManager rewardManagerImpl = new RewardManager(spoolAccessControl, assetGroupRegistry, smartVaultManager);
         proxy = new TransparentUpgradeableProxy(address(rewardManagerImpl), address(proxyAdmin), "");
         rewardManager = RewardManager(address(proxy));
+
+        require(address(proxy) == rewardManagerProxyAddress, "Invalid reward manager address");
 
         spoolAccessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         spoolAccessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
