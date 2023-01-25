@@ -3,7 +3,7 @@ pragma solidity 0.8.16;
 
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "./interfaces/CommonErrors.sol";
 import "./interfaces/ISmartVault.sol";
@@ -12,7 +12,7 @@ import "./access/SpoolAccessControl.sol";
 import "./interfaces/IGuardManager.sol";
 import "./libraries/ArrayMapping.sol";
 
-contract SmartVault is ERC20Upgradeable, ERC1155Upgradeable, SpoolAccessControllable, ISmartVault {
+contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessControllable, ISmartVault {
     using SafeERC20 for IERC20;
     using ArrayMapping for mapping(uint256 => uint256);
 
