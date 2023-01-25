@@ -136,7 +136,7 @@ contract DhwSingleAssetTest is TestFixture {
         strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
 
         // sync vault
-        smartVaultManager.syncSmartVault(address(smartVault));
+        smartVaultManager.syncSmartVault(address(smartVault), true);
 
         // claim deposit
         vm.startPrank(alice);
@@ -172,7 +172,7 @@ contract DhwSingleAssetTest is TestFixture {
         strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
 
         // // sync vault
-        smartVaultManager.syncSmartVault(address(smartVault));
+        smartVaultManager.syncSmartVault(address(smartVault), true);
 
         // claim deposit
         vm.startPrank(bob);
@@ -210,7 +210,7 @@ contract DhwSingleAssetTest is TestFixture {
 
         // sync vault
         console2.log("syncSmartVault");
-        smartVaultManager.syncSmartVault(address(smartVault));
+        smartVaultManager.syncSmartVault(address(smartVault), true);
 
         // claim withdrawal
         console2.log("tokenA Before:", tokenA.balanceOf(alice));

@@ -120,7 +120,7 @@ contract DhwMasterChefTest is TestFixture {
         skip(firstYieldSeconds);
 
         // sync vault
-        smartVaultManager.syncSmartVault(address(smartVault));
+        smartVaultManager.syncSmartVault(address(smartVault), true);
 
         // claim deposit
         vm.startPrank(alice);
@@ -160,7 +160,7 @@ contract DhwMasterChefTest is TestFixture {
         skip(secondYieldSeconds);
 
         // sync vault
-        smartVaultManager.syncSmartVault(address(smartVault));
+        smartVaultManager.syncSmartVault(address(smartVault), true);
 
         // claim deposit
         vm.startPrank(bob);
@@ -197,7 +197,7 @@ contract DhwMasterChefTest is TestFixture {
 
             // sync vault
             console2.log("syncSmartVault");
-            smartVaultManager.syncSmartVault(address(smartVault));
+            smartVaultManager.syncSmartVault(address(smartVault), true);
 
             // claim withdrawal
             console2.log("token Before:", token.balanceOf(alice));

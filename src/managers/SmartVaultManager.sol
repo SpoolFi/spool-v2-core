@@ -215,6 +215,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         onlyRegisteredSmartVault(bag.smartVault)
         returns (uint256)
     {
+        address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
+        _syncSmartVault(bag.smartVault, strategies_, tokens, false);
+
         _rewardManager.updateRewardsOnVault(bag.smartVault, receiver);
         uint256 flushIndex = _flushIndexes[bag.smartVault];
         return _withdrawalManager.redeem(bag, RedeemExtras(msg.sender, receiver, owner, flushIndex));
@@ -225,11 +229,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         onlyRegisteredSmartVault(bag.smartVault)
         returns (uint256[] memory)
     {
-        _rewardManager.updateRewardsOnVault(bag.smartVault, msg.sender);
         address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
         uint256 assetGroupId_ = _smartVaultAssetGroups[bag.smartVault];
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId_);
-        return _withdrawalManager.redeemFast(bag, RedeemFastExtras(strategies_, assetGroup, assetGroupId_, msg.sender));
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
+
+        _syncSmartVault(bag.smartVault, strategies_, tokens, false);
+        _rewardManager.updateRewardsOnVault(bag.smartVault, msg.sender);
+        return _withdrawalManager.redeemFast(bag, RedeemFastExtras(strategies_, tokens, assetGroupId_, msg.sender));
     }
 
     function depositFor(DepositBag calldata bag, address owner)
@@ -356,35 +362,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         emit SmartVaultFlushed(smartVault, flushIndex);
     }
 
-    function syncSmartVault(address smartVault) external {
-        // TODO: sync yields
-
-        // NOTE: warning "This declaration has the same name as another declaration."
+    function syncSmartVault(address smartVault, bool revertOnMissingDHW)
+        external
+        onlyRegisteredSmartVault(smartVault)
+    {
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-
-        uint256 flushIndex = _flushIndexesToSync[smartVault];
-        while (flushIndex < _flushIndexes[smartVault]) {
-            // TODO: Check if all DHW indexes were processed for given flushIndex (here, not down the stack)
-
-            uint256[] memory indexes = _dhwIndexes[smartVault][flushIndex].toArray(strategies_.length);
-
-            for (uint256 i = 0; i < strategies_.length; i++) {
-                uint256 dhwIndex = indexes[i];
-
-                if (dhwIndex == _strategyRegistry.currentIndex(strategies_[i])) {
-                    revert DhwNotRunYetForIndex(strategies_[i], dhwIndex);
-                }
-            }
-
-            _withdrawalManager.syncWithdrawals(smartVault, flushIndex, strategies_, indexes);
-            _depositManager.syncDeposits(smartVault, flushIndex, strategies_, indexes, assetGroup);
-
-            emit SmartVaultSynced(smartVault, flushIndex);
-
-            flushIndex++;
-            _flushIndexesToSync[smartVault] = flushIndex;
-        }
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
+        _syncSmartVault(smartVault, strategies_, tokens, revertOnMissingDHW);
     }
 
     /**
@@ -394,6 +378,43 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
+    function _syncSmartVault(
+        address smartVault,
+        address[] memory strategies_,
+        address[] memory tokens,
+        bool revertOnMissingDHW
+    ) private {
+        // TODO: sync yields
+
+        // NOTE: warning "This declaration has the same name as another declaration."
+        uint256[] memory currentStrategyIndexes = _strategyRegistry.currentIndex(strategies_);
+
+        uint256 flushIndex = _flushIndexesToSync[smartVault];
+        while (flushIndex < _flushIndexes[smartVault]) {
+            uint256[] memory indexes = _dhwIndexes[smartVault][flushIndex].toArray(strategies_.length);
+
+            for (uint256 i = 0; i < strategies_.length; i++) {
+                uint256 dhwIndex = indexes[i];
+
+                if (dhwIndex == currentStrategyIndexes[i]) {
+                    if (revertOnMissingDHW) {
+                        revert DhwNotRunYetForIndex(strategies_[i], dhwIndex);
+                    } else {
+                        return;
+                    }
+                }
+            }
+
+            _withdrawalManager.syncWithdrawals(smartVault, flushIndex, strategies_, indexes);
+            _depositManager.syncDeposits(smartVault, flushIndex, strategies_, indexes, tokens);
+
+            emit SmartVaultSynced(smartVault, flushIndex);
+
+            flushIndex++;
+            _flushIndexesToSync[smartVault] = flushIndex;
+        }
+    }
+
     /**
      * @notice Gets total value (in USD) of assets managed by the vault.
      */
@@ -402,10 +423,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     }
 
     function _depositAssets(DepositBag calldata bag, address owner) internal returns (uint256) {
-        _rewardManager.updateRewardsOnVault(bag.smartVault, bag.receiver);
-
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
         address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
+        _syncSmartVault(bag.smartVault, strategies_, tokens, false);
+        _rewardManager.updateRewardsOnVault(bag.smartVault, bag.receiver);
 
         (uint256[] memory deposits, uint256 depositId) = _depositManager.depositAssets(
             bag,

@@ -213,7 +213,7 @@ contract WithdrawalIntegrationTest is Test {
         assertEq(tokenB.balanceOf(address(strategyB)), 0, "20");
 
         // sync vault
-        smartVaultManager.syncSmartVault(address(mySmartVault));
+        smartVaultManager.syncSmartVault(address(mySmartVault), true);
 
         // check state
         // nothing to check

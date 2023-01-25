@@ -102,7 +102,7 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
      * @notice Syncs smart vault with strategies.
      * @param smartVault Smart vault to sync.
      */
-    function syncSmartVault(address smartVault) external;
+    function syncSmartVault(address smartVault, bool revertOnMissingDHW) external;
 
     /**
      * @notice TODO

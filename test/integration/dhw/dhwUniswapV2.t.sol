@@ -134,7 +134,7 @@ contract dhwUniswapV2 is TestFixture {
         uniswapV2Setup.addProfitToPair(address(tokenA), address(tokenB), firstYieldPercentage);
 
         // sync vault
-        smartVaultManager.syncSmartVault(address(smartVault));
+        smartVaultManager.syncSmartVault(address(smartVault), true);
 
         // claim deposit
         vm.startPrank(alice);
@@ -176,7 +176,7 @@ contract dhwUniswapV2 is TestFixture {
         uniswapV2Setup.addProfitToPair(address(tokenA), address(tokenB), secondYieldPercentage);
 
         // sync vault
-        smartVaultManager.syncSmartVault(address(smartVault));
+        smartVaultManager.syncSmartVault(address(smartVault), true);
 
         // claim deposit
         vm.startPrank(bob);
@@ -213,7 +213,7 @@ contract dhwUniswapV2 is TestFixture {
 
             // sync vault
             console2.log("syncSmartVault");
-            smartVaultManager.syncSmartVault(address(smartVault));
+            smartVaultManager.syncSmartVault(address(smartVault), true);
 
             // claim withdrawal
             console2.log("tokenA Before:", tokenA.balanceOf(alice));

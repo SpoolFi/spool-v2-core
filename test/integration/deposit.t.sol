@@ -178,7 +178,7 @@ contract DepositIntegrationTest is TestFixture {
         assertEq(strategyC.totalSupply(), 35716275414794966628800000);
 
         // sync vault
-        smartVaultManager.syncSmartVault(address(smartVault));
+        smartVaultManager.syncSmartVault(address(smartVault), true);
 
         // check state
         // - strategy tokens were claimed
@@ -243,7 +243,7 @@ contract DepositIntegrationTest is TestFixture {
         strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
 
         // sync vault
-        smartVaultManager.syncSmartVault(address(smartVault));
+        smartVaultManager.syncSmartVault(address(smartVault), true);
 
         uint256 svtBalance = 357162800000000000000000000;
 

@@ -150,7 +150,7 @@ contract DhwTest is TestFixture {
         strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
 
         // sync vault
-        smartVaultManager.syncSmartVault(address(smartVault));
+        smartVaultManager.syncSmartVault(address(smartVault), true);
 
         // claim deposit
         console2.log("smartVault.balanceOf(alice, aliceDepositNftId):", smartVault.balanceOf(alice, aliceDepositNftId));
@@ -182,7 +182,7 @@ contract DhwTest is TestFixture {
 
         // sync vault
         console2.log("syncSmartVault");
-        smartVaultManager.syncSmartVault(address(smartVault));
+        smartVaultManager.syncSmartVault(address(smartVault), true);
 
         // claim withdrawal
         console2.log("tokenA Before:", tokenA.balanceOf(alice));

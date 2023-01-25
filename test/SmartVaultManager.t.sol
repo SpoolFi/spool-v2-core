@@ -181,7 +181,7 @@ contract SmartVaultManagerTest is TestFixture {
         flushIdx = smartVaultManager.getLatestFlushIndex(address(smartVault_));
         assertEq(flushIdx, 1);
 
-        uint256 dhwIndex = strategyRegistry.currentIndex(strategies[0]);
+        uint256 dhwIndex = strategyRegistry.currentIndex(Arrays.toArray(strategies[0]))[0];
         uint256 r = 10 ** 5;
 
         uint256[] memory deposits1 = strategyRegistry.depositedAssets(strategies[0], dhwIndex);

@@ -94,10 +94,15 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     }
 
     /**
-     * @notice Deposits for given strategy and DHW index
+     * @notice Current DHW indexes for given strategies
      */
-    function currentIndex(address strategy) external view returns (uint256) {
-        return _currentIndexes[strategy];
+    function currentIndex(address[] calldata strategies) external view returns (uint256[] memory) {
+        uint256[] memory indexes = new uint256[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            indexes[i] = _currentIndexes[strategies[i]];
+        }
+
+        return indexes;
     }
 
     function assetRatioAtLastDhw(address strategy) external view returns (uint256[] memory) {
