@@ -210,7 +210,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== DEPOSIT/WITHDRAW ========== */
 
-    function redeem(RedeemBag calldata bag, address receiver, address owner)
+    function redeem(RedeemBag calldata bag, address receiver, address owner, bool doFlush)
         external
         onlyRegisteredSmartVault(bag.smartVault)
         returns (uint256)
@@ -221,7 +221,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         _rewardManager.updateRewardsOnVault(bag.smartVault, receiver);
         uint256 flushIndex = _flushIndexes[bag.smartVault];
-        return _withdrawalManager.redeem(bag, RedeemExtras(msg.sender, receiver, owner, flushIndex));
+        uint256 nftId = _withdrawalManager.redeem(bag, RedeemExtras(msg.sender, receiver, owner, flushIndex));
+
+        if (doFlush) {
+            flushSmartVault(bag.smartVault);
+        }
+
+        return nftId;
     }
 
     function redeemFast(RedeemBag calldata bag)
@@ -339,27 +345,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== BOOKKEEPING ========== */
 
-    function flushSmartVault(address smartVault) external onlyRegisteredSmartVault(smartVault) {
-        uint256 flushIndex = _flushIndexes[smartVault];
+    function flushSmartVault(address smartVault) public onlyRegisteredSmartVault(smartVault) {
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
-
-        // handle deposits
-        uint256[] memory allocation = _smartVaultAllocations[smartVault].toArray(strategies_.length);
+        uint256[] memory allocations_ = _smartVaultAllocations[smartVault].toArray(strategies_.length);
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-        uint256[] memory flushDhwIndexes =
-            _depositManager.flushSmartVault(smartVault, flushIndex, strategies_, allocation, tokens);
 
-        uint256[] memory flushDhwIndexes2 = _withdrawalManager.flushSmartVault(smartVault, flushIndex, strategies_);
-        if (flushDhwIndexes.length == 0) {
-            flushDhwIndexes = flushDhwIndexes2;
-        }
-
-        if (flushDhwIndexes.length == 0) revert NothingToFlush();
-
-        _dhwIndexes[smartVault][flushIndex].setValues(flushDhwIndexes);
-        _flushIndexes[smartVault] = flushIndex + 1;
-
-        emit SmartVaultFlushed(smartVault, flushIndex);
+        _flushSmartVault(smartVault, allocations_, strategies_, tokens);
     }
 
     function syncSmartVault(address smartVault, bool revertOnMissingDHW)
@@ -425,6 +416,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function _depositAssets(DepositBag calldata bag, address owner) internal returns (uint256) {
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
         address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
+        uint256[] memory allocations_ = _smartVaultAllocations[bag.smartVault].toArray(strategies_.length);
+
         _syncSmartVault(bag.smartVault, strategies_, tokens, false);
         _rewardManager.updateRewardsOnVault(bag.smartVault, bag.receiver);
 
@@ -434,7 +427,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
                 owner: owner,
                 executor: msg.sender,
                 tokens: tokens,
-                allocations: _smartVaultAllocations[bag.smartVault].toArray(strategies_.length),
+                allocations: allocations_,
                 strategies: strategies_,
                 flushIndex: _flushIndexes[bag.smartVault]
             })
@@ -444,7 +437,36 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             IERC20(tokens[i]).safeTransferFrom(owner, address(_masterWallet), deposits[i]);
         }
 
+        if (bag.doFlush) {
+            _flushSmartVault(bag.smartVault, allocations_, strategies_, tokens);
+        }
+
         return depositId;
+    }
+
+    function _flushSmartVault(
+        address smartVault,
+        uint256[] memory allocations_,
+        address[] memory strategies_,
+        address[] memory tokens
+    ) private {
+        uint256 flushIndex = _flushIndexes[smartVault];
+        uint256[] memory flushDhwIndexes =
+            _depositManager.flushSmartVault(smartVault, flushIndex, strategies_, allocations_, tokens);
+
+        uint256[] memory flushDhwIndexes2 = _withdrawalManager.flushSmartVault(smartVault, flushIndex, strategies_);
+        if (flushDhwIndexes.length == 0) {
+            flushDhwIndexes = flushDhwIndexes2;
+        }
+
+        if (flushDhwIndexes.length == 0) {
+            revert NothingToFlush();
+        }
+
+        _dhwIndexes[smartVault][flushIndex].setValues(flushDhwIndexes);
+        _flushIndexes[smartVault] = flushIndex + 1;
+
+        emit SmartVaultFlushed(smartVault, flushIndex);
     }
 
     function _onlyUnregisteredSmartVault(address smartVault) internal view {

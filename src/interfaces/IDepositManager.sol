@@ -13,6 +13,7 @@ struct DepositBag {
     uint256[] assets;
     address receiver;
     address referral;
+    bool doFlush;
 }
 
 struct DepositExtras {

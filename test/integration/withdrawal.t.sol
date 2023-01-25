@@ -159,12 +159,12 @@ contract WithdrawalIntegrationTest is Test {
         // request withdrawal
         vm.prank(alice);
         uint256 aliceWithdrawalNftId = smartVaultManager.redeem(
-            RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0)), alice, alice
+            RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0)), alice, alice, false
         );
 
         vm.prank(bob);
         uint256 bobWithdrawalNftId = smartVaultManager.redeem(
-            RedeemBag(address(mySmartVault), 200_000, new uint256[](0), new uint256[](0)), bob, bob
+            RedeemBag(address(mySmartVault), 200_000, new uint256[](0), new uint256[](0)), bob, bob, false
         );
 
         // check state

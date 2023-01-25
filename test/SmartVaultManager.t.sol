@@ -166,7 +166,7 @@ contract SmartVaultManagerTest is TestFixture {
         token2.approve(address(smartVaultManager), 100 ether);
 
         vm.prank(user);
-        smartVaultManager.deposit(DepositBag(address(smartVault_), assets, user, address(0)));
+        smartVaultManager.deposit(DepositBag(address(smartVault_), assets, user, address(0), false));
 
         uint256 flushIdx = smartVaultManager.getLatestFlushIndex(address(smartVault_));
         assertEq(flushIdx, 0);
