@@ -115,4 +115,10 @@ library SpoolUtils {
 
         return totalUsdValue;
     }
+
+    function getVaultStrategyUsdValue(address smartVault, address strategyAddress) public view returns (uint256) {
+        IStrategy strategy = IStrategy(strategyAddress);
+
+        return strategy.totalUsdValue() * strategy.balanceOf(smartVault) / strategy.totalSupply();
+    }
 }

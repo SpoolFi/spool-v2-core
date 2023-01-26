@@ -42,6 +42,11 @@ error SmartVaultRegistrationNoStrategies();
  */
 error ManagementFeeTooLarge(uint256 mgmtFeePct);
 
+/**
+ * @notice Used when all smart vaults do not have same asset group.
+ */
+error NotSameAssetGroup();
+
 /* ========== STRUCTS ========== */
 
 /**
@@ -72,7 +77,7 @@ interface ISmartVaultReallocator {
 
     function assetGroupId(address smartVault) external view returns (uint256 assetGroupId_);
 
-    function reallocate() external;
+    function reallocate(address[] calldata smartVaults) external;
 }
 
 interface ISmartVaultBalance {

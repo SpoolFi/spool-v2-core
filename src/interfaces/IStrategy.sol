@@ -100,6 +100,8 @@ interface IStrategy is IERC20Upgradeable {
 
     function claimShares(address claimer, uint256 amount) external;
 
+    function releaseShares(address smartVault, uint256 amount) external;
+
     /**
      * @notice Instantly redeems strategy shares for assets.
      * @param shares Amount of shares to redeem.
@@ -116,4 +118,10 @@ interface IStrategy is IERC20Upgradeable {
         uint256[] memory exchangeRates,
         IUsdPriceFeedManager priceFeedManager
     ) external returns (uint256[] memory assetsWithdrawn);
+
+    function depositFast(
+        address[] calldata assetGroup,
+        uint256[] calldata exchangeRates,
+        IUsdPriceFeedManager priceFeedManager
+    ) external returns (uint256 sstsMinted);
 }

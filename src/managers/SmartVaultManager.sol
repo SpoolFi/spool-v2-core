@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
+import "@openzeppelin/utils/Strings.sol";
+import "forge-std/console.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/utils/math/Math.sol";
@@ -36,6 +38,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     using SafeERC20 for IERC20;
     using ArrayMapping for mapping(uint256 => uint256);
+    using ArrayMapping for mapping(uint256 => address);
 
     IDepositManager private immutable _depositManager;
 
@@ -53,6 +56,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /// @notice Master wallet
     IMasterWallet private immutable _masterWallet;
 
+    /// @notice Price feed manager
+    IUsdPriceFeedManager private immutable _priceFeedManager;
+
     /* ========== STATE VARIABLES ========== */
 
     /// @notice Smart Vault registry
@@ -63,6 +69,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /// @notice Smart Vault strategy registry
     mapping(address => address[]) internal _smartVaultStrategies;
+    // TODO: change to "mapping array"
 
     /// @notice Smart Vault risk provider registry
     mapping(address => address) internal _smartVaultRiskProviders;
@@ -71,7 +78,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * @notice Risk appetite for given Smart Vault.
      * @dev smart vault => risk appetite
      */
-    mapping(address => uint256) internal _smartVaultRiskAppetite;
+    mapping(address => uint256) internal _smartVaultRiskAppetites;
 
     /// @notice Smart vault management fee percentage
     mapping(address => uint256) internal _smartVaultMgmtFeePct;
@@ -100,6 +107,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      */
     mapping(address => uint256) _lastDhwTimestampSynced;
 
+    mapping(uint256 => address) internal _reallocationStrategies;
+
     constructor(
         ISpoolAccessControl accessControl_,
         IAssetGroupRegistry assetGroupRegistry_,
@@ -107,7 +116,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         IDepositManager depositManager_,
         IWithdrawalManager withdrawalManager_,
         IStrategyRegistry strategyRegistry_,
-        IMasterWallet masterWallet_
+        IMasterWallet masterWallet_,
+        IUsdPriceFeedManager priceFeedManager_
     ) SpoolAccessControllable(accessControl_) {
         _assetGroupRegistry = assetGroupRegistry_;
         _riskManager = riskManager_;
@@ -115,6 +125,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _withdrawalManager = withdrawalManager_;
         _strategyRegistry = strategyRegistry_;
         _masterWallet = masterWallet_;
+        _priceFeedManager = priceFeedManager_;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -319,6 +330,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _smartVaultMgmtFeePct[smartVault] = registrationForm.managementFeePct;
         _smartVaultStrategies[smartVault] = registrationForm.strategies;
         _smartVaultRiskProviders[smartVault] = registrationForm.riskProvider;
+        // set risk appetite
+        _smartVaultRiskAppetites[smartVault] = registrationForm.riskAppetite;
 
         // set allocation
         _smartVaultAllocations[smartVault].setValues(
@@ -362,12 +375,334 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _syncSmartVault(smartVault, strategies_, tokens, revertOnMissingDHW);
     }
 
-    /**
-     * @notice TODO
-     */
-    function reallocate() external {}
+    // TOOD: access control - ROLE_REALLOCATOR
+    function reallocate(address[] calldata smartVaults) external whenNotPaused {
+        // console.log("vv SmartVaultManager::reallocate vv");
+        if (smartVaults.length == 0) {
+            // check if there is anything to reallocate
+            return;
+        }
+
+        uint256 assetGroupId_ = _smartVaultAssetGroups[smartVaults[0]];
+        for (uint256 i = 0; i < smartVaults.length; ++i) {
+            // check that all smart vaults are registered
+            _onlyRegisteredSmartVault(smartVaults[i]);
+
+            // check that all smart vaults use same asset group
+            if (_smartVaultAssetGroups[smartVaults[i]] != assetGroupId_) {
+                revert NotSameAssetGroup();
+            }
+        }
+
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId_);
+        uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(assetGroup, _priceFeedManager);
+
+        // figure out which strategies are included in the reallocation
+        (uint256[][] memory strategyMapping, uint256 numStrategies) = _reallocationMapStrategies(smartVaults);
+        // console.log("  strategyMapping");
+        // for (uint256 i = 0; i < strategyMapping.length; ++i) {
+        //     string memory map = string.concat("    ", Strings.toString(i), ":  ");
+        //     for (uint256 j = 0; j < strategyMapping[i].length; ++j) {
+        //         map = string.concat(map, "  ", Strings.toString(strategyMapping[i][j]));
+        //     }
+        //     console.log(map);
+        // }
+        // console.log("  numStrategies", numStrategies);
+
+        // set new allocations and calculate changes
+        uint256[][][] memory reallocations = new uint256[][][](smartVaults.length);
+        for (uint256 i = 0; i < smartVaults.length; ++i) {
+            reallocations[i] = _reallocationCalculateReallocation(smartVaults[i]);
+        }
+
+        // build reallocation table
+        uint256[][][] memory reallocationTable = _reallocationBuildReallocationTable(strategyMapping, numStrategies, reallocations);
+        // console.log("  reallocationTable");
+        // for (uint256 i = 0; i < numStrategies; ++i) {
+        //     for (uint256 j = 0; j < numStrategies; ++j) {
+        //         console.log(string.concat("    ", Strings.toString(i), " ", Strings.toString(j), ": ", Strings.toString(reallocationTable[i][j][0]), " | ", Strings.toString(reallocationTable[i][j][1]), " | ", Strings.toString(reallocationTable[i][j][2])));
+        //     }
+        // }
+
+        // do the reallocation
+        reallocationTable = _strategyRegistry.reallocationReallocate(
+            _reallocationStrategies.toArray(numStrategies),
+            reallocationTable,
+            assetGroup,
+            exchangeRates
+        );
+        // console.log("  reallocationTable");
+        // for (uint256 i = 0; i < numStrategies; ++i) {
+        //     for (uint256 j = 0; j < numStrategies; ++j) {
+        //         console.log(string.concat("    ", Strings.toString(i), " ", Strings.toString(j), ": ", Strings.toString(reallocationTable[i][j][0]), " | ", Strings.toString(reallocationTable[i][j][1]), " | ", Strings.toString(reallocationTable[i][j][2])));
+        //     }
+        // }
+
+        // claim shares
+        _reallocationClaimShares(smartVaults, strategyMapping, reallocationTable, reallocations);
+        // console.log("^^ SmartVaultManager::reallocate ^^");
+    }
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
+
+    function _reallocationClaimShares(
+        address[] calldata smartVaults,
+        uint256[][] memory strategyMapping,
+        uint256[][][] memory reallocationTable,
+        uint256[][][] memory reallocations
+    ) internal {
+        // console.log("vv SmartVaultManager::_reallocationClaimShares vv");
+        // console.log ("  loop 1: smaart vaults");
+        for (uint256 i = 0; i < smartVaults.length; ++i) {
+            // console.log("    i", i);
+            // console.log("    smartVaults[i]", smartVaults[i]);
+            // get strategies for this smart vault
+            address[] storage strategies_ = _smartVaultStrategies[smartVaults[i]];
+            uint256 strategiesLength = strategies_.length;
+
+            uint256[] memory toClaim = new uint256[](strategiesLength+2);
+
+            // find strategies that needed withdrawal
+            // console.log("    loop 1.1");
+            for (uint256 j = 0; j < strategiesLength; ++j) {
+                // console.log("      j", j);
+                // console.log("      strategies_[j]", strategies_[j]);
+                if (reallocations[i][0][j] == 0) {
+                    // strategy didn't need any withdrawal, so has no shares to claim, skipping
+                    // console.log("      no withdrawal, skipping");
+                    continue;
+                }
+
+                uint256[] memory values = new uint256[](2);
+                values[0] = reallocations[i][0][j];
+                values[1] = reallocations[i][1][strategiesLength];
+                // console.log("      values", values[0], values[1]);
+
+                // find strategiest that need deposit
+                // console.log("      loop 1.1.1");
+                for (uint256 k = 0; k < strategiesLength; ++k) {
+                    // console.log("        k", k);
+                    if (reallocations[i][1][k] == 0) {
+                        // strategy k had no deposits made, so there are no shares to claim, skipping
+                        // console.log("        no deposits, skipping");
+                        continue;
+                    }
+
+                    // find value from j that should move to strategy k
+                    uint256 valueToDeposit = values[0] * reallocations[i][1][k] / values[1];
+                    // console.log("        valueToDeposit", valueToDeposit);
+
+                    // claim strategy shares
+                    // matched
+                    toClaim[strategiesLength] = reallocationTable[strategyMapping[i][j]][strategyMapping[i][k]][1] * valueToDeposit / reallocationTable[strategyMapping[i][j]][strategyMapping[i][k]][0];
+                    // unmatched
+                    toClaim[strategiesLength + 1] = reallocationTable[strategyMapping[i][j]][strategyMapping[i][k]][2] * valueToDeposit / reallocationTable[strategyMapping[i][j]][strategyMapping[i][k]][0];
+                    // console.log("        toClaim[strategiesLength]", toClaim[strategiesLength]);
+                    // console.log("        toClaim[strategiesLength + 1]", toClaim[strategiesLength + 1]);
+
+                    // dust-less calculation
+                    reallocationTable[strategyMapping[i][j]][strategyMapping[i][k]][0] -= valueToDeposit;
+                    reallocationTable[strategyMapping[i][j]][strategyMapping[i][k]][1] -= toClaim[strategiesLength];
+                    reallocationTable[strategyMapping[i][j]][strategyMapping[i][k]][2] -= toClaim[strategiesLength+1];
+
+                    // dust-less calculation
+                    values[0] -= valueToDeposit;
+                    values[1] -= reallocations[i][1][k];
+
+                    toClaim[k] += toClaim[strategiesLength] + toClaim[strategiesLength + 1];
+                    // console.log("        toClaim[k]", toClaim[k]);
+                }
+            }
+
+            // claim shares
+            for (uint256 j = 0; j < strategiesLength; ++j) {
+                IStrategy(strategies_[j]).claimShares(smartVaults[i], toClaim[j]);
+            }
+        }
+        // console.log("^^ SmartVaultManager::_reallocationClaimShares ^^");
+    }
+
+    function _reallocationBuildReallocationTable(
+        uint256[][] memory strategyMapping,
+        uint256 numStrategies,
+        uint256[][][] memory reallocations
+    ) internal pure returns (uint256[][][] memory) {
+        // We want to build a reallocation table which specifies how to redistribute
+        // funds from one strategy to another.
+
+        // Reallocation table is numStrategies x numStrategies big.
+        // A value of cell (i, j) V_ij specifies the value V that needs to be withdrawn
+        // from strategy i and deposited into strategy j.
+        uint256[][][] memory reallocationTable = new uint256[][][](numStrategies);
+        for (uint256 i = 0; i < numStrategies; ++i) {
+            reallocationTable[i] = new uint256[][](numStrategies);
+
+            for (uint256 j = 0; j < numStrategies; ++j) {
+                reallocationTable[i][j] = new uint256[](3);
+            }
+        }
+
+        // Loop over smart vaults.
+        for (uint256 i = 0; i < reallocations.length; ++i) {
+            // Calculate witdrawals and deposits needed to allign with new allocation.
+            uint256 strategiesLength = reallocations[i][0].length;
+
+            // Find strategies that need withdrawal.
+            for (uint256 j = 0; j < strategiesLength; ++j) {
+                if (reallocations[i][0][j] == 0) {
+                    continue;
+                }
+
+                uint256[] memory values = new uint256[](2);
+                values[0] = reallocations[i][0][j];
+                values[1] = reallocations[i][1][strategiesLength];
+
+                // Find strategies that need deposit.
+                for (uint256 k = 0; k < strategiesLength; ++k) {
+                    if (reallocations[i][1][k] == 0) {
+                        continue;
+                    }
+
+                    // Find value from j that should move to strategy k.
+                    uint256 valueToDeposit = values[0] * reallocations[i][1][k] / values[1];
+                    reallocationTable[strategyMapping[i][j]][strategyMapping[i][k]][0] += valueToDeposit;
+
+                    // Dust-less calculation:
+                    // - lower amount of withdrawn value to redistribute
+                    values[0] -= valueToDeposit;
+                    // - lower amount of remaining deposits needed
+                    values[1] -= reallocations[i][1][k];
+                }
+            }
+        }
+
+        return reallocationTable;
+    }
+
+    function _reallocationCalculateReallocation(address smartVault) internal returns (uint256[][] memory) {
+        // Get strategies for smart vault.
+        address[] storage strategies_ = _smartVaultStrategies[smartVault];
+        uint256 strategiesLength = strategies_.length;
+
+        // Calculate new allocation.
+        uint256[] memory newAllocation = _riskManager.calculateAllocation(
+            _smartVaultRiskProviders[smartVault], strategies_, _smartVaultRiskAppetites[smartVault]
+        );
+        uint256 totalAllocation;
+        for (uint256 i = 0; i < strategiesLength; ++i) {
+            totalAllocation += newAllocation[i];
+        }
+        // Store new allocation.
+        _smartVaultAllocations[smartVault].setValues(newAllocation);
+
+        // Compare with current allocation.
+        uint256[][] memory results = new uint256[][](2);
+        results[0] = new uint256[](strategiesLength); // valueToRedeem
+        results[1] = new uint256[](strategiesLength + 1); // valueToDeposit + totalValueToDeposit
+        uint256 totalUsdValue = SpoolUtils.getVaultTotalUsdValue(smartVault, strategies_);
+        // TODO: will call strategy.totalUsdValue which is value from last DHW, is this OK?
+
+        for (uint256 i = 0; i < strategiesLength; ++i) {
+            uint256 newValue = newAllocation[i] * totalUsdValue / totalAllocation;
+            uint256 currentValue = SpoolUtils.getVaultStrategyUsdValue(smartVault, strategies_[i]);
+
+            if (newValue > currentValue) { // strategy needs deposit
+                results[1][i] = newValue - currentValue;
+                results[1][strategiesLength] += newValue - currentValue;
+            } else if (currentValue > newValue) { // strategy needs withdrawal
+                // Calculate number of shares to redeem.
+                uint256 sharesToRedeem = IStrategy(strategies_[i]).balanceOf(smartVault) * (currentValue - newValue) / currentValue;
+                // Release strategy shares.
+                IStrategy(strategies_[i]).releaseShares(smartVault, sharesToRedeem);
+                // Recalculate value to redeem.
+                results[0][i] = IStrategy(strategies_[i]).totalUsdValue() * sharesToRedeem / IStrategy(strategies_[i]).totalSupply();
+            }
+        }
+
+        return results;
+    }
+
+    function _reallocationMapStrategies(address[] calldata smartVaults) internal returns (uint256[][] memory, uint256) {
+        // We want to build a list of all strategies involved in this reallocation,
+        // and a mapping between smart vault's strategy list and this reallocaiton
+        // strategy list.
+
+        // Initially we have no strategies.
+        // We will reuse the _reallocationStrategies storage between reallocations.
+        uint256 numStrategies = 0;
+        uint256[][] memory strategyMapping = new uint256[][](smartVaults.length);
+
+        // Extract declarations from the loops.
+        address[] storage strategies_;
+        uint256 strategiesLength;
+        uint256[] memory smartVaultStrategyMapping;
+        address strategy;
+        bool found;
+
+        // We can handle first smart vault more efficiently since we know that
+        // its strategies are not in the list yet.
+        {
+            // Get strategies for this smart vault.
+            strategies_ = _smartVaultStrategies[smartVaults[0]];
+            strategiesLength = strategies_.length;
+            // Mapping from smart vault's strategies to all strategies.
+            smartVaultStrategyMapping = new uint256[](strategiesLength);
+
+            // Loop over smart vault's strategies.
+            for (uint256 j = 0; j < strategiesLength; ++j) {
+                // Add strategy to list of all strategies.
+                _reallocationStrategies[j] = strategies_[j];
+                // Add index to smart vault's mapping.
+                smartVaultStrategyMapping[j] = j;
+            }
+
+            // Update number of all strategies.
+            numStrategies = strategiesLength;
+            // Store smart vault's mapping.
+            strategyMapping[0] = smartVaultStrategyMapping;
+        }
+
+        // Loop over other smart vaults.
+        for (uint256 i = 1; i < smartVaults.length; ++i) {
+            // Get strategies for this smart vault.
+            strategies_ = _smartVaultStrategies[smartVaults[i]];
+            strategiesLength = strategies_.length;
+            // Mapping from smart vault's strategies to all strategies.
+            smartVaultStrategyMapping = new uint256[](strategiesLength);
+
+            // Loop over smart vault's strategies.
+            for (uint256 j = 0; j < strategiesLength; ++j) {
+                strategy = strategies_[j];
+                found = false;
+
+                // Try to find the strategy in list of all strategies.
+                for (uint256 k = 0; k < numStrategies; ++k) {
+                    if (_reallocationStrategies[k] == strategy) {
+                        // Add index to smart vault's mapping.
+                        smartVaultStrategyMapping[j] = k;
+
+                        // Break the loop.
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    // If strategy was not found in list of all strategies
+                    // add index to smart vault's mapping
+                    smartVaultStrategyMapping[j] = numStrategies;
+                    // add it to the list of all strategies
+                    _reallocationStrategies[numStrategies] = strategy;
+                    ++numStrategies;
+                }
+            }
+
+            // Store smart vault's mapping.
+            strategyMapping[i] = smartVaultStrategyMapping;
+        }
+
+        return (strategyMapping, numStrategies);
+    }
 
     /**
      * @dev Claim strategy shares, account for withdrawn assets and sync SVTs for all new DHW runs

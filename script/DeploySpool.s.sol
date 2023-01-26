@@ -113,7 +113,8 @@ contract DeploySpool is Script {
             depositManager,
             withdrawalManager,
             strategyRegistry,
-            masterWallet
+            masterWallet,
+            usdPriceFeedManager
         );
 
         proxy = new TransparentUpgradeableProxy(address(smartVaultManagerImpl), address(proxyAdmin), "");

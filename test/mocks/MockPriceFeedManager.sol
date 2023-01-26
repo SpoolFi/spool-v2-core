@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
-import "../../src/managers/UsdPriceFeedManager.sol";
-import "@openzeppelin/token/ERC20/ERC20.sol";
 import "forge-std/console.sol";
+import "@openzeppelin/token/ERC20/ERC20.sol";
+import "../../src/managers/UsdPriceFeedManager.sol";
 
 contract MockPriceFeedManager is IUsdPriceFeedManager {
     mapping(address => uint256) public exchangeRates;

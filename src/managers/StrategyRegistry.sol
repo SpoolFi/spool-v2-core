@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
+import "forge-std/console.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
@@ -265,7 +266,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         address[] memory strategies_,
         uint256[] memory dhwIndexes,
         uint256[] memory strategyShares
-    ) external view onlyRole(ROLE_STRATEGY_CLAIMER, msg.sender) returns (uint256[] memory) {
+    ) external view returns (uint256[] memory) {
         address[] memory tokens = IStrategy(strategies_[0]).assets();
         uint256[] memory totalWithdrawnAssets = new uint256[](tokens.length);
 
@@ -285,5 +286,190 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         }
 
         return totalWithdrawnAssets;
+    }
+
+    function reallocationReallocate(
+        address[] calldata strategies,
+        uint256[][][] memory reallocationTable,
+        address[] calldata assetGroup,
+        uint256[] calldata exchangeRates
+    ) external returns (uint256[][][] memory) {
+        // console.log("vv StrategyRegistry::reallocationReallocate vv");
+        uint256[][] memory toDeposit = new uint256[][](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            toDeposit[i] = new uint256[](assetGroup.length + 1);
+        }
+
+        // distribute matched shares and withdraw unamatched
+        // console.log("  loop 1");
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            // console.log("    i", i);
+            // calculate amount of shares to distribute and amount of shares to redeem
+            uint256 sharesToRedeem;
+            uint256 totalUnmatchedWithdrawals;
+
+            {
+                uint256[] memory totals = new uint256[](2);
+                // totals[0] -> total withdrawals
+                // totals[1] -> total matched withdrawals
+
+                // console.log("    loop 1.1");
+                for (uint256 j = 0; j < strategies.length; ++j) {
+                    // console.log("      j", j);
+                    // console.log("      reallocationTable[i][j][0]", reallocationTable[i][j][0]);
+                    totals[0] += reallocationTable[i][j][0];
+                    // console.log("      totals[0]", totals[0]);
+
+                    // take smaller for matched withdrawals
+                    // console.log("      reallocationTable[i][j][0]", reallocationTable[i][j][0]);
+                    // console.log("      reallocationTable[j][i][0]", reallocationTable[j][i][0]);
+                    if (reallocationTable[i][j][0] > reallocationTable[j][i][0]) {
+                        totals[1] += reallocationTable[j][i][0];
+                    } else {
+                        totals[1] += reallocationTable[i][j][0];
+                    }
+                    // console.log("      totals[1]", totals[1]);
+                }
+
+                totalUnmatchedWithdrawals = totals[0] - totals[1];
+
+                // console.log("    totals[0]", totals[0]);
+                if (totals[0] == 0) {
+                    // there is nothing to withdraw from strategy i
+                    // console.log("    nothing to withdaw, skipping");
+                    continue;
+                }
+
+                uint256 sharesToDistribute = IStrategy(strategies[i]).totalSupply() * totals[0] / IStrategy(strategies[i]).totalUsdValue();
+                sharesToRedeem = sharesToDistribute * (totals[0] - totals[1]) / totals[0];
+                sharesToDistribute -= sharesToRedeem;
+                // console.log("    sharesToDistribute", sharesToDistribute);
+                // console.log("    sharesToRedeem", sharesToRedeem);
+
+                // distribute matched shares
+                if (sharesToDistribute > 0) {
+                    // console.log("    distributing matched shares");
+                    // console.log("    loop 1.2");
+                    for (uint256 j = 0; j < strategies.length; ++j) {
+                        // console.log("      j", j);
+                        uint256 matched;
+
+                        // take smaller for matched withdrawals
+                        if (reallocationTable[i][j][0] > reallocationTable[j][i][0]) {
+                            matched = reallocationTable[j][i][0];
+                        } else {
+                            matched = reallocationTable[i][j][0];
+                        }
+
+                        if (matched == 0) {
+                            continue;
+                        }
+
+                        // give shares to strategy j
+                        reallocationTable[j][i][1] = sharesToDistribute * matched / totals[1];
+                        // dust-less calculation
+                        sharesToDistribute -= reallocationTable[j][i][1];
+                        totals[1] -= matched;
+                    }
+                }
+            }
+
+            if (sharesToRedeem == 0) {
+                // there is nothing to withdraw
+                // console.log("    no shares to redeem, skipping");
+                continue;
+            }
+
+            // withdraw
+            // console.log("    redeeming shares");
+            uint256[] memory withdrawnAssets = IStrategy(strategies[i]).redeemFast(
+                sharesToRedeem,
+                address(_masterWallet), // TODO: maybe have a clean bucket for reallocation
+                assetGroup,
+                exchangeRates,
+                _priceFeedManager
+            );
+
+            // distribute withdrawn assets
+            // console.log("    distributing shares");
+            // console.log("    loop 1.3");
+            for (uint256 j = 0; j < strategies.length; ++j) {
+                // console.log("      j", j);
+                // console.log("      reallocationTable[i][j][0]", reallocationTable[i][j][0]);
+                // console.log("      reallocationTable[j][i][0]", reallocationTable[j][i][0]);
+                if (reallocationTable[i][j][0] <= reallocationTable[j][i][0]) {
+                    // nothing to deposit into strategy j
+                    // console.log("      nothing to deposit into strategy j, skipping");
+                    continue;
+                }
+
+                // console.log("      depositing into strategy j");
+                // console.log("      loop 1.3.1");
+                for (uint256 k = 0; k < assetGroup.length; ++k) {
+                    // console.log("        k", k);
+                    // console.log("        withdrawnAssets[k]", withdrawnAssets[k]);
+                    // find out how much of asset k should go to strategy j
+                    uint256 depositAmount = withdrawnAssets[k] * (reallocationTable[i][j][0] - reallocationTable[j][i][0]) / totalUnmatchedWithdrawals;
+                    // console.log("        depositAmount", depositAmount);
+
+                    toDeposit[j][k] += depositAmount;
+                    // console.log("        toDeposit[j][k]", toDeposit[j][k]);
+                    toDeposit[j][assetGroup.length] += 1;
+                    // console.log("        toDeposit[j][assetGroup.length]", toDeposit[j][assetGroup.length]);
+                    // console.log("        assetGroup[k]", assetGroup[k]);
+                    // console.log("        depositAmount", depositAmount);
+                    // console.log("        exchangeRates[k]", exchangeRates[k]);
+                    // mark how much was given to strategy j for deposit
+                    reallocationTable[i][j][2] += _priceFeedManager.assetToUsdCustomPrice(assetGroup[k], depositAmount, exchangeRates[k]);
+                    // console.log("        reallocationTable[i][j][2]", reallocationTable[i][j][2]);
+                    // dust-less calculation
+                    withdrawnAssets[k] -= depositAmount;
+                    // console.log("        withdrawnAssets[k]", withdrawnAssets[k]);
+                }
+                totalUnmatchedWithdrawals -= (reallocationTable[i][j][0] - reallocationTable[j][i][0]);
+            }
+        }
+
+        // deposit
+        // console.log("  loop 2");
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            // console.log("    i", i);
+            if (toDeposit[i][assetGroup.length] == 0) {
+                // there is nothing to deposit for this strategy
+                // console.log("      nothing to deposit, skipping");
+                continue;
+            }
+
+            // console.log("    loop 2.1");
+            for (uint256 j = 0; j < assetGroup.length; ++j) {
+                // console.log("      j", j);
+                // console.log("      toDeposit[i][j]", toDeposit[i][j]);
+                _masterWallet.transfer(IERC20(assetGroup[j]), strategies[i], toDeposit[i][j]);
+            }
+
+            uint256 mintedSsts = IStrategy(strategies[i]).depositFast(assetGroup, exchangeRates, _priceFeedManager);
+            // console.log("    mintedSsts", mintedSsts);
+
+            // distribute minted SSTs
+            uint256 totalDepositedValue = _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, toDeposit[i], exchangeRates);
+
+            for (uint256 j = 0; j < strategies.length; ++j) {
+                if (reallocationTable[j][i][2] == 0) {
+                    // no shares to give to strategy j
+                    continue;
+                }
+
+                // calculate amount of shares to give strategy j that deposited into this one
+                uint256 shares = mintedSsts * reallocationTable[j][i][2] / totalDepositedValue;
+                // dust-less calculation
+                mintedSsts -= shares;
+                totalDepositedValue -= reallocationTable[j][i][2];
+                // give shares
+                reallocationTable[j][i][2] = shares;
+            }
+        }
+
+        // console.log("^^ StrategyRegistry::reallocationReallocate ^^");
+        return reallocationTable;
     }
 }
