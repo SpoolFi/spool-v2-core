@@ -88,12 +88,29 @@ library SpoolUtils {
         view
         returns (uint256)
     {
+        return getVaultTotalUsdValue(smartVault_, strategyAddresses_, new uint256[](strategyAddresses_.length));
+    }
+
+    /**
+     * @notice Gets total USD value of a smart vault.
+     * @dev Should be called with addresses of all strategies used by the smart vault,
+     * otherwise total USD value will be lower than it actually is.
+     * @param smartVault_ Address of the smart vault.
+     * @param strategyAddresses_ Addresses of smart vault's strategies.
+     * @param pendingShares shares that haven't been transferred yet
+     * @return totalUsdValue Total USD value of the smart vault.
+     */
+    function getVaultTotalUsdValue(
+        address smartVault_,
+        address[] memory strategyAddresses_,
+        uint256[] memory pendingShares
+    ) public view returns (uint256) {
         uint256 totalUsdValue = 0;
 
         for (uint256 i = 0; i < strategyAddresses_.length; i++) {
             IStrategy strategy = IStrategy(strategyAddresses_[i]);
-            totalUsdValue =
-                totalUsdValue + strategy.totalUsdValue() * strategy.balanceOf(smartVault_) / strategy.totalSupply();
+            uint256 shares = strategy.balanceOf(smartVault_) + pendingShares[i];
+            totalUsdValue = totalUsdValue + strategy.totalUsdValue() * shares / strategy.totalSupply();
         }
 
         return totalUsdValue;

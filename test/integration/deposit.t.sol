@@ -41,6 +41,11 @@ contract DepositIntegrationTest is TestFixture {
         tokenB = new MockToken("Token B", "TB");
         tokenC = new MockToken("Token C", "TC");
 
+        // set initial state
+        deal(address(tokenA), alice, 100 ether, true);
+        deal(address(tokenB), alice, 10 ether, true);
+        deal(address(tokenC), alice, 500 ether, true);
+
         address[] memory assetGroup = Arrays.toArray(address(tokenA), address(tokenB), address(tokenC));
         assetGroupRegistry.allowToken(address(tokenA));
         assetGroupRegistry.allowToken(address(tokenB));
@@ -114,13 +119,6 @@ contract DepositIntegrationTest is TestFixture {
     }
 
     function test_shouldBeAbleToDeposit() public {
-        bytes32 a = accessControl.getRoleAdmin(ROLE_SMART_VAULT);
-        console.logBytes32(a);
-        // set initial state
-        deal(address(tokenA), alice, 100 ether, true);
-        deal(address(tokenB), alice, 10 ether, true);
-        deal(address(tokenC), alice, 500 ether, true);
-
         // Alice deposits
         vm.startPrank(alice);
 
@@ -210,13 +208,6 @@ contract DepositIntegrationTest is TestFixture {
     }
 
     function test_claimSmartVaultTokensPartially() public {
-        bytes32 a = accessControl.getRoleAdmin(ROLE_SMART_VAULT);
-        console.logBytes32(a);
-        // set initial state
-        deal(address(tokenA), alice, 100 ether, true);
-        deal(address(tokenB), alice, 10 ether, true);
-        deal(address(tokenC), alice, 500 ether, true);
-
         // Alice deposits
         vm.startPrank(alice);
 
@@ -278,5 +269,74 @@ contract DepositIntegrationTest is TestFixture {
 
         // - deposit NFT was burned in full
         assertEq(smartVault.balanceOfFractional(alice, aliceDepositNftId), 0);
+    }
+
+    function test_getUserSVTBalance_withActiveDepositNFT() public {
+        deal(address(tokenA), alice, 2000 ether, true);
+        deal(address(tokenB), alice, 2000 ether, true);
+        deal(address(tokenC), alice, 2000 ether, true);
+
+        // Alice deposits #1
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        uint256 aliceBalance;
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), true));
+        vm.stopPrank();
+
+        // DHW
+        SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
+        dhwSwapInfo[0] = new SwapInfo[](0);
+        dhwSwapInfo[1] = new SwapInfo[](0);
+        dhwSwapInfo[2] = new SwapInfo[](0);
+
+        // balance before DHW should be 0
+        aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
+        assertEq(smartVault.totalSupply(), 0);
+        assertEq(smartVault.balanceOf(address(smartVault)), 0);
+        assertEq(smartVault.balanceOf(alice), 0);
+        assertEq(aliceBalance, 0);
+
+        strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
+
+        // balance after DHW, before vault sync
+        // should simulate sync
+        uint256 expectedBalance = 357162800000000000000000000;
+        aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
+        assertEq(smartVault.totalSupply(), 0);
+        assertEq(smartVault.balanceOf(address(smartVault)), 0);
+        assertEq(smartVault.balanceOf(alice), 0);
+        assertEq(aliceBalance, expectedBalance);
+
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        // balances after vault sync
+        aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
+        assertEq(aliceBalance, expectedBalance);
+        assertEq(smartVault.totalSupply(), expectedBalance);
+        assertEq(smartVault.balanceOf(address(smartVault)), expectedBalance);
+
+        // Alice deposits #2
+        vm.startPrank(alice);
+
+        depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), true));
+        vm.stopPrank();
+
+        // balances after deposit #2, before DHW, should be the same
+        aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
+        assertEq(aliceBalance, expectedBalance);
+        assertEq(smartVault.totalSupply(), expectedBalance);
+        assertEq(smartVault.balanceOf(address(smartVault)), expectedBalance);
     }
 }

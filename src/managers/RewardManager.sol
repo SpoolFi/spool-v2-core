@@ -341,7 +341,7 @@ contract RewardManager is IRewardManager, ReentrancyGuard, SpoolAccessControllab
     }
 
     function _totalDeposits(address smartVault) private view returns (uint256) {
-        return IERC20(smartVault).totalSupply();
+        return _smartVaultBalance.getSVTTotalSupply(smartVault);
     }
 
     function _updateReward(address smartVault, IERC20 token, address account) private {

@@ -123,29 +123,14 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256[] memory nftIds = smartVault.activeUserNFTIds(userAddress);
 
         if (nftIds.length > 0) {
-            bytes[] memory metadata = smartVault.getMetadata(nftIds);
-            uint256[] memory balances = smartVault.balanceOfFractionalBatch(userAddress, nftIds);
-            address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVaultAddress]);
-
-            for (uint256 i; i < nftIds.length; i++) {
-                if (nftIds[i] > MAXIMAL_DEPOSIT_ID) {
-                    continue;
-                }
-
-                DepositMetadata memory depositMetadata = abi.decode(metadata[i], (DepositMetadata));
-
-                if (depositMetadata.flushIndex >= _flushIndexesToSync[smartVaultAddress]) {
-                    revert DepositNotSyncedYet();
-                }
-
-                uint256 balance = _depositManager.getClaimedVaultTokensPreview(
-                    smartVaultAddress, depositMetadata, balances[i], tokens
-                );
-                currentBalance += balance;
-            }
+            currentBalance += _simulateDepositNFTBurn(smartVault, userAddress, nftIds);
         }
 
         return currentBalance;
+    }
+
+    function getSVTTotalSupply(address smartVault) external view returns (uint256) {
+        return ISmartVault(smartVault).totalSupply() + _SVTsPendingSync(smartVault);
     }
 
     /**
@@ -276,7 +261,11 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         onlyRegisteredSmartVault(smartVault)
         returns (uint256)
     {
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
+        uint256 assetGroupId_ = _smartVaultAssetGroups[smartVault];
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
+
+        _syncSmartVault(smartVault, strategies_, tokens, false);
         return _depositManager.claimSmartVaultTokens(smartVault, nftIds, nftAmounts, tokens, msg.sender);
     }
 
@@ -293,10 +282,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256[] calldata nftAmounts,
         address receiver
     ) public whenNotPaused onlyRegisteredSmartVault(smartVault) returns (uint256[] memory, uint256) {
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
         uint256 assetGroupId_ = _smartVaultAssetGroups[smartVault];
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId_);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
+
+        _syncSmartVault(smartVault, strategies_, tokens, false);
         return _withdrawalManager.claimWithdrawal(
-            WithdrawalClaimBag(smartVault, nftIds, nftAmounts, receiver, msg.sender, assetGroupId_, assetGroup)
+            WithdrawalClaimBag(smartVault, nftIds, nftAmounts, receiver, msg.sender, assetGroupId_, tokens)
         );
     }
 
@@ -380,6 +372,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
+    /**
+     * @dev Claim strategy shares, account for withdrawn assets and sync SVTs for all new DHW runs
+     */
     function _syncSmartVault(
         address smartVault,
         address[] memory strategies_,
@@ -395,15 +390,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         while (flushIndex < _flushIndexes[smartVault]) {
             uint256[] memory indexes = _dhwIndexes[smartVault][flushIndex].toArray(strategies_.length);
 
-            for (uint256 i = 0; i < strategies_.length; i++) {
-                uint256 dhwIndex = indexes[i];
-
-                if (dhwIndex == currentStrategyIndexes[i]) {
-                    if (revertOnMissingDHW) {
-                        revert DhwNotRunYetForIndex(strategies_[i], dhwIndex);
-                    } else {
-                        return;
-                    }
+            (bool dhwOk, uint256 idx) = _areAllDhwRunsCompleted(currentStrategyIndexes, indexes);
+            if (!dhwOk) {
+                if (revertOnMissingDHW) {
+                    revert DhwNotRunYetForIndex(strategies_[idx], indexes[idx]);
+                } else {
+                    return;
                 }
             }
 
@@ -418,12 +410,97 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     }
 
     /**
-     * @notice Gets total value (in USD) of assets managed by the vault.
+     * @dev Simulate how many SVTs would a user receive by burning given deposit NFTs
+     * - Withdrawal NFTs are skipped
+     * - Incomplete DHW runs are skipped
+     * - Incomplete vault syncs will be simulated
+     */
+    function _simulateDepositNFTBurn(ISmartVault smartVault, address userAddress, uint256[] memory nftIds)
+        private
+        view
+        returns (uint256)
+    {
+        uint256 balance;
+        address smartVaultAddress = address(smartVault);
+        bytes[] memory metadata = smartVault.getMetadata(nftIds);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVaultAddress]);
+        address[] memory strategies_ = _smartVaultStrategies[smartVaultAddress];
+        uint256[] memory nftBalances = smartVault.balanceOfFractionalBatch(userAddress, nftIds);
+        uint256[] memory currentStrategyIndexes = _strategyRegistry.currentIndex(strategies_);
+
+        for (uint256 i; i < nftIds.length; i++) {
+            if (nftIds[i] > MAXIMAL_DEPOSIT_ID) continue;
+
+            DepositMetadata memory depositMetadata = abi.decode(metadata[i], (DepositMetadata));
+            uint256[] memory dhwIndexes_ =
+                _dhwIndexes[smartVaultAddress][depositMetadata.flushIndex].toArray(strategies_.length);
+
+            (bool dhwOk,) = _areAllDhwRunsCompleted(currentStrategyIndexes, dhwIndexes_);
+            if (!dhwOk) continue;
+
+            balance += _depositManager.getClaimedVaultTokensPreview(
+                smartVaultAddress, depositMetadata, nftBalances[i], tokens, strategies_, dhwIndexes_, true
+            );
+        }
+        return balance;
+    }
+
+    /**
+     * @dev Check whether all DHW runs were completed for given indexes
+     */
+    function _areAllDhwRunsCompleted(uint256[] memory currentStrategyIndexes, uint256[] memory dhwIndexes_)
+        private
+        view
+        returns (bool, uint256)
+    {
+        for (uint256 i; i < dhwIndexes_.length; i++) {
+            if (dhwIndexes_[i] >= currentStrategyIndexes[i]) {
+                return (false, i);
+            }
+        }
+
+        return (true, 0);
+    }
+
+    /**
+     * @dev Calculate number of SVTs that haven't been synced yet after DHW runs
+     * DHW has minted strategy shares, but vaults haven't claimed them yet.
+     */
+    function _SVTsPendingSync(address smartVault) private view returns (uint256) {
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
+        uint256[] memory currentStrategyIndexes = _strategyRegistry.currentIndex(strategies_);
+        uint256 flushIndex = _flushIndexesToSync[smartVault];
+        uint256 pendingSVTs;
+
+        while (flushIndex < _flushIndexes[smartVault]) {
+            uint256[] memory indexes = _dhwIndexes[smartVault][flushIndex].toArray(strategies_.length);
+
+            (bool dhwOk,) = _areAllDhwRunsCompleted(currentStrategyIndexes, indexes);
+            if (!dhwOk) break;
+
+            (uint256 svts,) = _depositManager.syncDepositsSimulate(smartVault, flushIndex, strategies_, indexes, tokens);
+            pendingSVTs += svts;
+
+            flushIndex++;
+        }
+
+        return pendingSVTs;
+    }
+
+    /**
+     * @dev Gets total value (in USD) of assets managed by the vault.
      */
     function _getVaultTotalUsdValue(address smartVault) internal view returns (uint256) {
         return SpoolUtils.getVaultTotalUsdValue(smartVault, _smartVaultStrategies[smartVault]);
     }
 
+    /**
+     * @dev Prepare deposits to be processed in the next DHW cycle.
+     * - first sync vault
+     * - update vault rewards
+     * - optionally trigger flush right after
+     */
     function _depositAssets(DepositBag calldata bag, address owner) internal returns (uint256) {
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
         address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
@@ -455,6 +532,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return depositId;
     }
 
+    /**
+     * @dev Mark accrued deposits and withdrawals ready for the next DHW cycle
+     */
     function _flushSmartVault(
         address smartVault,
         uint256[] memory allocations_,
