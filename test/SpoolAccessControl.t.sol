@@ -284,6 +284,36 @@ contract SpoolAccessControlableTest is Test {
         vm.prank(user);
         mockContract.functionC();
     }
+
+    function test_pause_shouldRevertWithCallerNotPauser() public {
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_PAUSER, user));
+        accessControl.pause();
+
+        vm.prank(spoolAdmin);
+        accessControl.grantRole(ROLE_PAUSER, user);
+
+        vm.prank(user);
+        accessControl.pause();
+    }
+
+    function test_unpause_shouldRevertWithCallerNotUnpauser() public {
+        vm.prank(spoolAdmin);
+        accessControl.grantRole(ROLE_PAUSER, user);
+
+        vm.startPrank(user);
+        accessControl.pause();
+
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_UNPAUSER, user));
+        accessControl.unpause();
+        vm.stopPrank();
+
+        vm.prank(spoolAdmin);
+        accessControl.grantRole(ROLE_UNPAUSER, user);
+
+        vm.prank(user);
+        accessControl.unpause();
+    }
 }
 
 contract MockContract is SpoolAccessControllable {

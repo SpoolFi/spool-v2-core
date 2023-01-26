@@ -76,3 +76,13 @@ bytes32 constant ROLE_SMART_VAULT_MANAGER = keccak256("SMART_VAULT_MANAGER");
  * Should be granted to whoever is allowed to provide risk scores.
  */
 bytes32 constant ROLE_RISK_PROVIDER = keccak256("RISK_PROVIDER");
+
+/**
+ * @dev Grants permission to pause the system.
+ */
+bytes32 constant ROLE_PAUSER = keccak256("SYSTEM_PAUSER");
+
+/**
+ * @dev Grants permission to unpause the system.
+ */
+bytes32 constant ROLE_UNPAUSER = keccak256("SYSTEM_UNPAUSER");

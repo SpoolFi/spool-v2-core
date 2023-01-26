@@ -155,9 +155,7 @@ contract SmartVaultManagerTest is TestFixture {
         token1.mint(user, 200 ether);
         token2.mint(user, 200 ether);
 
-        uint256[] memory assets = new uint256[](2);
-        assets[0] = 100 ether;
-        assets[1] = 6.779734526152375133 ether;
+        uint256[] memory assets = Arrays.toArray(100 ether, 6.779734526152375133 ether);
 
         vm.prank(user);
         token1.approve(address(smartVaultManager), 100 ether);
@@ -238,6 +236,64 @@ contract SmartVaultManagerTest is TestFixture {
         strategyRegistry.registerStrategy(address(strategy3));
 
         return (strategies, assetGroupId);
+    }
+
+    function test_depositRevertOnPaused() public {
+        accessControl.grantRole(ROLE_PAUSER, address(this));
+        accessControl.pause();
+
+        vm.expectRevert(abi.encodeWithSelector(SystemPaused.selector));
+        smartVaultManager.deposit(DepositBag(address(smartVault), new uint256[](0), address(1), address(0), false));
+    }
+
+    function test_redeemRevertOnPaused() public {
+        accessControl.grantRole(ROLE_PAUSER, address(this));
+        accessControl.pause();
+
+        vm.expectRevert(abi.encodeWithSelector(SystemPaused.selector));
+        smartVaultManager.redeem(
+            RedeemBag(address(smartVault), 1, new uint256[](0), new uint256[](0)), address(1), address(1), false
+        );
+    }
+
+    function test_fastRedeemRevertOnPaused() public {
+        accessControl.grantRole(ROLE_PAUSER, address(this));
+        accessControl.pause();
+
+        vm.expectRevert(abi.encodeWithSelector(SystemPaused.selector));
+        smartVaultManager.redeemFast(RedeemBag(address(smartVault), 1, new uint256[](0), new uint256[](0)));
+    }
+
+    function test_flushSmartVaultRevertOnPaused() public {
+        accessControl.grantRole(ROLE_PAUSER, address(this));
+        accessControl.pause();
+
+        vm.expectRevert(abi.encodeWithSelector(SystemPaused.selector));
+        smartVaultManager.flushSmartVault(address(smartVault));
+    }
+
+    function test_syncSmartVaultRevertOnPaused() public {
+        accessControl.grantRole(ROLE_PAUSER, address(this));
+        accessControl.pause();
+
+        vm.expectRevert(abi.encodeWithSelector(SystemPaused.selector));
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+    }
+
+    function test_claimWithdrawalRevertOnPaused() public {
+        accessControl.grantRole(ROLE_PAUSER, address(this));
+        accessControl.pause();
+
+        vm.expectRevert(abi.encodeWithSelector(SystemPaused.selector));
+        smartVaultManager.claimWithdrawal(address(smartVault), new uint256[](0), new uint256[](0), address(0));
+    }
+
+    function test_claimSVTsRevertOnPaused() public {
+        accessControl.grantRole(ROLE_PAUSER, address(this));
+        accessControl.pause();
+
+        vm.expectRevert(abi.encodeWithSelector(SystemPaused.selector));
+        smartVaultManager.claimSmartVaultTokens(address(smartVault), new uint256[](0), new uint256[](0));
     }
 
     function _createVault(address[] memory strategies, uint256 assetGroupId) private returns (ISmartVault) {

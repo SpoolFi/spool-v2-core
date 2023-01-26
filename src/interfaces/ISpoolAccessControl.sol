@@ -10,6 +10,11 @@ import "@openzeppelin-upgradeable/access/IAccessControlUpgradeable.sol";
  */
 error MissingRole(bytes32 role, address account);
 
+/**
+ * @notice Used when interacting with Spool when the system is paused.
+ */
+error SystemPaused();
+
 interface ISpoolAccessControl is IAccessControlUpgradeable {
     /* ========== VIEW FUNCTIONS ========== */
 
@@ -33,7 +38,22 @@ interface ISpoolAccessControl is IAccessControlUpgradeable {
      */
     function checkIsAdminOrVaultAdmin(address smartVault, address account) external view;
 
+    /**
+     * @dev Returns true if the contract is paused, and false otherwise.
+     */
+    function paused() external view returns (bool);
+
     /* ========== MUTATIVE FUNCTIONS ========== */
+
+    /**
+     * @dev Pause the system,
+     */
+    function pause() external;
+
+    /**
+     * @dev Unpause the system,
+     */
+    function unpause() external;
 
     /**
      * @notice Grants role to an account for a smart vault.

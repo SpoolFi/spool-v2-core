@@ -245,6 +245,8 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal view override {
+        _requireNotPaused();
+
         // mint / burn / redeem
         if (from == address(0) || to == address(0) || to == address(this)) {
             return;
@@ -272,13 +274,15 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         uint256[] memory amounts,
         bytes memory
     ) internal view override {
+        _requireNotPaused();
+
         // skip transfer checks when minting and burning
         // they have their own checks made
         if (from == address(0) || to == address(0)) {
             return;
         }
 
-        // check that only full NFT can be transfered
+        // check that only full NFT can be transferred
         for (uint256 i = 0; i < ids.length; i++) {
             if (amounts[i] != NFT_MINTED_SHARES) {
                 revert InvalidNftTransferAmount(amounts[i]);

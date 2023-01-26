@@ -2,13 +2,14 @@
 pragma solidity 0.8.16;
 
 import "@openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin-upgradeable/security/PausableUpgradeable.sol";
 import "../interfaces/ISpoolAccessControl.sol";
 import "./Roles.sol";
 
 /**
  * @notice Spool access control management
  */
-contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl {
+contract SpoolAccessControl is AccessControlUpgradeable, PausableUpgradeable, ISpoolAccessControl {
     /* ========== CONSTRUCTOR ========== */
 
     constructor() {}
@@ -16,6 +17,7 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl {
     function initialize() public initializer {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setRoleAdmin(ROLE_SMART_VAULT, ADMIN_ROLE_SMART_VAULT);
+        __Pausable_init();
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
@@ -26,6 +28,10 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl {
 
     function checkIsAdminOrVaultAdmin(address smartVault, address account) external view {
         _onlyAdminOrVaultAdmin(smartVault, account);
+    }
+
+    function paused() public view override(ISpoolAccessControl, PausableUpgradeable) returns (bool) {
+        return super.paused();
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
@@ -48,6 +54,14 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl {
         renounceRole(_getSmartVaultRole(smartVault, role), msg.sender);
     }
 
+    function pause() external onlyRole(ROLE_PAUSER) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(ROLE_UNPAUSER) {
+        _unpause();
+    }
+
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _onlyAdminOrVaultAdmin(address smartVault, address account) private view {
@@ -59,6 +73,12 @@ contract SpoolAccessControl is AccessControlUpgradeable, ISpoolAccessControl {
 
     function _getSmartVaultRole(address smartVault, bytes32 role) internal pure returns (bytes32) {
         return keccak256(abi.encode(smartVault, role));
+    }
+
+    function _checkRole(bytes32 role, address account) internal view override {
+        if (!hasRole(role, account)) {
+            revert MissingRole(role, account);
+        }
     }
 
     /* ========== MODIFIERS ========== */
@@ -114,6 +134,15 @@ abstract contract SpoolAccessControllable {
         }
     }
 
+    /**
+     * @dev Throws if the contract is paused.
+     */
+    function _requireNotPaused() internal view virtual {
+        if (_accessControl.paused()) {
+            revert SystemPaused();
+        }
+    }
+
     /* ========== MODIFIERS ========== */
 
     /**
@@ -147,6 +176,18 @@ abstract contract SpoolAccessControllable {
      */
     modifier onlyAdminOrVaultAdmin(address smartVault, address account) {
         _accessControl.checkIsAdminOrVaultAdmin(smartVault, account);
+        _;
+    }
+
+    /**
+     * @dev Modifier to make a function callable only when the contract is not paused.
+     *
+     * Requirements:
+     *
+     * - The contract must not be paused.
+     */
+    modifier whenNotPaused() {
+        _requireNotPaused();
         _;
     }
 }
