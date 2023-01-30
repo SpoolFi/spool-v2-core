@@ -62,38 +62,99 @@ interface IDepositManager {
         address referral
     );
 
+    /**
+     * @notice Simulate vault synchronization (i.e. DHW was completed, but vault wasn't synced yet)
+     * @param smartVault Smart Vault address
+     * @param flushIndex vault flush index for which to simulate sync
+     * @param strategies strategy addresses
+     * @param dhwIndexes dhw indexes for given flushIndex
+     * @param assetGroup vault asset group token addresses
+     * @return number of SVTs minted and SSTs claimed
+     */
+    function syncDepositsSimulate(
+        address smartVault,
+        uint256 flushIndex,
+        address[] memory strategies,
+        uint256[] memory dhwIndexes,
+        address[] memory assetGroup
+    ) external view returns (uint256, uint256[] memory);
+
+    /**
+     * @notice Synchronize vault deposits for completed DHW runs
+     * @param smartVault Smart Vault address
+     * @param flushIndex index for which to synchronize deposits for
+     * @param strategies vault strategy addresses
+     * @param dhwIndexes dhw indexes for given flushIndex
+     * @param assetGroup vault asset group token addresses
+     */
+    function syncDeposits(
+        address smartVault,
+        uint256 flushIndex,
+        address[] memory strategies,
+        uint256[] memory dhwIndexes,
+        address[] memory assetGroup
+    ) external;
+
+    /**
+     * @notice Prepare deposits for the next flush cycle
+     */
     function depositAssets(DepositBag calldata bag, DepositExtras memory bag2)
         external
         returns (uint256[] memory, uint256);
 
-    function syncDeposits(
-        address smartVault,
-        uint256 flushIndex,
-        address[] memory strategies_,
-        uint256[] memory dhwIndexes_,
-        address[] memory assetGroup
-    ) external;
-
+    /**
+     * @notice Mark deposits ready to be processed in the next DHW cycle
+     * @param smartVault Smart Vault address
+     * @param flushIndex index to flush
+     * @param strategies vault strategy addresses
+     * @param allocations vault strategy allocations
+     * @param tokens vault asset group token addresses
+     * @return DHW indexes in which the deposits will be included
+     */
     function flushSmartVault(
         address smartVault,
         uint256 flushIndex,
-        address[] memory strategies_,
-        uint256[] memory allocation,
+        address[] memory strategies,
+        uint256[] memory allocations,
         address[] memory tokens
     ) external returns (uint256[] memory);
 
+    /**
+     * @notice Get the number of SVTs that are available, but haven't been claimed yet, for the given NFT
+     * @param smartVaultAddress Smart Vault address
+     * @param data NFT deposit NFT metadata
+     * @param nftShares amount of NFT shares to burn for SVTs
+     * @param tokens vault asset group addresses
+     * @param strategies vault strategy addresses
+     * @param dhwIndexes dhw indexes for given metadata.flushIndex
+     * @param allowSyncSimulate allow vault sync simulation, if it hasn't been executed yet
+     */
     function getClaimedVaultTokensPreview(
         address smartVaultAddress,
         DepositMetadata memory data,
         uint256 nftShares,
-        address[] memory assets
+        address[] memory tokens,
+        address[] memory strategies,
+        uint256[] memory dhwIndexes,
+        bool allowSyncSimulate
     ) external view returns (uint256);
 
+    /**
+     * @notice Fetch assets deposited in a given vault flush
+     */
     function smartVaultDeposits(address smartVault, uint256 flushIdx, uint256 assetGroupLength)
         external
         view
         returns (uint256[] memory);
 
+    /**
+     * @notice Claim SVTs by burning deposit NFTs
+     * @param smartVault Smart Vault address
+     * @param nftIds NFT ids to burn
+     * @param nftAmounts NFT amounts to burn (support for partial burn)
+     * @param tokens vault asset group token addresses
+     * @param executor address executing the claim transaction
+     */
     function claimSmartVaultTokens(
         address smartVault,
         uint256[] calldata nftIds,

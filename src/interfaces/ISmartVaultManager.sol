@@ -74,9 +74,17 @@ interface ISmartVaultBalance {
      * @notice Retrieves an amount of SVT tokens.
      * @param smartVault Smart Vault address.
      * @param user User address.
-     * @return depositNTFIds An array of deposit NFT Ids.
+     * @return balance SVT balance
      */
     function getUserSVTBalance(address smartVault, address user) external view returns (uint256);
+
+    /**
+     * @notice Retrieves total supply of SVTs.
+     * Includes deposits that were processed by DHW, but still need SVTs to be minted.
+     * @param smartVault Smart Vault address.
+     * @return totalSupply Simulated total supply
+     */
+    function getSVTTotalSupply(address smartVault) external view returns (uint256);
 }
 
 interface ISmartVaultRegistry {

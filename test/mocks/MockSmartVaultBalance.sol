@@ -8,4 +8,8 @@ contract MockSmartVaultBalance is ISmartVaultBalance {
     function getUserSVTBalance(address smartVault, address user) external view returns (uint256) {
         return IERC20(smartVault).balanceOf(user);
     }
+
+    function getSVTTotalSupply(address smartVault) external view returns (uint256) {
+        return IERC20(smartVault).totalSupply();
+    }
 }
