@@ -139,7 +139,8 @@ contract WithdrawalIntegrationTest is Test {
                     guardRequestTypes: new RequestType[](0),
                     strategies: mySmartVaultStrategies,
                     riskAppetite: 4,
-                    riskProvider: riskProvider
+                    riskProvider: riskProvider,
+                    managementFeePct: 0
                 })
             );
         }

@@ -58,6 +58,12 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     mapping(address => mapping(uint256 => uint256)) internal _sharesMinted;
 
     /**
+     * @notice Timestamp at which DHW was executed at.
+     * @dev strategy => index => DHW timestamp
+     */
+    mapping(address => mapping(uint256 => uint256)) internal _dhwTimestamp;
+
+    /**
      * @notice Amount of SSTs redeemed from strategy.
      * @dev strategy => index => SSTs redeemed
      */
@@ -112,13 +118,31 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     /**
      * @notice Get state of a strategy for a given DHW index
      */
-    function strategyAtIndex(address strategy, uint256 dhwIndex) external view returns (StrategyAtIndex memory) {
+    function strategyAtIndexBatch(address[] calldata strategies, uint256[] calldata dhwIndexes)
+        external
+        view
+        returns (StrategyAtIndex[] memory)
+    {
+        StrategyAtIndex[] memory result = new StrategyAtIndex[](strategies.length);
+
+        for (uint256 i = 0; i < strategies.length; i++) {
+            result[i] = strategyAtIndex(strategies[i], dhwIndexes[i]);
+        }
+
+        return result;
+    }
+
+    /**
+     * @notice Get state of a strategy for a given DHW index
+     */
+    function strategyAtIndex(address strategy, uint256 dhwIndex) public view returns (StrategyAtIndex memory) {
         uint256 assetGroupLength = IStrategy(strategy).assets().length;
 
         return StrategyAtIndex({
             exchangeRates: _exchangeRates[strategy][dhwIndex].toArray(assetGroupLength),
             assetsDeposited: _assetsDeposited[strategy][dhwIndex].toArray(assetGroupLength),
-            sharesMinted: _sharesMinted[strategy][dhwIndex]
+            sharesMinted: _sharesMinted[strategy][dhwIndex],
+            dhwTimestamp: _dhwTimestamp[strategy][dhwIndex]
         });
     }
 
@@ -175,6 +199,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
             _exchangeRates[address(strategy)][dhwIndex].setValues(exchangeRates);
             _sharesMinted[address(strategy)][dhwIndex] = dhwInfo.sharesMinted;
             _assetsWithdrawn[address(strategy)][dhwIndex].setValues(dhwInfo.assetsWithdrawn);
+            _dhwTimestamp[address(strategy)][dhwIndex] = block.timestamp;
         }
     }
 

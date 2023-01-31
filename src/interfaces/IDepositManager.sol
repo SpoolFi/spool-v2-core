@@ -2,6 +2,7 @@
 pragma solidity 0.8.16;
 
 import "./ISmartVault.sol";
+import "./IStrategyRegistry.sol";
 
 /**
  * @notice Used when deposited assets are not the same length as underlying assets.
@@ -23,6 +24,12 @@ struct DepositExtras {
     address[] strategies;
     uint256[] allocations;
     uint256 flushIndex;
+}
+
+struct DepositSyncResult {
+    uint256 mintedSVTs;
+    uint256 lastDhwTimestamp;
+    uint256[] sstShares;
 }
 
 interface IDepositManager {
@@ -67,17 +74,17 @@ interface IDepositManager {
      * @param smartVault Smart Vault address
      * @param flushIndex vault flush index for which to simulate sync
      * @param strategies strategy addresses
-     * @param dhwIndexes dhw indexes for given flushIndex
      * @param assetGroup vault asset group token addresses
+     * @param strategyDhwState strategy state at time of DHW
      * @return number of SVTs minted and SSTs claimed
      */
     function syncDepositsSimulate(
         address smartVault,
         uint256 flushIndex,
         address[] memory strategies,
-        uint256[] memory dhwIndexes,
-        address[] memory assetGroup
-    ) external view returns (uint256, uint256[] memory);
+        address[] memory assetGroup,
+        StrategyAtIndex[] memory strategyDhwState
+    ) external view returns (DepositSyncResult memory);
 
     /**
      * @notice Synchronize vault deposits for completed DHW runs
@@ -93,7 +100,7 @@ interface IDepositManager {
         address[] memory strategies,
         uint256[] memory dhwIndexes,
         address[] memory assetGroup
-    ) external;
+    ) external returns (DepositSyncResult memory);
 
     /**
      * @notice Prepare deposits for the next flush cycle

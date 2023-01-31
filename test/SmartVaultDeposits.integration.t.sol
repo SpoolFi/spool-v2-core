@@ -44,7 +44,7 @@ contract depositManagerIntegrationTest is Test {
         usdcUsdPriceAggregator.pushAnswer(1_00000000);
     }
 
-    function test_shouldWorkWhenTokensHabveDifferentDecimals() public {
+    function test_shouldWorkWhenTokensHaveDifferentDecimals() public {
         // let us first calculate the exchange rate for both tokens
         uint256[] memory exchangeRates =
             SpoolUtils.getExchangeRates(Arrays.toArray(daiAddress, usdcAddress), usdPriceFeedManager);

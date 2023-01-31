@@ -20,7 +20,7 @@ import "./libraries/Constants.sol";
 import "./mocks/MockPriceFeedManager.sol";
 import "./mocks/MockStrategy.sol";
 import "./mocks/MockToken.sol";
-import "./mocks/TestFixture.sol";
+import "./fixtures/TestFixture.sol";
 
 contract SmartVaultManagerTest is TestFixture {
     address mySmartVault = address(100);
@@ -69,7 +69,8 @@ contract SmartVaultManagerTest is TestFixture {
             assetGroupId: assetGroupId,
             strategies: strategies,
             riskAppetite: 4,
-            riskProvider: riskProvider
+            riskProvider: riskProvider,
+            managementFeePct: 0
         });
         smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
 
@@ -94,7 +95,8 @@ contract SmartVaultManagerTest is TestFixture {
             assetGroupId: assetGroupId,
             strategies: strategies,
             riskAppetite: 4,
-            riskProvider: riskProvider
+            riskProvider: riskProvider,
+            managementFeePct: 0
         });
 
         // when not smart vault
@@ -107,7 +109,8 @@ contract SmartVaultManagerTest is TestFixture {
                 assetGroupId: assetGroupId,
                 strategies: strategies,
                 riskAppetite: 4,
-                riskProvider: address(0xabc)
+                riskProvider: address(0xabc),
+                managementFeePct: 0
             });
             vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_RISK_PROVIDER, address(0xabc)));
             smartVaultManager.registerSmartVault(mySmartVault, _registrationForm);
@@ -120,7 +123,8 @@ contract SmartVaultManagerTest is TestFixture {
                 assetGroupId: assetGroupId,
                 strategies: _strategies,
                 riskAppetite: 4,
-                riskProvider: riskProvider
+                riskProvider: riskProvider,
+                managementFeePct: 0
             });
             vm.expectRevert(SmartVaultRegistrationNoStrategies.selector);
             smartVaultManager.registerSmartVault(mySmartVault, _registrationForm);
@@ -134,7 +138,8 @@ contract SmartVaultManagerTest is TestFixture {
                 assetGroupId: assetGroupId,
                 strategies: _strategies,
                 riskAppetite: 4,
-                riskProvider: riskProvider
+                riskProvider: riskProvider,
+                managementFeePct: 0
             });
             vm.expectRevert(abi.encodeWithSelector(InvalidStrategy.selector, address(0xabc)));
             smartVaultManager.registerSmartVault(mySmartVault, _registrationForm);
@@ -316,7 +321,8 @@ contract SmartVaultManagerTest is TestFixture {
             assetGroupId: assetGroupId,
             strategies: strategies,
             riskAppetite: 4,
-            riskProvider: riskProvider
+            riskProvider: riskProvider,
+            managementFeePct: 0
         });
         smartVaultManager.registerSmartVault(address(smartVault_), registrationForm);
 

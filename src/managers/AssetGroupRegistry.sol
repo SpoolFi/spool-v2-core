@@ -77,6 +77,12 @@ contract AssetGroupRegistry is IAssetGroupRegistry, SpoolAccessControllable, Ini
         _allowToken(token);
     }
 
+    function allowTokenBatch(address[] calldata tokens) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        for (uint256 i = 0; i < tokens.length; i++) {
+            _allowToken(tokens[i]);
+        }
+    }
+
     function registerAssetGroup(address[] calldata assets)
         external
         onlyRole(ROLE_SPOOL_ADMIN, msg.sender)

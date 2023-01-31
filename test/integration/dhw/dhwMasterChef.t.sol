@@ -18,7 +18,7 @@ import "../../mocks/MockMasterChef.sol";
 import "../../mocks/MockMasterChefStrategy.sol";
 import "../../mocks/MockToken.sol";
 import "../../mocks/MockPriceFeedManager.sol";
-import "../../mocks/TestFixture.sol";
+import "../../fixtures/TestFixture.sol";
 
 contract DhwMasterChefTest is TestFixture {
     address private alice;
@@ -79,7 +79,8 @@ contract DhwMasterChefTest is TestFixture {
                     guardRequestTypes: new RequestType[](0),
                     strategies: smartVaultStrategies,
                     riskAppetite: 4,
-                    riskProvider: riskProvider
+                    riskProvider: riskProvider,
+                    managementFeePct: 0
                 })
             );
         }

@@ -5,6 +5,10 @@ import "./ISmartVault.sol";
 import "./IDepositManager.sol";
 import "./IWithdrawalManager.sol";
 
+uint256 constant SECONDS_IN_YEAR = 31_536_000;
+
+uint256 constant MANAGEMENT_FEE_PRECISION = 100_000;
+
 /* ========== ERRORS ========== */
 
 /**
@@ -51,6 +55,7 @@ struct SmartVaultRegistrationForm {
     address[] strategies;
     address riskProvider;
     uint256 riskAppetite;
+    uint256 managementFeePct;
 }
 
 /* ========== INTERFACES ========== */

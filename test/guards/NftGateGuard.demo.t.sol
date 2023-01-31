@@ -19,7 +19,7 @@ import "../mocks/MockNft.sol";
 import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
 import "../libraries/Arrays.sol";
-import "../mocks/TestFixture.sol";
+import "../fixtures/TestFixture.sol";
 
 contract NftGateGuardDemoTest is TestFixture {
     address private alice;
@@ -85,7 +85,8 @@ contract NftGateGuardDemoTest is TestFixture {
                     guardRequestTypes: guardRequestTypes,
                     strategies: Arrays.toArray(address(strategy)),
                     riskAppetite: 4,
-                    riskProvider: riskProvider
+                    riskProvider: riskProvider,
+                    managementFeePct: 0
                 })
             );
         }

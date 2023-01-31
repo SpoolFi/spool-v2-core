@@ -15,8 +15,15 @@ error MissingRole(bytes32 role, address account);
  */
 error SystemPaused();
 
+/**
+ * @notice Used when setting smart vault owner
+ */
+error SmartVaultOwnerAlreadySet(address smartVault);
+
 interface ISpoolAccessControl is IAccessControlUpgradeable {
     /* ========== VIEW FUNCTIONS ========== */
+
+    function smartVaultOwner(address smartVault) external view returns (address);
 
     /**
      * @notice Looks if an account has a role for a smart vault.
@@ -77,4 +84,11 @@ interface ISpoolAccessControl is IAccessControlUpgradeable {
      * @param role Role to renounce.
      */
     function renounceSmartVaultRole(address smartVault, bytes32 role) external;
+
+    /**
+     * @notice Grant ownership to smart vault
+     * @param smartVault Address of the smart vault.
+     * @param owner address to which grant ownership to
+     */
+    function grantSmartVaultOwnership(address smartVault, address owner) external;
 }

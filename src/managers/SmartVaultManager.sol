@@ -75,6 +75,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      */
     mapping(address => uint256) internal _smartVaultRiskAppetite;
 
+    /// @notice Smart vault management fee percentage
+    mapping(address => uint256) internal _smartVaultMgmtFeePct;
+
     /// @notice Smart Vault strategy allocations
     mapping(address => mapping(uint256 => uint256)) internal _smartVaultAllocations;
 
@@ -92,6 +95,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * @dev smart vault => flush index => DHW indexes
      */
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _dhwIndexes;
+
+    /**
+     * @notice Timestamp of the last DHW that was synced
+     * @dev smart vault => dhw timestamp
+     */
+    mapping(address => uint256) _lastDhwTimestampSynced;
 
     constructor(
         ISpoolAccessControl accessControl_,
@@ -130,7 +139,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     }
 
     function getSVTTotalSupply(address smartVault) external view returns (uint256) {
-        return ISmartVault(smartVault).totalSupply() + _SVTsPendingSync(smartVault);
+        return _totalSVTs(smartVault);
     }
 
     /**
@@ -318,9 +327,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             }
         }
 
+        _smartVaultMgmtFeePct[smartVault] = registrationForm.managementFeePct;
         _smartVaultStrategies[smartVault] = registrationForm.strategies;
-
-        // set risk provider
         _smartVaultRiskProviders[smartVault] = registrationForm.riskProvider;
 
         // set allocation
@@ -385,28 +393,63 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         // NOTE: warning "This declaration has the same name as another declaration."
         uint256[] memory currentStrategyIndexes = _strategyRegistry.currentIndex(strategies_);
-
         uint256 flushIndex = _flushIndexesToSync[smartVault];
+        uint256 mgmtFeeSVTs;
+        DepositSyncResult memory res;
+        address vaultOwner = _accessControl.smartVaultOwner(smartVault);
+        uint256 vaultOwnerSVTs = ISmartVault(smartVault).balanceOf(vaultOwner);
+        uint256 totalSVTs = ISmartVault(smartVault).totalSupply() - vaultOwnerSVTs;
+
         while (flushIndex < _flushIndexes[smartVault]) {
             uint256[] memory indexes = _dhwIndexes[smartVault][flushIndex].toArray(strategies_.length);
 
-            (bool dhwOk, uint256 idx) = _areAllDhwRunsCompleted(currentStrategyIndexes, indexes);
-            if (!dhwOk) {
-                if (revertOnMissingDHW) {
-                    revert DhwNotRunYetForIndex(strategies_[idx], indexes[idx]);
-                } else {
-                    return;
+            {
+                (bool dhwOk, uint256 idx) = _areAllDhwRunsCompleted(currentStrategyIndexes, indexes);
+                if (!dhwOk) {
+                    if (revertOnMissingDHW) {
+                        revert DhwNotRunYetForIndex(strategies_[idx], indexes[idx]);
+                    } else {
+                        return;
+                    }
                 }
             }
 
             _withdrawalManager.syncWithdrawals(smartVault, flushIndex, strategies_, indexes);
-            _depositManager.syncDeposits(smartVault, flushIndex, strategies_, indexes, tokens);
+            res = _depositManager.syncDeposits(smartVault, flushIndex, strategies_, indexes, tokens);
+
+            uint256 lastSyncedDhw = _lastDhwTimestampSynced[smartVault];
+            mgmtFeeSVTs += _calculateManagementFees(smartVault, lastSyncedDhw, res.lastDhwTimestamp, totalSVTs);
+            totalSVTs += res.mintedSVTs;
+
+            _lastDhwTimestampSynced[smartVault] = res.lastDhwTimestamp;
 
             emit SmartVaultSynced(smartVault, flushIndex);
 
             flushIndex++;
             _flushIndexesToSync[smartVault] = flushIndex;
         }
+
+        if (mgmtFeeSVTs > 0) {
+            ISmartVault(smartVault).mint(vaultOwner, mgmtFeeSVTs);
+        }
+    }
+
+    /**
+     * @dev Calculated as percentage of assets under management, distributed throughout a year.
+     * SVT amount being diluted should not include previously distributed management fees.
+     * @param smartVault smart vault address
+     * @param timeFrom time from which to collect fees
+     * @param timeTo time to which to collect fees
+     * @param totalSVTs SVT amount basis on which to apply fees
+     */
+    function _calculateManagementFees(address smartVault, uint256 timeFrom, uint256 timeTo, uint256 totalSVTs)
+        private
+        view
+        returns (uint256)
+    {
+        uint256 mgmtFeePct = _smartVaultMgmtFeePct[smartVault];
+        uint256 timeDelta = timeTo - timeFrom;
+        return totalSVTs * mgmtFeePct * timeDelta / SECONDS_IN_YEAR / MANAGEMENT_FEE_PRECISION;
     }
 
     /**
@@ -450,7 +493,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      */
     function _areAllDhwRunsCompleted(uint256[] memory currentStrategyIndexes, uint256[] memory dhwIndexes_)
         private
-        view
+        pure
         returns (bool, uint256)
     {
         for (uint256 i; i < dhwIndexes_.length; i++) {
@@ -465,27 +508,38 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /**
      * @dev Calculate number of SVTs that haven't been synced yet after DHW runs
      * DHW has minted strategy shares, but vaults haven't claimed them yet.
+     * Includes management fees (percentage of assets under management, distributed throughout a year) .
      */
-    function _SVTsPendingSync(address smartVault) private view returns (uint256) {
+    function _totalSVTs(address smartVault) private view returns (uint256) {
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
         uint256[] memory currentStrategyIndexes = _strategyRegistry.currentIndex(strategies_);
         uint256 flushIndex = _flushIndexesToSync[smartVault];
-        uint256 pendingSVTs;
+        uint256 lastDhwSyncedTimestamp;
+        uint256 mgmtFeeSVTs;
+        uint256 vaultOwnerSVTs = ISmartVault(smartVault).balanceOf(_accessControl.smartVaultOwner(smartVault));
+        uint256 totalSVTs = ISmartVault(smartVault).totalSupply() - vaultOwnerSVTs;
+        StrategyAtIndex[] memory dhwStates;
 
         while (flushIndex < _flushIndexes[smartVault]) {
-            uint256[] memory indexes = _dhwIndexes[smartVault][flushIndex].toArray(strategies_.length);
+            {
+                uint256[] memory indexes = _dhwIndexes[smartVault][flushIndex].toArray(strategies_.length);
+                (bool dhwOk,) = _areAllDhwRunsCompleted(currentStrategyIndexes, indexes);
+                if (!dhwOk) break;
 
-            (bool dhwOk,) = _areAllDhwRunsCompleted(currentStrategyIndexes, indexes);
-            if (!dhwOk) break;
+                dhwStates = _strategyRegistry.strategyAtIndexBatch(strategies_, indexes);
+            }
 
-            (uint256 svts,) = _depositManager.syncDepositsSimulate(smartVault, flushIndex, strategies_, indexes, tokens);
-            pendingSVTs += svts;
+            DepositSyncResult memory res =
+                _depositManager.syncDepositsSimulate(smartVault, flushIndex, strategies_, tokens, dhwStates);
+            mgmtFeeSVTs += _calculateManagementFees(smartVault, lastDhwSyncedTimestamp, res.lastDhwTimestamp, totalSVTs);
+            totalSVTs += res.mintedSVTs;
 
+            lastDhwSyncedTimestamp = res.lastDhwTimestamp;
             flushIndex++;
         }
 
-        return pendingSVTs;
+        return totalSVTs + mgmtFeeSVTs + vaultOwnerSVTs;
     }
 
     /**
