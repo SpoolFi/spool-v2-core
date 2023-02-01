@@ -23,6 +23,7 @@ import "../interfaces/IDepositManager.sol";
 import "../interfaces/IWithdrawalManager.sol";
 import "../interfaces/IWithdrawalManager.sol";
 import "../interfaces/IRewardManager.sol";
+import "../interfaces/Constants.sol";
 
 /**
  * @dev Requires roles:
@@ -327,6 +328,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             }
         }
 
+        if (registrationForm.managementFeePct > MANAGEMENT_FEE_MAX) {
+            revert ManagementFeeTooLarge(registrationForm.managementFeePct);
+        }
+
         _smartVaultMgmtFeePct[smartVault] = registrationForm.managementFeePct;
         _smartVaultStrategies[smartVault] = registrationForm.strategies;
         _smartVaultRiskProviders[smartVault] = registrationForm.riskProvider;
@@ -397,11 +402,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256 mgmtFeeSVTs;
         DepositSyncResult memory syncResult;
         address vaultOwner = _accessControl.smartVaultOwner(smartVault);
-        uint256 vaultOwnerSVTs = ISmartVault(smartVault).balanceOf(vaultOwner);
-        uint256 totalSVTs = ISmartVault(smartVault).totalSupply() - vaultOwnerSVTs;
+        uint256 totalSVTs = ISmartVault(smartVault).totalSupply() - ISmartVault(smartVault).balanceOf(vaultOwner);
+        uint256 mgmtFeePct = _smartVaultMgmtFeePct[smartVault];
+        uint256[] memory indexes;
 
         while (flushIndex < _flushIndexes[smartVault]) {
-            uint256[] memory indexes = _dhwIndexes[smartVault][flushIndex].toArray(strategies_.length);
+            indexes = _dhwIndexes[smartVault][flushIndex].toArray(strategies_.length);
 
             {
                 (bool dhwOk, uint256 idx) = _areAllDhwRunsCompleted(currentStrategyIndexes, indexes);
@@ -418,9 +424,14 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             syncResult = _depositManager.syncDeposits(smartVault, flushIndex, strategies_, indexes, tokens);
 
             uint256 lastSyncedDhw = _lastDhwTimestampSynced[smartVault];
-            mgmtFeeSVTs += _calculateManagementFees(smartVault, lastSyncedDhw, syncResult.lastDhwTimestamp, totalSVTs);
-            totalSVTs += syncResult.mintedSVTs;
 
+            if (mgmtFeePct > 0) {
+                mgmtFeeSVTs += _calculateManagementFees(
+                    smartVault, lastSyncedDhw, syncResult.lastDhwTimestamp, totalSVTs, mgmtFeePct
+                );
+            }
+
+            totalSVTs += syncResult.mintedSVTs;
             _lastDhwTimestampSynced[smartVault] = syncResult.lastDhwTimestamp;
 
             emit SmartVaultSynced(smartVault, flushIndex);
@@ -441,15 +452,17 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * @param timeFrom time from which to collect fees
      * @param timeTo time to which to collect fees
      * @param totalSVTs SVT amount basis on which to apply fees
+     * @param mgmtFeePct management fee percentage value
      */
-    function _calculateManagementFees(address smartVault, uint256 timeFrom, uint256 timeTo, uint256 totalSVTs)
-        private
-        view
-        returns (uint256)
-    {
-        uint256 mgmtFeePct = _smartVaultMgmtFeePct[smartVault];
+    function _calculateManagementFees(
+        address smartVault,
+        uint256 timeFrom,
+        uint256 timeTo,
+        uint256 totalSVTs,
+        uint256 mgmtFeePct
+    ) private view returns (uint256) {
         uint256 timeDelta = timeTo - timeFrom;
-        return totalSVTs * mgmtFeePct * timeDelta / SECONDS_IN_YEAR / MANAGEMENT_FEE_PRECISION;
+        return totalSVTs * mgmtFeePct * timeDelta / SECONDS_IN_YEAR / FULL_PERCENT;
     }
 
     /**
@@ -519,6 +532,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256 mgmtFeeSVTs;
         uint256 vaultOwnerSVTs = ISmartVault(smartVault).balanceOf(_accessControl.smartVaultOwner(smartVault));
         uint256 totalSVTs = ISmartVault(smartVault).totalSupply() - vaultOwnerSVTs;
+        uint256 mgmtFeePct = _smartVaultMgmtFeePct[smartVault];
+
         StrategyAtIndex[] memory dhwStates;
 
         while (flushIndex < _flushIndexes[smartVault]) {
@@ -532,8 +547,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
             DepositSyncResult memory syncResult =
                 _depositManager.syncDepositsSimulate(smartVault, flushIndex, strategies_, tokens, dhwStates);
-            mgmtFeeSVTs +=
-                _calculateManagementFees(smartVault, lastDhwSyncedTimestamp, syncResult.lastDhwTimestamp, totalSVTs);
+
+            if (mgmtFeePct > 0) {
+                mgmtFeeSVTs += _calculateManagementFees(
+                    smartVault, lastDhwSyncedTimestamp, syncResult.lastDhwTimestamp, totalSVTs, mgmtFeePct
+                );
+            }
+
             totalSVTs += syncResult.mintedSVTs;
 
             lastDhwSyncedTimestamp = syncResult.lastDhwTimestamp;

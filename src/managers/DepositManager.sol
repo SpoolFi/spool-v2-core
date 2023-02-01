@@ -21,6 +21,7 @@ import "../interfaces/ISmartVaultManager.sol";
 import "../libraries/SpoolUtils.sol";
 import "./ActionsAndGuards.sol";
 import "../interfaces/IDepositManager.sol";
+import "../interfaces/Constants.sol";
 
 /**
  * @notice Used when deposit is not made in correct asset ratio.

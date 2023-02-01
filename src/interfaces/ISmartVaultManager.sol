@@ -5,10 +5,6 @@ import "./ISmartVault.sol";
 import "./IDepositManager.sol";
 import "./IWithdrawalManager.sol";
 
-uint256 constant SECONDS_IN_YEAR = 31_556_926;
-
-uint256 constant MANAGEMENT_FEE_PRECISION = 100_000;
-
 /* ========== ERRORS ========== */
 
 /**
@@ -40,6 +36,11 @@ error SmartVaultNotRegisteredYet();
  * @notice Used when no strategy was provided during smart vault registration.
  */
 error SmartVaultRegistrationNoStrategies();
+
+/**
+ * @notice Used when user tries to configure a vault with too large management fee.
+ */
+error ManagementFeeTooLarge(uint256 mgmtFeePct);
 
 /* ========== STRUCTS ========== */
 

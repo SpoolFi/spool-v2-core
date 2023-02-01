@@ -24,7 +24,7 @@ import "../fixtures/IntegrationTestFixture.sol";
 
 contract DepositIntegrationTest is IntegrationTestFixture {
     function setUp() public {
-        managementFeePct = 2_000;
+        managementFeePct = 2_00;
         setUpBase();
     }
 
