@@ -14,20 +14,6 @@ pragma solidity 0.8.16;
 bytes32 constant ROLE_SPOOL_ADMIN = 0x00;
 
 /**
- * @dev Grants permission to manage the role ROLE_SMART_VAULT.
- *
- * Should be granted to smart vault factory contracts.
- */
-bytes32 constant ADMIN_ROLE_SMART_VAULT = keccak256("ADMIN_SMART_VAULT");
-
-/**
- * @dev Marks a contract as a smart vault.
- *
- * Is granted to all smart vaults deployed by a smart vault factory.
- */
-bytes32 constant ROLE_SMART_VAULT = keccak256("SMART_VAULT");
-
-/**
  * @dev Grants permission to integrate a new smart vault into the Spool ecosystem.
  *
  * Should be granted to smart vault factory contracts.

@@ -149,7 +149,6 @@ contract DeploySpool is Script {
             smartVaultManager,
             assetGroupRegistry
         );
-        spoolAccessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(smartVaultFactory));
         spoolAccessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
 
         allowlistGuard = new AllowlistGuard(spoolAccessControl);

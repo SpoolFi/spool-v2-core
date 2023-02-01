@@ -43,15 +43,6 @@ contract SpoolAccessControlTest is Test {
         assertTrue(anotherAccessControl.hasRole(ROLE_SPOOL_ADMIN, spoolAdmin));
     }
 
-    function test_initialize_shouldSetRoleSmartVaultRoleAdmin() public {
-        vm.startPrank(spoolAdmin);
-        SpoolAccessControl anotherAccessControl = new SpoolAccessControl();
-        anotherAccessControl.initialize();
-        vm.stopPrank();
-
-        assertEq(anotherAccessControl.getRoleAdmin(ROLE_SMART_VAULT), ADMIN_ROLE_SMART_VAULT);
-    }
-
     function test_grantSmartVaultRole_spoolAdminShouldGrantSmartVaultRole() public {
         vm.prank(spoolAdmin);
         accessControl.grantSmartVaultRole(smartVault, TEST_ROLE, user);

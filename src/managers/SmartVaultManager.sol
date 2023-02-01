@@ -636,14 +636,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     }
 
     function _onlyUnregisteredSmartVault(address smartVault) internal view {
-        _checkRole(ROLE_SMART_VAULT, smartVault);
         if (_smartVaultRegistry[smartVault]) {
             revert SmartVaultAlreadyRegistered();
         }
     }
 
     function _onlyRegisteredSmartVault(address smartVault) internal view {
-        _checkRole(ROLE_SMART_VAULT, smartVault);
         if (!_smartVaultRegistry[smartVault]) {
             revert SmartVaultNotRegisteredYet();
         }

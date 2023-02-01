@@ -66,7 +66,6 @@ contract NftGateGuardDemoTest is TestFixture {
                 smartVaultManager,
                 assetGroupRegistry
             );
-            accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(smartVaultFactory));
             accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
 
             vm.mockCall(

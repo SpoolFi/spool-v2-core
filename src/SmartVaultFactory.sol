@@ -10,7 +10,6 @@ import {ISmartVault} from "./interfaces/ISmartVault.sol";
 import {ISmartVaultManager, SmartVaultRegistrationForm} from "./interfaces/ISmartVaultManager.sol";
 import {RequestType} from "./interfaces/RequestType.sol";
 import {ISpoolAccessControl} from "./access/SpoolAccessControl.sol";
-import {ROLE_SMART_VAULT} from "./access/Roles.sol";
 import {SmartVault} from "./SmartVault.sol";
 import {ISmartVaultRegistry} from "./interfaces/ISmartVaultManager.sol";
 
@@ -46,7 +45,6 @@ struct SmartVaultSpecification {
 
 /**
  * @dev Requires roles:
- * - ADMIN_ROLE_SMART_VAULT
  * - ROLE_SMART_VAULT_INTEGRATOR
  */
 contract SmartVaultFactory is UpgradeableBeacon {
@@ -218,7 +216,6 @@ contract SmartVaultFactory is UpgradeableBeacon {
      * @param specification Specifications for the new smart vault.
      */
     function _integrateSmartVault(address smartVaultAddress, SmartVaultSpecification calldata specification) private {
-        _accessControl.grantRole(ROLE_SMART_VAULT, smartVaultAddress);
         _accessControl.grantSmartVaultOwnership(smartVaultAddress, msg.sender);
         _actionManager.setActions(smartVaultAddress, specification.actions, specification.actionRequestTypes);
         _guardManager.setGuards(smartVaultAddress, specification.guards, specification.guardRequestTypes);

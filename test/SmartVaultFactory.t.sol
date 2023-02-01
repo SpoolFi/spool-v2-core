@@ -97,8 +97,6 @@ contract SmartVaultFactoryTest is Test {
     }
 
     function test_deploySmartVault_shouldIntegrateSmartVault() public {
-        // - grant role
-        vm.expectCall(address(accessControl), abi.encodeWithSelector(IAccessControlUpgradeable.grantRole.selector));
         // - set actions
         vm.expectCall(address(actionManager), abi.encodeWithSelector(IActionManager.setActions.selector));
         // - set guards
@@ -136,8 +134,6 @@ contract SmartVaultFactoryTest is Test {
     }
 
     function test_deploySmartVaultDeterministically_shouldIntegrateSmartVault() public {
-        // - grant role
-        vm.expectCall(address(accessControl), abi.encodeWithSelector(IAccessControlUpgradeable.grantRole.selector));
         // - set actions
         vm.expectCall(address(actionManager), abi.encodeWithSelector(IActionManager.setActions.selector));
         // - set guards

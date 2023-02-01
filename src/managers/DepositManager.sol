@@ -59,14 +59,6 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
      */
     uint256 constant DEPOSIT_TOLERANCE = 50;
 
-    /**
-     * @dev Represents full percent.
-     * - 100_00 -> 100%
-     * - 1_00 -> 1%
-     * - 1 -> 0.01%
-     */
-    uint256 constant FULL_PERCENT = 100_00;
-
     /// @notice Strategy registry
     IStrategyRegistry private immutable _strategyRegistry;
 

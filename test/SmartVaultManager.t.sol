@@ -37,9 +37,7 @@ contract SmartVaultManagerTest is TestFixture {
         assetGroupRegistry.allowToken(address(token1));
         assetGroupRegistry.allowToken(address(token2));
 
-        accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(this));
         accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(this));
-        accessControl.grantRole(ROLE_SMART_VAULT, mySmartVault);
     }
 
     function test_getUserSVTBalance_getsCurrentBalanceWithoutDepositNFT() public {
@@ -98,10 +96,6 @@ contract SmartVaultManagerTest is TestFixture {
             riskProvider: riskProvider,
             managementFeePct: 0
         });
-
-        // when not smart vault
-        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SMART_VAULT, address(0xabc)));
-        smartVaultManager.registerSmartVault(address(0xabc), registrationForm);
 
         // when not risk provider
         {
@@ -316,7 +310,6 @@ contract SmartVaultManagerTest is TestFixture {
             abi.encode(allocations)
         );
 
-        accessControl.grantRole(ROLE_SMART_VAULT, address(smartVault_));
         SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
             assetGroupId: assetGroupId,
             strategies: strategies,

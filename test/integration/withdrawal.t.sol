@@ -118,7 +118,6 @@ contract WithdrawalIntegrationTest is Test {
                 smartVaultManager,
                 assetGroupRegistry
             );
-            accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(smartVaultFactory));
             accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
 
             mySmartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB));

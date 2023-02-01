@@ -18,7 +18,6 @@ contract SpoolAccessControl is AccessControlUpgradeable, PausableUpgradeable, IS
 
     function initialize() public initializer {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setRoleAdmin(ROLE_SMART_VAULT, ADMIN_ROLE_SMART_VAULT);
         __Pausable_init();
     }
 
