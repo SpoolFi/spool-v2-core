@@ -5,7 +5,7 @@ import "./ISmartVault.sol";
 import "./IDepositManager.sol";
 import "./IWithdrawalManager.sol";
 
-uint256 constant SECONDS_IN_YEAR = 31_536_000;
+uint256 constant SECONDS_IN_YEAR = 31_556_926;
 
 uint256 constant MANAGEMENT_FEE_PRECISION = 100_000;
 
