@@ -50,21 +50,21 @@ contract DepositIntegrationTest is IntegrationTestFixture {
 
         StrategyAtIndex[] memory dhwStates =
             strategyRegistry.strategyAtIndexBatch(smartVaultStrategies, Arrays.toArray(1, 1, 1));
-        DepositSyncResult memory res =
+        DepositSyncResult memory syncResult =
             depositManager.syncDepositsSimulate(address(smartVault), 0, smartVaultStrategies, assetGroup, dhwStates);
         smartVaultManager.syncSmartVault(address(smartVault), true);
 
         uint256 totalSupply = smartVault.totalSupply();
 
-        assertEq(strategyA.totalSupply(), res.sstShares[0]);
-        assertEq(strategyB.totalSupply(), res.sstShares[1]);
-        assertEq(strategyC.totalSupply(), res.sstShares[2]);
-        assertEq(res.sstShares[0], 214297693046938776377950000);
-        assertEq(res.sstShares[1], 107148831538266256993250000);
-        assertEq(res.sstShares[2], 35716275414794966628800000);
-        assertEq(res.mintedSVTs, totalSupply);
-        assertEq(res.mintedSVTs, 357162800000000000000000000);
-        assertEq(res.lastDhwTimestamp, dhwTimestamp);
+        assertEq(strategyA.totalSupply(), syncResult.sstShares[0]);
+        assertEq(strategyB.totalSupply(), syncResult.sstShares[1]);
+        assertEq(strategyC.totalSupply(), syncResult.sstShares[2]);
+        assertEq(syncResult.sstShares[0], 214297693046938776377950000);
+        assertEq(syncResult.sstShares[1], 107148831538266256993250000);
+        assertEq(syncResult.sstShares[2], 35716275414794966628800000);
+        assertEq(syncResult.mintedSVTs, totalSupply);
+        assertEq(syncResult.mintedSVTs, 357162800000000000000000000);
+        assertEq(syncResult.lastDhwTimestamp, dhwTimestamp);
         assertEq(smartVault.totalSupply(), smartVaultManager.getSVTTotalSupply(address(smartVault)));
 
         uint256 vaultOwnerBalance = smartVault.balanceOf(accessControl.smartVaultOwner(address(smartVault)));
@@ -114,7 +114,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
 
         uint256[] memory dhwIndexes = smartVaultManager.dhwIndexes(address(smartVault), 1);
         StrategyAtIndex[] memory dhwStates = strategyRegistry.strategyAtIndexBatch(smartVaultStrategies, dhwIndexes);
-        DepositSyncResult memory res =
+        DepositSyncResult memory syncResult =
             depositManager.syncDepositsSimulate(address(smartVault), 1, smartVaultStrategies, assetGroup, dhwStates);
 
         // Sync second DHW
@@ -123,10 +123,10 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         uint256 simulatedTotalSupply = smartVaultManager.getSVTTotalSupply(address(smartVault));
 
         assertEq(vaultSupplyBefore, 357162800000000000000000000);
-        assertEq(res.lastDhwTimestamp, dhwTimestamp);
+        assertEq(syncResult.lastDhwTimestamp, dhwTimestamp);
         assertEq(smartVault.totalSupply(), simulatedTotalSupply);
         assertGt(vaultOwnerBalance, 0);
-        assertGt(res.mintedSVTs, 0);
-        assertEq(smartVault.totalSupply(), vaultSupplyBefore + res.mintedSVTs + vaultOwnerBalance);
+        assertGt(syncResult.mintedSVTs, 0);
+        assertEq(smartVault.totalSupply(), vaultSupplyBefore + syncResult.mintedSVTs + vaultOwnerBalance);
     }
 }

@@ -142,9 +142,9 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         if (mintedSVTs == 0 && allowSyncSimulate) {
             // simulate vault sync
             StrategyAtIndex[] memory dhwStates = _strategyRegistry.strategyAtIndexBatch(strategies, dhwIndexes);
-            DepositSyncResult memory res =
+            DepositSyncResult memory syncResult =
                 syncDepositsSimulate(smartVaultAddress, data.flushIndex, strategies, tokens, dhwStates);
-            mintedSVTs = res.mintedSVTs;
+            mintedSVTs = syncResult.mintedSVTs;
         }
 
         for (uint256 i = 0; i < data.assets.length; i++) {
@@ -250,18 +250,19 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
     ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (DepositSyncResult memory) {
         StrategyAtIndex[] memory dhwStates = _strategyRegistry.strategyAtIndexBatch(strategies, dhwIndexes);
         // mint SVTs based on USD value of claimed SSTs
-        DepositSyncResult memory res = syncDepositsSimulate(smartVault, flushIndex, strategies, assetGroup, dhwStates);
+        DepositSyncResult memory syncResult =
+            syncDepositsSimulate(smartVault, flushIndex, strategies, assetGroup, dhwStates);
 
-        if (res.mintedSVTs > 0) {
-            _mintedVaultShares[smartVault][flushIndex] = res.mintedSVTs;
+        if (syncResult.mintedSVTs > 0) {
+            _mintedVaultShares[smartVault][flushIndex] = syncResult.mintedSVTs;
             for (uint256 i = 0; i < strategies.length; i++) {
-                IStrategy(strategies[i]).claimShares(smartVault, res.sstShares[i]);
+                IStrategy(strategies[i]).claimShares(smartVault, syncResult.sstShares[i]);
             }
 
-            ISmartVault(smartVault).mint(smartVault, res.mintedSVTs);
+            ISmartVault(smartVault).mint(smartVault, syncResult.mintedSVTs);
         }
 
-        return res;
+        return syncResult;
     }
 
     function syncDepositsSimulate(

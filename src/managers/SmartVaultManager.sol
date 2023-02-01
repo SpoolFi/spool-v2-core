@@ -395,7 +395,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256[] memory currentStrategyIndexes = _strategyRegistry.currentIndex(strategies_);
         uint256 flushIndex = _flushIndexesToSync[smartVault];
         uint256 mgmtFeeSVTs;
-        DepositSyncResult memory res;
+        DepositSyncResult memory syncResult;
         address vaultOwner = _accessControl.smartVaultOwner(smartVault);
         uint256 vaultOwnerSVTs = ISmartVault(smartVault).balanceOf(vaultOwner);
         uint256 totalSVTs = ISmartVault(smartVault).totalSupply() - vaultOwnerSVTs;
@@ -415,13 +415,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             }
 
             _withdrawalManager.syncWithdrawals(smartVault, flushIndex, strategies_, indexes);
-            res = _depositManager.syncDeposits(smartVault, flushIndex, strategies_, indexes, tokens);
+            syncResult = _depositManager.syncDeposits(smartVault, flushIndex, strategies_, indexes, tokens);
 
             uint256 lastSyncedDhw = _lastDhwTimestampSynced[smartVault];
-            mgmtFeeSVTs += _calculateManagementFees(smartVault, lastSyncedDhw, res.lastDhwTimestamp, totalSVTs);
-            totalSVTs += res.mintedSVTs;
+            mgmtFeeSVTs += _calculateManagementFees(smartVault, lastSyncedDhw, syncResult.lastDhwTimestamp, totalSVTs);
+            totalSVTs += syncResult.mintedSVTs;
 
-            _lastDhwTimestampSynced[smartVault] = res.lastDhwTimestamp;
+            _lastDhwTimestampSynced[smartVault] = syncResult.lastDhwTimestamp;
 
             emit SmartVaultSynced(smartVault, flushIndex);
 
@@ -530,12 +530,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
                 dhwStates = _strategyRegistry.strategyAtIndexBatch(strategies_, indexes);
             }
 
-            DepositSyncResult memory res =
+            DepositSyncResult memory syncResult =
                 _depositManager.syncDepositsSimulate(smartVault, flushIndex, strategies_, tokens, dhwStates);
-            mgmtFeeSVTs += _calculateManagementFees(smartVault, lastDhwSyncedTimestamp, res.lastDhwTimestamp, totalSVTs);
-            totalSVTs += res.mintedSVTs;
+            mgmtFeeSVTs +=
+                _calculateManagementFees(smartVault, lastDhwSyncedTimestamp, syncResult.lastDhwTimestamp, totalSVTs);
+            totalSVTs += syncResult.mintedSVTs;
 
-            lastDhwSyncedTimestamp = res.lastDhwTimestamp;
+            lastDhwSyncedTimestamp = syncResult.lastDhwTimestamp;
             flushIndex++;
         }
 
