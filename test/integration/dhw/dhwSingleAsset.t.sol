@@ -17,7 +17,7 @@ import "../../libraries/Arrays.sol";
 import "../../mocks/MockStrategy.sol";
 import "../../mocks/MockToken.sol";
 import "../../mocks/MockPriceFeedManager.sol";
-import "../../mocks/TestFixture.sol";
+import "../../fixtures/TestFixture.sol";
 
 contract DhwSingleAssetTest is TestFixture {
     address private alice;
@@ -98,7 +98,8 @@ contract DhwSingleAssetTest is TestFixture {
                     guardRequestTypes: new RequestType[](0),
                     strategies: smartVaultStrategies,
                     riskAppetite: 4,
-                    riskProvider: riskProvider
+                    riskProvider: riskProvider,
+                    managementFeePct: 0
                 })
             );
         }

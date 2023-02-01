@@ -25,6 +25,7 @@ struct StrategyAtIndex {
     uint256[] exchangeRates;
     uint256[] assetsDeposited;
     uint256 sharesMinted;
+    uint256 dhwTimestamp;
 }
 
 /* ========== INTERFACES ========== */
@@ -36,6 +37,10 @@ interface IStrategyRegistry {
     function currentIndex(address[] calldata strategies) external view returns (uint256[] memory);
     function depositedAssets(address strategy, uint256 dhwIndex) external view returns (uint256[] memory);
     function strategyAtIndex(address strategy, uint256 dhwIndex) external view returns (StrategyAtIndex memory);
+    function strategyAtIndexBatch(address[] calldata strategies, uint256[] calldata dhwIndexes)
+        external
+        view
+        returns (StrategyAtIndex[] memory);
 
     /**
      * @notice Gets required asset ratio for strategy at last DHW.

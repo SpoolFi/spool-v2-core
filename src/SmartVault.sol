@@ -153,16 +153,6 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         return metadata;
     }
 
-    // TODO: implement or remove
-    function totalAssets() external pure returns (uint256[] memory) {
-        revert("0");
-    }
-
-    // TODO: implement or remove
-    function convertToAssets(uint256) external pure returns (uint256[] memory) {
-        revert("0");
-    }
-
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     function mint(address receiver, uint256 vaultShares) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {

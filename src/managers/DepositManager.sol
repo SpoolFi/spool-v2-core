@@ -21,7 +21,7 @@ import "../interfaces/ISmartVaultManager.sol";
 import "../libraries/SpoolUtils.sol";
 import "./ActionsAndGuards.sol";
 import "../interfaces/IDepositManager.sol";
-import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "../interfaces/Constants.sol";
 
 /**
  * @notice Used when deposit is not made in correct asset ratio.
@@ -142,7 +142,10 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
 
         if (mintedSVTs == 0 && allowSyncSimulate) {
             // simulate vault sync
-            (mintedSVTs,) = syncDepositsSimulate(smartVaultAddress, data.flushIndex, strategies, dhwIndexes, tokens);
+            StrategyAtIndex[] memory dhwStates = _strategyRegistry.strategyAtIndexBatch(strategies, dhwIndexes);
+            DepositSyncResult memory syncResult =
+                syncDepositsSimulate(smartVaultAddress, data.flushIndex, strategies, tokens, dhwStates);
+            mintedSVTs = syncResult.mintedSVTs;
         }
 
         for (uint256 i = 0; i < data.assets.length; i++) {
@@ -245,36 +248,45 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         address[] memory strategies,
         uint256[] memory dhwIndexes,
         address[] memory assetGroup
-    ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
-        // skip if there were no deposits made
-        if (_vaultDeposits[smartVault][flushIndex][0] == 0) {
-            return;
-        }
-
+    ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (DepositSyncResult memory) {
+        StrategyAtIndex[] memory dhwStates = _strategyRegistry.strategyAtIndexBatch(strategies, dhwIndexes);
         // mint SVTs based on USD value of claimed SSTs
-        (uint256 svtsToMint, uint256[] memory sstShares) =
-            syncDepositsSimulate(smartVault, flushIndex, strategies, dhwIndexes, assetGroup);
+        DepositSyncResult memory syncResult =
+            syncDepositsSimulate(smartVault, flushIndex, strategies, assetGroup, dhwStates);
 
-        for (uint256 i = 0; i < strategies.length; i++) {
-            IStrategy(strategies[i]).claimShares(smartVault, sstShares[i]);
+        if (syncResult.mintedSVTs > 0) {
+            _mintedVaultShares[smartVault][flushIndex] = syncResult.mintedSVTs;
+            for (uint256 i = 0; i < strategies.length; i++) {
+                IStrategy(strategies[i]).claimShares(smartVault, syncResult.sstShares[i]);
+            }
+
+            ISmartVault(smartVault).mint(smartVault, syncResult.mintedSVTs);
         }
 
-        ISmartVault(smartVault).mint(smartVault, svtsToMint);
-        _mintedVaultShares[smartVault][flushIndex] = svtsToMint;
+        return syncResult;
     }
 
     function syncDepositsSimulate(
         address smartVault,
         uint256 flushIndex,
         address[] memory strategies,
-        uint256[] memory dhwIndexes,
-        address[] memory assetGroup
-    ) public view returns (uint256, uint256[] memory) {
+        address[] memory assetGroup,
+        StrategyAtIndex[] memory strategyDhwState
+    ) public view returns (DepositSyncResult memory) {
         uint256[] memory sstShares = new uint256[](strategies.length);
+        uint256 currentDhwTimestamp = 0;
+
+        for (uint256 i = 0; i < strategies.length; i++) {
+            StrategyAtIndex memory atDhw = strategyDhwState[i];
+
+            if (atDhw.dhwTimestamp > currentDhwTimestamp) {
+                currentDhwTimestamp = atDhw.dhwTimestamp;
+            }
+        }
 
         // skip if there were no deposits made
         if (_vaultDeposits[smartVault][flushIndex][0] == 0) {
-            return (0, sstShares);
+            return DepositSyncResult(0, currentDhwTimestamp, sstShares);
         }
 
         // get vault's USD value before claiming SSTs
@@ -282,7 +294,7 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
 
         // claim SSTs from each strategy
         for (uint256 i = 0; i < strategies.length; i++) {
-            StrategyAtIndex memory atDhw = _strategyRegistry.strategyAtIndex(strategies[i], dhwIndexes[i]);
+            StrategyAtIndex memory atDhw = strategyDhwState[i];
 
             uint256[] memory vaultDepositedAssets =
                 _vaultFlushedDeposits[smartVault][flushIndex][strategies[i]].toArray(assetGroup.length);
@@ -306,7 +318,7 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
             svtsToMint = totalDepositedUsd * ISmartVault(smartVault).totalSupply() / totalVaultValueBefore;
         }
 
-        return (svtsToMint, sstShares);
+        return DepositSyncResult({mintedSVTs: svtsToMint, lastDhwTimestamp: currentDhwTimestamp, sstShares: sstShares});
     }
 
     function depositAssets(DepositBag calldata bag, DepositExtras memory bag2)

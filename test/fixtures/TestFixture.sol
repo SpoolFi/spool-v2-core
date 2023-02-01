@@ -2,19 +2,19 @@
 pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
-import "./MockGuard.sol";
-import "./MockToken.sol";
+import "../mocks/MockGuard.sol";
+import "../mocks/MockToken.sol";
+import "../mocks/MockPriceFeedManager.sol";
 import "../../src/managers/GuardManager.sol";
 import "../../src/managers/SmartVaultManager.sol";
 import "../../src/managers/ActionManager.sol";
 import "../../src/managers/AssetGroupRegistry.sol";
 import "../../src/MasterWallet.sol";
 import "../../src/managers/StrategyRegistry.sol";
-import "./MockPriceFeedManager.sol";
 import "../../src/managers/RiskManager.sol";
-import "../integration/withdrawal.t.sol";
 import "../../src/managers/DepositManager.sol";
 import "../../src/managers/WithdrawalManager.sol";
+import "../integration/withdrawal.t.sol";
 
 contract TestFixture is Test {
     address internal riskProvider = address(0x1);
@@ -34,7 +34,7 @@ contract TestFixture is Test {
     MockPriceFeedManager internal priceFeedManager;
     MasterWallet internal masterWallet;
 
-    function setUpBase() public {
+    function setUpBase() public virtual {
         token = new MockToken("Token", "T");
         guard = new MockGuard();
 

@@ -19,103 +19,12 @@ import "../libraries/Constants.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
-import "../mocks/TestFixture.sol";
+import "../fixtures/TestFixture.sol";
+import "../fixtures/IntegrationTestFixture.sol";
 
-contract DepositIntegrationTest is TestFixture {
-    address private alice;
-
-    MockToken tokenA;
-    MockToken tokenB;
-    MockToken tokenC;
-
-    MockStrategy strategyA;
-    MockStrategy strategyB;
-    MockStrategy strategyC;
-    address[] smartVaultStrategies;
-
+contract DepositIntegrationTest is IntegrationTestFixture {
     function setUp() public {
         setUpBase();
-        alice = address(0xa);
-
-        tokenA = new MockToken("Token A", "TA");
-        tokenB = new MockToken("Token B", "TB");
-        tokenC = new MockToken("Token C", "TC");
-
-        // set initial state
-        deal(address(tokenA), alice, 100 ether, true);
-        deal(address(tokenB), alice, 10 ether, true);
-        deal(address(tokenC), alice, 500 ether, true);
-
-        address[] memory assetGroup = Arrays.toArray(address(tokenA), address(tokenB), address(tokenC));
-        assetGroupRegistry.allowToken(address(tokenA));
-        assetGroupRegistry.allowToken(address(tokenB));
-        assetGroupRegistry.allowToken(address(tokenC));
-
-        uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-
-        strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
-        uint256[] memory strategyRatios = new uint256[](3);
-        strategyRatios[0] = 1000;
-        strategyRatios[1] = 71;
-        strategyRatios[2] = 4300;
-        strategyA.initialize(assetGroupId, strategyRatios);
-        strategyRegistry.registerStrategy(address(strategyA));
-
-        strategyRatios[1] = 74;
-        strategyRatios[2] = 4500;
-        strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
-        strategyB.initialize(assetGroupId, strategyRatios);
-        strategyRegistry.registerStrategy(address(strategyB));
-
-        strategyRatios[1] = 76;
-        strategyRatios[2] = 4600;
-        strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
-        strategyC.initialize(assetGroupId, strategyRatios);
-        strategyRegistry.registerStrategy(address(strategyC));
-
-        accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
-        accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
-        accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
-
-        {
-            address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
-            SmartVaultFactory smartVaultFactory = new SmartVaultFactory(
-                smartVaultImplementation,
-                accessControl,
-                actionManager,
-                guardManager,
-                smartVaultManager,
-                assetGroupRegistry
-            );
-            accessControl.grantRole(ADMIN_ROLE_SMART_VAULT, address(smartVaultFactory));
-            accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
-
-            smartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
-
-            vm.mockCall(
-                address(riskManager),
-                abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(600, 300, 100))
-            );
-
-            smartVault = smartVaultFactory.deploySmartVault(
-                SmartVaultSpecification({
-                    smartVaultName: "MySmartVault",
-                    assetGroupId: assetGroupId,
-                    actions: new IAction[](0),
-                    actionRequestTypes: new RequestType[](0),
-                    guards: new GuardDefinition[][](0),
-                    guardRequestTypes: new RequestType[](0),
-                    strategies: smartVaultStrategies,
-                    riskAppetite: 4,
-                    riskProvider: riskProvider
-                })
-            );
-        }
-
-        priceFeedManager.setExchangeRate(address(tokenA), 1200 * USD_DECIMALS_MULTIPLIER);
-        priceFeedManager.setExchangeRate(address(tokenB), 16400 * USD_DECIMALS_MULTIPLIER);
-        priceFeedManager.setExchangeRate(address(tokenC), 270 * USD_DECIMALS_MULTIPLIER);
     }
 
     function test_shouldBeAbleToDeposit() public {

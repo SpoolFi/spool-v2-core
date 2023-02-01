@@ -101,6 +101,14 @@ interface IAssetGroupRegistry {
     function allowToken(address token) external;
 
     /**
+     * @notice Allows tokens to be used as assets.
+     * @dev Requirements:
+     * - can only be valled by the ROLE_SPOOL_ADMIN
+     * @param tokens Addresses of tokens to be allowed.
+     */
+    function allowTokenBatch(address[] calldata tokens) external;
+
+    /**
      * @notice Registers a new asset group.
      * @dev Requirements:
      * - must provide at least one asset

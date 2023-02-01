@@ -37,6 +37,11 @@ error SmartVaultNotRegisteredYet();
  */
 error SmartVaultRegistrationNoStrategies();
 
+/**
+ * @notice Used when user tries to configure a vault with too large management fee.
+ */
+error ManagementFeeTooLarge(uint256 mgmtFeePct);
+
 /* ========== STRUCTS ========== */
 
 /**
@@ -51,6 +56,7 @@ struct SmartVaultRegistrationForm {
     address[] strategies;
     address riskProvider;
     uint256 riskAppetite;
+    uint256 managementFeePct;
 }
 
 /* ========== INTERFACES ========== */

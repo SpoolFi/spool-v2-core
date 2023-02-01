@@ -20,7 +20,7 @@ import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
 import "../mocks/MockGuard.sol";
 import "../libraries/Arrays.sol";
-import "../mocks/TestFixture.sol";
+import "../fixtures/TestFixture.sol";
 
 contract TimelockGuardDemoTest is Test, TestFixture {
     address private alice = address(0xa);
@@ -72,7 +72,8 @@ contract TimelockGuardDemoTest is Test, TestFixture {
                     guardRequestTypes: guardRequestTypes,
                     strategies: Arrays.toArray(address(strategy)),
                     riskAppetite: 4,
-                    riskProvider: riskProvider
+                    riskProvider: riskProvider,
+                    managementFeePct: 0
                 })
             );
         }

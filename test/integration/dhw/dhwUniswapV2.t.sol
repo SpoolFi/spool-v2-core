@@ -18,7 +18,7 @@ import "../../utils/UniswapV2Setup.sol";
 import "../../mocks/MockUniswapV2Strategy.sol";
 import "../../mocks/MockToken.sol";
 import "../../mocks/MockPriceFeedManager.sol";
-import "../../mocks/TestFixture.sol";
+import "../../fixtures/TestFixture.sol";
 
 contract dhwUniswapV2 is TestFixture {
     address private alice;
@@ -90,7 +90,8 @@ contract dhwUniswapV2 is TestFixture {
                     guardRequestTypes: new RequestType[](0),
                     strategies: smartVaultStrategies,
                     riskAppetite: 4,
-                    riskProvider: riskProvider
+                    riskProvider: riskProvider,
+                    managementFeePct: 0
                 })
             );
         }

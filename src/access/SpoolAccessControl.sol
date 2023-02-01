@@ -10,6 +10,8 @@ import "./Roles.sol";
  * @notice Spool access control management
  */
 contract SpoolAccessControl is AccessControlUpgradeable, PausableUpgradeable, ISpoolAccessControl {
+    mapping(address => address) public smartVaultOwner;
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor() {}
@@ -35,6 +37,14 @@ contract SpoolAccessControl is AccessControlUpgradeable, PausableUpgradeable, IS
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
+
+    function grantSmartVaultOwnership(address smartVault, address owner) external {
+        if (smartVaultOwner[smartVault] != address(0)) {
+            revert SmartVaultOwnerAlreadySet(smartVault);
+        }
+
+        smartVaultOwner[smartVault] = owner;
+    }
 
     function grantSmartVaultRole(address smartVault, bytes32 role, address account)
         external

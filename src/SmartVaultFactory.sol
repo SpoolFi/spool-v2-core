@@ -27,6 +27,7 @@ import {ISmartVaultRegistry} from "./interfaces/ISmartVaultManager.sol";
  * @custom:member actionRequestTypes Request types for actions.
  * @custom:member guards Guards to register for the smart vault.
  * @custom:member guardRequestTypes Request types for the smart vault.
+ * @custom:member managementFeePCt Management fee percentage.
  */
 struct SmartVaultSpecification {
     string smartVaultName;
@@ -38,6 +39,7 @@ struct SmartVaultSpecification {
     RequestType[] actionRequestTypes;
     GuardDefinition[][] guards;
     RequestType[] guardRequestTypes;
+    uint256 managementFeePct;
 }
 
 /* ========== CONTRACTS ========== */
@@ -217,6 +219,7 @@ contract SmartVaultFactory is UpgradeableBeacon {
      */
     function _integrateSmartVault(address smartVaultAddress, SmartVaultSpecification calldata specification) private {
         _accessControl.grantRole(ROLE_SMART_VAULT, smartVaultAddress);
+        _accessControl.grantSmartVaultOwnership(smartVaultAddress, msg.sender);
         _actionManager.setActions(smartVaultAddress, specification.actions, specification.actionRequestTypes);
         _guardManager.setGuards(smartVaultAddress, specification.guards, specification.guardRequestTypes);
 
@@ -226,7 +229,8 @@ contract SmartVaultFactory is UpgradeableBeacon {
                 assetGroupId: specification.assetGroupId,
                 strategies: specification.strategies,
                 riskAppetite: specification.riskAppetite,
-                riskProvider: specification.riskProvider
+                riskProvider: specification.riskProvider,
+                managementFeePct: specification.managementFeePct
             })
         );
     }
