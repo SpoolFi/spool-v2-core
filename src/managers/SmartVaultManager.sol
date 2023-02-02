@@ -53,9 +53,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /// @notice Master wallet
     IMasterWallet private immutable _masterWallet;
 
-    /// @notice Reward manager
-    IRewardManager private immutable _rewardManager;
-
     /* ========== STATE VARIABLES ========== */
 
     /// @notice Smart Vault registry
@@ -110,8 +107,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         IDepositManager depositManager_,
         IWithdrawalManager withdrawalManager_,
         IStrategyRegistry strategyRegistry_,
-        IMasterWallet masterWallet_,
-        IRewardManager rewardManager_
+        IMasterWallet masterWallet_
     ) SpoolAccessControllable(accessControl_) {
         _assetGroupRegistry = assetGroupRegistry_;
         _riskManager = riskManager_;
@@ -119,7 +115,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _withdrawalManager = withdrawalManager_;
         _strategyRegistry = strategyRegistry_;
         _masterWallet = masterWallet_;
-        _rewardManager = rewardManager_;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -215,7 +210,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
         _syncSmartVault(bag.smartVault, strategies_, tokens, false);
 
-        _rewardManager.updateRewardsOnVault(bag.smartVault, receiver);
         uint256 flushIndex = _flushIndexes[bag.smartVault];
         uint256 nftId = _withdrawalManager.redeem(bag, RedeemExtras(receiver, msg.sender, flushIndex));
 
@@ -237,7 +231,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
 
         _syncSmartVault(bag.smartVault, strategies_, tokens, false);
-        _rewardManager.updateRewardsOnVault(bag.smartVault, msg.sender);
         return _withdrawalManager.redeemFast(bag, RedeemFastExtras(strategies_, tokens, assetGroupId_, msg.sender));
     }
 
@@ -568,7 +561,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256[] memory allocations_ = _smartVaultAllocations[bag.smartVault].toArray(strategies_.length);
 
         _syncSmartVault(bag.smartVault, strategies_, tokens, false);
-        _rewardManager.updateRewardsOnVault(bag.smartVault, bag.receiver);
 
         (uint256[] memory deposits, uint256 depositId) = _depositManager.depositAssets(
             bag,

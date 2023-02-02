@@ -9,7 +9,7 @@ import {AllowlistGuard} from "../src/guards/AllowlistGuard.sol";
 import {ActionManager} from "../src/managers/ActionManager.sol";
 import {AssetGroupRegistry} from "../src/managers/AssetGroupRegistry.sol";
 import {GuardManager} from "../src/managers/GuardManager.sol";
-import {RewardManager} from "../src/managers/RewardManager.sol";
+import {RewardManager} from "../src/rewards/RewardManager.sol";
 import {RiskManager} from "../src/managers/RiskManager.sol";
 import {SmartVaultManager} from "../src/managers/SmartVaultManager.sol";
 import {StrategyRegistry} from "../src/managers/StrategyRegistry.sol";
@@ -47,8 +47,6 @@ contract DeploySpool is Script {
         console.log("Deploy Spool...");
 
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address deployer = vm.addr(deployerPrivateKey);
-
         vm.startBroadcast(deployerPrivateKey);
 
         proxyAdmin = new ProxyAdmin();
@@ -108,8 +106,6 @@ contract DeploySpool is Script {
             withdrawalManager = WithdrawalManager(address(proxy));
         }
 
-        address rewardManagerProxyAddress = computeCreateAddress(deployer, vm.getNonce(deployer) + 3);
-
         ISmartVaultManager smartVaultManagerImpl = new SmartVaultManager(
             spoolAccessControl,
             assetGroupRegistry,
@@ -117,18 +113,15 @@ contract DeploySpool is Script {
             depositManager,
             withdrawalManager,
             strategyRegistry,
-            masterWallet,
-            RewardManager(rewardManagerProxyAddress)
+            masterWallet
         );
 
         proxy = new TransparentUpgradeableProxy(address(smartVaultManagerImpl), address(proxyAdmin), "");
         smartVaultManager = SmartVaultManager(address(proxy));
 
-        RewardManager rewardManagerImpl = new RewardManager(spoolAccessControl, assetGroupRegistry, smartVaultManager);
+        RewardManager rewardManagerImpl = new RewardManager(spoolAccessControl, assetGroupRegistry);
         proxy = new TransparentUpgradeableProxy(address(rewardManagerImpl), address(proxyAdmin), "");
         rewardManager = RewardManager(address(proxy));
-
-        require(address(proxy) == rewardManagerProxyAddress, "Invalid reward manager address");
 
         spoolAccessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         spoolAccessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));

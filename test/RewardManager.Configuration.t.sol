@@ -3,7 +3,7 @@ pragma solidity 0.8.16;
 
 import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
-import "../src/managers/RewardManager.sol";
+import "../src/rewards/RewardManager.sol";
 import "../src/interfaces/IRewardManager.sol";
 import "./mocks/MockToken.sol";
 import "./mocks/Constants.sol";
@@ -24,7 +24,6 @@ contract RewardManagerConfigurationTests is RewardManagerTests {
             uint32 configurationRewardsDuration,
             uint32 configurationPeriodFinish,
             uint192 configurationRewardRate, // rewards per second multiplied by accuracy
-            ,
         ) = rewardManager.rewardConfiguration(smartVault, IERC20(rewardToken));
 
         assertEq(rewardDuration, configurationRewardsDuration);
@@ -53,7 +52,6 @@ contract RewardManagerConfigurationTests is RewardManagerTests {
             uint32 configurationRewardsDuration,
             ,
             uint192 configurationRewardRate, // rewards per second multiplied by accuracy
-            ,
         ) = rewardManager.rewardConfiguration(smartVault, IERC20(rewardToken));
 
         assertEq(rewardDuration, configurationRewardsDuration);
@@ -82,15 +80,13 @@ contract RewardManagerConfigurationTests is RewardManagerTests {
             uint32 configurationRewardsDuration,
             uint32 configurationPeriodFinish,
             uint192 configurationRewardRate, // rewards per second multiplied by accuracy
-            uint32 configurationLastUpdateTime,
-            uint224 configurationRewardPerTokenStored
+            uint32 configurationLastUpdateTime
         ) = rewardManager.rewardConfiguration(smartVault, IERC20(rewardToken));
 
         assertEq(0, configurationRewardsDuration);
         assertEq(0, configurationPeriodFinish);
         assertEq(0, configurationRewardRate);
         assertEq(0, configurationLastUpdateTime);
-        assertEq(0, configurationRewardPerTokenStored);
     }
 
     function test_configuration_extendWithoutAdd() public {

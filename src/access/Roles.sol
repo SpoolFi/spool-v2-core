@@ -72,3 +72,8 @@ bytes32 constant ROLE_PAUSER = keccak256("SYSTEM_PAUSER");
  * @dev Grants permission to unpause the system.
  */
 bytes32 constant ROLE_UNPAUSER = keccak256("SYSTEM_UNPAUSER");
+
+/**
+ * @dev Grants permission to manage rewards payment pool.
+ */
+bytes32 constant ROLE_REWARD_POOL_ADMIN = keccak256("ROLE_REWARD_POOL_ADMIN");

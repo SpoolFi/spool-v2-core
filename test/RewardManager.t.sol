@@ -4,7 +4,7 @@ pragma solidity 0.8.16;
 import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
 import "@openzeppelin/proxy/Clones.sol";
-import "../src/managers/RewardManager.sol";
+import "../src/rewards/RewardManager.sol";
 import "../src/interfaces/IRewardManager.sol";
 import "./mocks/MockToken.sol";
 import "./mocks/Constants.sol";
@@ -43,7 +43,7 @@ contract RewardManagerTests is Test {
         SmartVault smartVault_ = SmartVault(Clones.clone(smartVaultImplementation));
         smartVault_.initialize("SmartVault", assetGroupId);
 
-        rewardManager = new RewardManager(sac, assetGroupRegistry, new MockSmartVaultBalance());
+        rewardManager = new RewardManager(sac, assetGroupRegistry);
         // NOTE: can use days keyword
         rewardDuration = SECONDS_IN_DAY * 10;
         smartVault = address(smartVault_);
