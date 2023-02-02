@@ -179,11 +179,11 @@ contract DhwMasterChefTest is TestFixture {
         {
             vm.prank(alice);
             uint256 aliceWithdrawalNftId = smartVaultManager.redeem(
-                RedeemBag(address(smartVault), aliceShares, new uint256[](0), new uint256[](0)), alice, alice, false
+                RedeemBag(address(smartVault), aliceShares, new uint256[](0), new uint256[](0)), alice, false
             );
             vm.prank(bob);
             uint256 bobWithdrawalNftId = smartVaultManager.redeem(
-                RedeemBag(address(smartVault), bobShares, new uint256[](0), new uint256[](0)), bob, bob, false
+                RedeemBag(address(smartVault), bobShares, new uint256[](0), new uint256[](0)), bob, false
             );
 
             console2.log("flushSmartVault");

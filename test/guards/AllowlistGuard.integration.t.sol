@@ -94,7 +94,6 @@ contract AllowlistGuardIntegrationTest is TestFixture {
 
         // Setup smart vault with three guards:
         // - check whether the person executing the deposit is on allowlist
-        // - check whether the person owning the assets being deposited is on allowlist
         // - check whether the person receiving the deposit NFT is on allowlist
         // All three guards are implemented using the `isAllowed` function of the
         // AllowlistGuard contract. Each of the three checks is using a different
@@ -102,14 +101,14 @@ contract AllowlistGuardIntegrationTest is TestFixture {
         // AllowlistGuards supports this by allowing multiple allowlists per each
         // smart vault, each allowlist having a different ID.
         GuardDefinition[][] memory guards = new GuardDefinition[][](1);
-        guards[0] = new GuardDefinition[](3);
+        guards[0] = new GuardDefinition[](2);
 
         // guard call receives three parameters:
         // - address of the smart vault
         // - ID of allowlist to use for the smart vault
         // - address to check against the allowlist
-        GuardParamType[][] memory guardParamTypes = new GuardParamType[][](3);
-        bytes[][] memory guardParamValues = new bytes[][](3);
+        GuardParamType[][] memory guardParamTypes = new GuardParamType[][](2);
+        bytes[][] memory guardParamValues = new bytes[][](2);
 
         // first guard will check the person executing the deposit
         guardParamTypes[0] = new GuardParamType[](3);
@@ -123,17 +122,9 @@ contract AllowlistGuardIntegrationTest is TestFixture {
         guardParamTypes[1] = new GuardParamType[](3);
         guardParamTypes[1][0] = GuardParamType.VaultAddress; // address of the smart vault
         guardParamTypes[1][1] = GuardParamType.CustomValue; // ID of the allowlist, set as method param value below
-        guardParamTypes[1][2] = GuardParamType.Owner; // address of the owner
+        guardParamTypes[1][2] = GuardParamType.Receiver; // address of the receiver
         guardParamValues[1] = new bytes[](1);
         guardParamValues[1][0] = abi.encode(uint256(1)); // ID of the allowlist is set to 1
-
-        // second guard will check the person receiving the deposit NFT
-        guardParamTypes[2] = new GuardParamType[](3);
-        guardParamTypes[2][0] = GuardParamType.VaultAddress; // address of the smart vault
-        guardParamTypes[2][1] = GuardParamType.CustomValue; // ID of the allowlist, set as method param value below
-        guardParamTypes[2][2] = GuardParamType.Receiver; // address of the receiver
-        guardParamValues[2] = new bytes[](1);
-        guardParamValues[2][0] = abi.encode(uint256(2)); // ID of the allowlist is set to 2
 
         // define the guards
         guards[0][0] = GuardDefinition({ // guard checking the executor
@@ -152,14 +143,6 @@ contract AllowlistGuardIntegrationTest is TestFixture {
             methodParamValues: guardParamValues[1],
             operator: 0 // do not need this
         });
-        guards[0][2] = GuardDefinition({ // guard checking the receiver
-            contractAddress: address(allowlistGuard),
-            methodSignature: "isAllowed(address,uint256,address)",
-            expectedValue: 0, // do not need this
-            methodParamTypes: guardParamTypes[2],
-            methodParamValues: guardParamValues[2],
-            operator: 0 // do not need this
-        });
 
         RequestType[] memory requestTypes = new RequestType[](1);
         requestTypes[0] = RequestType.Deposit;
@@ -171,46 +154,41 @@ contract AllowlistGuardIntegrationTest is TestFixture {
         // allow Alice to update allowlists for the smart vault
         accessControl.grantSmartVaultRole(address(smartVault), ROLE_GUARD_ALLOWLIST_MANAGER, alice);
 
-        address[] memory addressesToAdd = new address[](1);
+        vm.startPrank(alice);
         // Bob can execute the deposit
-        addressesToAdd[0] = bob;
-        vm.prank(alice);
-        allowlistGuard.addToAllowlist(address(smartVault), 0, addressesToAdd);
-        // Charlie can own the assets
-        addressesToAdd[0] = charlie;
-        vm.prank(alice);
-        allowlistGuard.addToAllowlist(address(smartVault), 1, addressesToAdd);
+        allowlistGuard.addToAllowlist(address(smartVault), 0, Arrays.toArray(bob, charlie));
         // Dave can receive the NFT
-        addressesToAdd[0] = dave;
-        vm.prank(alice);
-        allowlistGuard.addToAllowlist(address(smartVault), 2, addressesToAdd);
+        allowlistGuard.addToAllowlist(address(smartVault), 1, Arrays.toArray(dave));
+        vm.stopPrank();
     }
 
-    function test() public {
+    function test_depositWithAllowList() public {
         token.mint(charlie, 2 ether);
         token.mint(eve, 1 ether);
+        token.mint(bob, 1 ether);
 
         vm.prank(charlie);
         token.approve(address(smartVaultManager), 2 ether);
         vm.prank(eve);
         token.approve(address(smartVaultManager), 1 ether);
+        vm.prank(bob);
+        token.approve(address(smartVaultManager), 1 ether);
 
         uint256[] memory depositAmounts = new uint256[](1);
         depositAmounts[0] = 1 ether;
-        // deposit as Bob using Charlies assets with Dave set as receiver, should pass
+
+        // deposit as Bob with Dave set as receiver, should pass
         vm.prank(bob);
-        smartVaultManager.depositFor(DepositBag(address(smartVault), depositAmounts, dave, address(0), false), charlie);
-        // deposit as Eve using Charlies assets with Dave set as receiver, should fail
+        smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, dave, address(0), false));
+
+        // deposit as Eve with Dave set as receiver, should fail
         vm.prank(eve);
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
-        smartVaultManager.depositFor(DepositBag(address(smartVault), depositAmounts, dave, address(0), false), charlie);
-        // deposit as Bob using Eve assets with Dave set as receiver, should fail
-        vm.prank(bob);
+        smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, dave, address(0), false));
+
+        // deposit as Charlie with Bob set as receiver, should fail
+        vm.prank(charlie);
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 1));
-        smartVaultManager.depositFor(DepositBag(address(smartVault), depositAmounts, dave, address(0), false), eve);
-        // deposit as Bob using Charlies assets with Eve set as receiver, should fail
-        vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 2));
-        smartVaultManager.depositFor(DepositBag(address(smartVault), depositAmounts, eve, address(0), false), charlie);
+        smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, bob, address(0), false));
     }
 }

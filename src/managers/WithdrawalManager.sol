@@ -167,15 +167,15 @@ contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdr
         returns (uint256)
     {
         ISmartVault smartVault = ISmartVault(bag.smartVault);
-        _validateRedeem(smartVault, bag2.owner, bag2.executor, bag2.receiver, bag.nftIds, bag.nftAmounts, bag.shares);
+        _validateRedeem(smartVault, bag2.redeemer, bag2.receiver, bag.nftIds, bag.nftAmounts, bag.shares);
 
         // add withdrawal to be flushed
         _withdrawnVaultShares[bag.smartVault][bag2.flushIndex] += bag.shares;
 
         // transfer vault shares back to smart vault
-        smartVault.transferFromSpender(bag2.owner, bag.smartVault, bag.shares, bag2.executor);
+        smartVault.transferFromSpender(bag2.redeemer, bag.smartVault, bag.shares, bag2.redeemer);
         uint256 redeemId = smartVault.mintWithdrawalNFT(bag2.receiver, WithdrawalMetadata(bag.shares, bag2.flushIndex));
-        emit RedeemInitiated(bag.smartVault, bag2.owner, redeemId, bag2.flushIndex, bag.shares, bag2.receiver);
+        emit RedeemInitiated(bag.smartVault, bag2.redeemer, redeemId, bag2.flushIndex, bag.shares, bag2.receiver);
 
         return redeemId;
     }
@@ -186,7 +186,7 @@ contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdr
         returns (uint256[] memory)
     {
         ISmartVault smartVault = ISmartVault(bag.smartVault);
-        _validateRedeem(smartVault, bag2.executor, bag2.executor, bag2.executor, bag.nftIds, bag.nftAmounts, bag.shares);
+        _validateRedeem(smartVault, bag2.redeemer, bag2.redeemer, bag.nftIds, bag.nftAmounts, bag.shares);
 
         // figure out how much to redeem from each strategy
         uint256[] memory strategySharesToRedeem = new uint256[](bag2.strategies.length);
@@ -199,7 +199,7 @@ contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdr
             }
 
             // redeem from strategies and burn
-            smartVault.burn(bag2.executor, bag.shares, bag2.strategies, strategySharesToRedeem);
+            smartVault.burn(bag2.redeemer, bag.shares, bag2.strategies, strategySharesToRedeem);
         }
 
         uint256[] memory assetsWithdrawn =
@@ -207,18 +207,17 @@ contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdr
 
         // transfer assets to the redeemer
         for (uint256 i = 0; i < bag2.assetGroup.length; i++) {
-            _masterWallet.transfer(IERC20(bag2.assetGroup[i]), bag2.executor, assetsWithdrawn[i]);
+            _masterWallet.transfer(IERC20(bag2.assetGroup[i]), bag2.redeemer, assetsWithdrawn[i]);
         }
 
-        emit FastRedeemInitiated(bag.smartVault, bag2.executor, bag.shares, bag.nftIds, bag.nftAmounts, assetsWithdrawn);
+        emit FastRedeemInitiated(bag.smartVault, bag2.redeemer, bag.shares, bag.nftIds, bag.nftAmounts, assetsWithdrawn);
 
         return assetsWithdrawn;
     }
 
     function _validateRedeem(
         ISmartVault smartVault,
-        address owner,
-        address executor,
+        address redeemer,
         address receiver,
         uint256[] memory nftIds,
         uint256[] memory nftAmounts,
@@ -230,17 +229,17 @@ contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdr
             }
         }
 
-        _runGuards(address(smartVault), owner, owner, owner, nftIds, new address[](0), RequestType.BurnNFT);
-        smartVault.burnNFTs(owner, nftIds, nftAmounts);
+        _runGuards(address(smartVault), redeemer, redeemer, redeemer, nftIds, new address[](0), RequestType.BurnNFT);
+        smartVault.burnNFTs(redeemer, nftIds, nftAmounts);
 
-        if (smartVault.balanceOf(owner) < shares) {
-            revert InsufficientBalance(smartVault.balanceOf(owner), shares);
+        if (smartVault.balanceOf(redeemer) < shares) {
+            revert InsufficientBalance(smartVault.balanceOf(redeemer), shares);
         }
 
         uint256[] memory assets = new uint256[](1);
         assets[0] = shares;
         address[] memory tokens = new address[](1);
         tokens[0] = address(smartVault);
-        _runGuards(address(smartVault), executor, receiver, owner, assets, tokens, RequestType.Withdrawal);
+        _runGuards(address(smartVault), redeemer, receiver, redeemer, assets, tokens, RequestType.Withdrawal);
     }
 }

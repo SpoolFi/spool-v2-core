@@ -205,7 +205,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== DEPOSIT/WITHDRAW ========== */
 
-    function redeem(RedeemBag calldata bag, address receiver, address owner, bool doFlush)
+    function redeem(RedeemBag calldata bag, address receiver, bool doFlush)
         external
         whenNotPaused
         onlyRegisteredSmartVault(bag.smartVault)
@@ -217,7 +217,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         _rewardManager.updateRewardsOnVault(bag.smartVault, receiver);
         uint256 flushIndex = _flushIndexes[bag.smartVault];
-        uint256 nftId = _withdrawalManager.redeem(bag, RedeemExtras(msg.sender, receiver, owner, flushIndex));
+        uint256 nftId = _withdrawalManager.redeem(bag, RedeemExtras(receiver, msg.sender, flushIndex));
 
         if (doFlush) {
             flushSmartVault(bag.smartVault);
@@ -241,22 +241,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return _withdrawalManager.redeemFast(bag, RedeemFastExtras(strategies_, tokens, assetGroupId_, msg.sender));
     }
 
-    function depositFor(DepositBag calldata bag, address owner)
-        external
-        whenNotPaused
-        onlyRegisteredSmartVault(bag.smartVault)
-        returns (uint256)
-    {
-        return _depositAssets(bag, owner);
-    }
-
     function deposit(DepositBag calldata bag)
         external
         whenNotPaused
         onlyRegisteredSmartVault(bag.smartVault)
         returns (uint256)
     {
-        return _depositAssets(bag, msg.sender);
+        return _depositAssets(bag);
     }
 
     /**
@@ -426,9 +417,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             uint256 lastSyncedDhw = _lastDhwTimestampSynced[smartVault];
 
             if (mgmtFeePct > 0) {
-                mgmtFeeSVTs += _calculateManagementFees(
-                    smartVault, lastSyncedDhw, syncResult.lastDhwTimestamp, totalSVTs, mgmtFeePct
-                );
+                mgmtFeeSVTs +=
+                    _calculateManagementFees(lastSyncedDhw, syncResult.lastDhwTimestamp, totalSVTs, mgmtFeePct);
             }
 
             totalSVTs += syncResult.mintedSVTs;
@@ -448,19 +438,16 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /**
      * @dev Calculated as percentage of assets under management, distributed throughout a year.
      * SVT amount being diluted should not include previously distributed management fees.
-     * @param smartVault smart vault address
      * @param timeFrom time from which to collect fees
      * @param timeTo time to which to collect fees
      * @param totalSVTs SVT amount basis on which to apply fees
      * @param mgmtFeePct management fee percentage value
      */
-    function _calculateManagementFees(
-        address smartVault,
-        uint256 timeFrom,
-        uint256 timeTo,
-        uint256 totalSVTs,
-        uint256 mgmtFeePct
-    ) private view returns (uint256) {
+    function _calculateManagementFees(uint256 timeFrom, uint256 timeTo, uint256 totalSVTs, uint256 mgmtFeePct)
+        private
+        pure
+        returns (uint256)
+    {
         uint256 timeDelta = timeTo - timeFrom;
         return totalSVTs * mgmtFeePct * timeDelta / SECONDS_IN_YEAR / FULL_PERCENT;
     }
@@ -549,9 +536,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
                 _depositManager.syncDepositsSimulate(smartVault, flushIndex, strategies_, tokens, dhwStates);
 
             if (mgmtFeePct > 0) {
-                mgmtFeeSVTs += _calculateManagementFees(
-                    smartVault, lastDhwSyncedTimestamp, syncResult.lastDhwTimestamp, totalSVTs, mgmtFeePct
-                );
+                mgmtFeeSVTs +=
+                    _calculateManagementFees(lastDhwSyncedTimestamp, syncResult.lastDhwTimestamp, totalSVTs, mgmtFeePct);
             }
 
             totalSVTs += syncResult.mintedSVTs;
@@ -576,7 +562,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * - update vault rewards
      * - optionally trigger flush right after
      */
-    function _depositAssets(DepositBag calldata bag, address owner) internal returns (uint256) {
+    function _depositAssets(DepositBag calldata bag) internal returns (uint256) {
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
         address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
         uint256[] memory allocations_ = _smartVaultAllocations[bag.smartVault].toArray(strategies_.length);
@@ -587,8 +573,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         (uint256[] memory deposits, uint256 depositId) = _depositManager.depositAssets(
             bag,
             DepositExtras({
-                owner: owner,
-                executor: msg.sender,
+                depositor: msg.sender,
                 tokens: tokens,
                 allocations: allocations_,
                 strategies: strategies_,
@@ -597,7 +582,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         );
 
         for (uint256 i = 0; i < deposits.length; i++) {
-            IERC20(tokens[i]).safeTransferFrom(owner, address(_masterWallet), deposits[i]);
+            IERC20(tokens[i]).safeTransferFrom(msg.sender, address(_masterWallet), deposits[i]);
         }
 
         if (bag.doFlush) {

@@ -18,8 +18,7 @@ struct DepositBag {
 }
 
 struct DepositExtras {
-    address executor;
-    address owner;
+    address depositor;
     address[] tokens;
     address[] strategies;
     uint256[] allocations;
@@ -56,7 +55,7 @@ interface IDepositManager {
      * @param depositId Deposit NFT ID for this deposit
      * @param flushIndex Flush index the deposit was scheduled for
      * @param assets Amount of assets to deposit
-     * @param executor Address that initiated the deposit
+     * @param depositor Address that initiated the deposit
      * @param referral Referral address
      */
     event DepositInitiated(
@@ -65,7 +64,7 @@ interface IDepositManager {
         uint256 indexed depositId,
         uint256 flushIndex,
         uint256[] assets,
-        address executor,
+        address depositor,
         address referral
     );
 

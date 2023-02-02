@@ -324,10 +324,10 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
 
         // run guards and actions
         _runGuards(
-            bag.smartVault, bag2.executor, bag.receiver, bag2.owner, bag.assets, bag2.tokens, RequestType.Deposit
+            bag.smartVault, bag2.depositor, bag.receiver, bag2.depositor, bag.assets, bag2.tokens, RequestType.Deposit
         );
         _runActions(
-            bag.smartVault, bag2.executor, bag.receiver, bag2.owner, bag.assets, bag2.tokens, RequestType.Deposit
+            bag.smartVault, bag2.depositor, bag.receiver, bag2.depositor, bag.assets, bag2.tokens, RequestType.Deposit
         );
 
         // check if assets are in correct ratio
@@ -348,7 +348,7 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         uint256 depositId = ISmartVault(bag.smartVault).mintDepositNFT(bag.receiver, metadata);
 
         emit DepositInitiated(
-            bag.smartVault, bag.receiver, depositId, bag2.flushIndex, bag.assets, bag2.executor, bag.referral
+            bag.smartVault, bag.receiver, depositId, bag2.flushIndex, bag.assets, bag2.depositor, bag.referral
             );
 
         return (_vaultDeposits[bag.smartVault][bag2.flushIndex].toArray(bag2.tokens.length), depositId);

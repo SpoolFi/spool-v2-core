@@ -12,13 +12,12 @@ struct RedeemFastExtras {
     address[] strategies;
     address[] assetGroup;
     uint256 assetGroupId;
-    address executor;
+    address redeemer;
 }
 
 struct RedeemExtras {
-    address executor;
     address receiver;
-    address owner;
+    address redeemer;
     uint256 flushIndex;
 }
 
@@ -71,7 +70,7 @@ interface IWithdrawalManager {
     /**
      * @notice A deposit has been initiated
      * @param smartVault Smart vault address
-     * @param redeemer Redeemal initiator and owner of shares
+     * @param redeemer Redeem initiator and owner of shares
      * @param shares Amount of vault shares to redeem
      * @param nftIds NFTs to burn
      * @param nftAmounts NFT shares to burn

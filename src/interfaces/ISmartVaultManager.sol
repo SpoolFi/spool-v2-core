@@ -119,12 +119,6 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
     function syncSmartVault(address smartVault, bool revertOnMissingDHW) external;
 
     /**
-     * @notice TODO
-     * @return depositNFTId TODO
-     */
-    function depositFor(DepositBag calldata bag, address owner) external returns (uint256 depositNFTId);
-
-    /**
      * @notice Instantly redeems smart vault shares for assets.
      * @return withdrawnAssets Amount of assets withdrawn.
      */
@@ -174,9 +168,7 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
      * NOTE: some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
      * Those methods should be performed separately.
      */
-    function redeem(RedeemBag calldata bag, address receiver, address owner, bool doFlush)
-        external
-        returns (uint256 receipt);
+    function redeem(RedeemBag calldata bag, address receiver, bool doFlush) external returns (uint256 receipt);
 
     /**
      * @dev Mints shares Vault shares to receiver by depositing exactly amount of underlying tokens.

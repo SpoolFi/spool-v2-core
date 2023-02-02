@@ -166,7 +166,7 @@ contract DhwTest is TestFixture {
 
         vm.prank(alice);
         uint256 aliceWithdrawalNftId = smartVaultManager.redeem(
-            RedeemBag(address(smartVault), aliceShares, new uint256[](0), new uint256[](0)), alice, alice, false
+            RedeemBag(address(smartVault), aliceShares, new uint256[](0), new uint256[](0)), alice, false
         );
 
         console2.log("flushSmartVault");
