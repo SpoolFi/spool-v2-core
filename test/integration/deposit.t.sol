@@ -25,6 +25,7 @@ import "../fixtures/IntegrationTestFixture.sol";
 contract DepositIntegrationTest is IntegrationTestFixture {
     function setUp() public {
         setUpBase();
+        createVault();
     }
 
     function test_shouldBeAbleToDeposit() public {

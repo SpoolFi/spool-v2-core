@@ -158,7 +158,8 @@ contract ReallocationIntegrationTest is Test {
                 strategies: Arrays.toArray(address(strategyA), address(strategyB)),
                 riskAppetite: 4,
                 riskProvider: riskProvider,
-                managementFeePct: 0
+                managementFeePct: 0,
+                depositFeePct: 0
             });
             vm.mockCall(
                 address(riskManager),
@@ -311,7 +312,8 @@ contract ReallocationIntegrationTest is Test {
                 strategies: Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
                 riskAppetite: 4,
                 riskProvider: riskProvider,
-                managementFeePct: 0
+                managementFeePct: 0,
+            depositFeePct: 0
             });
             vm.mockCall(
                 address(riskManager),
@@ -475,7 +477,8 @@ contract ReallocationIntegrationTest is Test {
                 strategies: Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
                 riskAppetite: 4,
                 riskProvider: riskProvider,
-                managementFeePct: 0
+                managementFeePct: 0,
+            depositFeePct: 0
             });
             vm.mockCall(
                 address(riskManager),
@@ -639,7 +642,8 @@ contract ReallocationIntegrationTest is Test {
                 strategies: Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
                 riskAppetite: 4,
                 riskProvider: riskProvider,
-                managementFeePct: 0
+                managementFeePct: 0,
+            depositFeePct: 0
             });
             vm.mockCall(
                 address(riskManager),
@@ -807,7 +811,8 @@ contract ReallocationIntegrationTest is Test {
                 strategies: Arrays.toArray(address(strategyA), address(strategyB)),
                 riskAppetite: 4,
                 riskProvider: riskProvider,
-                managementFeePct: 0
+                managementFeePct: 0,
+            depositFeePct: 0
             });
             vm.mockCall(
                 address(riskManager),
@@ -1003,7 +1008,8 @@ contract ReallocationIntegrationTest is Test {
                 strategies: Arrays.toArray(address(strategyA), address(strategyB)),
                 riskAppetite: 4,
                 riskProvider: riskProvider,
-                managementFeePct: 0
+                managementFeePct: 0,
+            depositFeePct: 0
             });
             vm.mockCall(
                 address(riskManager),
@@ -1199,7 +1205,8 @@ contract ReallocationIntegrationTest is Test {
                 strategies: Arrays.toArray(address(strategyA), address(strategyB)),
                 riskAppetite: 4,
                 riskProvider: riskProvider,
-                managementFeePct: 0
+                managementFeePct: 0,
+            depositFeePct: 0
             });
             vm.mockCall(
                 address(riskManager),
@@ -1397,7 +1404,8 @@ contract ReallocationIntegrationTest is Test {
                 strategies: Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
                 riskAppetite: 4,
                 riskProvider: riskProvider,
-                managementFeePct: 0
+                managementFeePct: 0,
+            depositFeePct: 0
             });
             vm.mockCall(
                 address(riskManager),
@@ -1599,7 +1607,8 @@ contract ReallocationIntegrationTest is Test {
                 strategies: Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
                 riskAppetite: 4,
                 riskProvider: riskProvider,
-                managementFeePct: 0
+                managementFeePct: 0,
+            depositFeePct: 0
             });
             vm.mockCall(
                 address(riskManager),
@@ -1801,7 +1810,8 @@ contract ReallocationIntegrationTest is Test {
                 strategies: Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
                 riskAppetite: 4,
                 riskProvider: riskProvider,
-                managementFeePct: 0
+                managementFeePct: 0,
+            depositFeePct: 0
             });
             vm.mockCall(
                 address(riskManager),

@@ -27,6 +27,7 @@ import {ISmartVaultRegistry} from "./interfaces/ISmartVaultManager.sol";
  * @custom:member guards Guards to register for the smart vault.
  * @custom:member guardRequestTypes Request types for the smart vault.
  * @custom:member managementFeePCt Management fee percentage.
+ * @custom:member depositFeePct Deposit fee percentage.
  */
 struct SmartVaultSpecification {
     string smartVaultName;
@@ -39,6 +40,7 @@ struct SmartVaultSpecification {
     GuardDefinition[][] guards;
     RequestType[] guardRequestTypes;
     uint256 managementFeePct;
+    uint256 depositFeePct;
 }
 
 /* ========== CONTRACTS ========== */
@@ -227,7 +229,8 @@ contract SmartVaultFactory is UpgradeableBeacon {
                 strategies: specification.strategies,
                 riskAppetite: specification.riskAppetite,
                 riskProvider: specification.riskProvider,
-                managementFeePct: specification.managementFeePct
+                managementFeePct: specification.managementFeePct,
+                depositFeePct: specification.depositFeePct
             })
         );
     }

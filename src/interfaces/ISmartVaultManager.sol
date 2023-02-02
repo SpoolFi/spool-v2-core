@@ -52,6 +52,11 @@ error NotSameAssetGroup();
  */
 error InvalidStrategies();
 
+/**
+ * @notice Used when user tries to configure a vault with too large deposit fee.
+ */
+error DepositFeeTooLarge(uint256 deposittFeePct);
+
 /* ========== STRUCTS ========== */
 
 /**
@@ -60,6 +65,8 @@ error InvalidStrategies();
  * @custom:member strategies Strategies used by the smart vault.
  * @custom:member riskProvider Risk provider used by the smart vault.
  * @custom:member riskAppetite Risk appetite of the smart vault.
+ * @custom:member managementFeePct Management fee of the smart vault.
+ * @custom:member depositFeePct Deposit fee of the smart vault.
  */
 struct SmartVaultRegistrationForm {
     uint256 assetGroupId;
@@ -67,6 +74,17 @@ struct SmartVaultRegistrationForm {
     address riskProvider;
     uint256 riskAppetite;
     uint256 managementFeePct;
+    uint256 depositFeePct;
+}
+
+struct VaultSyncBag {
+    address vaultOwner;
+    uint256 totalSVTs;
+    uint256 mgmtFeePct;
+    uint256 depositFeePct;
+    uint256 feeSVTs;
+    uint256 mintedSVTs;
+    uint256 flushIndex;
 }
 
 /* ========== INTERFACES ========== */

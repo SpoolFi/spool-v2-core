@@ -22,21 +22,30 @@ import "../mocks/MockPriceFeedManager.sol";
 import "../fixtures/TestFixture.sol";
 import "../fixtures/IntegrationTestFixture.sol";
 
-contract DepositIntegrationTest is IntegrationTestFixture {
+contract VaultSyncTest is IntegrationTestFixture {
     function setUp() public {
-        managementFeePct = 2_00;
         setUpBase();
+        deal(address(tokenA), alice, 1000 ether, true);
+        deal(address(tokenB), alice, 1000 ether, true);
+        deal(address(tokenC), alice, 1000 ether, true);
+
+        vm.startPrank(alice);
+        tokenA.approve(address(smartVaultManager), 1000 ether);
+        tokenB.approve(address(smartVaultManager), 1000 ether);
+        tokenC.approve(address(smartVaultManager), 1000 ether);
+        vm.stopPrank();
     }
 
     function test_syncVault_oneDeposit() public {
+        createVault(2_00, 0);
         vm.startPrank(alice);
-
-        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
         SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
         dhwSwapInfo[0] = new SwapInfo[](0);
         dhwSwapInfo[1] = new SwapInfo[](0);
         dhwSwapInfo[2] = new SwapInfo[](0);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
         tokenA.approve(address(smartVaultManager), 100 ether);
         tokenB.approve(address(smartVaultManager), 100 ether);
@@ -72,22 +81,17 @@ contract DepositIntegrationTest is IntegrationTestFixture {
     }
 
     function test_syncVault_managementFees() public {
-        address vaultOwner = accessControl.smartVaultOwner(address(smartVault));
-        deal(address(tokenA), alice, 1000 ether, true);
-        deal(address(tokenB), alice, 1000 ether, true);
-        deal(address(tokenC), alice, 1000 ether, true);
+        createVault(2_00, 0);
 
-        vm.startPrank(alice);
-
-        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
         SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
         dhwSwapInfo[0] = new SwapInfo[](0);
         dhwSwapInfo[1] = new SwapInfo[](0);
         dhwSwapInfo[2] = new SwapInfo[](0);
 
-        tokenA.approve(address(smartVaultManager), 1000 ether);
-        tokenB.approve(address(smartVaultManager), 1000 ether);
-        tokenC.approve(address(smartVaultManager), 1000 ether);
+        address vaultOwner = accessControl.smartVaultOwner(address(smartVault));
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
         // Deposit #1 and DHW
         smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), true));
@@ -105,6 +109,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), true));
         flushIndex = smartVaultManager.getLatestFlushIndex(address(smartVault));
 
+        // Should have no fees after syncing first DHW
         assertEq(flushIndex, 2);
         assertEq(smartVault.balanceOf(vaultOwner), 0);
 
@@ -122,11 +127,57 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         uint256 vaultOwnerBalance = smartVault.balanceOf(vaultOwner);
         uint256 simulatedTotalSupply = smartVaultManager.getSVTTotalSupply(address(smartVault));
 
+        // Should have management fees after syncing second DHW
         assertEq(vaultSupplyBefore, 357162800000000000000000000);
         assertEq(syncResult.lastDhwTimestamp, dhwTimestamp);
         assertEq(smartVault.totalSupply(), simulatedTotalSupply);
         assertGt(vaultOwnerBalance, 0);
         assertGt(syncResult.mintedSVTs, 0);
         assertEq(smartVault.totalSupply(), vaultSupplyBefore + syncResult.mintedSVTs + vaultOwnerBalance);
+    }
+
+    function test_syncVault_depositFees() public {
+        createVault(0, 3_00);
+
+        SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
+        dhwSwapInfo[0] = new SwapInfo[](0);
+        dhwSwapInfo[1] = new SwapInfo[](0);
+        dhwSwapInfo[2] = new SwapInfo[](0);
+
+        address vaultOwner = accessControl.smartVaultOwner(address(smartVault));
+
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        // Deposit #1 and DHW
+        smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), true));
+        vm.stopPrank();
+
+        uint256 flushIndex = smartVaultManager.getLatestFlushIndex(address(smartVault));
+        assertEq(flushIndex, 1);
+
+        strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
+
+        // Run simulations
+        uint256[] memory dhwIndexes = smartVaultManager.dhwIndexes(address(smartVault), 0);
+        StrategyAtIndex[] memory dhwStates = strategyRegistry.strategyAtIndexBatch(smartVaultStrategies, dhwIndexes);
+        DepositSyncResult memory syncResult =
+            depositManager.syncDepositsSimulate(address(smartVault), 0, smartVaultStrategies, assetGroup, dhwStates);
+        uint256 simulatedTotalSupply = smartVaultManager.getSVTTotalSupply(address(smartVault));
+        uint256 ownerBalance = smartVaultManager.getUserSVTBalance(address(smartVault), vaultOwner);
+
+        // Sync previous DHW
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        // Should have deposit fees, after syncing first DHW
+        uint256 mintedSVTs = 357162800000000000000000000;
+        uint256 depositFee = mintedSVTs * 3_00 / 100_00;
+        uint256 totalSupply = smartVault.totalSupply();
+        assertEq(smartVault.balanceOf(vaultOwner), depositFee);
+        assertEq(ownerBalance, depositFee);
+        assertEq(totalSupply, mintedSVTs + depositFee);
+        assertEq(smartVault.totalSupply(), simulatedTotalSupply);
+        assertEq(syncResult.mintedSVTs, mintedSVTs);
     }
 }

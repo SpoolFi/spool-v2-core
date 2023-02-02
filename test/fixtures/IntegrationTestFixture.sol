@@ -33,8 +33,7 @@ contract IntegrationTestFixture is TestFixture {
     MockStrategy internal strategyC;
     address[] internal smartVaultStrategies;
     address[] internal assetGroup;
-
-    uint256 internal managementFeePct = 0;
+    uint256 internal assetGroupId;
 
     function setUpBase() public override {
         super.setUpBase();
@@ -51,7 +50,7 @@ contract IntegrationTestFixture is TestFixture {
 
         assetGroup = Arrays.toArray(address(tokenA), address(tokenB), address(tokenC));
         assetGroupRegistry.allowTokenBatch(assetGroup);
-        uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+        assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         uint256[] memory strategyRatios = Arrays.toArray(1000, 71, 4300);
         strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
         strategyA.initialize(assetGroupId, strategyRatios);
@@ -71,44 +70,49 @@ contract IntegrationTestFixture is TestFixture {
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
 
-        {
-            address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
-            SmartVaultFactory smartVaultFactory = new SmartVaultFactory(
-                smartVaultImplementation,
-                accessControl,
-                actionManager,
-                guardManager,
-                smartVaultManager,
-                assetGroupRegistry
-            );
-            accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
-
-            smartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
-
-            vm.mockCall(
-                address(riskManager),
-                abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(600, 300, 100))
-            );
-
-            smartVault = smartVaultFactory.deploySmartVault(
-                SmartVaultSpecification({
-                    smartVaultName: "MySmartVault",
-                    assetGroupId: assetGroupId,
-                    actions: new IAction[](0),
-                    actionRequestTypes: new RequestType[](0),
-                    guards: new GuardDefinition[][](0),
-                    guardRequestTypes: new RequestType[](0),
-                    strategies: smartVaultStrategies,
-                    riskAppetite: 4,
-                    riskProvider: riskProvider,
-                    managementFeePct: managementFeePct
-                })
-            );
-        }
-
         priceFeedManager.setExchangeRate(address(tokenA), 1200 * USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenB), 16400 * USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenC), 270 * USD_DECIMALS_MULTIPLIER);
+    }
+
+    function createVault() internal {
+        createVault(0, 0);
+    }
+
+    function createVault(uint256 managementFeePct, uint256 depositFeePct) internal {
+        address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
+        SmartVaultFactory smartVaultFactory = new SmartVaultFactory(
+            smartVaultImplementation,
+            accessControl,
+            actionManager,
+            guardManager,
+            smartVaultManager,
+            assetGroupRegistry
+        );
+        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
+
+        smartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
+
+        vm.mockCall(
+            address(riskManager),
+            abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+            abi.encode(Arrays.toArray(600, 300, 100))
+        );
+
+        smartVault = smartVaultFactory.deploySmartVault(
+            SmartVaultSpecification({
+                smartVaultName: "MySmartVault",
+                assetGroupId: assetGroupId,
+                actions: new IAction[](0),
+                actionRequestTypes: new RequestType[](0),
+                guards: new GuardDefinition[][](0),
+                guardRequestTypes: new RequestType[](0),
+                strategies: smartVaultStrategies,
+                riskAppetite: 4,
+                riskProvider: riskProvider,
+                managementFeePct: managementFeePct,
+                depositFeePct: depositFeePct
+            })
+        );
     }
 }

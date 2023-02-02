@@ -68,7 +68,8 @@ contract SmartVaultManagerTest is TestFixture {
             strategies: strategies,
             riskAppetite: 4,
             riskProvider: riskProvider,
-            managementFeePct: 0
+            managementFeePct: 0,
+            depositFeePct: 0
         });
         smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
 
@@ -94,7 +95,8 @@ contract SmartVaultManagerTest is TestFixture {
             strategies: strategies,
             riskAppetite: 4,
             riskProvider: riskProvider,
-            managementFeePct: 0
+            managementFeePct: 0,
+            depositFeePct: 0
         });
 
         // when not risk provider
@@ -104,7 +106,8 @@ contract SmartVaultManagerTest is TestFixture {
                 strategies: strategies,
                 riskAppetite: 4,
                 riskProvider: address(0xabc),
-                managementFeePct: 0
+                managementFeePct: 0,
+                depositFeePct: 0
             });
             vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_RISK_PROVIDER, address(0xabc)));
             smartVaultManager.registerSmartVault(mySmartVault, _registrationForm);
@@ -118,7 +121,8 @@ contract SmartVaultManagerTest is TestFixture {
                 strategies: _strategies,
                 riskAppetite: 4,
                 riskProvider: riskProvider,
-                managementFeePct: 0
+                managementFeePct: 0,
+                depositFeePct: 0
             });
             vm.expectRevert(SmartVaultRegistrationNoStrategies.selector);
             smartVaultManager.registerSmartVault(mySmartVault, _registrationForm);
@@ -133,7 +137,8 @@ contract SmartVaultManagerTest is TestFixture {
                 strategies: _strategies,
                 riskAppetite: 4,
                 riskProvider: riskProvider,
-                managementFeePct: 0
+                managementFeePct: 0,
+                depositFeePct: 0
             });
             vm.expectRevert(abi.encodeWithSelector(InvalidStrategy.selector, address(0xabc)));
             smartVaultManager.registerSmartVault(mySmartVault, _registrationForm);
@@ -312,7 +317,8 @@ contract SmartVaultManagerTest is TestFixture {
             strategies: strategies,
             riskAppetite: 4,
             riskProvider: riskProvider,
-            managementFeePct: 0
+            managementFeePct: 0,
+            depositFeePct: 0
         });
         smartVaultManager.registerSmartVault(address(smartVault_), registrationForm);
 

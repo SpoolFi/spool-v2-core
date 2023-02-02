@@ -85,7 +85,8 @@ contract NftGateGuardDemoTest is TestFixture {
                     strategies: Arrays.toArray(address(strategy)),
                     riskAppetite: 4,
                     riskProvider: riskProvider,
-                    managementFeePct: 0
+                    managementFeePct: 0,
+                    depositFeePct: 0
                 })
             );
         }
