@@ -21,6 +21,7 @@ contract TestFixture is Test {
 
     MockGuard internal guard;
     MockToken internal token;
+    Swapper internal swapper;
     GuardManager internal guardManager;
     ISmartVault internal smartVault;
     SmartVaultManager internal smartVaultManager;
@@ -40,6 +41,7 @@ contract TestFixture is Test {
 
         accessControl = new SpoolAccessControl();
         accessControl.initialize();
+        swapper = new Swapper(accessControl);
         actionManager = new ActionManager(accessControl);
         assetGroupRegistry = new AssetGroupRegistry(accessControl);
         assetGroupRegistry.initialize(Arrays.toArray(address(token)));

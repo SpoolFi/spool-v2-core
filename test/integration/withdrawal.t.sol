@@ -33,6 +33,7 @@ contract WithdrawalIntegrationTest is Test {
     MockStrategy strategyB;
     address[] mySmartVaultStrategies;
 
+    Swapper private swapper;
     ISmartVault private mySmartVault;
     SmartVaultManager private smartVaultManager;
     StrategyRegistry private strategyRegistry;
@@ -54,6 +55,8 @@ contract WithdrawalIntegrationTest is Test {
         accessControl = new SpoolAccessControl();
         accessControl.initialize();
         masterWallet = new MasterWallet(accessControl);
+
+        swapper = new Swapper(accessControl);
 
         address[] memory assetGroup = new address[](2);
         assetGroup[0] = address(tokenA);
@@ -82,7 +85,7 @@ contract WithdrawalIntegrationTest is Test {
             masterWallet
         );
 
-        strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
+        strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
         uint256[] memory strategyRatios = new uint256[](2);
         strategyRatios[0] = 1_000;
         strategyRatios[1] = 68;
@@ -90,7 +93,7 @@ contract WithdrawalIntegrationTest is Test {
         strategyRegistry.registerStrategy(address(strategyA));
 
         strategyRatios[1] = 67;
-        strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
+        strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
         strategyB.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyB));
 

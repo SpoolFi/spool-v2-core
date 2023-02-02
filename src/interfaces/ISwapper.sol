@@ -3,6 +3,8 @@ pragma solidity 0.8.16;
 
 import "./ISmartVaultManager.sol";
 
+/* ========== STRUCTS ========== */
+
 /**
  * @notice Information needed to make a swap of assets.
  * @custom:member swapTarget Contract executing the swap.
@@ -17,7 +19,28 @@ struct SwapInfo {
     bytes swapCallData;
 }
 
+/* ========== ERRORS ========== */
+
+/**
+ * @notice Used when trying to do a swap via an exchange that is not allowed to execute a swap.
+ * @param exchange Exchange used.
+ */
+error ExchangeNotAllowed(address exchange);
+
+/* ========== INTERFACES ========== */
+
 interface ISwapper {
+    /* ========== EVENTS ========== */
+
+    /**
+     * @notice Emitted when the exchange allowlist is updated.
+     * @param exchange Exchange that was updated.
+     * @param isAllowed Whether the exchange is allowed to be used in a swap or not after the update.
+     */
+    event ExchangeAllowlistUpdated(address indexed exchange, bool isAllowed);
+
+    /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
+
     /**
      * @notice Performs a swap of tokens with external contracts.
      * - deposit tokens into the swapper contract
@@ -28,4 +51,23 @@ interface ISwapper {
      * @param receiver Receiver of unswapped tokens.
      */
     function swap(address[] calldata tokens, SwapInfo[] calldata swapInfo, address receiver) external;
+
+    /**
+     * @notice Updates list of exchanges that can be used in a swap.
+     * @dev Requirements:
+     *   - can only be called by user granted ROLE_SWAPPER_ADMIN
+     *   - exchanges and allowed arrays need to be of same length
+     * @param exchanges Addresses of exchanges.
+     * @param allowed Whether an exchange is allowed to be used in a swap.
+     */
+    function updateExchangeAllowlist(address[] calldata exchanges, bool[] calldata allowed) external;
+
+    /* ========== EXTERNAL VIEW FUNCTIONS ========== */
+
+    /**
+     * @notice Checks if an exchange is allowed to be used in a swap.
+     * @param exchange Exchange to check.
+     * @return isAllowed True if the exchange is allowed to be used in a swap, false otherwise.
+     */
+    function isExchangeAllowed(address exchange) external view returns (bool isAllowed);
 }

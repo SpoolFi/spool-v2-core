@@ -47,7 +47,7 @@ contract NftGateGuardDemoTest is TestFixture {
         }
 
         MockStrategy strategy =
-            new MockStrategy("Strategy", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
+            new MockStrategy("Strategy", strategyRegistry, assetGroupRegistry, accessControl, swapper);
         {
             uint256[] memory strategyRatios = new uint256[](1);
             strategyRatios[0] = 1_000;

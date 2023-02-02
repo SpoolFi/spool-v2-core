@@ -53,17 +53,17 @@ contract IntegrationTestFixture is TestFixture {
         assetGroupRegistry.allowTokenBatch(assetGroup);
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         uint256[] memory strategyRatios = Arrays.toArray(1000, 71, 4300);
-        strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
+        strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
         strategyA.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyA));
 
         strategyRatios = Arrays.toArray(1000, 74, 4500);
-        strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
+        strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
         strategyB.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyB));
 
         strategyRatios = Arrays.toArray(1000, 76, 4600);
-        strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
+        strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
         strategyC.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyC));
 

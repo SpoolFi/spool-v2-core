@@ -77,3 +77,8 @@ bytes32 constant ROLE_UNPAUSER = keccak256("SYSTEM_UNPAUSER");
  * @dev Grants permission to manage rewards payment pool.
  */
 bytes32 constant ROLE_REWARD_POOL_ADMIN = keccak256("ROLE_REWARD_POOL_ADMIN");
+
+/**
+ * @dev Grants permission to manage the swapper.
+ */
+bytes32 constant ROLE_SWAPPER_ADMIN = keccak256("SWAPPER_ADMIN");

@@ -57,7 +57,7 @@ contract DeploySpool is Script {
         spoolAccessControl = SpoolAccessControl(address(proxy));
         spoolAccessControl.initialize();
 
-        Swapper swapperImpl = new Swapper();
+        Swapper swapperImpl = new Swapper(spoolAccessControl);
         proxy = new TransparentUpgradeableProxy(address(swapperImpl), address(proxyAdmin), "");
         swapper = Swapper(address(proxy));
 

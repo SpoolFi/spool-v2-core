@@ -49,7 +49,7 @@ contract DhwTest is TestFixture {
         assetGroupRegistry.allowToken(address(tokenC));
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
-        strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
+        strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
         uint256[] memory strategyRatios = new uint256[](3);
         strategyRatios[0] = 1000;
         strategyRatios[1] = 71;
@@ -59,13 +59,13 @@ contract DhwTest is TestFixture {
 
         strategyRatios[1] = 74;
         strategyRatios[2] = 4500;
-        strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
+        strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
         strategyB.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyB));
 
         strategyRatios[1] = 76;
         strategyRatios[2] = 4600;
-        strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
+        strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
         strategyC.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyC));
 

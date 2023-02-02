@@ -201,12 +201,9 @@ contract SmartVaultManagerTest is TestFixture {
     }
 
     function _createStrategies() private returns (address[] memory, uint256) {
-        MockStrategy strategy1 =
-            new MockStrategy("A", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
-        MockStrategy strategy2 =
-            new MockStrategy("B", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
-        MockStrategy strategy3 =
-            new MockStrategy("C", strategyRegistry, assetGroupRegistry, accessControl, new Swapper());
+        MockStrategy strategy1 = new MockStrategy("A", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+        MockStrategy strategy2 = new MockStrategy("B", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+        MockStrategy strategy3 = new MockStrategy("C", strategyRegistry, assetGroupRegistry, accessControl, swapper);
 
         address[] memory assetGroup = new address[](2);
         assetGroup[0] = address(token1);

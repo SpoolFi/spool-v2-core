@@ -54,4 +54,25 @@ library Arrays {
         result[2] = x3;
         return result;
     }
+
+    function toArray(bool x1) public pure returns (bool[] memory) {
+        bool[] memory result = new bool[](1);
+        result[0] = x1;
+        return result;
+    }
+
+    function toArray(bool x1, bool x2) public pure returns (bool[] memory) {
+        bool[] memory result = new bool[](2);
+        result[0] = x1;
+        result[1] = x2;
+        return result;
+    }
+
+    function toArray(bool x1, bool x2, bool x3) public pure returns (bool[] memory) {
+        bool[] memory result = new bool[](3);
+        result[0] = x1;
+        result[1] = x2;
+        result[2] = x3;
+        return result;
+    }
 }

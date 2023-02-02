@@ -18,14 +18,13 @@ import "./mocks/MockWeth.sol";
 contract DepositSwapIntegrationTest is TestFixture {
     address private alice;
     address private bob;
+    address swapperAdmin;
 
     MockToken private tokenA;
     MockToken private tokenB;
     MockToken private tokenC;
 
     IWETH9 private weth;
-
-    Swapper private swapper;
 
     DepositSwap depositSwap;
 
@@ -34,6 +33,9 @@ contract DepositSwapIntegrationTest is TestFixture {
 
         alice = address(0xa);
         bob = address(0xb);
+        swapperAdmin = address(0xc);
+
+        accessControl.grantRole(ROLE_SWAPPER_ADMIN, swapperAdmin);
 
         tokenA = new MockToken("Token A", "TA");
         tokenB = new MockToken("Token B", "TB");
@@ -43,8 +45,6 @@ contract DepositSwapIntegrationTest is TestFixture {
         assetGroupRegistry.allowToken(address(tokenB));
         assetGroupRegistry.allowToken(address(tokenC));
         assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(tokenA), address(tokenB), address(tokenC)));
-
-        swapper = new Swapper();
 
         weth = IWETH9(address(new WETH9()));
 
@@ -111,6 +111,12 @@ contract DepositSwapIntegrationTest is TestFixture {
         tokenB.mint(address(exchangeBC), 1000 ether);
         tokenC.mint(address(exchangeBC), 1000 ether);
 
+        vm.startPrank(swapperAdmin);
+        swapper.updateExchangeAllowlist(
+            Arrays.toArray(address(exchangeAC), address(exchangeBC)), Arrays.toArray(true, true)
+        );
+        vm.stopPrank();
+
         priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenB), 1 * USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenC), 2 * USD_DECIMALS_MULTIPLIER);
@@ -160,6 +166,10 @@ contract DepositSwapIntegrationTest is TestFixture {
         tokenA.mint(address(exchangeAB), 1000 ether);
         tokenB.mint(address(exchangeAB), 1000 ether);
 
+        vm.startPrank(swapperAdmin);
+        swapper.updateExchangeAllowlist(Arrays.toArray(address(exchangeAB)), Arrays.toArray(true));
+        vm.stopPrank();
+
         priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenB), 1 * USD_DECIMALS_MULTIPLIER);
 
@@ -204,6 +214,12 @@ contract DepositSwapIntegrationTest is TestFixture {
         tokenA.mint(address(exchangeWethA), 1000 ether);
         MockExchange exchangeWethB = new MockExchange(IERC20(address(weth)), tokenB, priceFeedManager);
         tokenB.mint(address(exchangeWethB), 1000 ether);
+
+        vm.startPrank(swapperAdmin);
+        swapper.updateExchangeAllowlist(
+            Arrays.toArray(address(exchangeWethA), address(exchangeWethB)), Arrays.toArray(true, true)
+        );
+        vm.stopPrank();
 
         priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenB), 1 * USD_DECIMALS_MULTIPLIER);
