@@ -80,7 +80,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     mapping(address => uint256) internal _smartVaultRiskAppetites;
 
     /// @notice Smart vault fees
-    mapping(address => uint256) internal _smartVaultFees;
+    mapping(address => SmartVaultFees) internal _smartVaultFees;
 
     /// @notice Smart Vault strategy allocations
     mapping(address => mapping(uint256 => uint256)) internal _smartVaultAllocations;
@@ -334,7 +334,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             revert DepositFeeTooLarge(registrationForm.depositFeePct);
         }
 
-        _smartVaultFees[smartVault] = (registrationForm.managementFeePct << 128) + registrationForm.depositFeePct;
+        _smartVaultFees[smartVault] = SmartVaultFees(registrationForm.managementFeePct, registrationForm.depositFeePct);
         _smartVaultStrategies[smartVault] = registrationForm.strategies;
         _smartVaultRiskProviders[smartVault] = registrationForm.riskProvider;
         // set risk appetite
@@ -436,7 +436,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256[] memory currentStrategyIndexes = _strategyRegistry.currentIndex(strategies_);
         bag.vaultOwner = _accessControl.smartVaultOwner(smartVault);
         bag.totalSVTs = ISmartVault(smartVault).totalSupply() - ISmartVault(smartVault).balanceOf(bag.vaultOwner);
-        (bag.mgmtFeePct, bag.depositFeePct) = _getSmartVaultFees(smartVault);
+        SmartVaultFees memory fees = _smartVaultFees[smartVault];
         bag.flushIndex = _flushIndexesToSync[smartVault];
 
         while (bag.flushIndex < _flushIndexes[smartVault]) {
@@ -457,12 +457,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             _withdrawalManager.syncWithdrawals(smartVault, bag.flushIndex, strategies_, indexes);
             syncResult = _depositManager.syncDeposits(smartVault, bag.flushIndex, strategies_, indexes, tokens);
 
-            if (bag.mgmtFeePct > 0) {
+            if (fees.managementFeePct > 0) {
                 bag.feeSVTs += _calculateManagementFees(
                     _lastDhwTimestampSynced[smartVault],
                     syncResult.lastDhwTimestamp,
                     bag.mintedSVTs + bag.totalSVTs,
-                    bag.mgmtFeePct
+                    fees.managementFeePct
                 );
             }
 
@@ -473,8 +473,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             bag.flushIndex++;
         }
 
-        if (bag.depositFeePct > 0 && bag.mintedSVTs > 0) {
-            bag.feeSVTs += bag.mintedSVTs * bag.depositFeePct / FULL_PERCENT;
+        if (fees.depositFeePct > 0 && bag.mintedSVTs > 0) {
+            bag.feeSVTs += bag.mintedSVTs * fees.depositFeePct / FULL_PERCENT;
         }
 
         if (bag.feeSVTs > 0) {
@@ -574,7 +574,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         bag.vaultOwner = _accessControl.smartVaultOwner(smartVault);
         vaultOwnerSVTs = ISmartVault(smartVault).balanceOf(bag.vaultOwner);
         bag.totalSVTs = ISmartVault(smartVault).totalSupply() - vaultOwnerSVTs;
-        (bag.mgmtFeePct, bag.depositFeePct) = _getSmartVaultFees(smartVault);
+        SmartVaultFees memory fees = _smartVaultFees[smartVault];
 
         StrategyAtIndex[] memory dhwStates;
 
@@ -590,9 +590,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             DepositSyncResult memory syncResult =
                 _depositManager.syncDepositsSimulate(smartVault, bag.flushIndex, strategies_, tokens, dhwStates);
 
-            if (bag.mgmtFeePct > 0) {
+            if (fees.managementFeePct > 0) {
                 bag.feeSVTs += _calculateManagementFees(
-                    lastDhwSyncedTimestamp, syncResult.lastDhwTimestamp, bag.totalSVTs + bag.mintedSVTs, bag.mgmtFeePct
+                    lastDhwSyncedTimestamp,
+                    syncResult.lastDhwTimestamp,
+                    bag.totalSVTs + bag.mintedSVTs,
+                    fees.managementFeePct
                 );
             }
 
@@ -602,8 +605,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             bag.flushIndex++;
         }
 
-        if (bag.depositFeePct > 0 && bag.mintedSVTs > 0) {
-            bag.feeSVTs += bag.mintedSVTs * bag.depositFeePct / FULL_PERCENT;
+        if (fees.depositFeePct > 0 && bag.mintedSVTs > 0) {
+            bag.feeSVTs += bag.mintedSVTs * fees.depositFeePct / FULL_PERCENT;
         }
 
         return (bag.totalSVTs, vaultOwnerSVTs, bag.mintedSVTs, bag.feeSVTs);
@@ -614,14 +617,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      */
     function _getVaultTotalUsdValue(address smartVault) internal view returns (uint256) {
         return SpoolUtils.getVaultTotalUsdValue(smartVault, _smartVaultStrategies[smartVault]);
-    }
-
-    /**
-     * @dev Returns vault management and deposit fee.
-     */
-    function _getSmartVaultFees(address smartVault) internal view returns (uint256 mgmtFeePct, uint256 depositFeePct) {
-        uint256 fees = _smartVaultFees[smartVault];
-        return (fees >> 128, (fees << 128) >> 128);
     }
 
     /**

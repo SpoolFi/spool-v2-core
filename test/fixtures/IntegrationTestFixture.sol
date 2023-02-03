@@ -79,7 +79,7 @@ contract IntegrationTestFixture is TestFixture {
         createVault(0, 0);
     }
 
-    function createVault(uint256 managementFeePct, uint256 depositFeePct) internal {
+    function createVault(uint16 managementFeePct, uint16 depositFeePct) internal {
         address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
         SmartVaultFactory smartVaultFactory = new SmartVaultFactory(
             smartVaultImplementation,

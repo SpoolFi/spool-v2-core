@@ -73,18 +73,21 @@ struct SmartVaultRegistrationForm {
     address[] strategies;
     address riskProvider;
     uint256 riskAppetite;
-    uint256 managementFeePct;
-    uint256 depositFeePct;
+    uint16 managementFeePct;
+    uint16 depositFeePct;
 }
 
 struct VaultSyncBag {
     address vaultOwner;
     uint256 totalSVTs;
-    uint256 mgmtFeePct;
-    uint256 depositFeePct;
     uint256 feeSVTs;
     uint256 mintedSVTs;
     uint256 flushIndex;
+}
+
+struct SmartVaultFees {
+    uint16 managementFeePct;
+    uint16 depositFeePct;
 }
 
 /* ========== INTERFACES ========== */

@@ -39,8 +39,8 @@ struct SmartVaultSpecification {
     RequestType[] actionRequestTypes;
     GuardDefinition[][] guards;
     RequestType[] guardRequestTypes;
-    uint256 managementFeePct;
-    uint256 depositFeePct;
+    uint16 managementFeePct;
+    uint16 depositFeePct;
 }
 
 /* ========== CONTRACTS ========== */
