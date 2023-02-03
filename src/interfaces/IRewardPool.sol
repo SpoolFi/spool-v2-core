@@ -43,7 +43,7 @@ interface IRewardPool {
     /**
      * @notice Return true if leaf has already been claimed
      */
-    function leafsClaimed(bytes32 leaf) external view returns (bool);
+    function isLeafClaimed(bytes32 leaf) external view returns (bool);
 
     /**
      * @notice Current cycle count

@@ -11,7 +11,7 @@ contract RewardPool is IRewardPool, SpoolAccessControllable {
 
     mapping(uint256 => bytes32) public roots;
 
-    mapping(bytes32 => bool) public leafsClaimed;
+    mapping(bytes32 => bool) public isLeafClaimed;
 
     uint256 public cycleCount;
 
@@ -45,7 +45,7 @@ contract RewardPool is IRewardPool, SpoolAccessControllable {
     function claim(ClaimRequest[] calldata data) public {
         for (uint256 i = 0; i < data.length; i++) {
             bytes32 leaf = _getLeaf(data[i], msg.sender);
-            if (leafsClaimed[leaf]) {
+            if (isLeafClaimed[leaf]) {
                 revert ProofAlreadyClaimed(i);
             }
 
@@ -53,7 +53,7 @@ contract RewardPool is IRewardPool, SpoolAccessControllable {
                 revert InvalidProof(i);
             }
 
-            leafsClaimed[leaf] = true;
+            isLeafClaimed[leaf] = true;
             IERC20(data[i].token).safeTransfer(msg.sender, data[i].amount);
         }
     }
