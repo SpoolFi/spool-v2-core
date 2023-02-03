@@ -47,6 +47,11 @@ error ManagementFeeTooLarge(uint256 mgmtFeePct);
  */
 error NotSameAssetGroup();
 
+/**
+ * @notice Used when strategies provided for reallocation are invalid.
+ */
+error InvalidStrategies();
+
 /* ========== STRUCTS ========== */
 
 /**
@@ -77,7 +82,7 @@ interface ISmartVaultReallocator {
 
     function assetGroupId(address smartVault) external view returns (uint256 assetGroupId_);
 
-    function reallocate(address[] calldata smartVaults) external;
+    function reallocate(address[] calldata smartVaults, address[] calldata strategies_) external;
 }
 
 interface ISmartVaultBalance {

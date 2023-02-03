@@ -48,12 +48,8 @@ contract SmartVaultManagerHarness is SmartVaultManager {
         priceFeedManager_)
     {}
 
-    function exposed_reallocationMapStrategies(address[] calldata smartVaults) external returns (uint256[][] memory, uint256) {
-        return _reallocationMapStrategies(smartVaults);
-    }
-
-    function exposed_reallocationStrategies(uint256 numStrategies) external view returns (address[] memory) {
-        return _reallocationStrategies.toArray(numStrategies);
+    function exposed_reallocationMapStrategies(address[] calldata smartVaults, address[] calldata strategies_) external view returns (uint256[][] memory) {
+        return _reallocationMapStrategies(smartVaults, strategies_);
     }
 
     function exposed_reallocationCalculateReallocation(address smartVault) external returns (uint256[][] memory) {
@@ -226,67 +222,117 @@ contract SmartVaultManagerReallocationTest is Test {
 
         // check strategy mapping for smart vaults: A
         uint256[][] memory strategyMapping;
-        uint256 numStrategies;
-        address[] memory strategies;
 
-        (strategyMapping, numStrategies) = smartVaultManager.exposed_reallocationMapStrategies(
-            Arrays.toArray(address(smartVaultA))
+        strategyMapping = smartVaultManager.exposed_reallocationMapStrategies(
+            Arrays.toArray(address(smartVaultA)),
+            Arrays.toArray(address(strategyA))
         );
-        assertEq(numStrategies, 1);
         assertEq(strategyMapping.length, 1);
         assertEq(strategyMapping[0], Arrays.toArray(0));
 
-        strategies = smartVaultManager.exposed_reallocationStrategies(numStrategies);
-        assertEq(strategies, Arrays.toArray(address(strategyA)));
-
         // check strategy mapping for smart vaults: A, B
-        (strategyMapping, numStrategies) = smartVaultManager.exposed_reallocationMapStrategies(
-            Arrays.toArray(address(smartVaultA), address(smartVaultB))
+        strategyMapping = smartVaultManager.exposed_reallocationMapStrategies(
+            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+            Arrays.toArray(address(strategyA), address(strategyB))
         );
-        assertEq(numStrategies, 2);
         assertEq(strategyMapping.length, 2);
         assertEq(strategyMapping[0], Arrays.toArray(0));
         assertEq(strategyMapping[1], Arrays.toArray(0, 1));
 
-        strategies = smartVaultManager.exposed_reallocationStrategies(numStrategies);
-        assertEq(strategies, Arrays.toArray(address(strategyA), address(strategyB)));
-
         // check strategy mapping for smart vaults: A, C
-        (strategyMapping, numStrategies) = smartVaultManager.exposed_reallocationMapStrategies(
-            Arrays.toArray(address(smartVaultA), address(smartVaultC))
+        strategyMapping = smartVaultManager.exposed_reallocationMapStrategies(
+            Arrays.toArray(address(smartVaultA), address(smartVaultC)),
+            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
         );
-        assertEq(numStrategies, 3);
         assertEq(strategyMapping.length, 2);
         assertEq(strategyMapping[0], Arrays.toArray(0));
         assertEq(strategyMapping[1], Arrays.toArray(1, 2));
 
-        strategies = smartVaultManager.exposed_reallocationStrategies(numStrategies);
-        assertEq(strategies, Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
-
         // check strategy mapping for smart vaults: B, C
-        (strategyMapping, numStrategies) = smartVaultManager.exposed_reallocationMapStrategies(
-            Arrays.toArray(address(smartVaultB), address(smartVaultC))
+        strategyMapping = smartVaultManager.exposed_reallocationMapStrategies(
+            Arrays.toArray(address(smartVaultB), address(smartVaultC)),
+            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
         );
-        assertEq(numStrategies, 3);
         assertEq(strategyMapping.length, 2);
         assertEq(strategyMapping[0], Arrays.toArray(0, 1));
         assertEq(strategyMapping[1], Arrays.toArray(1, 2));
 
-        strategies = smartVaultManager.exposed_reallocationStrategies(numStrategies);
-        assertEq(strategies, Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
-
         // check strategy mapping for smart vaults: A, B, C
-        (strategyMapping, numStrategies) = smartVaultManager.exposed_reallocationMapStrategies(
-            Arrays.toArray(address(smartVaultA), address(smartVaultB), address(smartVaultC))
+        strategyMapping = smartVaultManager.exposed_reallocationMapStrategies(
+            Arrays.toArray(address(smartVaultA), address(smartVaultB), address(smartVaultC)),
+            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
         );
-        assertEq(numStrategies, 3);
         assertEq(strategyMapping.length, 3);
         assertEq(strategyMapping[0], Arrays.toArray(0));
         assertEq(strategyMapping[1], Arrays.toArray(0, 1));
         assertEq(strategyMapping[2], Arrays.toArray(1, 2));
+    }
 
-        strategies = smartVaultManager.exposed_reallocationStrategies(numStrategies);
-        assertEq(strategies, Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
+    function test_reallocationMapStrategies_shouldRevertWhenProvidedStrategiesAreNotOk() public {
+        // setup asset group with TokenA
+        uint256 assetGroupId;
+        {
+            assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(tokenA)));
+
+            priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
+        }
+
+        // setup strategies
+        MockStrategy strategyA;
+        MockStrategy strategyB;
+        MockStrategy strategyC;
+        {
+            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyRegistry.registerStrategy(address(strategyA));
+
+            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyRegistry.registerStrategy(address(strategyB));
+
+            strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyC.initialize(assetGroupId, Arrays.toArray(1));
+            strategyRegistry.registerStrategy(address(strategyC));
+        }
+
+        // setup smart vaults
+        ISmartVault smartVaultA;
+        {
+            SmartVaultSpecification memory specification = SmartVaultSpecification({
+                smartVaultName: "SmartVaultA",
+                assetGroupId: assetGroupId,
+                actions: new IAction[](0),
+                actionRequestTypes: new RequestType[](0),
+                guards: new GuardDefinition[][](0),
+                guardRequestTypes: new RequestType[](0),
+                strategies: Arrays.toArray(address(strategyA), address(strategyB)),
+                riskAppetite: 4,
+                riskProvider: riskProvider,
+                managementFeePct: 0
+            });
+            vm.mockCall(
+                address(riskManager),
+                abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+                abi.encode(Arrays.toArray(100_00))
+            );
+            smartVaultA = smartVaultFactory.deploySmartVault(specification);
+        }
+
+        // should revert when too few strategies are provided
+        address[] memory smartVaults = Arrays.toArray(address(smartVaultA));
+        address[] memory strategies = Arrays.toArray(address(strategyA));
+        vm.expectRevert(InvalidStrategies.selector);
+        smartVaultManager.exposed_reallocationMapStrategies(smartVaults, strategies);
+
+        // should revert when too many strategies are provided
+        strategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
+        vm.expectRevert(InvalidStrategies.selector);
+        smartVaultManager.exposed_reallocationMapStrategies(smartVaults, strategies);
+
+        // should revert when a strategy is doubled
+        strategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyA));
+        vm.expectRevert(InvalidStrategies.selector);
+        smartVaultManager.exposed_reallocationMapStrategies(smartVaults, strategies);
     }
 
     function test_reallocationCalculateReallocation_shouldCalculateReallocation() public {

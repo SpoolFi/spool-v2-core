@@ -237,7 +237,7 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA)));
+        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA)), Arrays.toArray(address(strategyA), address(strategyB)));
 
         // check final state
         // - assets were redistributed between strategies
@@ -387,7 +387,7 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA)));
+        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
 
         // check final state
         // - assets were redistributed between strategies
@@ -540,7 +540,7 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA)));
+        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
 
         // check final state
         // - assets were redistributed between strategies
@@ -693,7 +693,7 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA)));
+        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
 
         // check final state
         // - assets were redistributed between strategies
@@ -870,7 +870,7 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)));
+        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
 
         // check final state
         // - assets were redistributed between strategies
@@ -1050,7 +1050,7 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)));
+        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
 
         // check final state
         // - assets were redistributed between strategies
@@ -1230,7 +1230,7 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)));
+        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
 
         // check final state
         // - assets were redistributed between strategies
@@ -1414,7 +1414,7 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)));
+        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
 
         // check final state
         // - assets were redistributed between strategies
@@ -1600,7 +1600,7 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)));
+        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
 
         // check final state
         // - assets were redistributed between strategies
@@ -1786,7 +1786,7 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)));
+        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
 
         // check final state
         // - assets were redistributed between strategies

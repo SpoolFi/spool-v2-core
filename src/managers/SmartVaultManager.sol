@@ -107,8 +107,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      */
     mapping(address => uint256) _lastDhwTimestampSynced;
 
-    mapping(uint256 => address) internal _reallocationStrategies;
-
     constructor(
         ISpoolAccessControl accessControl_,
         IAssetGroupRegistry assetGroupRegistry_,
@@ -376,7 +374,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     }
 
     // TOOD: access control - ROLE_REALLOCATOR
-    function reallocate(address[] calldata smartVaults) external whenNotPaused {
+    function reallocate(address[] calldata smartVaults, address[] calldata strategies_) external whenNotPaused {
         // console.log("vv SmartVaultManager::reallocate vv");
         if (smartVaults.length == 0) {
             // check if there is anything to reallocate
@@ -398,7 +396,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(assetGroup, _priceFeedManager);
 
         // figure out which strategies are included in the reallocation
-        (uint256[][] memory strategyMapping, uint256 numStrategies) = _reallocationMapStrategies(smartVaults);
+        uint256[][] memory strategyMapping = _reallocationMapStrategies(smartVaults, strategies_);
         // console.log("  strategyMapping");
         // for (uint256 i = 0; i < strategyMapping.length; ++i) {
         //     string memory map = string.concat("    ", Strings.toString(i), ":  ");
@@ -416,7 +414,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         // build reallocation table
-        uint256[][][] memory reallocationTable = _reallocationBuildReallocationTable(strategyMapping, numStrategies, reallocations);
+        uint256[][][] memory reallocationTable = _reallocationBuildReallocationTable(strategyMapping, strategies_.length, reallocations);
         // console.log("  reallocationTable");
         // for (uint256 i = 0; i < numStrategies; ++i) {
         //     for (uint256 j = 0; j < numStrategies; ++j) {
@@ -426,7 +424,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         // do the reallocation
         reallocationTable = _strategyRegistry.reallocationReallocate(
-            _reallocationStrategies.toArray(numStrategies),
+            strategies_,
             reallocationTable,
             assetGroup,
             exchangeRates
@@ -622,86 +620,60 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return results;
     }
 
-    function _reallocationMapStrategies(address[] calldata smartVaults) internal returns (uint256[][] memory, uint256) {
-        // We want to build a list of all strategies involved in this reallocation,
-        // and a mapping between smart vault's strategy list and this reallocaiton
-        // strategy list.
+    function _reallocationMapStrategies(address[] calldata smartVaults, address[] calldata strategies_) internal view returns (uint256[][] memory) {
+        // We want to validate that the provided strategies represent a set of all the
+        // strategies used by the smart vaults being reallocated. At the same time we
+        // also build a mapping between strategies as listed on each smart vault and
+        // the provided strategies.
 
-        // Initially we have no strategies.
-        // We will reuse the _reallocationStrategies storage between reallocations.
-        uint256 numStrategies = 0;
+        bool[] memory strategyMatched = new bool[](strategies_.length);
         uint256[][] memory strategyMapping = new uint256[][](smartVaults.length);
 
-        // Extract declarations from the loops.
-        address[] storage strategies_;
-        uint256 strategiesLength;
-        uint256[] memory smartVaultStrategyMapping;
-        address strategy;
-        bool found;
-
-        // We can handle first smart vault more efficiently since we know that
-        // its strategies are not in the list yet.
-        {
+        // Build a mapping for each smart vault and validate that all strategies are
+        // present in the provided list.
+        for (uint256 i; i < smartVaults.length; ++i) {
             // Get strategies for this smart vault.
-            strategies_ = _smartVaultStrategies[smartVaults[0]];
-            strategiesLength = strategies_.length;
-            // Mapping from smart vault's strategies to all strategies.
-            smartVaultStrategyMapping = new uint256[](strategiesLength);
+            address[] storage smartVaultStrategies = _smartVaultStrategies[smartVaults[i]];
+            uint256 smartVaultStrategiesLength = smartVaultStrategies.length;
+            // Mapping from this smart vault's strategies to provided strategies.
+            strategyMapping[i] = new uint256[](smartVaultStrategiesLength);
 
             // Loop over smart vault's strategies.
-            for (uint256 j = 0; j < strategiesLength; ++j) {
-                // Add strategy to list of all strategies.
-                _reallocationStrategies[j] = strategies_[j];
-                // Add index to smart vault's mapping.
-                smartVaultStrategyMapping[j] = j;
-            }
+            for (uint256 j; j < smartVaultStrategiesLength; ++j) {
+                address strategy = smartVaultStrategies[j];
+                bool found = false;
 
-            // Update number of all strategies.
-            numStrategies = strategiesLength;
-            // Store smart vault's mapping.
-            strategyMapping[0] = smartVaultStrategyMapping;
-        }
-
-        // Loop over other smart vaults.
-        for (uint256 i = 1; i < smartVaults.length; ++i) {
-            // Get strategies for this smart vault.
-            strategies_ = _smartVaultStrategies[smartVaults[i]];
-            strategiesLength = strategies_.length;
-            // Mapping from smart vault's strategies to all strategies.
-            smartVaultStrategyMapping = new uint256[](strategiesLength);
-
-            // Loop over smart vault's strategies.
-            for (uint256 j = 0; j < strategiesLength; ++j) {
-                strategy = strategies_[j];
-                found = false;
-
-                // Try to find the strategy in list of all strategies.
-                for (uint256 k = 0; k < numStrategies; ++k) {
-                    if (_reallocationStrategies[k] == strategy) {
-                        // Add index to smart vault's mapping.
-                        smartVaultStrategyMapping[j] = k;
-
-                        // Break the loop.
+                // Try to find the strategy in the provided list of strategies.
+                for (uint256 k; k < strategies_.length; ++k) {
+                    if (strategies_[k] == strategy) {
+                        // Match found.
                         found = true;
+                        strategyMatched[k] = true;
+                        // Add entry to the strategy mapping.
+                        strategyMapping[i][j] = k;
+
                         break;
                     }
                 }
 
                 if (!found) {
-                    // If strategy was not found in list of all strategies
-                    // add index to smart vault's mapping
-                    smartVaultStrategyMapping[j] = numStrategies;
-                    // add it to the list of all strategies
-                    _reallocationStrategies[numStrategies] = strategy;
-                    ++numStrategies;
+                    // If a smart vault's strategy was not found in the provided list
+                    // of strategies, this means that the provided list is invalid.
+                    revert InvalidStrategies();
                 }
             }
-
-            // Store smart vault's mapping.
-            strategyMapping[i] = smartVaultStrategyMapping;
         }
 
-        return (strategyMapping, numStrategies);
+        // Validate that each strategy in the provided list was matched at least once.
+        for (uint256 i; i < strategyMatched.length; ++i) {
+            if (!strategyMatched[i]) {
+                // If a strategy was not matched, this means that it is not used by any
+                // smart vault and should not be included in the list.
+                revert InvalidStrategies();
+            }
+        }
+
+        return strategyMapping;
     }
 
     /**
