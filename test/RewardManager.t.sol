@@ -43,7 +43,7 @@ contract RewardManagerTests is Test {
         SmartVault smartVault_ = SmartVault(Clones.clone(smartVaultImplementation));
         smartVault_.initialize("SmartVault", assetGroupId);
 
-        rewardManager = new RewardManager(sac, assetGroupRegistry);
+        rewardManager = new RewardManager(sac, assetGroupRegistry, false);
         // NOTE: can use days keyword
         rewardDuration = SECONDS_IN_DAY * 10;
         smartVault = address(smartVault_);

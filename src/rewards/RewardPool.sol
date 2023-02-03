@@ -15,13 +15,31 @@ contract RewardPool is IRewardPool, SpoolAccessControllable {
 
     uint256 public cycleCount;
 
-    constructor(ISpoolAccessControl accessControl) SpoolAccessControllable(accessControl) {}
+    bool public allowUpdates;
+
+    constructor(ISpoolAccessControl accessControl, bool allowUpdates_) SpoolAccessControllable(accessControl) {
+        allowUpdates = allowUpdates_;
+    }
 
     function addTreeRoot(bytes32 root) external onlyRole(ROLE_REWARD_POOL_ADMIN, msg.sender) {
         cycleCount++;
         roots[cycleCount] = root;
 
-        emit PoolCycleIncreased(cycleCount);
+        emit PoolRootAdded(cycleCount);
+    }
+
+    function updateTreeRoot(bytes32 root, uint256 cycle) external onlyRole(ROLE_REWARD_POOL_ADMIN, msg.sender) {
+        if (!allowUpdates) {
+            revert RootUpdatesNotAllowed();
+        }
+
+        if (cycle > cycleCount) {
+            revert InvalidCycle();
+        }
+
+        roots[cycle] = root;
+
+        emit PoolRootUpdated(cycle);
     }
 
     function claim(ClaimRequest[] calldata data) public {

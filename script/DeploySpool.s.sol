@@ -119,7 +119,7 @@ contract DeploySpool is Script {
         proxy = new TransparentUpgradeableProxy(address(smartVaultManagerImpl), address(proxyAdmin), "");
         smartVaultManager = SmartVaultManager(address(proxy));
 
-        RewardManager rewardManagerImpl = new RewardManager(spoolAccessControl, assetGroupRegistry);
+        RewardManager rewardManagerImpl = new RewardManager(spoolAccessControl, assetGroupRegistry, false);
         proxy = new TransparentUpgradeableProxy(address(rewardManagerImpl), address(proxyAdmin), "");
         rewardManager = RewardManager(address(proxy));
 

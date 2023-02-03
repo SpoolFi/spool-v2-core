@@ -34,9 +34,11 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuard {
 
     mapping(address => mapping(IERC20 => bool)) tokenBlacklist;
 
-    constructor(ISpoolAccessControl spoolAccessControl, IAssetGroupRegistry assetGroupRegistry_)
-        RewardPool(spoolAccessControl)
-    {
+    constructor(
+        ISpoolAccessControl spoolAccessControl,
+        IAssetGroupRegistry assetGroupRegistry_,
+        bool allowPoolRootUpdates
+    ) RewardPool(spoolAccessControl, allowPoolRootUpdates) {
         _assetGroupRegistry = assetGroupRegistry_;
     }
 

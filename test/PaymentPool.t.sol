@@ -7,7 +7,7 @@ import "../src/rewards/RewardManager.sol";
 import "./mocks/MockToken.sol";
 
 contract RewardPoolTest is Test {
-    RewardPool paymentPool;
+    IRewardPool paymentPool;
     MockToken token;
     bytes32 treeRoot = 0x77e3bb058cf4f611bb9c8a2f5e920ff8b745f893c484b030b2c83106d5290dbe;
     address alice = 0x1111111111111111111111111111111111111111;
@@ -17,7 +17,7 @@ contract RewardPoolTest is Test {
         accessControl.initialize();
         accessControl.grantRole(ROLE_REWARD_POOL_ADMIN, address(this));
 
-        paymentPool = new RewardPool(accessControl);
+        paymentPool = new RewardPool(accessControl, true);
         token = new MockToken("A", "A");
         assertEq(address(token), 0xF62849F9A0B5Bf2913b396098F7c7019b51A820a);
 
@@ -26,6 +26,26 @@ contract RewardPoolTest is Test {
 
     function test_addRoot() public {
         paymentPool.addTreeRoot(treeRoot);
+    }
+
+    function test_updateRoot_success() public {
+        bytes32 newRoot = 0x77e3bb058cf4f611bb9c8a2f5e920ff8b745f893c484b030b2c83106d0090000;
+        paymentPool.addTreeRoot(treeRoot);
+        paymentPool.updateTreeRoot(newRoot, 1);
+
+        assertEq(paymentPool.roots(1), newRoot);
+    }
+
+    function test_updateRoot_revertInvalidCycle() public {
+        paymentPool.addTreeRoot(treeRoot);
+        vm.expectRevert(abi.encodeWithSelector(InvalidCycle.selector));
+        paymentPool.updateTreeRoot(treeRoot, 10);
+    }
+
+    function test_updateRoot_revertMissingRole() public {
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_REWARD_POOL_ADMIN, alice));
+        paymentPool.updateTreeRoot(treeRoot, 10);
     }
 
     function test_addRoot_revertMissingRole() public {

@@ -11,6 +11,8 @@ struct ClaimRequest {
 
 error InvalidProof(uint256 idx);
 error ProofAlreadyClaimed(uint256 idx);
+error RootUpdatesNotAllowed();
+error InvalidCycle();
 
 interface IRewardPool {
     /**
@@ -22,6 +24,11 @@ interface IRewardPool {
      * @notice Add a Merkle tree root
      */
     function addTreeRoot(bytes32 root) external;
+
+    /**
+     * @notice Update existing root for a given cycle
+     */
+    function updateTreeRoot(bytes32 root, uint256 cycle) external;
 
     /**
      * @notice Verify a Merkle proof for given claim request
@@ -43,5 +50,11 @@ interface IRewardPool {
      */
     function cycleCount() external view returns (uint256);
 
-    event PoolCycleIncreased(uint256 cycle);
+    /**
+     * @notice Whether pool allows updating existing Merkle tree roots
+     */
+    function allowUpdates() external view returns (bool);
+
+    event PoolRootAdded(uint256 cycle);
+    event PoolRootUpdated(uint256 cycle);
 }
