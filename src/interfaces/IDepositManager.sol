@@ -27,7 +27,8 @@ struct DepositExtras {
 
 struct DepositSyncResult {
     uint256 mintedSVTs;
-    uint256 lastDhwTimestamp;
+    uint256 dhwTimestamp;
+    uint256 feeSVTs;
     uint256[] sstShares;
 }
 
@@ -72,33 +73,45 @@ interface IDepositManager {
      * @notice Simulate vault synchronization (i.e. DHW was completed, but vault wasn't synced yet)
      * @param smartVault Smart Vault address
      * @param flushIndex vault flush index for which to simulate sync
+     * @param lastDhwSyncedTimestamp timestamp of the last synced DHW up until now
+     * @param oldTotalSVTs amount of SVTs up until this simulation
      * @param strategies strategy addresses
      * @param assetGroup vault asset group token addresses
-     * @param strategyDhwState strategy state at time of DHW
+     * @param dhwIndexes DHW Indexes for given flush index
+     * @param fees smart vault fee configuration
      * @return number of SVTs minted and SSTs claimed
      */
     function syncDepositsSimulate(
         address smartVault,
         uint256 flushIndex,
+        uint256 lastDhwSyncedTimestamp,
+        uint256 oldTotalSVTs,
         address[] memory strategies,
         address[] memory assetGroup,
-        StrategyAtIndex[] memory strategyDhwState
+        uint256[] memory dhwIndexes,
+        SmartVaultFees memory fees
     ) external view returns (DepositSyncResult memory);
 
     /**
      * @notice Synchronize vault deposits for completed DHW runs
      * @param smartVault Smart Vault address
      * @param flushIndex index for which to synchronize deposits for
+     * @param lastDhwSyncedTimestamp timestamp of the last synced DHW up until now
+     * @param oldTotalSVTs amount of SVTs up until this sync
      * @param strategies vault strategy addresses
      * @param dhwIndexes dhw indexes for given flushIndex
      * @param assetGroup vault asset group token addresses
+     * @param fees smart vault fee configuration
      */
     function syncDeposits(
         address smartVault,
         uint256 flushIndex,
+        uint256 lastDhwSyncedTimestamp,
+        uint256 oldTotalSVTs,
         address[] memory strategies,
         uint256[] memory dhwIndexes,
-        address[] memory assetGroup
+        address[] memory assetGroup,
+        SmartVaultFees memory fees
     ) external returns (DepositSyncResult memory);
 
     /**
@@ -130,19 +143,15 @@ interface IDepositManager {
      * @param smartVaultAddress Smart Vault address
      * @param data NFT deposit NFT metadata
      * @param nftShares amount of NFT shares to burn for SVTs
+     * @param mintedSVTs amount of SVTs minted for this flush
      * @param tokens vault asset group addresses
-     * @param strategies vault strategy addresses
-     * @param dhwIndexes dhw indexes for given metadata.flushIndex
-     * @param allowSyncSimulate allow vault sync simulation, if it hasn't been executed yet
      */
     function getClaimedVaultTokensPreview(
         address smartVaultAddress,
         DepositMetadata memory data,
         uint256 nftShares,
-        address[] memory tokens,
-        address[] memory strategies,
-        uint256[] memory dhwIndexes,
-        bool allowSyncSimulate
+        uint256 mintedSVTs,
+        address[] memory tokens
     ) external view returns (uint256);
 
     /**

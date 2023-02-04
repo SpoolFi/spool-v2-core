@@ -77,14 +77,6 @@ struct SmartVaultRegistrationForm {
     uint16 depositFeePct;
 }
 
-struct VaultSyncBag {
-    address vaultOwner;
-    uint256 totalSVTs;
-    uint256 feeSVTs;
-    uint256 mintedSVTs;
-    uint256 flushIndex;
-}
-
 struct SmartVaultFees {
     uint16 managementFeePct;
     uint16 depositFeePct;

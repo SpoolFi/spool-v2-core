@@ -26,6 +26,7 @@ import "../interfaces/Constants.sol";
 /**
  * @notice Used when deposit is not made in correct asset ratio.
  */
+
 error IncorrectDepositRatio();
 
 /**
@@ -40,6 +41,12 @@ struct DepositQueryBag1 {
     uint256[] exchangeRates;
     uint256[] allocation;
     uint256[][] strategyRatios;
+}
+
+struct ClaimTokensLocalBag {
+    bytes[] metadata;
+    uint256 mintedSVTs;
+    DepositMetadata data;
 }
 
 contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositManager {
@@ -110,48 +117,6 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
     }
 
     /**
-     * @notice Calculates the SVT balance that is available to be claimed
-     * @dev Simulates vault sync, if it hasn't been invoked yet
-     */
-    function getClaimedVaultTokensPreview(
-        address smartVaultAddress,
-        DepositMetadata memory data,
-        uint256 nftShares,
-        address[] memory tokens,
-        address[] memory strategies,
-        uint256[] memory dhwIndexes,
-        bool allowSyncSimulate
-    ) public view returns (uint256) {
-        uint256[] memory totalDepositedAssets;
-        uint256[] memory exchangeRates;
-        uint256 depositedUsd;
-        uint256 totalDepositedUsd;
-        uint256 mintedSVTs;
-
-        mintedSVTs = _mintedVaultShares[smartVaultAddress][data.flushIndex];
-        totalDepositedAssets = _vaultDeposits[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
-        exchangeRates = _flushExchangeRates[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
-
-        if (mintedSVTs == 0 && allowSyncSimulate) {
-            // simulate vault sync
-            StrategyAtIndex[] memory dhwStates = _strategyRegistry.strategyAtIndexBatch(strategies, dhwIndexes);
-            DepositSyncResult memory syncResult =
-                syncDepositsSimulate(smartVaultAddress, data.flushIndex, strategies, tokens, dhwStates);
-            mintedSVTs = syncResult.mintedSVTs;
-        }
-
-        for (uint256 i = 0; i < data.assets.length; i++) {
-            depositedUsd += _priceFeedManager.assetToUsdCustomPrice(tokens[i], data.assets[i], exchangeRates[i]);
-            totalDepositedUsd +=
-                _priceFeedManager.assetToUsdCustomPrice(tokens[i], totalDepositedAssets[i], exchangeRates[i]);
-        }
-        uint256 claimedVaultTokens = mintedSVTs * depositedUsd / totalDepositedUsd;
-
-        // TODO: dust
-        return claimedVaultTokens * nftShares / NFT_MINTED_SHARES;
-    }
-
-    /**
      * @notice Burn deposit NFTs to claim SVTs
      * @param smartVault Vault address
      * @param nftIds NFTs to burn
@@ -169,8 +134,9 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         // - here we passing empty array as tokens
         _runGuards(smartVault, executor, executor, executor, nftIds, new address[](0), RequestType.BurnNFT);
 
+        ClaimTokensLocalBag memory bag;
         ISmartVault vault = ISmartVault(smartVault);
-        bytes[] memory metadata = vault.burnNFTs(executor, nftIds, nftAmounts);
+        bag.metadata = vault.burnNFTs(executor, nftIds, nftAmounts);
 
         uint256 claimedVaultTokens = 0;
         for (uint256 i = 0; i < nftIds.length; i++) {
@@ -180,15 +146,11 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
 
             // we can pass empty strategy array and empty DHW index array,
             // because vault should already be synced and _mintedVaultShares values available
-            claimedVaultTokens += getClaimedVaultTokensPreview(
-                smartVault,
-                abi.decode(metadata[i], (DepositMetadata)),
-                nftAmounts[i],
-                tokens,
-                new address[](0),
-                new uint256[](0),
-                false
-            );
+            bag.data = abi.decode(bag.metadata[i], (DepositMetadata));
+            bag.mintedSVTs = _mintedVaultShares[smartVault][bag.data.flushIndex];
+
+            claimedVaultTokens +=
+                getClaimedVaultTokensPreview(smartVault, bag.data, nftAmounts[i], bag.mintedSVTs, tokens);
         }
 
         // there will be some dust after all users claim SVTs
@@ -237,22 +199,23 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
     function syncDeposits(
         address smartVault,
         uint256 flushIndex,
+        uint256 lastDhwSyncedTimestamp,
+        uint256 oldTotalSVTs,
         address[] memory strategies,
         uint256[] memory dhwIndexes,
-        address[] memory assetGroup
+        address[] memory assetGroup,
+        SmartVaultFees memory fees
     ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (DepositSyncResult memory) {
-        StrategyAtIndex[] memory dhwStates = _strategyRegistry.strategyAtIndexBatch(strategies, dhwIndexes);
         // mint SVTs based on USD value of claimed SSTs
-        DepositSyncResult memory syncResult =
-            syncDepositsSimulate(smartVault, flushIndex, strategies, assetGroup, dhwStates);
+        DepositSyncResult memory syncResult = syncDepositsSimulate(
+            smartVault, flushIndex, lastDhwSyncedTimestamp, oldTotalSVTs, strategies, assetGroup, dhwIndexes, fees
+        );
 
         if (syncResult.mintedSVTs > 0) {
             _mintedVaultShares[smartVault][flushIndex] = syncResult.mintedSVTs;
             for (uint256 i = 0; i < strategies.length; i++) {
                 IStrategy(strategies[i]).claimShares(smartVault, syncResult.sstShares[i]);
             }
-
-            ISmartVault(smartVault).mint(smartVault, syncResult.mintedSVTs);
         }
 
         return syncResult;
@@ -261,28 +224,28 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
     function syncDepositsSimulate(
         address smartVault,
         uint256 flushIndex,
+        uint256 lastDhwSyncedTimestamp,
+        uint256 oldTotalSVTs,
         address[] memory strategies,
         address[] memory assetGroup,
-        StrategyAtIndex[] memory strategyDhwState
+        uint256[] memory dhwIndexes,
+        SmartVaultFees memory fees
     ) public view returns (DepositSyncResult memory) {
-        uint256[] memory sstShares = new uint256[](strategies.length);
-        uint256 currentDhwTimestamp = 0;
-
+        StrategyAtIndex[] memory strategyDhwState = _strategyRegistry.strategyAtIndexBatch(strategies, dhwIndexes);
+        DepositSyncResult memory result =
+            DepositSyncResult(0, lastDhwSyncedTimestamp, 0, new uint256[](strategies.length));
         for (uint256 i = 0; i < strategies.length; i++) {
             StrategyAtIndex memory atDhw = strategyDhwState[i];
 
-            if (atDhw.dhwTimestamp > currentDhwTimestamp) {
-                currentDhwTimestamp = atDhw.dhwTimestamp;
+            if (atDhw.dhwTimestamp > result.dhwTimestamp) {
+                result.dhwTimestamp = atDhw.dhwTimestamp;
             }
         }
 
         // skip if there were no deposits made
         if (_vaultDeposits[smartVault][flushIndex][0] == 0) {
-            return DepositSyncResult(0, currentDhwTimestamp, sstShares);
+            return result;
         }
-
-        // get vault's USD value before claiming SSTs
-        uint256 totalVaultValueBefore = SpoolUtils.getVaultTotalUsdValue(smartVault, strategies);
 
         // claim SSTs from each strategy
         for (uint256 i = 0; i < strategies.length; i++) {
@@ -295,22 +258,36 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
             uint256 strategyDepositedUsd =
                 _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, atDhw.assetsDeposited, atDhw.exchangeRates);
 
-            sstShares[i] = atDhw.sharesMinted * vaultDepositedUsd / strategyDepositedUsd;
+            result.sstShares[i] = atDhw.sharesMinted * vaultDepositedUsd / strategyDepositedUsd;
 
             // TODO: there might be dust left after all vaults are synced
         }
 
+        // get vault's USD value before claiming SSTs
+        uint256 totalVaultValueBefore = SpoolUtils.getVaultTotalUsdValue(smartVault, strategies);
         // mint SVTs based on USD value of claimed SSTs
-        uint256 totalVaultValueAfter = SpoolUtils.getVaultTotalUsdValue(smartVault, strategies, sstShares);
+        uint256 totalVaultValueAfter = SpoolUtils.getVaultTotalUsdValue(smartVault, strategies, result.sstShares);
         uint256 totalDepositedUsd = totalVaultValueAfter - totalVaultValueBefore;
-        uint256 svtsToMint;
         if (totalVaultValueBefore == 0) {
-            svtsToMint = totalDepositedUsd * INITIAL_SHARE_MULTIPLIER;
+            result.mintedSVTs = totalDepositedUsd * INITIAL_SHARE_MULTIPLIER;
         } else {
-            svtsToMint = totalDepositedUsd * ISmartVault(smartVault).totalSupply() / totalVaultValueBefore;
+            result.mintedSVTs = totalDepositedUsd * ISmartVault(smartVault).totalSupply() / totalVaultValueBefore;
         }
 
-        return DepositSyncResult({mintedSVTs: svtsToMint, lastDhwTimestamp: currentDhwTimestamp, sstShares: sstShares});
+        if (fees.depositFeePct > 0 && result.mintedSVTs > 0) {
+            uint256 depositFees = result.mintedSVTs * fees.depositFeePct / FULL_PERCENT;
+            result.feeSVTs += depositFees;
+            result.mintedSVTs -= depositFees;
+        }
+
+        if (fees.managementFeePct > 0) {
+            // % of all SVTs minted until now, excluding the ones held by the vault owner
+            result.feeSVTs += _calculateManagementFees(
+                lastDhwSyncedTimestamp, result.dhwTimestamp, oldTotalSVTs, fees.managementFeePct
+            );
+        }
+
+        return result;
     }
 
     function depositAssets(DepositBag calldata bag, DepositExtras memory bag2)
@@ -457,6 +434,38 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
     }
 
     /**
+     * @notice Calculates the SVT balance that is available to be claimed
+     */
+    function getClaimedVaultTokensPreview(
+        address smartVaultAddress,
+        DepositMetadata memory data,
+        uint256 nftShares,
+        uint256 mintedSVTs,
+        address[] memory tokens
+    ) public view returns (uint256) {
+        uint256[] memory totalDepositedAssets;
+        uint256[] memory exchangeRates;
+        uint256 depositedUsd;
+        uint256 totalDepositedUsd;
+        totalDepositedAssets = _vaultDeposits[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
+        exchangeRates = _flushExchangeRates[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
+
+        if (mintedSVTs == 0) {
+            mintedSVTs = _mintedVaultShares[smartVaultAddress][data.flushIndex];
+        }
+
+        for (uint256 i = 0; i < data.assets.length; i++) {
+            depositedUsd += _priceFeedManager.assetToUsdCustomPrice(tokens[i], data.assets[i], exchangeRates[i]);
+            totalDepositedUsd +=
+                _priceFeedManager.assetToUsdCustomPrice(tokens[i], totalDepositedAssets[i], exchangeRates[i]);
+        }
+        uint256 claimedVaultTokens = mintedSVTs * depositedUsd / totalDepositedUsd;
+
+        // TODO: dust
+        return claimedVaultTokens * nftShares / NFT_MINTED_SHARES;
+    }
+
+    /**
      * @dev Calculated deposit ratio from flush factors.
      * @param flushFactors Flush factors.
      * @return Deposit ratio, with first index running over strategies and second index running over assets.
@@ -536,5 +545,22 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         }
 
         return distribution;
+    }
+
+    /**
+     * @dev Calculated as percentage of assets under management, distributed throughout a year.
+     * SVT amount being diluted should not include previously distributed management fees.
+     * @param timeFrom time from which to collect fees
+     * @param timeTo time to which to collect fees
+     * @param totalSVTs SVT amount basis on which to apply fees
+     * @param mgmtFeePct management fee percentage value
+     */
+    function _calculateManagementFees(uint256 timeFrom, uint256 timeTo, uint256 totalSVTs, uint256 mgmtFeePct)
+        private
+        pure
+        returns (uint256)
+    {
+        uint256 timeDelta = timeTo - timeFrom;
+        return totalSVTs * mgmtFeePct * timeDelta / SECONDS_IN_YEAR / FULL_PERCENT;
     }
 }

@@ -15,6 +15,9 @@ error StrategyAlreadyRegistered(address address_);
  */
 error DhwNotRunYetForIndex(address strategy, uint256 strategyIndex);
 
+/// @notice Used when syncing vault that is already fully synced.
+error NothingToSync();
+
 /**
  * @notice Represents change of state for a strategy during a DHW.
  * @custom:member exchangeRates Exchange rates between assets and USD.
