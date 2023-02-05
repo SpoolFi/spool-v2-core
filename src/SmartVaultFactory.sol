@@ -23,6 +23,7 @@ import {ISmartVaultRegistry} from "./interfaces/ISmartVaultManager.sol";
  * @custom:member strategyAllocation Optional. If empty array, values will be calculated on the spot.
  * @custom:member riskTolerance Risk appetite of the smart vault.
  * @custom:member riskProvider Risk provider used by the smart vault.
+ * @custom:member allocationProvider Allocation provider used by the smart vault.
  * @custom:member actions Actions to register for the smart vault.
  * @custom:member actionRequestTypes Request types for actions.
  * @custom:member guards Guards to register for the smart vault.

@@ -67,6 +67,7 @@ error DepositFeeTooLarge(uint256 deposittFeePct);
  * @custom:member riskProvider Risk provider used by the smart vault.
  * @custom:member managementFeePct Management fee of the smart vault.
  * @custom:member depositFeePct Deposit fee of the smart vault.
+ * @custom:member allocationProvider Allocation provider used by the smart vault.
  * @custom:member riskTolerance Risk appetite of the smart vault.
  */
 struct SmartVaultRegistrationForm {

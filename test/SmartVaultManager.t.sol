@@ -97,7 +97,7 @@ contract SmartVaultManagerTest is TestFixture {
         });
 
         smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
-        assertEq(strategyAllocations, smartVaultManager.allocations(mySmartVault));
+        assertEq(smartVaultManager.allocations(mySmartVault), strategyAllocations);
     }
 
     function test_registerSmartVault_shouldRevert() public {
