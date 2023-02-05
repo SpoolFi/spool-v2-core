@@ -5,7 +5,7 @@ struct ClaimRequest {
     address smartVault;
     address token;
     uint256 cycle;
-    uint256 amount;
+    uint256 rewardsTotal;
     bytes32[] proof;
 }
 
@@ -55,6 +55,17 @@ interface IRewardPool {
      */
     function allowUpdates() external view returns (bool);
 
+    /**
+     * @notice Amount already claimed by user per token per vault
+     * @param user claimer
+     * @param smartVault smart vault address
+     * @param token token address
+     */
+    function rewardsClaimed(address user, address smartVault, address token) external view returns (uint256);
+
     event PoolRootAdded(uint256 cycle);
     event PoolRootUpdated(uint256 cycle);
+    event RewardsClaimed(
+        address indexed user, address indexed smartVault, address indexed token, uint256 cycle, uint256 amount
+    );
 }

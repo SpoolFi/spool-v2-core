@@ -13,6 +13,8 @@ contract RewardPool is IRewardPool, SpoolAccessControllable {
 
     mapping(bytes32 => bool) public isLeafClaimed;
 
+    mapping(address => mapping(address => mapping(address => uint256))) public rewardsClaimed;
+
     uint256 public cycleCount;
 
     bool public allowUpdates;
@@ -54,7 +56,14 @@ contract RewardPool is IRewardPool, SpoolAccessControllable {
             }
 
             isLeafClaimed[leaf] = true;
-            IERC20(data[i].token).safeTransfer(msg.sender, data[i].amount);
+
+            uint256 alreadyClaimed = rewardsClaimed[msg.sender][data[i].smartVault][data[i].token];
+            uint256 toClaim = data[i].rewardsTotal - alreadyClaimed;
+            rewardsClaimed[msg.sender][data[i].smartVault][data[i].token] += toClaim;
+
+            IERC20(data[i].token).safeTransfer(msg.sender, toClaim);
+
+            emit RewardsClaimed(msg.sender, data[i].smartVault, data[i].token, data[i].cycle, toClaim);
         }
     }
 
@@ -67,7 +76,8 @@ contract RewardPool is IRewardPool, SpoolAccessControllable {
     }
 
     function _getLeaf(ClaimRequest memory data, address user) internal pure returns (bytes32) {
-        return
-            keccak256(bytes.concat(keccak256(abi.encode(user, data.cycle, data.smartVault, data.token, data.amount))));
+        return keccak256(
+            bytes.concat(keccak256(abi.encode(user, data.cycle, data.smartVault, data.token, data.rewardsTotal)))
+        );
     }
 }

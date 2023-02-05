@@ -9,6 +9,8 @@ import "./mocks/MockToken.sol";
 contract RewardPoolTest is Test {
     IRewardPool paymentPool;
     MockToken token;
+
+    // Total rewards 5000000000000000000 per user
     bytes32 treeRoot = 0x77e3bb058cf4f611bb9c8a2f5e920ff8b745f893c484b030b2c83106d5290dbe;
     address alice = 0x1111111111111111111111111111111111111111;
 
@@ -63,7 +65,7 @@ contract RewardPoolTest is Test {
             smartVault: 0x0000000000000000000000000000000000000001,
             token: address(token),
             cycle: 1,
-            amount: 5000000000000000000,
+            rewardsTotal: 5000000000000000000,
             proof: proof
         });
         paymentPool.addTreeRoot(treeRoot);
@@ -79,7 +81,7 @@ contract RewardPoolTest is Test {
             smartVault: 0x0000000000000000000000000000000000000001,
             token: address(token),
             cycle: 1,
-            amount: 5000000000000000000,
+            rewardsTotal: 5000000000000000000,
             proof: proof
         });
         paymentPool.addTreeRoot(treeRoot);
@@ -95,7 +97,7 @@ contract RewardPoolTest is Test {
             smartVault: 0x0000000000000000000000000000000000000001,
             token: 0x0000000000000000000000000000000000000001,
             cycle: 1,
-            amount: 5000000000000000000,
+            rewardsTotal: 5000000000000000000,
             proof: proof
         });
         paymentPool.addTreeRoot(treeRoot);
@@ -111,7 +113,7 @@ contract RewardPoolTest is Test {
             smartVault: 0x0000000000000000000000000000000000000001,
             token: address(token),
             cycle: 1,
-            amount: 5000000000000000000,
+            rewardsTotal: 5000000000000000000,
             proof: proof
         });
         paymentPool.addTreeRoot(treeRoot);
@@ -127,7 +129,7 @@ contract RewardPoolTest is Test {
             smartVault: 0x0000000000000000000000000000000000000001,
             token: address(token),
             cycle: 1,
-            amount: 5000000000000000001,
+            rewardsTotal: 5000000000000000001,
             proof: proof
         });
         paymentPool.addTreeRoot(treeRoot);
@@ -143,7 +145,7 @@ contract RewardPoolTest is Test {
             smartVault: 0x0000000000000000000000000000000000000001,
             token: address(token),
             cycle: 1,
-            amount: 5000000000000000001,
+            rewardsTotal: 5000000000000000001,
             proof: proof
         });
         paymentPool.addTreeRoot(treeRoot);
@@ -159,7 +161,7 @@ contract RewardPoolTest is Test {
             smartVault: 0x0000000000000000000000000000000000000001,
             token: address(token),
             cycle: 1,
-            amount: 5000000000000000000,
+            rewardsTotal: 5000000000000000000,
             proof: proof
         });
         paymentPool.addTreeRoot(treeRoot);
@@ -172,6 +174,52 @@ contract RewardPoolTest is Test {
         assertEq(token.balanceOf(alice), 5000000000000000000);
     }
 
+    function test_claim_twoCycles() public {
+        bytes32[] memory proof1 = new bytes32[](2);
+        proof1[0] = 0x860a1203a2121819132e9257ef9629d47704f0d1c0903f71aa4b5c24a666f203;
+        proof1[1] = 0xd094e3ae2f9fc0a3ec98bfb30953f724c817df729ec1838a3d5b5d025b00fe4b;
+
+        // Increase rewards for 10000000000000000
+        bytes32 treeRoot2 = 0x5043114118595679b087c86b1d82a95ea78bd2cfed74e18366f5f6ca305883ef;
+
+        bytes32[] memory proof2 = new bytes32[](2);
+        proof2[0] = 0xe4ebad09aa885751ceca8f7a8881f21b4c79f93a881e3136ccc418c67af42a99;
+        proof2[1] = 0x3c6e72f54c1ddb52449f7824836dafbcac33f105ac74fbfa7ca44a5137a510fa;
+
+        paymentPool.addTreeRoot(treeRoot);
+        paymentPool.addTreeRoot(treeRoot2);
+
+        ClaimRequest memory data1 = ClaimRequest({
+            smartVault: 0x0000000000000000000000000000000000000001,
+            token: address(token),
+            cycle: 1,
+            rewardsTotal: 5000000000000000000,
+            proof: proof1
+        });
+
+        ClaimRequest memory data2 = ClaimRequest({
+            smartVault: 0x0000000000000000000000000000000000000001,
+            token: address(token),
+            cycle: 2,
+            rewardsTotal: 5010000000000000000,
+            proof: proof2
+        });
+
+        ClaimRequest[] memory payload = new ClaimRequest[](1);
+        payload[0] = data1;
+
+        vm.prank(alice);
+        paymentPool.claim(payload);
+        assertEq(token.balanceOf(alice), 5000000000000000000);
+        assertEq(paymentPool.rewardsClaimed(alice, data1.smartVault, address(token)), 5000000000000000000);
+
+        payload[0] = data2;
+        vm.prank(alice);
+        paymentPool.claim(payload);
+        assertEq(token.balanceOf(alice), 5010000000000000000);
+        assertEq(paymentPool.rewardsClaimed(alice, data1.smartVault, address(token)), 5010000000000000000);
+    }
+
     function test_claim_revertAlreadyClaimed() public {
         bytes32[] memory proof = new bytes32[](2);
         proof[0] = 0x860a1203a2121819132e9257ef9629d47704f0d1c0903f71aa4b5c24a666f203;
@@ -181,7 +229,7 @@ contract RewardPoolTest is Test {
             smartVault: 0x0000000000000000000000000000000000000001,
             token: address(token),
             cycle: 1,
-            amount: 5000000000000000000,
+            rewardsTotal: 5000000000000000000,
             proof: proof
         });
         paymentPool.addTreeRoot(treeRoot);
@@ -205,7 +253,7 @@ contract RewardPoolTest is Test {
             smartVault: 0x0000000000000000000000000000000000000001,
             token: address(token),
             cycle: 1,
-            amount: 5000000000000000000,
+            rewardsTotal: 5000000000000000000,
             proof: proof
         });
         paymentPool.addTreeRoot(treeRoot);
