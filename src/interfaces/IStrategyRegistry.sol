@@ -96,13 +96,4 @@ interface IStrategyRegistry {
         uint256[] memory dhwIndexes,
         uint256[] memory strategyShares
     ) external view returns (uint256[] memory assetsWithdrawn);
-
-    // vv REALLOCATION vv
-
-    function reallocationReallocate(
-        address[] calldata strategies,
-        uint256[][][] memory reallocationTable,
-        address[] calldata assetGroup,
-        uint256[] calldata exchangeRates
-    ) external returns (uint256[][][] memory);
 }

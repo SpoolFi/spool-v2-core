@@ -7,7 +7,6 @@ import "../../src/managers/ActionManager.sol";
 import "../../src/managers/AssetGroupRegistry.sol";
 import "../../src/managers/DepositManager.sol";
 import "../../src/managers/GuardManager.sol";
-import "../../src/managers/RewardManager.sol";
 import "../../src/managers/RiskManager.sol";
 import "../../src/managers/SmartVaultManager.sol";
 import "../../src/managers/StrategyRegistry.sol";
@@ -70,7 +69,7 @@ contract ReallocationIntegrationTest is Test {
 
         riskManager = new RiskManager(accessControl);
 
-        swapper = new Swapper();
+        swapper = new Swapper(accessControl);
 
         DepositManager depositManager =
             new DepositManager(strategyRegistry, priceFeedManager, guardManager, actionManager, accessControl);
@@ -83,10 +82,6 @@ contract ReallocationIntegrationTest is Test {
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(withdrawalManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(withdrawalManager));
 
-        address managerAddress = computeCreateAddress(address(this), 1);
-        RewardManager rewardManager =
-            new RewardManager(accessControl, assetGroupRegistry, ISmartVaultBalance(managerAddress));
-
         smartVaultManager = new SmartVaultManager(
             accessControl,
             assetGroupRegistry,
@@ -95,7 +90,6 @@ contract ReallocationIntegrationTest is Test {
             withdrawalManager,
             strategyRegistry,
             masterWallet,
-            rewardManager,
             priceFeedManager
         );
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
@@ -237,9 +231,17 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA)), Arrays.toArray(address(strategyA), address(strategyB)));
+        smartVaultManager.reallocate(
+            Arrays.toArray(address(smartVaultA)), Arrays.toArray(address(strategyA), address(strategyB))
+        );
 
         // check final state
+        // - new allocation was set
+        assertEq(
+            smartVaultManager.allocations(address(smartVaultA)),
+            Arrays.toArray(50_00, 50_00),
+            "final allocation for smart vault A"
+        );
         // - assets were redistributed between strategies
         assertEq(tokenA.balanceOf(address(strategyA.protocol())), 50 ether, "final tokenA balance strategyA");
         assertEq(tokenA.balanceOf(address(strategyB.protocol())), 50 ether, "final tokenA balance strategyB");
@@ -342,7 +344,9 @@ contract ReallocationIntegrationTest is Test {
             dhwSwapInfo[0] = new SwapInfo[](0);
             dhwSwapInfo[1] = new SwapInfo[](0);
             dhwSwapInfo[2] = new SwapInfo[](0);
-            strategyRegistry.doHardWork(Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo);
+            strategyRegistry.doHardWork(
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+            );
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
 
@@ -387,9 +391,18 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
+        smartVaultManager.reallocate(
+            Arrays.toArray(address(smartVaultA)),
+            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+        );
 
         // check final state
+        // - new allocation was set
+        assertEq(
+            smartVaultManager.allocations(address(smartVaultA)),
+            Arrays.toArray(40_00, 30_00, 30_00),
+            "final allocation for smart vault A"
+        );
         // - assets were redistributed between strategies
         assertEq(tokenA.balanceOf(address(strategyA.protocol())), 40 ether, "final tokenA balance strategyA");
         assertEq(tokenA.balanceOf(address(strategyB.protocol())), 30 ether, "final tokenA balance strategyB");
@@ -495,7 +508,9 @@ contract ReallocationIntegrationTest is Test {
             dhwSwapInfo[0] = new SwapInfo[](0);
             dhwSwapInfo[1] = new SwapInfo[](0);
             dhwSwapInfo[2] = new SwapInfo[](0);
-            strategyRegistry.doHardWork(Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo);
+            strategyRegistry.doHardWork(
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+            );
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
 
@@ -540,9 +555,18 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
+        smartVaultManager.reallocate(
+            Arrays.toArray(address(smartVaultA)),
+            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+        );
 
         // check final state
+        // - new allocation was set
+        assertEq(
+            smartVaultManager.allocations(address(smartVaultA)),
+            Arrays.toArray(40_00, 30_00, 30_00),
+            "final allocation for smart vault A"
+        );
         // - assets were redistributed between strategies
         assertEq(tokenA.balanceOf(address(strategyA.protocol())), 40 ether, "final tokenA balance strategyA");
         assertEq(tokenA.balanceOf(address(strategyB.protocol())), 30 ether, "final tokenA balance strategyB");
@@ -648,7 +672,9 @@ contract ReallocationIntegrationTest is Test {
             dhwSwapInfo[0] = new SwapInfo[](0);
             dhwSwapInfo[1] = new SwapInfo[](0);
             dhwSwapInfo[2] = new SwapInfo[](0);
-            strategyRegistry.doHardWork(Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo);
+            strategyRegistry.doHardWork(
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+            );
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
 
@@ -693,9 +719,18 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
+        smartVaultManager.reallocate(
+            Arrays.toArray(address(smartVaultA)),
+            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+        );
 
         // check final state
+        // - new allocation was set
+        assertEq(
+            smartVaultManager.allocations(address(smartVaultA)),
+            Arrays.toArray(40_00, 30_00, 30_00),
+            "final allocation for smart vault A"
+        );
         // - assets were redistributed between strategies
         assertEq(tokenA.balanceOf(address(strategyA.protocol())), 40 ether, "final tokenA balance strategyA");
         assertEq(tokenA.balanceOf(address(strategyB.protocol())), 30 ether, "final tokenA balance strategyB");
@@ -817,7 +852,9 @@ contract ReallocationIntegrationTest is Test {
             dhwSwapInfo[0] = new SwapInfo[](0);
             dhwSwapInfo[1] = new SwapInfo[](0);
             dhwSwapInfo[2] = new SwapInfo[](0);
-            strategyRegistry.doHardWork(Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo);
+            strategyRegistry.doHardWork(
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+            );
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -870,9 +907,23 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
+        smartVaultManager.reallocate(
+            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+        );
 
         // check final state
+        // - new allocation was set
+        assertEq(
+            smartVaultManager.allocations(address(smartVaultA)),
+            Arrays.toArray(50_00, 50_00),
+            "final allocation for smart vault A"
+        );
+        assertEq(
+            smartVaultManager.allocations(address(smartVaultB)),
+            Arrays.toArray(50_00, 50_00),
+            "final allocation for smart vault B"
+        );
         // - assets were redistributed between strategies
         assertEq(tokenA.balanceOf(address(strategyA.protocol())), 50 ether, "final tokenA balance strategyA");
         assertEq(tokenA.balanceOf(address(strategyB.protocol())), 100 ether, "final tokenA balance strategyB");
@@ -997,7 +1048,9 @@ contract ReallocationIntegrationTest is Test {
             dhwSwapInfo[0] = new SwapInfo[](0);
             dhwSwapInfo[1] = new SwapInfo[](0);
             dhwSwapInfo[2] = new SwapInfo[](0);
-            strategyRegistry.doHardWork(Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo);
+            strategyRegistry.doHardWork(
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+            );
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -1050,9 +1103,23 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
+        smartVaultManager.reallocate(
+            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+        );
 
         // check final state
+        // - new allocation was set
+        assertEq(
+            smartVaultManager.allocations(address(smartVaultA)),
+            Arrays.toArray(50_00, 50_00),
+            "final allocation for smart vault A"
+        );
+        assertEq(
+            smartVaultManager.allocations(address(smartVaultB)),
+            Arrays.toArray(50_00, 50_00),
+            "final allocation for smart vault B"
+        );
         // - assets were redistributed between strategies
         assertEq(tokenA.balanceOf(address(strategyA.protocol())), 50 ether, "final tokenA balance strategyA");
         assertEq(tokenA.balanceOf(address(strategyB.protocol())), 100 ether, "final tokenA balance strategyB");
@@ -1177,7 +1244,9 @@ contract ReallocationIntegrationTest is Test {
             dhwSwapInfo[0] = new SwapInfo[](0);
             dhwSwapInfo[1] = new SwapInfo[](0);
             dhwSwapInfo[2] = new SwapInfo[](0);
-            strategyRegistry.doHardWork(Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo);
+            strategyRegistry.doHardWork(
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+            );
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -1230,9 +1299,23 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
+        smartVaultManager.reallocate(
+            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+        );
 
         // check final state
+        // - new allocation was set
+        assertEq(
+            smartVaultManager.allocations(address(smartVaultA)),
+            Arrays.toArray(50_00, 50_00),
+            "final allocation for smart vault A"
+        );
+        assertEq(
+            smartVaultManager.allocations(address(smartVaultB)),
+            Arrays.toArray(50_00, 50_00),
+            "final allocation for smart vault B"
+        );
         // - assets were redistributed between strategies
         assertEq(tokenA.balanceOf(address(strategyA.protocol())), 50 ether, "final tokenA balance strategyA");
         assertEq(tokenA.balanceOf(address(strategyB.protocol())), 100 ether, "final tokenA balance strategyB");
@@ -1359,7 +1442,9 @@ contract ReallocationIntegrationTest is Test {
             dhwSwapInfo[0] = new SwapInfo[](0);
             dhwSwapInfo[1] = new SwapInfo[](0);
             dhwSwapInfo[2] = new SwapInfo[](0);
-            strategyRegistry.doHardWork(Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo);
+            strategyRegistry.doHardWork(
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+            );
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -1414,9 +1499,23 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
+        smartVaultManager.reallocate(
+            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+        );
 
         // check final state
+        // - new allocation was set
+        assertEq(
+            smartVaultManager.allocations(address(smartVaultA)),
+            Arrays.toArray(40_00, 30_00, 30_00),
+            "final allocation for smart vault A"
+        );
+        assertEq(
+            smartVaultManager.allocations(address(smartVaultB)),
+            Arrays.toArray(40_00, 30_00, 30_00),
+            "final allocation for smart vault B"
+        );
         // - assets were redistributed between strategies
         assertEq(tokenA.balanceOf(address(strategyA.protocol())), 80 ether, "final tokenA balance strategyA");
         assertEq(tokenA.balanceOf(address(strategyB.protocol())), 60 ether, "final tokenA balance strategyB");
@@ -1545,7 +1644,9 @@ contract ReallocationIntegrationTest is Test {
             dhwSwapInfo[0] = new SwapInfo[](0);
             dhwSwapInfo[1] = new SwapInfo[](0);
             dhwSwapInfo[2] = new SwapInfo[](0);
-            strategyRegistry.doHardWork(Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo);
+            strategyRegistry.doHardWork(
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+            );
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -1600,9 +1701,23 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
+        smartVaultManager.reallocate(
+            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+        );
 
         // check final state
+        // - new allocation was set
+        assertEq(
+            smartVaultManager.allocations(address(smartVaultA)),
+            Arrays.toArray(40_00, 30_00, 30_00),
+            "final allocation for smart vault A"
+        );
+        assertEq(
+            smartVaultManager.allocations(address(smartVaultB)),
+            Arrays.toArray(40_00, 30_00, 30_00),
+            "final allocation for smart vault B"
+        );
         // - assets were redistributed between strategies
         assertEq(tokenA.balanceOf(address(strategyA.protocol())), 80 ether, "final tokenA balance strategyA");
         assertEq(tokenA.balanceOf(address(strategyB.protocol())), 60 ether, "final tokenA balance strategyB");
@@ -1731,7 +1846,9 @@ contract ReallocationIntegrationTest is Test {
             dhwSwapInfo[0] = new SwapInfo[](0);
             dhwSwapInfo[1] = new SwapInfo[](0);
             dhwSwapInfo[2] = new SwapInfo[](0);
-            strategyRegistry.doHardWork(Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo);
+            strategyRegistry.doHardWork(
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+            );
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -1786,9 +1903,23 @@ contract ReallocationIntegrationTest is Test {
         );
 
         // reallocate
-        smartVaultManager.reallocate(Arrays.toArray(address(smartVaultA), address(smartVaultB)), Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)));
+        smartVaultManager.reallocate(
+            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+        );
 
         // check final state
+        // - new allocation was set
+        assertEq(
+            smartVaultManager.allocations(address(smartVaultA)),
+            Arrays.toArray(40_00, 30_00, 30_00),
+            "final allocation for smart vault A"
+        );
+        assertEq(
+            smartVaultManager.allocations(address(smartVaultB)),
+            Arrays.toArray(40_00, 30_00, 30_00),
+            "final allocation for smart vault B"
+        );
         // - assets were redistributed between strategies
         assertEq(tokenA.balanceOf(address(strategyA.protocol())), 80 ether, "final tokenA balance strategyA");
         assertEq(tokenA.balanceOf(address(strategyB.protocol())), 60 ether, "final tokenA balance strategyB");

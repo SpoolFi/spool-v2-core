@@ -190,7 +190,10 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         _transfer(address(this), claimer, amount);
     }
 
-    function releaseShares(address smartVault, uint256 amount) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
+    function releaseShares(address smartVault, uint256 amount)
+        external
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+    {
         _transfer(smartVault, address(this), amount);
     }
 
