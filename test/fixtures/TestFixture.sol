@@ -15,6 +15,7 @@ import "../../src/managers/RiskManager.sol";
 import "../../src/managers/DepositManager.sol";
 import "../../src/managers/WithdrawalManager.sol";
 import "../integration/withdrawal.t.sol";
+import "../../src/providers/UniformAllocationProvider.sol";
 
 contract TestFixture is Test {
     address internal riskProvider = address(0x1);
@@ -34,6 +35,7 @@ contract TestFixture is Test {
     StrategyRegistry internal strategyRegistry;
     MockPriceFeedManager internal priceFeedManager;
     MasterWallet internal masterWallet;
+    IAllocationProvider internal allocationProvider;
 
     function setUpBase() public virtual {
         token = new MockToken("Token", "T");
@@ -50,6 +52,7 @@ contract TestFixture is Test {
         priceFeedManager = new MockPriceFeedManager();
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
         riskManager = new RiskManager(accessControl);
+        allocationProvider = new UniformAllocationProvider();
         depositManager =
             new DepositManager(strategyRegistry, priceFeedManager, guardManager, actionManager, accessControl);
 
@@ -74,5 +77,6 @@ contract TestFixture is Test {
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(withdrawalManager));
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
+        accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, address(allocationProvider));
     }
 }

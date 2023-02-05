@@ -64,6 +64,13 @@ bytes32 constant ROLE_SMART_VAULT_MANAGER = keccak256("SMART_VAULT_MANAGER");
 bytes32 constant ROLE_RISK_PROVIDER = keccak256("RISK_PROVIDER");
 
 /**
+ * @dev Grants permission to act as an allocation provider.
+ *
+ * Should be granted to contracts that are allowed to calculate allocations.
+ */
+bytes32 constant ROLE_ALLOCATION_PROVIDER = keccak256("ALLOCATION_PROVIDER");
+
+/**
  * @dev Grants permission to pause the system.
  */
 bytes32 constant ROLE_PAUSER = keccak256("SYSTEM_PAUSER");

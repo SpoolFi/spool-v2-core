@@ -66,17 +66,38 @@ contract SmartVaultManagerTest is TestFixture {
         SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
             assetGroupId: assetGroupId,
             strategies: strategies,
-            riskAppetite: 4,
+            strategyAllocation: new uint256[](0),
+            riskTolerance: 4,
             riskProvider: riskProvider,
             managementFeePct: 0,
-            depositFeePct: 0
+            depositFeePct: 0,
+            allocationProvider: address(allocationProvider)
         });
         smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
 
         assertEq(smartVaultManager.assetGroupId(mySmartVault), assetGroupId);
         assertEq(smartVaultManager.strategies(mySmartVault), strategies);
         assertEq(smartVaultManager.allocations(mySmartVault), strategyAllocations);
-        assertEq(smartVaultManager.riskProvider(mySmartVault), riskProvider);
+        assertEq(riskManager.getRiskProvider(mySmartVault), riskProvider);
+    }
+
+    function test_registerSmartVault_customAllocations() public {
+        (address[] memory strategies, uint256 assetGroupId) = _createStrategies();
+        uint256[] memory strategyAllocations = Arrays.toArray(100, 300, 600);
+
+        SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
+            assetGroupId: assetGroupId,
+            strategies: strategies,
+            strategyAllocation: strategyAllocations,
+            riskTolerance: 4,
+            riskProvider: address(0),
+            managementFeePct: 0,
+            depositFeePct: 0,
+            allocationProvider: address(0)
+        });
+
+        smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
+        assertEq(strategyAllocations, smartVaultManager.allocations(mySmartVault));
     }
 
     function test_registerSmartVault_shouldRevert() public {
@@ -93,10 +114,12 @@ contract SmartVaultManagerTest is TestFixture {
         SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
             assetGroupId: assetGroupId,
             strategies: strategies,
-            riskAppetite: 4,
+            strategyAllocation: new uint256[](0),
+            riskTolerance: 4,
             riskProvider: riskProvider,
             managementFeePct: 0,
-            depositFeePct: 0
+            depositFeePct: 0,
+            allocationProvider: address(allocationProvider)
         });
 
         // when not risk provider
@@ -104,10 +127,12 @@ contract SmartVaultManagerTest is TestFixture {
             SmartVaultRegistrationForm memory _registrationForm = SmartVaultRegistrationForm({
                 assetGroupId: assetGroupId,
                 strategies: strategies,
-                riskAppetite: 4,
+                strategyAllocation: new uint256[](0),
+                riskTolerance: 4,
                 riskProvider: address(0xabc),
                 managementFeePct: 0,
-                depositFeePct: 0
+                depositFeePct: 0,
+                allocationProvider: address(0xabc)
             });
             vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_RISK_PROVIDER, address(0xabc)));
             smartVaultManager.registerSmartVault(mySmartVault, _registrationForm);
@@ -119,10 +144,12 @@ contract SmartVaultManagerTest is TestFixture {
             SmartVaultRegistrationForm memory _registrationForm = SmartVaultRegistrationForm({
                 assetGroupId: assetGroupId,
                 strategies: _strategies,
-                riskAppetite: 4,
+                strategyAllocation: new uint256[](0),
+                riskTolerance: 4,
                 riskProvider: riskProvider,
                 managementFeePct: 0,
-                depositFeePct: 0
+                depositFeePct: 0,
+                allocationProvider: address(allocationProvider)
             });
             vm.expectRevert(SmartVaultRegistrationNoStrategies.selector);
             smartVaultManager.registerSmartVault(mySmartVault, _registrationForm);
@@ -135,10 +162,12 @@ contract SmartVaultManagerTest is TestFixture {
             SmartVaultRegistrationForm memory _registrationForm = SmartVaultRegistrationForm({
                 assetGroupId: assetGroupId,
                 strategies: _strategies,
-                riskAppetite: 4,
+                strategyAllocation: new uint256[](0),
+                riskTolerance: 4,
                 riskProvider: riskProvider,
                 managementFeePct: 0,
-                depositFeePct: 0
+                depositFeePct: 0,
+                allocationProvider: address(allocationProvider)
             });
             vm.expectRevert(abi.encodeWithSelector(InvalidStrategy.selector, address(0xabc)));
             smartVaultManager.registerSmartVault(mySmartVault, _registrationForm);
@@ -315,10 +344,12 @@ contract SmartVaultManagerTest is TestFixture {
         SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
             assetGroupId: assetGroupId,
             strategies: strategies,
-            riskAppetite: 4,
+            strategyAllocation: new uint256[](0),
+            riskTolerance: 4,
             riskProvider: riskProvider,
             managementFeePct: 0,
-            depositFeePct: 0
+            depositFeePct: 0,
+            allocationProvider: address(allocationProvider)
         });
         smartVaultManager.registerSmartVault(address(smartVault_), registrationForm);
 

@@ -85,25 +85,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /// @notice Smart Vault strategy registry
     mapping(address => address[]) internal _smartVaultStrategies;
-    // TODO: change to "mapping array"
-
-    /// @notice Smart Vault risk provider registry
-    mapping(address => address) internal _smartVaultRiskProviders;
-
-    /**
-     * @notice Risk appetite for given Smart Vault.
-     * @dev smart vault => risk appetite
-     */
-    mapping(address => uint256) internal _smartVaultRiskAppetites;
 
     /// @notice Smart vault fees
     mapping(address => SmartVaultFees) internal _smartVaultFees;
 
     /// @notice Smart Vault strategy allocations
     mapping(address => mapping(uint256 => uint256)) internal _smartVaultAllocations;
-
-    /// @notice Smart Vault tolerance registry
-    mapping(address => int256) internal _riskTolerances;
 
     /// @notice Current flush index for given Smart Vault
     mapping(address => uint256) internal _flushIndexes;
@@ -181,20 +168,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      */
     function allocations(address smartVault) external view returns (uint256[] memory) {
         return _smartVaultAllocations[smartVault].toArray(_smartVaultStrategies[smartVault].length);
-    }
-
-    /**
-     * @notice SmartVault risk provider
-     */
-    function riskProvider(address smartVault) external view returns (address) {
-        return _smartVaultRiskProviders[smartVault];
-    }
-
-    /**
-     * @notice SmartVault risk tolerance
-     */
-    function riskTolerance(address smartVault) external view returns (int256) {
-        return _riskTolerances[smartVault];
     }
 
     /**
@@ -324,7 +297,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         whenNotPaused
         onlyUnregisteredSmartVault(smartVault)
         onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)
-        onlyRole(ROLE_RISK_PROVIDER, registrationForm.riskProvider)
     {
         // TODO: should check if same asset group on strategies and smart vault
 
@@ -353,30 +325,27 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         _smartVaultFees[smartVault] = SmartVaultFees(registrationForm.managementFeePct, registrationForm.depositFeePct);
         _smartVaultStrategies[smartVault] = registrationForm.strategies;
-        _smartVaultRiskProviders[smartVault] = registrationForm.riskProvider;
-        // set risk appetite
-        _smartVaultRiskAppetites[smartVault] = registrationForm.riskAppetite;
 
         // set allocation
-        _smartVaultAllocations[smartVault].setValues(
-            _riskManager.calculateAllocation(
-                registrationForm.riskProvider, registrationForm.strategies, registrationForm.riskAppetite
-            )
-        );
+        if (registrationForm.strategyAllocation.length == registrationForm.strategies.length) {
+            _smartVaultAllocations[smartVault].setValues(registrationForm.strategyAllocation);
+        } else {
+            uint16[] memory apyList = new uint16[](registrationForm.strategies.length);
+            for (uint256 i = 0; i < registrationForm.strategies.length; i++) {
+                apyList[i] = IStrategy(registrationForm.strategies[i]).getAPY();
+            }
+
+            _riskManager.setRiskProvider(smartVault, registrationForm.riskProvider);
+            _riskManager.setRiskTolerance(smartVault, registrationForm.riskTolerance);
+            _riskManager.setAllocationProvider(smartVault, registrationForm.allocationProvider);
+
+            _smartVaultAllocations[smartVault].setValues(
+                _riskManager.calculateAllocation(smartVault, registrationForm.strategies, apyList)
+            );
+        }
 
         // update registry
         _smartVaultRegistry[smartVault] = true;
-    }
-
-    /**
-     * @notice TODO
-     */
-    function setRiskProvider(address smartVault, address riskProvider_)
-        external
-        onlyRole(ROLE_RISK_PROVIDER, riskProvider_)
-    {
-        _smartVaultRiskProviders[smartVault] = riskProvider_;
-        emit RiskProviderSet(smartVault, riskProvider_);
     }
 
     /* ========== BOOKKEEPING ========== */
@@ -406,6 +375,11 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             return;
         }
 
+        uint16[] memory apyList = new uint16[](strategies_.length);
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            apyList[i] = IStrategy(strategies_[i]).getAPY();
+        }
+
         uint256 assetGroupId_ = _smartVaultAssetGroups[smartVaults[0]];
         for (uint256 i = 0; i < smartVaults.length; ++i) {
             // Check that all smart vaults are registered.
@@ -418,9 +392,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
             // Set new allocation.
             _smartVaultAllocations[smartVaults[i]].setValues(
-                _riskManager.calculateAllocation(
-                    _smartVaultRiskProviders[smartVaults[i]], strategies_, _smartVaultRiskAppetites[smartVaults[i]]
-                )
+                _riskManager.calculateAllocation(smartVaults[i], strategies_, apyList)
             );
         }
 

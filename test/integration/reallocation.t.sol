@@ -81,6 +81,7 @@ contract ReallocationIntegrationTest is Test {
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(withdrawalManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(withdrawalManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(withdrawalManager));
+        accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, address(0xabc));
 
         smartVaultManager = new SmartVaultManager(
             accessControl,
@@ -156,8 +157,10 @@ contract ReallocationIntegrationTest is Test {
                 guards: new GuardDefinition[][](0),
                 guardRequestTypes: new RequestType[](0),
                 strategies: Arrays.toArray(address(strategyA), address(strategyB)),
-                riskAppetite: 4,
+                strategyAllocation: new uint256[](0),
+                riskTolerance: 4,
                 riskProvider: riskProvider,
+                allocationProvider: address(0xabc),
                 managementFeePct: 0,
                 depositFeePct: 0
             });
@@ -310,8 +313,10 @@ contract ReallocationIntegrationTest is Test {
                 guards: new GuardDefinition[][](0),
                 guardRequestTypes: new RequestType[](0),
                 strategies: Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
-                riskAppetite: 4,
+                strategyAllocation: new uint256[](0),
+                riskTolerance: 4,
                 riskProvider: riskProvider,
+                allocationProvider: address(0xabc),
                 managementFeePct: 0,
                 depositFeePct: 0
             });
@@ -475,8 +480,10 @@ contract ReallocationIntegrationTest is Test {
                 guards: new GuardDefinition[][](0),
                 guardRequestTypes: new RequestType[](0),
                 strategies: Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
-                riskAppetite: 4,
+                strategyAllocation: new uint256[](0),
+                riskTolerance: 4,
                 riskProvider: riskProvider,
+                allocationProvider: address(0xabc),
                 managementFeePct: 0,
                 depositFeePct: 0
             });
@@ -640,8 +647,10 @@ contract ReallocationIntegrationTest is Test {
                 guards: new GuardDefinition[][](0),
                 guardRequestTypes: new RequestType[](0),
                 strategies: Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
-                riskAppetite: 4,
+                strategyAllocation: new uint256[](0),
+                riskTolerance: 4,
                 riskProvider: riskProvider,
+                allocationProvider: address(0xabc),
                 managementFeePct: 0,
                 depositFeePct: 0
             });
@@ -809,8 +818,10 @@ contract ReallocationIntegrationTest is Test {
                 guards: new GuardDefinition[][](0),
                 guardRequestTypes: new RequestType[](0),
                 strategies: Arrays.toArray(address(strategyA), address(strategyB)),
-                riskAppetite: 4,
+                strategyAllocation: new uint256[](0),
+                riskTolerance: 4,
                 riskProvider: riskProvider,
+                allocationProvider: address(0xabc),
                 managementFeePct: 0,
                 depositFeePct: 0
             });
@@ -1006,8 +1017,10 @@ contract ReallocationIntegrationTest is Test {
                 guards: new GuardDefinition[][](0),
                 guardRequestTypes: new RequestType[](0),
                 strategies: Arrays.toArray(address(strategyA), address(strategyB)),
-                riskAppetite: 4,
+                strategyAllocation: new uint256[](0),
+                riskTolerance: 4,
                 riskProvider: riskProvider,
+                allocationProvider: address(0xabc),
                 managementFeePct: 0,
                 depositFeePct: 0
             });
@@ -1203,8 +1216,10 @@ contract ReallocationIntegrationTest is Test {
                 guards: new GuardDefinition[][](0),
                 guardRequestTypes: new RequestType[](0),
                 strategies: Arrays.toArray(address(strategyA), address(strategyB)),
-                riskAppetite: 4,
+                strategyAllocation: new uint256[](0),
+                riskTolerance: 4,
                 riskProvider: riskProvider,
+                allocationProvider: address(0xabc),
                 managementFeePct: 0,
                 depositFeePct: 0
             });
@@ -1402,8 +1417,10 @@ contract ReallocationIntegrationTest is Test {
                 guards: new GuardDefinition[][](0),
                 guardRequestTypes: new RequestType[](0),
                 strategies: Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
-                riskAppetite: 4,
+                strategyAllocation: new uint256[](0),
+                riskTolerance: 4,
                 riskProvider: riskProvider,
+                allocationProvider: address(0xabc),
                 managementFeePct: 0,
                 depositFeePct: 0
             });
@@ -1605,8 +1622,10 @@ contract ReallocationIntegrationTest is Test {
                 guards: new GuardDefinition[][](0),
                 guardRequestTypes: new RequestType[](0),
                 strategies: Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
-                riskAppetite: 4,
+                strategyAllocation: new uint256[](0),
+                riskTolerance: 4,
                 riskProvider: riskProvider,
+                allocationProvider: address(0xabc),
                 managementFeePct: 0,
                 depositFeePct: 0
             });
@@ -1808,8 +1827,10 @@ contract ReallocationIntegrationTest is Test {
                 guards: new GuardDefinition[][](0),
                 guardRequestTypes: new RequestType[](0),
                 strategies: Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
-                riskAppetite: 4,
+                strategyAllocation: new uint256[](0),
+                riskTolerance: 4,
                 riskProvider: riskProvider,
+                allocationProvider: address(0xabc),
                 managementFeePct: 0,
                 depositFeePct: 0
             });

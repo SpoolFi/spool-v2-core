@@ -20,7 +20,8 @@ import {ISmartVaultRegistry} from "./interfaces/ISmartVaultManager.sol";
  * @custom:member smartVaultName Name of the smart vault.
  * @custom:member assetGroupId ID of the asset group.
  * @custom:member strategies Strategies used by the smart vault.
- * @custom:member riskAppetite Risk appetite of the smart vault.
+ * @custom:member strategyAllocation Optional. If empty array, values will be calculated on the spot.
+ * @custom:member riskTolerance Risk appetite of the smart vault.
  * @custom:member riskProvider Risk provider used by the smart vault.
  * @custom:member actions Actions to register for the smart vault.
  * @custom:member actionRequestTypes Request types for actions.
@@ -33,8 +34,10 @@ struct SmartVaultSpecification {
     string smartVaultName;
     uint256 assetGroupId;
     address[] strategies;
-    uint256 riskAppetite;
+    uint256[] strategyAllocation;
+    int8 riskTolerance;
     address riskProvider;
+    address allocationProvider;
     IAction[] actions;
     RequestType[] actionRequestTypes;
     GuardDefinition[][] guards;
@@ -227,10 +230,12 @@ contract SmartVaultFactory is UpgradeableBeacon {
             SmartVaultRegistrationForm({
                 assetGroupId: specification.assetGroupId,
                 strategies: specification.strategies,
-                riskAppetite: specification.riskAppetite,
+                strategyAllocation: specification.strategyAllocation,
+                riskTolerance: specification.riskTolerance,
                 riskProvider: specification.riskProvider,
                 managementFeePct: specification.managementFeePct,
-                depositFeePct: specification.depositFeePct
+                depositFeePct: specification.depositFeePct,
+                allocationProvider: specification.allocationProvider
             })
         );
     }

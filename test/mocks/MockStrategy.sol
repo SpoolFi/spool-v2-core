@@ -35,6 +35,10 @@ contract MockStrategy is Strategy {
         ratios = ratios_;
     }
 
+    function getAPY() external pure override returns (uint16) {
+        return 0;
+    }
+
     function assetRatio() external view override returns (uint256[] memory) {
         return ratios;
     }

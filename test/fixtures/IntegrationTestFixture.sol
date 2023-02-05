@@ -70,6 +70,45 @@ contract IntegrationTestFixture is TestFixture {
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
 
+        {
+            address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
+            SmartVaultFactory smartVaultFactory = new SmartVaultFactory(
+                smartVaultImplementation,
+                accessControl,
+                actionManager,
+                guardManager,
+                smartVaultManager,
+                assetGroupRegistry
+            );
+            accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
+
+            smartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
+
+            vm.mockCall(
+                address(riskManager),
+                abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+                abi.encode(Arrays.toArray(600, 300, 100))
+            );
+
+            smartVault = smartVaultFactory.deploySmartVault(
+                SmartVaultSpecification({
+                    smartVaultName: "MySmartVault",
+                    assetGroupId: assetGroupId,
+                    actions: new IAction[](0),
+                    actionRequestTypes: new RequestType[](0),
+                    guards: new GuardDefinition[][](0),
+                    guardRequestTypes: new RequestType[](0),
+                    strategies: smartVaultStrategies,
+                    strategyAllocation: new uint256[](0),
+                    riskTolerance: 4,
+                    riskProvider: riskProvider,
+                    allocationProvider: address(allocationProvider),
+                    managementFeePct: 0,
+                    depositFeePct: 0
+                })
+            );
+        }
+
         priceFeedManager.setExchangeRate(address(tokenA), 1200 * USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenB), 16400 * USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenC), 270 * USD_DECIMALS_MULTIPLIER);
@@ -108,10 +147,12 @@ contract IntegrationTestFixture is TestFixture {
                 guards: new GuardDefinition[][](0),
                 guardRequestTypes: new RequestType[](0),
                 strategies: smartVaultStrategies,
-                riskAppetite: 4,
+                strategyAllocation: new uint256[](0),
+                riskTolerance: 4,
                 riskProvider: riskProvider,
                 managementFeePct: managementFeePct,
-                depositFeePct: depositFeePct
+                depositFeePct: depositFeePct,
+                allocationProvider: address(allocationProvider)
             })
         );
     }

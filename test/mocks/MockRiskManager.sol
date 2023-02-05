@@ -8,51 +8,43 @@ import "../../src/interfaces/IRiskManager.sol";
 contract MockRiskManager is IRiskManager {
     function test_mock() external pure {}
 
-    function calculateAllocation(address, address[] calldata, uint256) external pure returns (uint256[] memory) {
+    function calculateAllocation(address, address[] calldata, uint16[] calldata)
+        external
+        pure
+        returns (uint256[] memory)
+    {
         revert("0");
     }
 
-    function registerRiskProvider(address, bool) external pure {
+    function getRiskScores(address, address[] memory) external pure virtual returns (uint8[] memory) {
         revert("0");
     }
 
-    function setRiskScores(address, uint256[] memory) external pure {
+    function getRiskProvider(address) external pure virtual returns (address) {
         revert("0");
     }
 
-    function setRiskProvider(address, address) external pure {
+    function getAllocationProvider(address) external pure virtual returns (address) {
         revert("0");
     }
 
-    function reallocate(address) external pure {
+    function setRiskProvider(address, address) external virtual {
         revert("0");
     }
 
-    function setAllocations(address, uint256[] memory) external pure {
+    function setAllocationProvider(address, address) external virtual {
         revert("0");
     }
 
-    function riskScores(address) external pure returns (uint256[] memory) {
+    function setRiskScores(uint8[] calldata, address[] calldata) external virtual {
         revert("0");
     }
 
-    function riskTolerance(address) external pure returns (int256) {
+    function getRiskTolerance(address) external pure virtual returns (int8) {
         revert("0");
     }
 
-    function riskProvider(address) external pure returns (address) {
-        revert("0");
-    }
-
-    function isRiskProvider(address) external pure returns (bool) {
-        revert("0");
-    }
-
-    function allocations(address) external pure returns (uint256[] memory) {
-        revert("0");
-    }
-
-    function getRiskScores(address, address[] memory) external view virtual returns (uint256[] memory) {
+    function setRiskTolerance(address, int8) external pure {
         revert("0");
     }
 }

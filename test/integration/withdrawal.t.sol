@@ -99,6 +99,7 @@ contract WithdrawalIntegrationTest is Test {
         strategyRegistry.registerStrategy(address(strategyB));
 
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
+        accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, address(0xabc));
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(withdrawalManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(depositManager));
@@ -136,10 +137,12 @@ contract WithdrawalIntegrationTest is Test {
                     guards: new GuardDefinition[][](0),
                     guardRequestTypes: new RequestType[](0),
                     strategies: mySmartVaultStrategies,
-                    riskAppetite: 4,
+                    strategyAllocation: new uint256[](0),
+                    riskTolerance: 4,
                     riskProvider: riskProvider,
                     managementFeePct: 0,
-                    depositFeePct: 0
+                    depositFeePct: 0,
+                    allocationProvider: address(0xabc)
                 })
             );
         }

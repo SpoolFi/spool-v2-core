@@ -63,16 +63,19 @@ error DepositFeeTooLarge(uint256 deposittFeePct);
  * @notice Struct holding all data for registration of smart vault.
  * @custom:member assetGroupId Underlying asset group of the smart vault.
  * @custom:member strategies Strategies used by the smart vault.
+ * @custom:member strategyAllocation Optional. If empty array, values will be calculated on the spot.
  * @custom:member riskProvider Risk provider used by the smart vault.
- * @custom:member riskAppetite Risk appetite of the smart vault.
  * @custom:member managementFeePct Management fee of the smart vault.
  * @custom:member depositFeePct Deposit fee of the smart vault.
+ * @custom:member riskTolerance Risk appetite of the smart vault.
  */
 struct SmartVaultRegistrationForm {
     uint256 assetGroupId;
     address[] strategies;
+    uint256[] strategyAllocation;
     address riskProvider;
-    uint256 riskAppetite;
+    address allocationProvider;
+    int8 riskTolerance;
     uint16 managementFeePct;
     uint16 depositFeePct;
 }
@@ -88,10 +91,6 @@ interface ISmartVaultReallocator {
     function allocations(address smartVault) external view returns (uint256[] memory allocations_);
 
     function strategies(address smartVault) external view returns (address[] memory);
-
-    function riskTolerance(address smartVault) external view returns (int256 riskTolerance_);
-
-    function riskProvider(address smartVault) external view returns (address riskProviderAddress_);
 
     function assetGroupId(address smartVault) external view returns (uint256 assetGroupId_);
 
@@ -207,13 +206,6 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
     function deposit(DepositBag calldata bag) external returns (uint256 receipt);
 
     /* ========== EVENTS ========== */
-
-    /**
-     * @notice Smart vault risk provider set
-     * @param smartVault Smart vault address
-     * @param riskProvider_ New risk provider address
-     */
-    event RiskProviderSet(address indexed smartVault, address indexed riskProvider_);
 
     /**
      * @notice Smart vault has been flushed

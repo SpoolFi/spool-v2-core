@@ -70,10 +70,12 @@ contract TimelockGuardDemoTest is Test, TestFixture {
                     guards: guards,
                     guardRequestTypes: guardRequestTypes,
                     strategies: Arrays.toArray(address(strategy)),
-                    riskAppetite: 4,
+                    strategyAllocation: new uint256[](0),
+                    riskTolerance: 4,
                     riskProvider: riskProvider,
                     managementFeePct: 0,
-                    depositFeePct: 0
+                    depositFeePct: 0,
+                    allocationProvider: address(allocationProvider)
                 })
             );
         }

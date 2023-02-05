@@ -43,6 +43,10 @@ contract MockUniswapV2Strategy is Strategy {
         uniswapPair = IUniswapV2Pair(pairAddress);
     }
 
+    function getAPY() external pure override returns (uint16) {
+        return 0;
+    }
+
     function assetRatio() external view override returns (uint256[] memory) {
         // NOTE: NOT OK, NEEDS SOME SLIPPAGES/CONSTRAINTS
         (uint112 reserve0, uint112 reserve1,) = uniswapPair.getReserves();
