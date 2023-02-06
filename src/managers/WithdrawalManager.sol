@@ -167,7 +167,7 @@ contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdr
         returns (uint256)
     {
         ISmartVault smartVault = ISmartVault(bag.smartVault);
-        _validateRedeem(smartVault, bag2.redeemer, bag2.receiver, bag.nftIds, bag.nftAmounts, bag.shares);
+        _validateRedeem(smartVault, bag2.redeemer, bag2.receiver, bag.shares);
 
         // add withdrawal to be flushed
         _withdrawnVaultShares[bag.smartVault][bag2.flushIndex] += bag.shares;
@@ -186,7 +186,7 @@ contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdr
         returns (uint256[] memory)
     {
         ISmartVault smartVault = ISmartVault(bag.smartVault);
-        _validateRedeem(smartVault, bag2.redeemer, bag2.redeemer, bag.nftIds, bag.nftAmounts, bag.shares);
+        _validateRedeem(smartVault, bag2.redeemer, bag2.redeemer, bag.shares);
 
         // figure out how much to redeem from each strategy
         uint256[] memory strategySharesToRedeem = new uint256[](bag2.strategies.length);
@@ -215,23 +215,7 @@ contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdr
         return assetsWithdrawn;
     }
 
-    function _validateRedeem(
-        ISmartVault smartVault,
-        address redeemer,
-        address receiver,
-        uint256[] memory nftIds,
-        uint256[] memory nftAmounts,
-        uint256 shares
-    ) private {
-        for (uint256 i = 0; i < nftIds.length; i++) {
-            if (nftIds[i] > MAXIMAL_DEPOSIT_ID) {
-                revert InvalidDepositNftId(nftIds[i]);
-            }
-        }
-
-        _runGuards(address(smartVault), redeemer, redeemer, redeemer, nftIds, new address[](0), RequestType.BurnNFT);
-        smartVault.burnNFTs(redeemer, nftIds, nftAmounts);
-
+    function _validateRedeem(ISmartVault smartVault, address redeemer, address receiver, uint256 shares) private view {
         if (smartVault.balanceOf(redeemer) < shares) {
             revert InsufficientBalance(smartVault.balanceOf(redeemer), shares);
         }

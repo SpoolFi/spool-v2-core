@@ -23,6 +23,7 @@ import "@openzeppelin/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "../src/managers/DepositManager.sol";
 import "../src/managers/WithdrawalManager.sol";
+import "../src/strategies/GhostStrategy.sol";
 
 contract DeploySpool is Script {
     ProxyAdmin proxyAdmin;
@@ -42,6 +43,7 @@ contract DeploySpool is Script {
     AllowlistGuard allowlistGuard;
     DepositManager depositManager;
     WithdrawalManager withdrawalManager;
+    IStrategy ghostStrategy;
 
     function run() public {
         console.log("Deploy Spool...");
@@ -51,6 +53,8 @@ contract DeploySpool is Script {
 
         proxyAdmin = new ProxyAdmin();
         TransparentUpgradeableProxy proxy;
+
+        ghostStrategy = new GhostStrategy();
 
         SpoolAccessControl spoolAccessControlImpl = new SpoolAccessControl();
         proxy = new TransparentUpgradeableProxy(address(spoolAccessControlImpl), address(proxyAdmin), "");
@@ -78,7 +82,11 @@ contract DeploySpool is Script {
         proxy = new TransparentUpgradeableProxy(address(guardManagerImpl), address(proxyAdmin), "");
         guardManager = GuardManager(address(proxy));
 
-        proxy = new TransparentUpgradeableProxy(address(new RiskManager(spoolAccessControl)), address(proxyAdmin), "");
+        proxy = new TransparentUpgradeableProxy(
+            address(new RiskManager(spoolAccessControl, address(ghostStrategy))),
+            address(proxyAdmin),
+            ""
+        );
         riskManager = RiskManager(address(proxy));
 
         proxy = new TransparentUpgradeableProxy(address(new UsdPriceFeedManager()), address(proxyAdmin), "");
@@ -87,7 +95,8 @@ contract DeploySpool is Script {
         StrategyRegistry strategyRegistryImpl = new StrategyRegistry(
             masterWallet,
             spoolAccessControl,
-            usdPriceFeedManager
+            usdPriceFeedManager,
+            address(ghostStrategy)
         );
         proxy = new TransparentUpgradeableProxy(address(strategyRegistryImpl), address(proxyAdmin), "");
         strategyRegistry = StrategyRegistry(address(proxy));
@@ -114,7 +123,8 @@ contract DeploySpool is Script {
             withdrawalManager,
             strategyRegistry,
             masterWallet,
-            usdPriceFeedManager
+            usdPriceFeedManager,
+            address(ghostStrategy)
         );
 
         proxy = new TransparentUpgradeableProxy(address(smartVaultManagerImpl), address(proxyAdmin), "");

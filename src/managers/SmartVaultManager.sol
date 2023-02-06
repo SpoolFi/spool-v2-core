@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
-import "@openzeppelin/utils/Strings.sol";
-import "forge-std/console.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/utils/math/Math.sol";
@@ -11,7 +9,6 @@ import "../interfaces/IAssetGroupRegistry.sol";
 import "../interfaces/IDepositManager.sol";
 import "../interfaces/IGuardManager.sol";
 import "../interfaces/IMasterWallet.sol";
-import "../interfaces/IRewardManager.sol";
 import "../interfaces/IRiskManager.sol";
 import "../interfaces/ISmartVault.sol";
 import "../interfaces/ISmartVaultManager.sol";
@@ -24,7 +21,6 @@ import "../interfaces/RequestType.sol";
 import "../access/SpoolAccessControl.sol";
 import "../libraries/ArrayMapping.sol";
 import "../libraries/ReallocationLib.sol";
-import "../libraries/SpoolUtils.sol";
 
 struct VaultSyncBag {
     address vaultOwner;
@@ -75,6 +71,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /// @notice Price feed manager
     IUsdPriceFeedManager private immutable _priceFeedManager;
 
+    address private immutable _ghostStrategy;
+
     /* ========== STATE VARIABLES ========== */
 
     /// @notice Smart Vault registry
@@ -98,6 +96,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /// @notice First flush index that still needs to be synced for given Smart Vault.
     mapping(address => uint256) internal _flushIndexesToSync;
 
+    /// @notice List of vaults per strategy
+    mapping(address => address[]) internal _smartVaultsWithStrategy;
+
     /**
      * @notice DHW indexes for given Smart Vault and flush index
      * @dev smart vault => flush index => DHW indexes
@@ -118,7 +119,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         IWithdrawalManager withdrawalManager_,
         IStrategyRegistry strategyRegistry_,
         IMasterWallet masterWallet_,
-        IUsdPriceFeedManager priceFeedManager_
+        IUsdPriceFeedManager priceFeedManager_,
+        address ghostStrategy
     ) SpoolAccessControllable(accessControl_) {
         _assetGroupRegistry = assetGroupRegistry_;
         _riskManager = riskManager_;
@@ -127,6 +129,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _strategyRegistry = strategyRegistry_;
         _masterWallet = masterWallet_;
         _priceFeedManager = priceFeedManager_;
+        _ghostStrategy = ghostStrategy;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -185,14 +188,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     }
 
     /**
-     * @notice Smart vault deposits for given flush index.
-     */
-    function smartVaultDeposits(address smartVault, uint256 flushIdx) external view returns (uint256[] memory) {
-        uint256 assetGroupLength = _assetGroupRegistry.assetGroupLength(_smartVaultAssetGroups[smartVault]);
-        return _depositManager.smartVaultDeposits(smartVault, flushIdx, assetGroupLength);
-    }
-
-    /**
      * @notice DHW indexes that were active at given flush index
      */
     function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint256[] memory) {
@@ -215,6 +210,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _syncSmartVault(bag.smartVault, strategies_, tokens, false);
 
         uint256 flushIndex = _flushIndexes[bag.smartVault];
+
+        _depositManager.claimSmartVaultTokens(bag.smartVault, bag.nftIds, bag.nftAmounts, tokens, msg.sender);
         uint256 nftId = _withdrawalManager.redeem(bag, RedeemExtras(receiver, msg.sender, flushIndex));
 
         if (doFlush) {
@@ -235,6 +232,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
 
         _syncSmartVault(bag.smartVault, strategies_, tokens, false);
+        _depositManager.claimSmartVaultTokens(bag.smartVault, bag.nftIds, bag.nftAmounts, tokens, msg.sender);
         return _withdrawalManager.redeemFast(bag, RedeemFastExtras(strategies_, tokens, assetGroupId_, msg.sender));
     }
 
@@ -310,8 +308,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         for (uint256 i = 0; i < registrationForm.strategies.length; i++) {
             address strategy = registrationForm.strategies[i];
 
-            // check that strategies are registered
-            if (!_strategyRegistry.isStrategy(strategy)) {
+            if (!_accessControl.hasRole(ROLE_STRATEGY, strategy)) {
                 revert InvalidStrategy(strategy);
             }
 
@@ -319,6 +316,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             if (IStrategy(strategy).assetGroupId() != registrationForm.assetGroupId) {
                 revert NotSameAssetGroup();
             }
+
+            _smartVaultsWithStrategy[strategy].push(smartVault);
         }
 
         // check that management fee is not too big
@@ -339,22 +338,35 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         if (registrationForm.strategyAllocation.length == registrationForm.strategies.length) {
             _smartVaultAllocations[smartVault].setValues(registrationForm.strategyAllocation);
         } else {
-            uint16[] memory apyList = new uint16[](registrationForm.strategies.length);
-            for (uint256 i = 0; i < registrationForm.strategies.length; i++) {
-                apyList[i] = IStrategy(registrationForm.strategies[i]).getAPY();
-            }
-
             _riskManager.setRiskProvider(smartVault, registrationForm.riskProvider);
             _riskManager.setRiskTolerance(smartVault, registrationForm.riskTolerance);
             _riskManager.setAllocationProvider(smartVault, registrationForm.allocationProvider);
 
             _smartVaultAllocations[smartVault].setValues(
-                _riskManager.calculateAllocation(smartVault, registrationForm.strategies, apyList)
+                _riskManager.calculateAllocation(smartVault, registrationForm.strategies)
             );
         }
 
         // update registry
         _smartVaultRegistry[smartVault] = true;
+    }
+
+    function removeStrategy(address strategy) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        _checkRole(ROLE_STRATEGY, strategy);
+
+        for (uint256 i = 0; i < _smartVaultsWithStrategy[strategy].length; i++) {
+            address smartVault = _smartVaultsWithStrategy[strategy][i];
+            address[] memory strategies_ = _smartVaultStrategies[smartVault];
+            for (uint256 j = 0; j < strategies_.length; j++) {
+                if (strategies_[j] == strategy) {
+                    _smartVaultStrategies[smartVault][j] = _ghostStrategy;
+                    _smartVaultAllocations[smartVault][j] = 0;
+                    break;
+                }
+            }
+        }
+
+        _strategyRegistry.removeStrategy(strategy);
     }
 
     /* ========== BOOKKEEPING ========== */
@@ -386,11 +398,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             return;
         }
 
-        uint16[] memory apyList = new uint16[](strategies_.length);
-        for (uint256 i = 0; i < strategies_.length; i++) {
-            apyList[i] = IStrategy(strategies_[i]).getAPY();
-        }
-
         uint256 assetGroupId_ = _smartVaultAssetGroups[smartVaults[0]];
         for (uint256 i = 0; i < smartVaults.length; ++i) {
             // Check that all smart vaults are registered.
@@ -408,7 +415,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
             // Set new allocation.
             _smartVaultAllocations[smartVaults[i]].setValues(
-                _riskManager.calculateAllocation(smartVaults[i], strategies_, apyList)
+                _riskManager.calculateAllocation(smartVaults[i], _smartVaultStrategies[smartVaults[i]])
             );
         }
 
@@ -456,17 +463,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         while (bag.flushIndex < _flushIndexes[smartVault]) {
             uint256[] memory indexes = _dhwIndexes[smartVault][bag.flushIndex].toArray(strategies_.length);
-
-            {
-                (bool dhwOk, uint256 idx) = _areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes);
-                if (!dhwOk) {
-                    if (revertIfError) {
-                        revert DhwNotRunYetForIndex(strategies_[idx], indexes[idx]);
-                    } else {
-                        break;
-                    }
-                }
-            }
+            if (!_areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes, strategies_, revertIfError)) break;
 
             _withdrawalManager.syncWithdrawals(smartVault, bag.flushIndex, strategies_, indexes);
             DepositSyncResult memory syncResult = _depositManager.syncDeposits(
@@ -497,18 +494,27 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /**
      * @dev Check whether all DHW runs were completed for given indexes
      */
-    function _areAllDhwRunsCompleted(uint256[] memory currentStrategyIndexes, uint256[] memory dhwIndexes_)
-        private
-        pure
-        returns (bool, uint256)
-    {
+    function _areAllDhwRunsCompleted(
+        uint256[] memory currentStrategyIndexes,
+        uint256[] memory dhwIndexes_,
+        address[] memory strategies_,
+        bool revertIfError
+    ) private view returns (bool) {
         for (uint256 i; i < dhwIndexes_.length; i++) {
+            if (strategies_[i] == _ghostStrategy) {
+                continue;
+            }
+
             if (dhwIndexes_[i] >= currentStrategyIndexes[i]) {
-                return (false, i);
+                if (revertIfError) {
+                    revert DhwNotRunYetForIndex(strategies_[i], dhwIndexes_[i]);
+                }
+
+                return false;
             }
         }
 
-        return (true, 0);
+        return true;
     }
 
     /**
@@ -536,10 +542,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         while (bag.flushIndex < _flushIndexes[smartVault]) {
             uint256[] memory indexes = _dhwIndexes[smartVault][bag.flushIndex].toArray(strategies_.length);
 
-            {
-                (bool dhwOk,) = _areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes);
-                if (!dhwOk) break;
-            }
+            if (!_areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes, strategies_, false)) break;
 
             DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(
                 smartVault,
@@ -607,10 +610,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         while (bag.flushIndex < _flushIndexes[smartVault]) {
             uint256[] memory indexes = _dhwIndexes[smartVault][bag.flushIndex].toArray(bag2.strategies.length);
-            {
-                (bool dhwOk,) = _areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes);
-                if (!dhwOk) break;
-            }
+            if (!_areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes, bag2.strategies, false)) break;
 
             DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(
                 smartVault,
@@ -642,13 +642,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         return newBalance;
-    }
-
-    /**
-     * @dev Gets total value (in USD) of assets managed by the vault.
-     */
-    function _getVaultTotalUsdValue(address smartVault) internal view returns (uint256) {
-        return SpoolUtils.getVaultTotalUsdValue(smartVault, _smartVaultStrategies[smartVault]);
     }
 
     /**

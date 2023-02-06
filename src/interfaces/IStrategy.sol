@@ -22,6 +22,8 @@ struct DhwInfo {
     uint256[] assetsWithdrawn;
 }
 
+error IsGhostStrategy();
+
 interface IStrategy is IERC20Upgradeable {
     /* ========== EVENTS ========== */
 
@@ -68,30 +70,6 @@ interface IStrategy is IERC20Upgradeable {
      * - MUST NOT revert.
      */
     function assets() external view returns (address[] memory assetTokenAddresses);
-
-    /**
-     * @dev Returns the total amount of the underlying asset that is “managed” by Vault.
-     *
-     * - SHOULD include any compounding that occurs from yield.
-     * - MUST be inclusive of any fees that are charged against assets in the Vault.
-     * - MUST NOT revert.
-     */
-    function totalAssets() external view returns (uint256[] memory totalManagedAssets);
-
-    /**
-     * @dev Returns the amount of assets that the Vault would exchange for the amount of shares provided, in an ideal
-     * scenario where all the conditions are met.
-     *
-     * - MUST NOT be inclusive of any fees that are charged against assets in the Vault.
-     * - MUST NOT show any variations depending on the caller.
-     * - MUST NOT reflect slippage or other on-chain conditions, when performing the actual exchange.
-     * - MUST NOT revert.
-     *
-     * NOTE: This calculation MAY NOT reflect the “per-user” price-per-share, and instead should reflect the
-     * “average-user’s” price-per-share, meaning what the average user should expect to see when exchanging to and
-     * from.
-     */
-    function convertToAssets(uint256 shares) external view returns (uint256[] memory assets_);
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 

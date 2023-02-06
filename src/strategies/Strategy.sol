@@ -5,11 +5,11 @@ import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/utils/math/Math.sol";
-import "./interfaces/IAssetGroupRegistry.sol";
-import "./interfaces/IMasterWallet.sol";
-import "./interfaces/IStrategy.sol";
-import "./interfaces/IStrategyRegistry.sol";
-import "./access/SpoolAccessControl.sol";
+import "../interfaces/IAssetGroupRegistry.sol";
+import "../interfaces/IMasterWallet.sol";
+import "../interfaces/IStrategy.sol";
+import "../interfaces/IStrategyRegistry.sol";
+import "../access/SpoolAccessControl.sol";
 
 abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrategy {
     using SafeERC20 for IERC20;
@@ -64,11 +64,6 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
     }
 
     function assetRatio() external view virtual returns (uint256[] memory);
-
-    // TODO: implement or remove
-    function totalAssets() external pure returns (uint256[] memory) {
-        revert("0");
-    }
 
     function strategyName() external view returns (string memory) {
         return _strategyName;
@@ -197,11 +192,6 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
     {
         _transfer(smartVault, address(this), amount);
-    }
-
-    // TODO: implement or remove
-    function convertToAssets(uint256) external pure returns (uint256[] memory) {
-        revert("0");
     }
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */

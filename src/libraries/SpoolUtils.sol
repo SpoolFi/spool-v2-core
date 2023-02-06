@@ -109,8 +109,13 @@ library SpoolUtils {
 
         for (uint256 i = 0; i < strategyAddresses_.length; i++) {
             IStrategy strategy = IStrategy(strategyAddresses_[i]);
+            uint256 totalSupply = strategy.totalSupply();
+            if (totalSupply == 0) {
+                continue;
+            }
+
             uint256 shares = strategy.balanceOf(smartVault_) + pendingShares[i];
-            totalUsdValue = totalUsdValue + strategy.totalUsdValue() * shares / strategy.totalSupply();
+            totalUsdValue = totalUsdValue + strategy.totalUsdValue() * shares / totalSupply;
         }
 
         return totalUsdValue;
@@ -118,7 +123,11 @@ library SpoolUtils {
 
     function getVaultStrategyUsdValue(address smartVault, address strategyAddress) public view returns (uint256) {
         IStrategy strategy = IStrategy(strategyAddress);
+        uint256 totalSupply = strategy.totalSupply();
+        if (totalSupply == 0) {
+            return 0;
+        }
 
-        return strategy.totalUsdValue() * strategy.balanceOf(smartVault) / strategy.totalSupply();
+        return strategy.totalUsdValue() * strategy.balanceOf(smartVault) / totalSupply;
     }
 }

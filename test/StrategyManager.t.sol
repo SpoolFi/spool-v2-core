@@ -9,39 +9,56 @@ import "../src/MasterWallet.sol";
 import "./libraries/Arrays.sol";
 import "../src/Swapper.sol";
 import "./mocks/MockPriceFeedManager.sol";
+import "../src/strategies/GhostStrategy.sol";
 
 contract StrategyRegistryTest is Test {
     IStrategyRegistry strategyRegistry;
+    SpoolAccessControl accessControl;
 
     function setUp() public {
-        SpoolAccessControl accessControl = new SpoolAccessControl();
+        accessControl = new SpoolAccessControl();
         accessControl.initialize();
         strategyRegistry =
-            new StrategyRegistry(new MasterWallet(accessControl), accessControl, new MockPriceFeedManager());
+        new StrategyRegistry(new MasterWallet(accessControl), accessControl, new MockPriceFeedManager(), address(new GhostStrategy()));
+
+        accessControl.grantRole(ADMIN_ROLE_STRATEGY, address(strategyRegistry));
     }
 
     function test_registerStrategy() public {
         address strategy = address(new MockStrategy());
-        assertFalse(strategyRegistry.isStrategy(strategy));
+        assertFalse(accessControl.hasRole(ROLE_STRATEGY, strategy));
 
         strategyRegistry.registerStrategy(strategy);
-        assertTrue(strategyRegistry.isStrategy(strategy));
+        assertTrue(accessControl.hasRole(ROLE_STRATEGY, strategy));
 
         vm.expectRevert(abi.encodeWithSelector(StrategyAlreadyRegistered.selector, strategy));
         strategyRegistry.registerStrategy(strategy);
     }
 
-    function test_removeStrategy() public {
+    function test_removeStrategy_revertNotVaultManager() public {
         address strategy = address(new MockStrategy());
+
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SMART_VAULT_MANAGER, address(this)));
+        strategyRegistry.removeStrategy(strategy);
+    }
+
+    function test_removeStrategy_revertInvalidStrategy() public {
+        address strategy = address(new MockStrategy());
+        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(this));
 
         vm.expectRevert(abi.encodeWithSelector(InvalidStrategy.selector, strategy));
         strategyRegistry.removeStrategy(strategy);
+    }
+
+    function test_removeStrategy_success() public {
+        address strategy = address(new MockStrategy());
+        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(this));
 
         strategyRegistry.registerStrategy(strategy);
-        assertTrue(strategyRegistry.isStrategy(strategy));
+        assertTrue(accessControl.hasRole(ROLE_STRATEGY, strategy));
 
         strategyRegistry.removeStrategy(strategy);
-        assertFalse(strategyRegistry.isStrategy(strategy));
+        assertFalse(accessControl.hasRole(ROLE_STRATEGY, strategy));
     }
 }
 

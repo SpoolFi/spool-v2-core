@@ -36,7 +36,6 @@ struct StrategyAtIndex {
 interface IStrategyRegistry {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
-    function isStrategy(address strategy) external view returns (bool);
     function currentIndex(address[] calldata strategies) external view returns (uint256[] memory);
     function depositedAssets(address strategy, uint256 dhwIndex) external view returns (uint256[] memory);
     function strategyAtIndex(address strategy, uint256 dhwIndex) external view returns (StrategyAtIndex memory);

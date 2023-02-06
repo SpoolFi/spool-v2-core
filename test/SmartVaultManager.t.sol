@@ -204,7 +204,7 @@ contract SmartVaultManagerTest is TestFixture {
         uint256 flushIdx = smartVaultManager.getLatestFlushIndex(address(smartVault_));
         assertEq(flushIdx, 0);
 
-        uint256[] memory deposits = smartVaultManager.smartVaultDeposits(address(smartVault_), flushIdx);
+        uint256[] memory deposits = depositManager.smartVaultDeposits(address(smartVault_), flushIdx, 2);
         assertEq(deposits.length, 2);
         assertEq(deposits[0], 100 ether);
         assertEq(deposits[1], 6.779734526152375133 ether);

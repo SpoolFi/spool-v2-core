@@ -199,4 +199,46 @@ contract VaultSyncTest is IntegrationTestFixture {
         assertEq(smartVault.totalSupply(), simulatedTotalSupply);
         assertEq(syncResult.mintedSVTs, mintedSVTs - depositFee);
     }
+
+    function test_depositAndRedeemNFTs() public {
+        TestBag memory bag;
+        createVault();
+        vm.clearMockedCalls();
+
+        bag.fees = SmartVaultFees(0, 0);
+        bag.dhwSwapInfo = new SwapInfo[][](3);
+        bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        bag.dhwSwapInfo[0] = new SwapInfo[](0);
+        bag.dhwSwapInfo[1] = new SwapInfo[](0);
+        bag.dhwSwapInfo[2] = new SwapInfo[](0);
+
+        vm.prank(alice);
+        uint256 nftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), bag.depositAmounts, alice, address(0), true));
+        strategyRegistry.doHardWork(smartVaultStrategies, bag.dhwSwapInfo);
+
+        uint256 aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
+        vm.startPrank(alice);
+        uint256 redeemNftId = smartVaultManager.redeem(
+            RedeemBag(address(smartVault), aliceBalance, Arrays.toArray(nftId), Arrays.toArray(NFT_MINTED_SHARES)),
+            alice,
+            true
+        );
+        vm.stopPrank();
+
+        strategyRegistry.doHardWork(smartVaultStrategies, bag.dhwSwapInfo);
+
+        vm.startPrank(alice);
+        (uint256[] memory withdrawnAssets,) = smartVaultManager.claimWithdrawal(
+            address(smartVault), Arrays.toArray(redeemNftId), Arrays.toArray(NFT_MINTED_SHARES), alice
+        );
+
+        assertEq(withdrawnAssets[0], bag.depositAmounts[0]);
+        assertEq(withdrawnAssets[1], bag.depositAmounts[1]);
+        assertEq(withdrawnAssets[2], bag.depositAmounts[2]);
+
+        assertEq(smartVault.balanceOf(alice), 0);
+        assertEq(smartVault.balanceOf(alice, nftId), 0);
+    }
 }

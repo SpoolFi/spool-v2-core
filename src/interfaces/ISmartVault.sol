@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
-import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "./RequestType.sol";
+import "./Constants.sol";
 
 /* ========== ERRORS ========== */
 
@@ -40,7 +40,7 @@ error InvalidNftBalance(uint256 balance);
 
 /**
  * @notice Used when someone wants to transfer invalid NFT shares amount.
- * @param transferAmount Amount of shares requested to be transfered.
+ * @param transferAmount Amount of shares requested to be transferred.
  */
 error InvalidNftTransferAmount(uint256 transferAmount);
 
@@ -48,7 +48,7 @@ error InvalidNftTransferAmount(uint256 transferAmount);
 
 struct DepositMetadata {
     uint256[] assets;
-    uint256 initiated; // TODO: initiated / locked until / timelock ?
+    uint256 initiated;
     uint256 flushIndex;
 }
 
@@ -62,14 +62,10 @@ struct WithdrawalMetadata {
     uint256 flushIndex;
 }
 
-/// @dev Maximal value of deposit NFT ID.
-uint256 constant MAXIMAL_DEPOSIT_ID = 2 ** 255 - 1;
-
-/// @dev Maximal value of withdrawal NFT ID.
-uint256 constant MAXIMAL_WITHDRAWAL_ID = 2 ** 256 - 1;
-
-/// @dev How many shares will be minted with a NFT
-uint256 constant NFT_MINTED_SHARES = 10 ** 6;
+struct SmartVaultFees {
+    uint16 managementFeePct;
+    uint16 depositFeePct;
+}
 
 /* ========== INTERFACES ========== */
 

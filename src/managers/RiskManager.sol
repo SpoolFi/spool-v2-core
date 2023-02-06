@@ -2,6 +2,7 @@
 pragma solidity 0.8.16;
 
 import "../interfaces/IRiskManager.sol";
+import "../interfaces/IStrategy.sol";
 import "../interfaces/Constants.sol";
 import "../access/SpoolAccessControl.sol";
 import "../interfaces/IAllocationProvider.sol";
@@ -21,24 +22,41 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
     /// @notice Smart Vault allocation providers
     mapping(address => address) private _smartVaultAllocationProviders;
 
-    constructor(ISpoolAccessControl accessControl) SpoolAccessControllable(accessControl) {}
+    address private immutable _ghostStrategy;
+
+    constructor(ISpoolAccessControl accessControl, address ghostStrategy) SpoolAccessControllable(accessControl) {
+        _ghostStrategy = ghostStrategy;
+    }
 
     /* ========== VIEW FUNCTIONS ========== */
 
-    function calculateAllocation(address smartVault, address[] calldata strategies, uint16[] calldata apys)
-        external
+    function calculateAllocation(address smartVault, address[] calldata strategies)
+        public
         view
         returns (uint256[] memory)
     {
+        uint16[] memory apyList = new uint16[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            apyList[i] = IStrategy(strategies[i]).getAPY();
+        }
+
         IAllocationProvider allocationProvider = IAllocationProvider(_smartVaultAllocationProviders[smartVault]);
-        return allocationProvider.calculateAllocation(
+        uint256[] memory allocations = allocationProvider.calculateAllocation(
             AllocationCalculationInput({
                 strategies: strategies,
-                apys: apys,
+                apys: apyList,
                 riskScores: getRiskScores(_smartVaultRiskProviders[smartVault], strategies),
                 riskTolerance: _smartVaultRiskTolerance[smartVault]
             })
         );
+
+        for (uint256 i = 0; i < strategies.length; i++) {
+            if (strategies[i] == _ghostStrategy) {
+                allocations[i] = 0;
+            }
+        }
+
+        return allocations;
     }
 
     function getRiskScores(address riskProvider, address[] memory strategies) public view returns (uint8[] memory) {

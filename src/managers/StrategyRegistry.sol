@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
-import "forge-std/console.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/CommonErrors.sol";
-import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/ISwapper.sol";
 import "../libraries/ArrayMapping.sol";
@@ -16,6 +14,7 @@ import "../access/SpoolAccessControl.sol";
 /**
  * @dev Requires roles:
  * - ROLE_MASTER_WALLET_MANAGER
+ * - ADMIN_ROLE_STRATEGY
  */
 contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     using ArrayMapping for mapping(uint256 => uint256);
@@ -28,8 +27,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     /// @notice Price feed manager
     IUsdPriceFeedManager immutable _priceFeedManager;
 
-    /// @notice Strategy registry
-    mapping(address => bool) internal _strategies;
+    address private immutable _ghostStrategy;
 
     /// @notice Current DHW index for strategies
     mapping(address => uint256) internal _currentIndexes;
@@ -76,21 +74,18 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
      */
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _assetsWithdrawn;
 
-    constructor(IMasterWallet masterWallet_, ISpoolAccessControl accessControl_, IUsdPriceFeedManager priceFeedManager_)
-        SpoolAccessControllable(accessControl_)
-    {
+    constructor(
+        IMasterWallet masterWallet_,
+        ISpoolAccessControl accessControl_,
+        IUsdPriceFeedManager priceFeedManager_,
+        address ghostStrategy_
+    ) SpoolAccessControllable(accessControl_) {
         _masterWallet = masterWallet_;
         _priceFeedManager = priceFeedManager_;
+        _ghostStrategy = ghostStrategy_;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
-
-    /**
-     * @notice Checks if given address is registered as a strategy
-     */
-    function isStrategy(address strategy) external view returns (bool) {
-        return _strategies[strategy];
-    }
 
     /**
      * @notice Deposits for given strategy and DHW index
@@ -153,9 +148,9 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
      * @notice Add strategy to registry
      */
     function registerStrategy(address strategy) external {
-        if (_strategies[strategy]) revert StrategyAlreadyRegistered({address_: strategy});
+        if (_accessControl.hasRole(ROLE_STRATEGY, strategy)) revert StrategyAlreadyRegistered({address_: strategy});
 
-        _strategies[strategy] = true;
+        _accessControl.grantRole(ROLE_STRATEGY, strategy);
         _currentIndexes[strategy] = 1;
         _dhwAssetRatios[strategy].setValues(IStrategy(strategy).assetRatio());
     }
@@ -163,27 +158,41 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     /**
      * @notice Remove strategy from registry
      */
-    function removeStrategy(address strategy) external {
-        if (!_strategies[strategy]) revert InvalidStrategy({address_: strategy});
-        _strategies[strategy] = false;
+    function removeStrategy(address strategy) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
+        if (!_accessControl.hasRole(ROLE_STRATEGY, strategy)) revert InvalidStrategy({address_: strategy});
+        _accessControl.revokeRole(ROLE_STRATEGY, strategy);
     }
 
     /**
      * @notice TODO: just a quick mockup so we can test withdrawals
      */
     function doHardWork(address[] memory strategies_, SwapInfo[][] calldata swapInfo) external {
-        address[] memory assetGroup = IStrategy(strategies_[0]).assets();
-        uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(assetGroup, _priceFeedManager);
+        address[] memory assetGroup;
+        uint256[] memory exchangeRates;
 
         for (uint256 i = 0; i < strategies_.length; i++) {
+            if (strategies_[i] == _ghostStrategy) {
+                continue;
+            }
+
             IStrategy strategy = IStrategy(strategies_[i]);
+
+            if (assetGroup.length == 0) {
+                assetGroup = strategy.assets();
+                exchangeRates = SpoolUtils.getExchangeRates(assetGroup, _priceFeedManager);
+            }
+
             uint256 dhwIndex = _currentIndexes[address(strategy)];
 
             // transfer deposited assets to strategy
             for (uint256 j = 0; j < assetGroup.length; j++) {
-                _masterWallet.transfer(
-                    IERC20(assetGroup[j]), address(strategy), _assetsDeposited[address(strategy)][dhwIndex][j]
-                );
+                uint256 deposited = _assetsDeposited[address(strategy)][dhwIndex][j];
+
+                if (deposited > 0) {
+                    _masterWallet.transfer(
+                        IERC20(assetGroup[j]), address(strategy), _assetsDeposited[address(strategy)][dhwIndex][j]
+                    );
+                }
             }
 
             // call strategy to do hard work
@@ -206,11 +215,13 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
 
     function addDeposits(address[] memory strategies_, uint256[][] memory amounts)
         external
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256[] memory)
     {
         uint256[] memory indexes = new uint256[](strategies_.length);
         for (uint256 i = 0; i < strategies_.length; i++) {
             address strategy = strategies_[i];
+
             uint256 latestIndex = _currentIndexes[strategy];
             indexes[i] = latestIndex;
 
@@ -224,6 +235,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
 
     function addWithdrawals(address[] memory strategies_, uint256[] memory strategyShares)
         external
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256[] memory)
     {
         uint256[] memory indexes = new uint256[](strategies_.length);
@@ -241,6 +253,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
 
     function redeemFast(address[] memory strategies_, uint256[] memory strategyShares, address[] memory assetGroup)
         external
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256[] memory)
     {
         uint256[] memory withdrawnAssets = new uint256[](assetGroup.length);
@@ -266,12 +279,22 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         address[] memory strategies_,
         uint256[] memory dhwIndexes,
         uint256[] memory strategyShares
-    ) external view returns (uint256[] memory) {
-        address[] memory tokens = IStrategy(strategies_[0]).assets();
-        uint256[] memory totalWithdrawnAssets = new uint256[](tokens.length);
+    ) external view onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (uint256[] memory) {
+        address[] memory assetGroup;
+        uint256[] memory totalWithdrawnAssets;
 
         for (uint256 i = 0; i < strategies_.length; i++) {
             address strategy = strategies_[i];
+
+            if (strategies_[i] == _ghostStrategy) {
+                continue;
+            }
+
+            if (assetGroup.length == 0) {
+                assetGroup = IStrategy(strategy).assets();
+                totalWithdrawnAssets = new uint256[](assetGroup.length);
+            }
+
             uint256 dhwIndex = dhwIndexes[i];
 
             if (dhwIndex == _currentIndexes[strategy]) {

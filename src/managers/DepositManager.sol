@@ -189,7 +189,9 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
             flushDhwIndexes = _strategyRegistry.addDeposits(strategies, distribution);
 
             for (uint256 i = 0; i < strategies.length; i++) {
-                _vaultFlushedDeposits[smartVault][flushIndex][strategies[i]].setValues(distribution[i]);
+                if (distribution[i].length > 0) {
+                    _vaultFlushedDeposits[smartVault][flushIndex][strategies[i]].setValues(distribution[i]);
+                }
             }
         }
 
@@ -214,7 +216,9 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         if (syncResult.mintedSVTs > 0) {
             _mintedVaultShares[smartVault][flushIndex] = syncResult.mintedSVTs;
             for (uint256 i = 0; i < strategies.length; i++) {
-                IStrategy(strategies[i]).claimShares(smartVault, syncResult.sstShares[i]);
+                if (syncResult.sstShares[i] > 0) {
+                    IStrategy(strategies[i]).claimShares(smartVault, syncResult.sstShares[i]);
+                }
             }
         }
 
@@ -250,6 +254,9 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         // claim SSTs from each strategy
         for (uint256 i = 0; i < strategies.length; i++) {
             StrategyAtIndex memory atDhw = strategyDhwState[i];
+            if (atDhw.sharesMinted == 0) {
+                continue;
+            }
 
             uint256[] memory vaultDepositedAssets =
                 _vaultFlushedDeposits[smartVault][flushIndex][strategies[i]].toArray(assetGroup.length);

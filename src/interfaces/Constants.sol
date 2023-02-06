@@ -26,3 +26,12 @@ address constant STATIC_RISK_PROVIDER = address(0xaaa);
  * @notice Fixed values to use if risk provider is set to STATIC_RISK_PROVIDER
  */
 uint8 constant STATIC_RISK_SCORE = 1;
+
+/// @dev Maximal value of deposit NFT ID.
+uint256 constant MAXIMAL_DEPOSIT_ID = 2 ** 255 - 1;
+
+/// @dev Maximal value of withdrawal NFT ID.
+uint256 constant MAXIMAL_WITHDRAWAL_ID = 2 ** 256 - 1;
+
+/// @dev How many shares will be minted with a NFT
+uint256 constant NFT_MINTED_SHARES = 10 ** 6;

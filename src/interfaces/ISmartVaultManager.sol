@@ -60,7 +60,7 @@ error StaticAllocationSmartVault();
 /**
  * @notice Used when user tries to configure a vault with too large deposit fee.
  */
-error DepositFeeTooLarge(uint256 deposittFeePct);
+error DepositFeeTooLarge(uint256 depositFeePct);
 
 /* ========== STRUCTS ========== */
 
@@ -82,11 +82,6 @@ struct SmartVaultRegistrationForm {
     address riskProvider;
     address allocationProvider;
     int8 riskTolerance;
-    uint16 managementFeePct;
-    uint16 depositFeePct;
-}
-
-struct SmartVaultFees {
     uint16 managementFeePct;
     uint16 depositFeePct;
 }
@@ -135,12 +130,18 @@ interface ISmartVaultRegistry {
     function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm) external;
 }
 
-interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISmartVaultRegistry {
+interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint256[] memory);
 
     function getLatestFlushIndex(address smartVault) external view returns (uint256);
+
+    function allocations(address smartVault) external view returns (uint256[] memory allocations_);
+
+    function strategies(address smartVault) external view returns (address[] memory);
+
+    function assetGroupId(address smartVault) external view returns (uint256 assetGroupId_);
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
@@ -148,7 +149,9 @@ interface ISmartVaultManager is ISmartVaultReallocator, ISmartVaultBalance, ISma
 
     function flushSmartVault(address smartVault) external;
 
-    function smartVaultDeposits(address smartVault, uint256 flushIdx) external returns (uint256[] memory);
+    function reallocate(address[] calldata smartVaults, address[] calldata strategies_) external;
+
+    function removeStrategy(address strategy) external;
 
     /**
      * @notice Syncs smart vault with strategies.

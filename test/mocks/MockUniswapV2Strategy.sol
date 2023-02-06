@@ -4,7 +4,7 @@ pragma solidity 0.8.16;
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/utils/math/Math.sol";
-import "../../src/Strategy.sol";
+import "../../src/strategies/Strategy.sol";
 import "../external/uniswap/interfaces/IUniswapV2Factory.sol";
 import "../external/uniswap/interfaces/IUniswapV2Router02.sol";
 import "../external/uniswap/interfaces/IUniswapV2Pair.sol";

@@ -94,3 +94,13 @@ bytes32 constant ROLE_SWAPPER_ADMIN = keccak256("SWAPPER_ADMIN");
  * @dev Grants permission to reallocate smart vaults.
  */
 bytes32 constant ROLE_REALLOCATOR = keccak256("REALLOCATOR");
+
+/**
+ * @dev Grants permission to be used as a strategy.
+ */
+bytes32 constant ROLE_STRATEGY = keccak256("STRATEGY");
+
+/**
+ * @dev Grants permission to manage role ROLE_STRATEGY.
+ */
+bytes32 constant ADMIN_ROLE_STRATEGY = keccak256("ADMIN_STRATEGY");

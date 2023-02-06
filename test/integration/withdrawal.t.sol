@@ -21,6 +21,7 @@ import "../mocks/MockPriceFeedManager.sol";
 import "../../src/managers/WithdrawalManager.sol";
 import "../../src/managers/DepositManager.sol";
 import "../../src/rewards/RewardManager.sol";
+import "../../src/strategies/GhostStrategy.sol";
 
 contract WithdrawalIntegrationTest is Test {
     address private alice;
@@ -65,11 +66,12 @@ contract WithdrawalIntegrationTest is Test {
         assetGroupRegistry.initialize(assetGroup);
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
+        IStrategy ghostStrategy = new GhostStrategy();
         IUsdPriceFeedManager priceFeedManager = new MockPriceFeedManager();
-        strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
+        strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager, address(ghostStrategy));
         IActionManager actionManager = new ActionManager(accessControl);
         IGuardManager guardManager = new GuardManager(accessControl);
-        IRiskManager riskManager = new RiskManager(accessControl);
+        IRiskManager riskManager = new RiskManager(accessControl, address(ghostStrategy));
         depositManager =
             new DepositManager(strategyRegistry, priceFeedManager, guardManager, actionManager, accessControl);
         withdrawalManager =
@@ -83,8 +85,11 @@ contract WithdrawalIntegrationTest is Test {
             withdrawalManager,
             strategyRegistry,
             masterWallet,
-            priceFeedManager
+            priceFeedManager,
+            address(ghostStrategy)
         );
+
+        accessControl.grantRole(ADMIN_ROLE_STRATEGY, address(strategyRegistry));
 
         strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
         uint256[] memory strategyRatios = new uint256[](2);

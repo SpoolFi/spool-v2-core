@@ -1,0 +1,89 @@
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity 0.8.16;
+
+import "@openzeppelin-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "../interfaces/IStrategy.sol";
+
+contract GhostStrategy is IERC20Upgradeable, IStrategy {
+    constructor() {}
+
+    function getAPY() external pure returns (uint16) {
+        return 0;
+    }
+
+    function strategyName() external pure returns (string memory) {
+        return "Ghost strategy";
+    }
+
+    function totalUsdValue() external pure returns (uint256) {
+        return 0;
+    }
+
+    function assetRatio() external pure returns (uint256[] memory) {
+        return new uint256[](0);
+    }
+
+    function assetGroupId() external pure returns (uint256) {
+        return 0;
+    }
+
+    function assets() external pure returns (address[] memory) {
+        return new address[](0);
+    }
+
+    function doHardWork(SwapInfo[] calldata, uint256, address, uint256[] calldata, IUsdPriceFeedManager)
+        external
+        pure
+        returns (DhwInfo memory)
+    {
+        revert IsGhostStrategy();
+    }
+
+    function claimShares(address, uint256) external pure {
+        revert IsGhostStrategy();
+    }
+
+    function releaseShares(address, uint256) external pure {
+        revert IsGhostStrategy();
+    }
+
+    function redeemFast(uint256, address, address[] memory, uint256[] memory, IUsdPriceFeedManager)
+        external
+        pure
+        returns (uint256[] memory)
+    {
+        revert IsGhostStrategy();
+    }
+
+    function depositFast(address[] calldata, uint256[] calldata, IUsdPriceFeedManager)
+        external
+        pure
+        returns (uint256)
+    {
+        revert IsGhostStrategy();
+    }
+
+    function totalSupply() external pure returns (uint256) {
+        return 0;
+    }
+
+    function balanceOf(address) external pure returns (uint256) {
+        return 0;
+    }
+
+    function transfer(address, uint256) external pure returns (bool) {
+        revert IsGhostStrategy();
+    }
+
+    function allowance(address, address) external pure returns (uint256) {
+        return 0;
+    }
+
+    function approve(address, uint256) external pure returns (bool) {
+        revert IsGhostStrategy();
+    }
+
+    function transferFrom(address, address, uint256) external pure returns (bool) {
+        revert IsGhostStrategy();
+    }
+}

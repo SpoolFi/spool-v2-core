@@ -14,10 +14,9 @@ interface IRiskManager {
      * - risk appetite
      * @param smartVault Smart vault address
      * @param strategies Strategies.
-     * @param apys strategy apys.
      * @return allocation Calculated allocation.
      */
-    function calculateAllocation(address smartVault, address[] calldata strategies, uint16[] calldata apys)
+    function calculateAllocation(address smartVault, address[] calldata strategies)
         external
         view
         returns (uint256[] memory allocation);

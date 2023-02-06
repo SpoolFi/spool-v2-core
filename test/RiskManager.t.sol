@@ -17,7 +17,8 @@ contract RiskManagerTest is Test {
     function setUp() public {
         accessControl = new SpoolAccessControl();
         accessControl.initialize();
-        riskManager = new RiskManager(accessControl);
+
+        riskManager = new RiskManager(accessControl, address(0xabc));
     }
 
     function test_setRiskScore_success() public {

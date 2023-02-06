@@ -36,6 +36,7 @@ contract TestFixture is Test {
     MockPriceFeedManager internal priceFeedManager;
     MasterWallet internal masterWallet;
     IAllocationProvider internal allocationProvider;
+    IStrategy internal ghostStrategy;
 
     function setUpBase() public virtual {
         token = new MockToken("Token", "T");
@@ -43,6 +44,7 @@ contract TestFixture is Test {
 
         accessControl = new SpoolAccessControl();
         accessControl.initialize();
+        ghostStrategy = new GhostStrategy();
         swapper = new Swapper(accessControl);
         actionManager = new ActionManager(accessControl);
         assetGroupRegistry = new AssetGroupRegistry(accessControl);
@@ -50,8 +52,8 @@ contract TestFixture is Test {
         guardManager = new GuardManager(accessControl);
         masterWallet = new MasterWallet(accessControl);
         priceFeedManager = new MockPriceFeedManager();
-        strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
-        riskManager = new RiskManager(accessControl);
+        strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager, address(ghostStrategy));
+        riskManager = new RiskManager(accessControl, address(ghostStrategy));
         allocationProvider = new UniformAllocationProvider();
         depositManager =
             new DepositManager(strategyRegistry, priceFeedManager, guardManager, actionManager, accessControl);
@@ -66,7 +68,8 @@ contract TestFixture is Test {
             withdrawalManager,
             strategyRegistry,
             masterWallet,
-            priceFeedManager
+            priceFeedManager,
+            address(ghostStrategy)
         );
 
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
@@ -74,9 +77,11 @@ contract TestFixture is Test {
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(withdrawalManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(depositManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(withdrawalManager));
+        accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(withdrawalManager));
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, address(allocationProvider));
+        accessControl.grantRole(ADMIN_ROLE_STRATEGY, address(strategyRegistry));
     }
 }

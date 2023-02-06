@@ -21,6 +21,7 @@ import "../libraries/Constants.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
+import "../../src/strategies/GhostStrategy.sol";
 
 contract ReallocationIntegrationTest is Test {
     address private alice;
@@ -55,6 +56,8 @@ contract ReallocationIntegrationTest is Test {
         reallocator = address(0x1);
         accessControl.grantRole(ROLE_REALLOCATOR, reallocator);
         riskProvider = address(0x2);
+        IStrategy ghostStrategy = new GhostStrategy();
+
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
 
         masterWallet = new MasterWallet(accessControl);
@@ -64,13 +67,14 @@ contract ReallocationIntegrationTest is Test {
 
         priceFeedManager = new MockPriceFeedManager();
 
-        strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager);
+        strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager, address(ghostStrategy));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
+        accessControl.grantRole(ADMIN_ROLE_STRATEGY, address(strategyRegistry));
 
         IActionManager actionManager = new ActionManager(accessControl);
         IGuardManager guardManager = new GuardManager(accessControl);
 
-        riskManager = new RiskManager(accessControl);
+        riskManager = new RiskManager(accessControl, address(ghostStrategy));
 
         swapper = new Swapper(accessControl);
 
@@ -94,7 +98,8 @@ contract ReallocationIntegrationTest is Test {
             withdrawalManager,
             strategyRegistry,
             masterWallet,
-            priceFeedManager
+            priceFeedManager,
+            address(ghostStrategy)
         );
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
@@ -109,6 +114,7 @@ contract ReallocationIntegrationTest is Test {
             smartVaultManager,
             assetGroupRegistry
         );
+
         accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
 
         deal(address(tokenA), alice, 1000 ether, true);

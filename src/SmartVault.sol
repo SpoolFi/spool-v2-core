@@ -167,7 +167,9 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         _burn(owner, vaultShares);
 
         for (uint256 i = 0; i < strategies.length; i++) {
-            IERC20(strategies[i]).safeTransfer(strategies[i], shares[i]);
+            if (shares[i] > 0) {
+                IERC20(strategies[i]).safeTransfer(strategies[i], shares[i]);
+            }
         }
     }
 
