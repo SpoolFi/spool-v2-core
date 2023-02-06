@@ -124,59 +124,61 @@ contract SmartVaultManagerTest is TestFixture {
 
         // when not risk provider
         {
-            SmartVaultRegistrationForm memory _registrationForm = SmartVaultRegistrationForm({
-                assetGroupId: assetGroupId,
-                strategies: strategies,
-                strategyAllocation: new uint256[](0),
-                riskTolerance: 4,
-                riskProvider: address(0xabc),
-                managementFeePct: 0,
-                depositFeePct: 0,
-                allocationProvider: address(0xabc)
-            });
+            registrationForm.riskProvider = address(0xabc);
             vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_RISK_PROVIDER, address(0xabc)));
-            smartVaultManager.registerSmartVault(mySmartVault, _registrationForm);
+            smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
+
+            registrationForm.riskProvider = riskProvider;
         }
 
         // when no strategy
         {
-            address[] memory _strategies = new address[](0);
-            SmartVaultRegistrationForm memory _registrationForm = SmartVaultRegistrationForm({
-                assetGroupId: assetGroupId,
-                strategies: _strategies,
-                strategyAllocation: new uint256[](0),
-                riskTolerance: 4,
-                riskProvider: riskProvider,
-                managementFeePct: 0,
-                depositFeePct: 0,
-                allocationProvider: address(allocationProvider)
-            });
+            registrationForm.strategies = new address[](0);
             vm.expectRevert(SmartVaultRegistrationNoStrategies.selector);
-            smartVaultManager.registerSmartVault(mySmartVault, _registrationForm);
+            smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
+
+            registrationForm.strategies = strategies;
         }
 
         // when not strategy
         {
-            address[] memory _strategies = new address[](1);
-            _strategies[0] = address(0xabc);
-            SmartVaultRegistrationForm memory _registrationForm = SmartVaultRegistrationForm({
-                assetGroupId: assetGroupId,
-                strategies: _strategies,
-                strategyAllocation: new uint256[](0),
-                riskTolerance: 4,
-                riskProvider: riskProvider,
-                managementFeePct: 0,
-                depositFeePct: 0,
-                allocationProvider: address(allocationProvider)
-            });
+            registrationForm.strategies = Arrays.toArray(address(0xabc));
             vm.expectRevert(abi.encodeWithSelector(InvalidStrategy.selector, address(0xabc)));
-            smartVaultManager.registerSmartVault(mySmartVault, _registrationForm);
+            smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
+
+            registrationForm.strategies = strategies;
+        }
+
+        // when strategies don't have same asset group
+        {
+            address[] memory assetGroup = new address[](1);
+            assetGroup[0] = address(token1);
+            uint256 anotherAssetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+
+            MockStrategy anotherStrategy = new MockStrategy(
+                "AnotherStrategy",
+                strategyRegistry,
+                assetGroupRegistry,
+                accessControl,
+                swapper
+            );
+            anotherStrategy.initialize(anotherAssetGroupId, Arrays.toArray(1));
+
+            strategyRegistry.registerStrategy(address(anotherStrategy));
+
+            registrationForm.strategies = Arrays.toArray(address(anotherStrategy));
+            vm.expectRevert(NotSameAssetGroup.selector);
+            smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
+
+            registrationForm.strategies = strategies;
         }
 
         // when smart vault already registered
-        smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
-        vm.expectRevert(SmartVaultAlreadyRegistered.selector);
-        smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
+        {
+            smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
+            vm.expectRevert(SmartVaultAlreadyRegistered.selector);
+            smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
+        }
     }
 
     function test_addDepositsAndFlush() public {

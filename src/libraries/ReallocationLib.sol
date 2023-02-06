@@ -18,6 +18,14 @@ library ReallocationLib {
     using ArrayMapping for mapping(uint256 => uint256);
     using ArrayMapping for mapping(uint256 => address);
 
+    /**
+     * @notice Reallocates smart vaults.
+     * @param smartVaults Smart vaults to reallocate.
+     * @param strategies Set of strategies involved in the reallocation.
+     * @param reallocationBag Bag with reallocation parameters.
+     * @param _smartVaultStrategies Strategies per smart vault.
+     * @param _smartVaultAllocations Allocations per smart vault.
+     */
     function reallocate(
         address[] calldata smartVaults,
         address[] calldata strategies,
@@ -25,15 +33,15 @@ library ReallocationLib {
         mapping(address => address[]) storage _smartVaultStrategies,
         mapping(address => mapping(uint256 => uint256)) storage _smartVaultAllocations
     ) public {
+        // Validate provided strategies and create a per smart vault strategy mapping.
+        uint256[][] memory strategyMapping = mapStrategies(smartVaults, strategies, _smartVaultStrategies);
+
         // Calculate reallocations needed for smart vaults.
         uint256[][][] memory reallocations = new uint256[][][](smartVaults.length);
         for (uint256 i; i < smartVaults.length; ++i) {
             reallocations[i] =
                 calculateReallocation(smartVaults[i], _smartVaultStrategies[smartVaults[i]], _smartVaultAllocations);
         }
-
-        // Validate provided strategies and create a per smart vault strategy mapping.
-        uint256[][] memory strategyMapping = mapStrategies(smartVaults, strategies, _smartVaultStrategies);
 
         // Build the strategy-to-strategy reallocation table.
         uint256[][][] memory reallocationTable =
@@ -46,6 +54,17 @@ library ReallocationLib {
         claimShares(smartVaults, strategies, strategyMapping, reallocationTable, reallocations);
     }
 
+    /**
+     * @dev Creates a mapping between strategies of smart vaults and provided strategies.
+     * Also validates that provided strategies form a set of smart vaults' strategies.
+     * @param smartVaults Smart vaults to reallocate.
+     * @param strategies Set of strategies involved in the reallocation.
+     * @param _smartVaultStrategies Strategies per smart vault.
+     * @return Mapping between smart vault's strategies and provided strategies:
+     * - first index runs over smart vaults
+     * - second index runs over strategies of the smart vault.
+     * - value represents a position of smart vault's strategy in the provided `strategies` array.
+     */
     function mapStrategies(
         address[] calldata smartVaults,
         address[] calldata strategies,
@@ -106,12 +125,27 @@ library ReallocationLib {
         return strategyMapping;
     }
 
+    /**
+     * @dev Calculates reallocation needed per smart vault.
+     * @param smartVault Smart vault.
+     * @param smartVaultStrategies Strategies of the smart vault.
+     * @param _smartVaultAllocations Allocations per smart vault.
+     * @return Reallocation of the smart vault:
+     * - first index is 0 or 1
+     * - 0:
+     *   - second index runs over smart vault's strategies
+     *   - value is USD value that needs to be withdrawn from the strategy
+     * - 1:
+     *   - second index runs over smart vault's strategies + extra field
+     *   - value is USD value that needs to be deposited into the strategy
+     *   - extra field gathers total value that needs to be deposited by the smart vault
+     */
     function calculateReallocation(
         address smartVault,
         address[] storage smartVaultStrategies,
         mapping(address => mapping(uint256 => uint256)) storage _smartVaultAllocations
     ) private returns (uint256[][] memory) {
-        // Store length of strategies array not to read storage every time.
+        // Store length of strategies array to not read storage every time.
         uint256 smartVaultStrategiesLength = smartVaultStrategies.length;
 
         // Initialize array for this smart vault.
@@ -139,7 +173,7 @@ library ReallocationLib {
                 reallocation[1][i] = targetValue - currentValue;
                 reallocation[1][smartVaultStrategiesLength] += targetValue - currentValue;
             } else if (targetValue < currentValue) {
-                // This Strategy needs withdrawal.
+                // This strategy needs withdrawal.
 
                 // Relese strategy shares.
                 uint256 sharesToRedeem = IStrategy(smartVaultStrategies[i]).balanceOf(smartVault)
@@ -155,6 +189,21 @@ library ReallocationLib {
         return reallocation;
     }
 
+    /**
+     * @dev Builds reallocation table from smart vaults' reallocations.
+     * @param strategyMapping Mapping between smart vault's strategies and provided strategies.
+     * @param numStrategies Number of all strategies involved in the reallocation.
+     * @param reallocations Reallocations needed by each smart vaults.
+     * @return Reallocation table:
+     * - first index runs over all strategies i
+     * - second index runs over all strategies j
+     * - third index is 0, 1 or 2
+     *   - 0: value represent USD value that should be withdrawn by strategy i and deposited into strategy j
+     *   - 1: value is not used yet
+     *     - will be used to represent amount of matched shares from strategy j that are distributed to strategy i
+     *   - 2: value is not used yet
+     *     - will be used to represent amount of unmatched shares from strategy j that are distributed to strategy i
+     */
     function buildReallocationTable(
         uint256[][] memory strategyMapping,
         uint256 numStrategies,
@@ -209,6 +258,13 @@ library ReallocationLib {
         return reallocationTable;
     }
 
+    /**
+     * @dev Does the actual reallocation by withdrawing from and depositing into strategies.
+     * Also populates the reallocation table.
+     * @param strategies Set of strategies involved in the reallocation.
+     * @param reallocationBag Bag with reallocation parameters.
+     * @param reallocationTable Reallocation table.
+     */
     function doReallocation(
         address[] calldata strategies,
         ReallocationBag calldata reallocationBag,
@@ -364,6 +420,14 @@ library ReallocationLib {
         }
     }
 
+    /**
+     * @dev Smart vaults claim strategy shares.
+     * @param smartVaults Smart vaults involved in the reallocation.
+     * @param strategies Set of strategies involved in the reallocation.
+     * @param strategyMapping Mapping between smart vaults' strategies and set of all strategies.
+     * @param reallocationTable Filled in reallocation table.
+     * @param reallocations Realllocations needed by the smart vaults.
+     */
     function claimShares(
         address[] calldata smartVaults,
         address[] calldata strategies,

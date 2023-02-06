@@ -298,8 +298,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         onlyUnregisteredSmartVault(smartVault)
         onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)
     {
-        // TODO: should check if same asset group on strategies and smart vault
-
         // set asset group
         _smartVaultAssetGroups[smartVault] = registrationForm.assetGroupId;
 
@@ -308,22 +306,33 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             revert SmartVaultRegistrationNoStrategies();
         }
 
+        // validate strategies
         for (uint256 i = 0; i < registrationForm.strategies.length; i++) {
             address strategy = registrationForm.strategies[i];
+
+            // check that strategies are registered
             if (!_strategyRegistry.isStrategy(strategy)) {
                 revert InvalidStrategy(strategy);
             }
+
+            // check that strategies use same asset group as smart vault
+            if (IStrategy(strategy).assetGroupId() != registrationForm.assetGroupId) {
+                revert NotSameAssetGroup();
+            }
         }
 
+        // check that management fee is not too big
         if (registrationForm.managementFeePct > MANAGEMENT_FEE_MAX) {
             revert ManagementFeeTooLarge(registrationForm.managementFeePct);
         }
-
+        // check that deposit fee is not too big
         if (registrationForm.depositFeePct > DEPOSIT_FEE_MAX) {
             revert DepositFeeTooLarge(registrationForm.depositFeePct);
         }
-
+        // set smart vault fees
         _smartVaultFees[smartVault] = SmartVaultFees(registrationForm.managementFeePct, registrationForm.depositFeePct);
+
+        // set strategies
         _smartVaultStrategies[smartVault] = registrationForm.strategies;
 
         // set allocation
@@ -368,8 +377,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _syncSmartVault(smartVault, strategies_, tokens, revertOnMissingDHW);
     }
 
-    // TOOD: access control - ROLE_REALLOCATOR
     function reallocate(address[] calldata smartVaults, address[] calldata strategies_) external whenNotPaused {
+        // Can only be called by a reallocator.
+        _checkRole(ROLE_REALLOCATOR, msg.sender);
+
         if (smartVaults.length == 0) {
             // Check if there is anything to reallocate.
             return;
@@ -388,6 +399,11 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             // Check that all smart vaults use the same asset group.
             if (_smartVaultAssetGroups[smartVaults[i]] != assetGroupId_) {
                 revert NotSameAssetGroup();
+            }
+
+            // Check that any smart vault does not have statically set allocation.
+            if (_riskManager.getRiskProvider(smartVaults[i]) == address(0)) {
+                revert StaticAllocationSmartVault();
             }
 
             // Set new allocation.

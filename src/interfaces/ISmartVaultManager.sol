@@ -53,6 +53,11 @@ error NotSameAssetGroup();
 error InvalidStrategies();
 
 /**
+ * @notice Used when smart vault in reallocation has statically set allocation.
+ */
+error StaticAllocationSmartVault();
+
+/**
  * @notice Used when user tries to configure a vault with too large deposit fee.
  */
 error DepositFeeTooLarge(uint256 deposittFeePct);
@@ -95,6 +100,16 @@ interface ISmartVaultReallocator {
 
     function assetGroupId(address smartVault) external view returns (uint256 assetGroupId_);
 
+    /**
+     * @notice Reallocates smart vaults.
+     * @dev Requirements:
+     * - caller must have a ROLE_REALLOCATOR role
+     * - smart vaults must be registered
+     * - smart vaults must use same asset group
+     * - strategies must represent a set of strategies used by smart vaults
+     * @param smartVaults Smart vaults to reallocate.
+     * @param strategies_ Set of strategies involved in the reallocation.
+     */
     function reallocate(address[] calldata smartVaults, address[] calldata strategies_) external;
 }
 

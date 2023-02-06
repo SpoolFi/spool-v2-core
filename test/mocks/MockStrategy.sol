@@ -12,9 +12,12 @@ contract MockStrategy is Strategy {
     uint256[] public ratios;
     uint256[] public __withdrawnAssets;
     bool public __withdrawnAssetsSet;
+    uint256 public depositFee;
+    uint256 public withdrawalFee;
 
     ISwapper _swapper;
     MockProtocol public protocol;
+    MockProtocol public protocolFees;
 
     constructor(
         string memory name_,
@@ -25,6 +28,7 @@ contract MockStrategy is Strategy {
     ) Strategy(name_, strategyRegistry_, assetGroupRegistry_, accessControl_) {
         _swapper = swapper_;
         protocol = new MockProtocol();
+        protocolFees = new MockProtocol();
     }
 
     function test_mock() external pure {}
@@ -59,7 +63,10 @@ contract MockStrategy is Strategy {
 
     function depositToProtocol(address[] memory tokens, uint256[] memory amounts) internal override {
         for (uint256 i = 0; i < tokens.length; i++) {
-            IERC20(tokens[i]).safeTransfer(address(protocol), amounts[i]);
+            // deposit fees
+            IERC20(tokens[i]).safeTransfer(address(protocolFees), amounts[i] * depositFee / 100_00);
+            // deposit
+            IERC20(tokens[i]).safeTransfer(address(protocol), amounts[i] * (100_00 - depositFee) / 100_00);
         }
     }
 
@@ -88,8 +95,24 @@ contract MockStrategy is Strategy {
 
         for (uint256 i = 0; i < tokens.length; i++) {
             uint256 toWithdraw = IERC20(tokens[i]).balanceOf(address(protocol)) * ssts / totalSupply();
-            protocol.withdraw(tokens[i], toWithdraw);
+
+            // withdrawal fees
+            protocol.withdrawTo(tokens[i], toWithdraw * withdrawalFee / 100_00, address(protocolFees));
+            // withdraw
+            protocol.withdraw(tokens[i], toWithdraw * (100_00 - withdrawalFee) / 100_00);
         }
+    }
+
+    function setDepositFee(uint256 newDepositFee) external {
+        require(newDepositFee < 100_00);
+
+        depositFee = newDepositFee;
+    }
+
+    function setWithdrawalFee(uint256 newWithdrawalFee) external {
+        require(newWithdrawalFee < 100_00);
+
+        withdrawalFee = newWithdrawalFee;
     }
 }
 
@@ -100,5 +123,9 @@ contract MockProtocol {
 
     function withdraw(address token, uint256 amount) external {
         IERC20(token).safeTransfer(msg.sender, amount);
+    }
+
+    function withdrawTo(address token, uint256 amount, address to) external {
+        IERC20(token).safeTransfer(to, amount);
     }
 }
