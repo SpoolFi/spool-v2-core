@@ -82,7 +82,8 @@ contract WithdrawalIntegrationTest is Test {
             depositManager,
             withdrawalManager,
             strategyRegistry,
-            masterWallet
+            masterWallet,
+            priceFeedManager
         );
 
         strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);

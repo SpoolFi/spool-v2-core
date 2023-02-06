@@ -62,7 +62,8 @@ contract TestFixture is Test {
             depositManager,
             withdrawalManager,
             strategyRegistry,
-            masterWallet
+            masterWallet,
+            priceFeedManager
         );
 
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));

@@ -130,6 +130,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         return DhwInfo({usdRouted: usdWorthDeposited, sharesMinted: sstsToMint, assetsWithdrawn: withdrawnAssets});
     }
 
+    // add access control
     function redeemFast(
         uint256 shares,
         address masterWallet,
@@ -153,8 +154,47 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         return assetsWithdrawn;
     }
 
+    // add access control
+    function depositFast(
+        address[] calldata assetGroup,
+        uint256[] calldata exchangeRates,
+        IUsdPriceFeedManager priceFeedManager
+    ) external returns (uint256) {
+        // get amount of assets available to deposit
+        uint256[] memory assetsToDeposit = new uint256[](assetGroup.length);
+        for (uint256 i = 0; i < assetGroup.length; ++i) {
+            assetsToDeposit[i] = IERC20(assetGroup[i]).balanceOf(address(this));
+        }
+
+        // deposit assets
+        uint256 usdWorth0 = getUsdWorth(exchangeRates, priceFeedManager);
+        depositToProtocol(assetGroup, assetsToDeposit);
+        uint256 usdWorth1 = getUsdWorth(exchangeRates, priceFeedManager);
+
+        // mint SSTs
+        uint256 usdWorthDeposited = usdWorth1 - usdWorth0;
+        uint256 sstsToMint;
+        if (usdWorth0 > 0) {
+            sstsToMint = usdWorthDeposited * totalSupply() / usdWorth0;
+        } else {
+            sstsToMint = usdWorthDeposited * INITIAL_SHARE_MULTIPLIER;
+        }
+        _mint(address(this), sstsToMint);
+
+        totalUsdValue = usdWorth1;
+
+        return sstsToMint;
+    }
+
     function claimShares(address claimer, uint256 amount) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
         _transfer(address(this), claimer, amount);
+    }
+
+    function releaseShares(address smartVault, uint256 amount)
+        external
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+    {
+        _transfer(smartVault, address(this), amount);
     }
 
     // TODO: implement or remove

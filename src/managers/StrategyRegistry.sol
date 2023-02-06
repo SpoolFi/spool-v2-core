@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
+import "forge-std/console.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
@@ -265,7 +266,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         address[] memory strategies_,
         uint256[] memory dhwIndexes,
         uint256[] memory strategyShares
-    ) external view onlyRole(ROLE_STRATEGY_CLAIMER, msg.sender) returns (uint256[] memory) {
+    ) external view returns (uint256[] memory) {
         address[] memory tokens = IStrategy(strategies_[0]).assets();
         uint256[] memory totalWithdrawnAssets = new uint256[](tokens.length);
 

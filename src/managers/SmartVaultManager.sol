@@ -1,29 +1,30 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
+import "@openzeppelin/utils/Strings.sol";
+import "forge-std/console.sol";
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/utils/math/Math.sol";
+import "../interfaces/IAction.sol";
+import "../interfaces/IAssetGroupRegistry.sol";
+import "../interfaces/IDepositManager.sol";
+import "../interfaces/IGuardManager.sol";
+import "../interfaces/IMasterWallet.sol";
+import "../interfaces/IRewardManager.sol";
+import "../interfaces/IRiskManager.sol";
+import "../interfaces/ISmartVault.sol";
+import "../interfaces/ISmartVaultManager.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
-import "../interfaces/ISmartVaultManager.sol";
-import "../interfaces/IRiskManager.sol";
-import "../interfaces/ISmartVault.sol";
-import "../interfaces/IMasterWallet.sol";
-import "../interfaces/IGuardManager.sol";
-import "../interfaces/IAction.sol";
-import "../interfaces/RequestType.sol";
-import "../interfaces/IAssetGroupRegistry.sol";
-import "../libraries/ArrayMapping.sol";
-import "../libraries/SpoolUtils.sol";
-import "../access/SpoolAccessControl.sol";
-import "../interfaces/ISmartVaultManager.sol";
-import "../interfaces/IDepositManager.sol";
 import "../interfaces/IWithdrawalManager.sol";
-import "../interfaces/IWithdrawalManager.sol";
-import "../interfaces/IRewardManager.sol";
 import "../interfaces/Constants.sol";
+import "../interfaces/RequestType.sol";
+import "../access/SpoolAccessControl.sol";
+import "../libraries/ArrayMapping.sol";
+import "../libraries/ReallocationLib.sol";
+import "../libraries/SpoolUtils.sol";
 
 /**
  * @dev Requires roles:
@@ -36,6 +37,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     using SafeERC20 for IERC20;
     using ArrayMapping for mapping(uint256 => uint256);
+    using ArrayMapping for mapping(uint256 => address);
 
     IDepositManager private immutable _depositManager;
 
@@ -53,6 +55,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /// @notice Master wallet
     IMasterWallet private immutable _masterWallet;
 
+    /// @notice Price feed manager
+    IUsdPriceFeedManager private immutable _priceFeedManager;
+
     /* ========== STATE VARIABLES ========== */
 
     /// @notice Smart Vault registry
@@ -63,6 +68,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /// @notice Smart Vault strategy registry
     mapping(address => address[]) internal _smartVaultStrategies;
+    // TODO: change to "mapping array"
 
     /// @notice Smart Vault risk provider registry
     mapping(address => address) internal _smartVaultRiskProviders;
@@ -71,7 +77,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * @notice Risk appetite for given Smart Vault.
      * @dev smart vault => risk appetite
      */
-    mapping(address => uint256) internal _smartVaultRiskAppetite;
+    mapping(address => uint256) internal _smartVaultRiskAppetites;
 
     /// @notice Smart vault management fee percentage
     mapping(address => uint256) internal _smartVaultMgmtFeePct;
@@ -107,7 +113,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         IDepositManager depositManager_,
         IWithdrawalManager withdrawalManager_,
         IStrategyRegistry strategyRegistry_,
-        IMasterWallet masterWallet_
+        IMasterWallet masterWallet_,
+        IUsdPriceFeedManager priceFeedManager_
     ) SpoolAccessControllable(accessControl_) {
         _assetGroupRegistry = assetGroupRegistry_;
         _riskManager = riskManager_;
@@ -115,6 +122,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _withdrawalManager = withdrawalManager_;
         _strategyRegistry = strategyRegistry_;
         _masterWallet = masterWallet_;
+        _priceFeedManager = priceFeedManager_;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -319,6 +327,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _smartVaultMgmtFeePct[smartVault] = registrationForm.managementFeePct;
         _smartVaultStrategies[smartVault] = registrationForm.strategies;
         _smartVaultRiskProviders[smartVault] = registrationForm.riskProvider;
+        // set risk appetite
+        _smartVaultRiskAppetites[smartVault] = registrationForm.riskAppetite;
 
         // set allocation
         _smartVaultAllocations[smartVault].setValues(
@@ -362,10 +372,43 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _syncSmartVault(smartVault, strategies_, tokens, revertOnMissingDHW);
     }
 
-    /**
-     * @notice TODO
-     */
-    function reallocate() external {}
+    // TOOD: access control - ROLE_REALLOCATOR
+    function reallocate(address[] calldata smartVaults, address[] calldata strategies_) external whenNotPaused {
+        if (smartVaults.length == 0) {
+            // Check if there is anything to reallocate.
+            return;
+        }
+
+        uint256 assetGroupId_ = _smartVaultAssetGroups[smartVaults[0]];
+        for (uint256 i = 0; i < smartVaults.length; ++i) {
+            // Check that all smart vaults are registered.
+            _onlyRegisteredSmartVault(smartVaults[i]);
+
+            // Check that all smart vaults use the same asset group.
+            if (_smartVaultAssetGroups[smartVaults[i]] != assetGroupId_) {
+                revert NotSameAssetGroup();
+            }
+
+            // Set new allocation.
+            _smartVaultAllocations[smartVaults[i]].setValues(
+                _riskManager.calculateAllocation(
+                    _smartVaultRiskProviders[smartVaults[i]], strategies_, _smartVaultRiskAppetites[smartVaults[i]]
+                )
+            );
+        }
+
+        ReallocationBag memory reallocationBag = ReallocationBag({
+            assetGroupRegistry: _assetGroupRegistry,
+            priceFeedManager: _priceFeedManager,
+            masterWallet: _masterWallet,
+            assetGroupId: assetGroupId_
+        });
+
+        // Do the reallocation.
+        ReallocationLib.reallocate(
+            smartVaults, strategies_, reallocationBag, _smartVaultStrategies, _smartVaultAllocations
+        );
+    }
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
