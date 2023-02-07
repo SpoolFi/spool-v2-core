@@ -16,6 +16,7 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/IWithdrawalManager.sol";
+import "../interfaces/CommonErrors.sol";
 import "../interfaces/Constants.sol";
 import "../interfaces/RequestType.sol";
 import "../access/SpoolAccessControl.sol";

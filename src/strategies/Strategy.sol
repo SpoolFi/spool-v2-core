@@ -80,51 +80,126 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
     ) external returns (DhwInfo memory) {
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
 
-        // deposits
-        // - swap assets to correct ratio
-        // NOTE: how do we know the current amounts of tokens??
-        swapAssets(tokens, swapInfo);
+        // usdWorth[0]: usd worth before deposit / withdrawal
+        // usdWorth[1]: usd worth after deposit / withdrawal
+        uint256[] memory usdWorth = new uint256[](2);
 
-        // - get amount of assets available to deposit
-        uint256[] memory assetsToDeposit = new uint256[](tokens.length);
-        for (uint256 i = 0; i < tokens.length; i++) {
-            assetsToDeposit[i] = IERC20(tokens[i]).balanceOf(address(this));
-        }
-
+        // Compound and get USD value.
         compound();
+        usdWorth[0] = getUsdWorth(exchangeRates, priceFeedManager);
 
-        // - deposit assets
-        uint256 usdWorth0 = getUsdWorth(exchangeRates, priceFeedManager);
+        // Get amount of assets available to deposit + if there is anything to deposit.
+        uint256[] memory assetsToDeposit = new uint256[](tokens.length + 1);
+        for (uint256 i; i < tokens.length; ++i) {
+            assetsToDeposit[i] = IERC20(tokens[i]).balanceOf(address(this));
 
-        depositToProtocol(tokens, assetsToDeposit);
-        uint256 usdWorth1 = getUsdWorth(exchangeRates, priceFeedManager);
-
-        // - mint SSTs
-        uint256 usdWorthDeposited = usdWorth1 - usdWorth0;
-        uint256 sstsToMint;
-        if (usdWorth0 > 0) {
-            sstsToMint = usdWorthDeposited * totalSupply() / usdWorth0;
-        } else {
-            sstsToMint = usdWorthDeposited * INITIAL_SHARE_MULTIPLIER;
+            if (assetsToDeposit[i] > 0) {
+                assetsToDeposit[tokens.length] += 1;
+            }
         }
-        _mint(address(this), sstsToMint);
 
-        // withdrawal
-        // - redeem shares from protocol
-        redeemFromProtocol(tokens, withdrawnShares);
-        _burn(address(this), withdrawnShares);
-        uint256 usdWorth2 = getUsdWorth(exchangeRates, priceFeedManager);
+        // shares[0]: matched shares
+        // shares[1]: deposit share equivalent
+        // shares[2]: minted shares
+        uint256[] memory shares = new uint256[](3);
 
-        totalUsdValue = usdWorth2;
+        // Calculate deposit share equivalent.
+        if (assetsToDeposit[tokens.length] > 0) {
+            uint256 valueToDeposit = priceFeedManager.assetToUsdCustomPriceBulk(tokens, assetsToDeposit, exchangeRates);
 
-        // - transfer assets to master wallet
+            if (usdWorth[0] > 0) {
+                shares[1] = totalSupply() * valueToDeposit / usdWorth[0];
+            } else {
+                shares[1] = INITIAL_SHARE_MULTIPLIER * valueToDeposit;
+            }
+        }
+
+        // Match withdrawals and deposits.
+        if (shares[1] > 0 && withdrawnShares > 0) {
+            // Take smaller value as matched shares.
+            if (shares[1] < withdrawnShares) {
+                shares[0] = shares[1];
+            } else {
+                shares[0] = withdrawnShares;
+            }
+        }
+
         uint256[] memory withdrawnAssets = new uint256[](tokens.length);
-        for (uint256 i = 0; i < tokens.length; i++) {
-            withdrawnAssets[i] = IERC20(tokens[i]).balanceOf(address(this));
-            IERC20(tokens[i]).safeTransfer(masterWallet, withdrawnAssets[i]);
+        bool withdrawn;
+        if (shares[1] > withdrawnShares) {
+            // Deposit is needed.
+
+            // - match if needed
+            if (shares[0] > 0) {
+                for (uint256 i; i < tokens.length; ++i) {
+                    withdrawnAssets[i] = assetsToDeposit[i] * shares[0] / shares[1];
+                    assetsToDeposit[i] -= withdrawnAssets[i];
+                }
+                withdrawn = true;
+            }
+
+            // - swap assets
+            // NOTE: how do we know the current amounts of tokens??
+            swapAssets(tokens, swapInfo);
+
+            // - deposit assets into the protocol
+            depositToProtocol(tokens, assetsToDeposit);
+            usdWorth[1] = getUsdWorth(exchangeRates, priceFeedManager);
+
+            // - mint SSTs
+            uint256 usdWorthDeposited = usdWorth[1] - usdWorth[0];
+            if (usdWorth[0] > 0) {
+                shares[2] = usdWorthDeposited * totalSupply() / usdWorth[0];
+            } else {
+                shares[2] = usdWorthDeposited * INITIAL_SHARE_MULTIPLIER;
+            }
+            _mint(address(this), shares[2]);
+
+            shares[2] += shares[0];
+        } else if (withdrawnShares > shares[1]) {
+            // Withdrawal is needed.
+
+            // - match if needed
+            if (shares[0] > 0) {
+                withdrawnShares -= shares[0];
+                shares[2] = shares[0];
+            }
+
+            // - redeem shares from protocol
+            redeemFromProtocol(tokens, withdrawnShares);
+            _burn(address(this), withdrawnShares);
+            withdrawn = true;
+
+            // - figure out how much was withdrawn
+            usdWorth[1] = getUsdWorth(exchangeRates, priceFeedManager);
+            for (uint256 i; i < tokens.length; ++i) {
+                withdrawnAssets[i] = IERC20(tokens[i]).balanceOf(address(this));
+            }
+        } else {
+            // Neither withdrawal nor deposit is needed.
+
+            // - match if needed
+            if (shares[0] > 0) {
+                shares[2] = withdrawnShares;
+                for (uint256 i; i < tokens.length; ++i) {
+                    withdrawnAssets[i] = assetsToDeposit[i];
+                }
+                withdrawn = true;
+            }
+
+            usdWorth[1] = usdWorth[0];
         }
 
-        return DhwInfo({usdRouted: usdWorthDeposited, sharesMinted: sstsToMint, assetsWithdrawn: withdrawnAssets});
+        totalUsdValue = usdWorth[1];
+
+        // Transfer withdrawn assets to master wallet if needed.
+        if (withdrawn) {
+            for (uint256 i; i < tokens.length; ++i) {
+                IERC20(tokens[i]).safeTransfer(masterWallet, withdrawnAssets[i]);
+            }
+        }
+
+        return DhwInfo({sharesMinted: shares[2], assetsWithdrawn: withdrawnAssets});
     }
 
     // add access control

@@ -37,6 +37,7 @@ contract TestFixture is Test {
     MasterWallet internal masterWallet;
     IAllocationProvider internal allocationProvider;
     IStrategy internal ghostStrategy;
+    SmartVaultFactory internal smartVaultFactory;
 
     function setUpBase() public virtual {
         token = new MockToken("Token", "T");
@@ -72,6 +73,17 @@ contract TestFixture is Test {
             address(ghostStrategy)
         );
 
+        address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
+        smartVaultFactory = new SmartVaultFactory(
+            smartVaultImplementation,
+            accessControl,
+            actionManager,
+            guardManager,
+            smartVaultManager,
+            assetGroupRegistry
+        );
+
+        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(depositManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(withdrawalManager));

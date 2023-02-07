@@ -53,17 +53,6 @@ contract AllowlistGuardIntegrationTest is TestFixture {
         }
 
         {
-            address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
-            SmartVaultFactory smartVaultFactory = new SmartVaultFactory(
-                smartVaultImplementation,
-                accessControl,
-                actionManager,
-                guardManager,
-                smartVaultManager,
-                assetGroupRegistry
-            );
-            accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
-
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),

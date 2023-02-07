@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
+import "../interfaces/IMasterWallet.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
+import "../interfaces/ISwapper.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/CommonErrors.sol";
-import "../interfaces/IMasterWallet.sol";
-import "../interfaces/ISwapper.sol";
+import "../access/SpoolAccessControl.sol";
 import "../libraries/ArrayMapping.sol";
 import "../libraries/SpoolUtils.sol";
-import "../access/SpoolAccessControl.sol";
 
 /**
  * @dev Requires roles:
@@ -168,6 +168,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
      * @notice TODO: just a quick mockup so we can test withdrawals
      */
     function doHardWork(address[] memory strategies_, SwapInfo[][] calldata swapInfo) external {
+        uint256 assetGroupId;
         address[] memory assetGroup;
         uint256[] memory exchangeRates;
 
@@ -179,13 +180,21 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
             IStrategy strategy = IStrategy(strategies_[i]);
 
             if (assetGroup.length == 0) {
+                // First strategy being processes should set asset group and exchange rates,
+                // since they are common for all strategies.
+                assetGroupId = strategy.assetGroupId();
                 assetGroup = strategy.assets();
                 exchangeRates = SpoolUtils.getExchangeRates(assetGroup, _priceFeedManager);
+            } else {
+                // Check that all strategies use same asset group.
+                if (strategy.assetGroupId() != assetGroupId) {
+                    revert NotSameAssetGroup();
+                }
             }
 
             uint256 dhwIndex = _currentIndexes[address(strategy)];
 
-            // transfer deposited assets to strategy
+            // Transfer deposited assets to the strategy.
             for (uint256 j = 0; j < assetGroup.length; j++) {
                 uint256 deposited = _assetsDeposited[address(strategy)][dhwIndex][j];
 
@@ -196,7 +205,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
                 }
             }
 
-            // call strategy to do hard work
+            // Call strategy to do hard work.
             DhwInfo memory dhwInfo = strategy.doHardWork(
                 swapInfo[i],
                 _sharesRedeemed[address(strategy)][dhwIndex],
@@ -205,6 +214,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
                 _priceFeedManager
             );
 
+            // Bookkeeping.
             _dhwAssetRatios[address(strategy)].setValues(strategy.assetRatio());
             _currentIndexes[address(strategy)]++;
             _exchangeRates[address(strategy)][dhwIndex].setValues(exchangeRates);

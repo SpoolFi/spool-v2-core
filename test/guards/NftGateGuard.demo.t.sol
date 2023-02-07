@@ -58,16 +58,6 @@ contract NftGateGuardDemoTest is TestFixture {
         (GuardDefinition[][] memory guards, RequestType[] memory guardRequestTypes) = setUpNftGateGuard();
 
         {
-            SmartVaultFactory smartVaultFactory = new SmartVaultFactory(
-                address(new SmartVault(accessControl, guardManager)),
-                accessControl,
-                actionManager,
-                guardManager,
-                smartVaultManager,
-                assetGroupRegistry
-            );
-            accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
-
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),

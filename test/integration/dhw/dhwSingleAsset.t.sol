@@ -68,17 +68,6 @@ contract DhwSingleAssetTest is TestFixture {
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
 
         {
-            address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
-            SmartVaultFactory smartVaultFactory = new SmartVaultFactory(
-                smartVaultImplementation,
-                accessControl,
-                actionManager,
-                guardManager,
-                smartVaultManager,
-                assetGroupRegistry
-            );
-            accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
-
             smartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
 
             vm.mockCall(

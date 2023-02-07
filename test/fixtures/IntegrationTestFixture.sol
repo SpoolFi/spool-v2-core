@@ -81,17 +81,6 @@ contract IntegrationTestFixture is TestFixture {
     }
 
     function createVault(uint16 managementFeePct, uint16 depositFeePct) internal {
-        address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
-        SmartVaultFactory smartVaultFactory = new SmartVaultFactory(
-            smartVaultImplementation,
-            accessControl,
-            actionManager,
-            guardManager,
-            smartVaultManager,
-            assetGroupRegistry
-        );
-        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
-
         smartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
 
         vm.mockCall(

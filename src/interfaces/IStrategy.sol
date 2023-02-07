@@ -17,7 +17,6 @@ struct SwapData {
 }
 
 struct DhwInfo {
-    uint256 usdRouted;
     uint256 sharesMinted;
     uint256[] assetsWithdrawn;
 }
