@@ -88,7 +88,7 @@ interface IDepositManager {
         uint256 oldTotalSVTs,
         address[] memory strategies,
         address[] memory assetGroup,
-        uint256[] memory dhwIndexes,
+        uint16a16 dhwIndexes,
         SmartVaultFees memory fees
     ) external view returns (DepositSyncResult memory);
 
@@ -109,7 +109,7 @@ interface IDepositManager {
         uint256 lastDhwSyncedTimestamp,
         uint256 oldTotalSVTs,
         address[] memory strategies,
-        uint256[] memory dhwIndexes,
+        uint16a16 dhwIndexes,
         address[] memory assetGroup,
         SmartVaultFees memory fees
     ) external returns (DepositSyncResult memory);
@@ -136,7 +136,7 @@ interface IDepositManager {
         address[] memory strategies,
         uint256[] memory allocations,
         address[] memory tokens
-    ) external returns (uint256[] memory);
+    ) external returns (uint16a16);
 
     /**
      * @notice Get the number of SVTs that are available, but haven't been claimed yet, for the given NFT

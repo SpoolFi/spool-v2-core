@@ -61,9 +61,9 @@ contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdr
     function flushSmartVault(address smartVault, uint256 flushIndex, address[] memory strategies)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
-        returns (uint256[] memory)
+        returns (uint16a16)
     {
-        uint256[] memory flushDhwIndexes;
+        uint16a16 flushDhwIndexes;
         uint256 withdrawals = _withdrawnVaultShares[smartVault][flushIndex];
 
         if (withdrawals > 0) {
@@ -144,12 +144,10 @@ contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdr
         return (withdrawnAssets, bag.assetGroupId);
     }
 
-    function syncWithdrawals(
-        address smartVault,
-        uint256 flushIndex,
-        address[] memory strategies,
-        uint256[] memory dhwIndexes_
-    ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
+    function syncWithdrawals(address smartVault, uint256 flushIndex, address[] memory strategies, uint16a16 dhwIndexes_)
+        external
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+    {
         if (_withdrawnVaultShares[smartVault][flushIndex] == 0) {
             return;
         }

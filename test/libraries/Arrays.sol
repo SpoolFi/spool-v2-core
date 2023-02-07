@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
+import "../../src/libraries/uint16a16Lib.sol";
+
 library Arrays {
+    using uint16a16Lib for uint16a16;
+
     function test_lib() external pure {}
 
     function toArray(uint256 x1) public pure returns (uint256[] memory) {
@@ -74,5 +78,23 @@ library Arrays {
         result[1] = x2;
         result[2] = x3;
         return result;
+    }
+
+    function toUint16a16(uint256 x1) public pure returns (uint16a16) {
+        uint16a16 result;
+        return result.set(0, x1);
+    }
+
+    function toUint16a16(uint256 x1, uint256 x2) public pure returns (uint16a16) {
+        uint16a16 result;
+        result = result.set(0, x1);
+        return result.set(1, x2);
+    }
+
+    function toUint16a16(uint256 x1, uint256 x2, uint256 x3) public pure returns (uint16a16) {
+        uint16a16 result;
+        result = result.set(0, x1);
+        result = result.set(1, x2);
+        return result.set(2, x3);
     }
 }

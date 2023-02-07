@@ -18,6 +18,7 @@ import "../access/SpoolAccessControl.sol";
  */
 contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     using ArrayMapping for mapping(uint256 => uint256);
+    using uint16a16Lib for uint16a16;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -114,7 +115,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     /**
      * @notice Get state of a strategy for a given DHW index
      */
-    function strategyAtIndexBatch(address[] calldata strategies, uint256[] calldata dhwIndexes)
+    function strategyAtIndexBatch(address[] calldata strategies, uint16a16 dhwIndexes)
         external
         view
         returns (StrategyAtIndex[] memory)
@@ -122,7 +123,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         StrategyAtIndex[] memory result = new StrategyAtIndex[](strategies.length);
 
         for (uint256 i = 0; i < strategies.length; i++) {
-            result[i] = strategyAtIndex(strategies[i], dhwIndexes[i]);
+            result[i] = strategyAtIndex(strategies[i], dhwIndexes.get(i));
         }
 
         return result;
@@ -216,14 +217,14 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     function addDeposits(address[] memory strategies_, uint256[][] memory amounts)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
-        returns (uint256[] memory)
+        returns (uint16a16)
     {
-        uint256[] memory indexes = new uint256[](strategies_.length);
+        uint16a16 indexes;
         for (uint256 i = 0; i < strategies_.length; i++) {
             address strategy = strategies_[i];
 
             uint256 latestIndex = _currentIndexes[strategy];
-            indexes[i] = latestIndex;
+            indexes = indexes.set(i, latestIndex);
 
             for (uint256 j = 0; j < amounts[i].length; j++) {
                 _assetsDeposited[strategy][latestIndex][j] += amounts[i][j];
@@ -236,15 +237,15 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     function addWithdrawals(address[] memory strategies_, uint256[] memory strategyShares)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
-        returns (uint256[] memory)
+        returns (uint16a16)
     {
-        uint256[] memory indexes = new uint256[](strategies_.length);
+        uint16a16 indexes;
 
         for (uint256 i = 0; i < strategies_.length; i++) {
             address strategy = strategies_[i];
             uint256 latestIndex = _currentIndexes[strategy];
 
-            indexes[i] = latestIndex;
+            indexes = indexes.set(i, latestIndex);
             _sharesRedeemed[strategy][latestIndex] += strategyShares[i];
         }
 
@@ -275,11 +276,12 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         return withdrawnAssets;
     }
 
-    function claimWithdrawals(
-        address[] memory strategies_,
-        uint256[] memory dhwIndexes,
-        uint256[] memory strategyShares
-    ) external view onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (uint256[] memory) {
+    function claimWithdrawals(address[] memory strategies_, uint16a16 dhwIndexes, uint256[] memory strategyShares)
+        external
+        view
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+        returns (uint256[] memory)
+    {
         address[] memory assetGroup;
         uint256[] memory totalWithdrawnAssets;
 
@@ -295,7 +297,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
                 totalWithdrawnAssets = new uint256[](assetGroup.length);
             }
 
-            uint256 dhwIndex = dhwIndexes[i];
+            uint256 dhwIndex = dhwIndexes.get(i);
 
             if (dhwIndex == _currentIndexes[strategy]) {
                 revert DhwNotRunYetForIndex(strategy, dhwIndex);

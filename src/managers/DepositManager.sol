@@ -51,6 +51,7 @@ struct ClaimTokensLocalBag {
 
 contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositManager {
     using SafeERC20 for IERC20;
+    using uint16a16Lib for uint16a16;
     using ArrayMapping for mapping(uint256 => uint256);
 
     uint256 constant INITIAL_SHARE_MULTIPLIER = 1000;
@@ -167,8 +168,8 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         address[] memory strategies,
         uint256[] memory allocation,
         address[] memory tokens
-    ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (uint256[] memory) {
-        uint256[] memory flushDhwIndexes;
+    ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (uint16a16) {
+        uint16a16 flushDhwIndexes;
 
         if (_vaultDeposits[smartVault][flushIndex][0] > 0) {
             // handle deposits
@@ -204,7 +205,7 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         uint256 lastDhwSyncedTimestamp,
         uint256 oldTotalSVTs,
         address[] memory strategies,
-        uint256[] memory dhwIndexes,
+        uint16a16 dhwIndexes,
         address[] memory assetGroup,
         SmartVaultFees memory fees
     ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (DepositSyncResult memory) {
@@ -232,7 +233,7 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         uint256 oldTotalSVTs,
         address[] memory strategies,
         address[] memory assetGroup,
-        uint256[] memory dhwIndexes,
+        uint16a16 dhwIndexes,
         SmartVaultFees memory fees
     ) public view returns (DepositSyncResult memory) {
         StrategyAtIndex[] memory strategyDhwState = _strategyRegistry.strategyAtIndexBatch(strategies, dhwIndexes);

@@ -2,6 +2,7 @@
 pragma solidity 0.8.16;
 
 import "./ISwapper.sol";
+import "../libraries/uint16a16Lib.sol";
 
 /* ========== ERRORS ========== */
 
@@ -39,7 +40,7 @@ interface IStrategyRegistry {
     function currentIndex(address[] calldata strategies) external view returns (uint256[] memory);
     function depositedAssets(address strategy, uint256 dhwIndex) external view returns (uint256[] memory);
     function strategyAtIndex(address strategy, uint256 dhwIndex) external view returns (StrategyAtIndex memory);
-    function strategyAtIndexBatch(address[] calldata strategies, uint256[] calldata dhwIndexes)
+    function strategyAtIndexBatch(address[] calldata strategies, uint16a16 dhwIndexes)
         external
         view
         returns (StrategyAtIndex[] memory);
@@ -56,9 +57,7 @@ interface IStrategyRegistry {
     function registerStrategy(address strategy) external;
     function removeStrategy(address strategy) external;
     function doHardWork(address[] calldata strategies_, SwapInfo[][] calldata swapInfo) external;
-    function addDeposits(address[] memory strategies_, uint256[][] memory amounts)
-        external
-        returns (uint256[] memory);
+    function addDeposits(address[] memory strategies_, uint256[][] memory amounts) external returns (uint16a16);
 
     /**
      * @notice Adds withdrawals to the strategies to be processed on DHW.
@@ -70,7 +69,7 @@ interface IStrategyRegistry {
      */
     function addWithdrawals(address[] memory strategies_, uint256[] memory strategyShares)
         external
-        returns (uint256[] memory strategyIndexes);
+        returns (uint16a16 strategyIndexes);
 
     /**
      * @notice Instantly redeems strategy shares for assets.
@@ -93,9 +92,8 @@ interface IStrategyRegistry {
      * @param strategyShares Amount of strategy shares that was withdrawn.
      * @return assetsWithdrawn Amount of assets withdrawn from strategies.
      */
-    function claimWithdrawals(
-        address[] memory strategies_,
-        uint256[] memory dhwIndexes,
-        uint256[] memory strategyShares
-    ) external view returns (uint256[] memory assetsWithdrawn);
+    function claimWithdrawals(address[] memory strategies_, uint16a16 dhwIndexes, uint256[] memory strategyShares)
+        external
+        view
+        returns (uint256[] memory assetsWithdrawn);
 }

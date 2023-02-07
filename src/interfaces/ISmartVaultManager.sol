@@ -62,6 +62,11 @@ error StaticAllocationSmartVault();
  */
 error DepositFeeTooLarge(uint256 depositFeePct);
 
+/**
+ * @notice Used when user tries to flush a vault, but DHW indexes overlap with previous flush
+ */
+error FlushOverlap(address strategy);
+
 /* ========== STRUCTS ========== */
 
 /**
@@ -133,7 +138,7 @@ interface ISmartVaultRegistry {
 interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
-    function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint256[] memory);
+    function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint16a16);
 
     function getLatestFlushIndex(address smartVault) external view returns (uint256);
 

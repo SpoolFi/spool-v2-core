@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
+import "../libraries/uint16a16Lib.sol";
+
 struct RedeemBag {
     address smartVault;
     uint256 shares;
@@ -87,16 +89,12 @@ interface IWithdrawalManager {
 
     function flushSmartVault(address smartVault, uint256 flushIndex, address[] memory strategies)
         external
-        returns (uint256[] memory);
+        returns (uint16a16);
 
     function claimWithdrawal(WithdrawalClaimBag memory bag) external returns (uint256[] memory, uint256);
 
-    function syncWithdrawals(
-        address smartVault,
-        uint256 flushIndex,
-        address[] memory strategies,
-        uint256[] memory dhwIndexes_
-    ) external;
+    function syncWithdrawals(address smartVault, uint256 flushIndex, address[] memory strategies, uint16a16 dhwIndexes_)
+        external;
 
     function redeem(RedeemBag calldata bag, RedeemExtras memory bag2) external returns (uint256);
 

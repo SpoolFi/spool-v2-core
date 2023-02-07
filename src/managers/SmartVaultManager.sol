@@ -20,6 +20,7 @@ import "../interfaces/Constants.sol";
 import "../interfaces/RequestType.sol";
 import "../access/SpoolAccessControl.sol";
 import "../libraries/ArrayMapping.sol";
+import "../libraries/uint16a16Lib.sol";
 import "../libraries/ReallocationLib.sol";
 
 struct VaultSyncBag {
@@ -48,6 +49,7 @@ struct VaultSyncUserBag {
 contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /* ========== CONSTANTS ========== */
 
+    using uint16a16Lib for uint16a16;
     using SafeERC20 for IERC20;
     using ArrayMapping for mapping(uint256 => uint256);
     using ArrayMapping for mapping(uint256 => address);
@@ -103,7 +105,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * @notice DHW indexes for given Smart Vault and flush index
      * @dev smart vault => flush index => DHW indexes
      */
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _dhwIndexes;
+    mapping(address => mapping(uint256 => uint16a16)) internal _dhwIndexes;
 
     /**
      * @notice Timestamp of the last DHW that was synced
@@ -190,9 +192,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /**
      * @notice DHW indexes that were active at given flush index
      */
-    function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint256[] memory) {
-        uint256 strategyCount = _smartVaultStrategies[smartVault].length;
-        return _dhwIndexes[smartVault][flushIndex].toArray(strategyCount);
+    function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint16a16) {
+        return _dhwIndexes[smartVault][flushIndex];
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
@@ -462,7 +463,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         SmartVaultFees memory fees = _smartVaultFees[smartVault];
 
         while (bag.flushIndex < _flushIndexes[smartVault]) {
-            uint256[] memory indexes = _dhwIndexes[smartVault][bag.flushIndex].toArray(strategies_.length);
+            uint16a16 indexes = _dhwIndexes[smartVault][bag.flushIndex];
             if (!_areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes, strategies_, revertIfError)) break;
 
             _withdrawalManager.syncWithdrawals(smartVault, bag.flushIndex, strategies_, indexes);
@@ -496,18 +497,18 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      */
     function _areAllDhwRunsCompleted(
         uint256[] memory currentStrategyIndexes,
-        uint256[] memory dhwIndexes_,
+        uint16a16 dhwIndexes_,
         address[] memory strategies_,
         bool revertIfError
     ) private view returns (bool) {
-        for (uint256 i; i < dhwIndexes_.length; i++) {
+        for (uint256 i; i < strategies_.length; i++) {
             if (strategies_[i] == _ghostStrategy) {
                 continue;
             }
 
-            if (dhwIndexes_[i] >= currentStrategyIndexes[i]) {
+            if (dhwIndexes_.get(i) >= currentStrategyIndexes[i]) {
                 if (revertIfError) {
-                    revert DhwNotRunYetForIndex(strategies_[i], dhwIndexes_[i]);
+                    revert DhwNotRunYetForIndex(strategies_[i], dhwIndexes_.get(i));
                 }
 
                 return false;
@@ -540,7 +541,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         SmartVaultFees memory fees = _smartVaultFees[smartVault];
 
         while (bag.flushIndex < _flushIndexes[smartVault]) {
-            uint256[] memory indexes = _dhwIndexes[smartVault][bag.flushIndex].toArray(strategies_.length);
+            uint16a16 indexes = _dhwIndexes[smartVault][bag.flushIndex];
 
             if (!_areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes, strategies_, false)) break;
 
@@ -609,7 +610,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             - ISmartVault(smartVault).balanceOf(_accessControl.smartVaultOwner(smartVault));
 
         while (bag.flushIndex < _flushIndexes[smartVault]) {
-            uint256[] memory indexes = _dhwIndexes[smartVault][bag.flushIndex].toArray(bag2.strategies.length);
+            uint16a16 indexes = _dhwIndexes[smartVault][bag.flushIndex];
             if (!_areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes, bag2.strategies, false)) break;
 
             DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(
@@ -689,19 +690,30 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address[] memory tokens
     ) private {
         uint256 flushIndex = _flushIndexes[smartVault];
-        uint256[] memory flushDhwIndexes =
+        uint16a16 flushDhwIndexes =
             _depositManager.flushSmartVault(smartVault, flushIndex, strategies_, allocations_, tokens);
 
-        uint256[] memory flushDhwIndexes2 = _withdrawalManager.flushSmartVault(smartVault, flushIndex, strategies_);
-        if (flushDhwIndexes.length == 0) {
+        uint16a16 flushDhwIndexes2 = _withdrawalManager.flushSmartVault(smartVault, flushIndex, strategies_);
+
+        if (uint16a16.unwrap(flushDhwIndexes2) > 0) {
             flushDhwIndexes = flushDhwIndexes2;
         }
 
-        if (flushDhwIndexes.length == 0) {
-            revert NothingToFlush();
+        if (uint16a16.unwrap(flushDhwIndexes) == 0) revert NothingToFlush();
+
+        uint16a16 currentFlushDhwIndexes = _dhwIndexes[smartVault][flushIndex];
+
+        for (uint256 i = 0; i < strategies_.length; i++) {
+            if (strategies_[i] == _ghostStrategy) continue;
+
+            for (uint256 j = 0; j < strategies_.length; j++) {
+                if (flushDhwIndexes.get(i) == currentFlushDhwIndexes.get(i)) {
+                    revert FlushOverlap(strategies_[i]);
+                }
+            }
         }
 
-        _dhwIndexes[smartVault][flushIndex].setValues(flushDhwIndexes);
+        _dhwIndexes[smartVault][flushIndex] = flushDhwIndexes;
         _flushIndexes[smartVault] = flushIndex + 1;
 
         emit SmartVaultFlushed(smartVault, flushIndex);

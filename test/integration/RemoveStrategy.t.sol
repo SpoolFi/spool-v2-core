@@ -80,7 +80,7 @@ contract RemoveStrategyTest is IntegrationTestFixture {
             0, // total SVTs minted til now
             smartVaultStrategies,
             assetGroup,
-            Arrays.toArray(1, 1, 1),
+            Arrays.toUint16a16(1, 1, 1),
             bag.fees
         );
         smartVaultManager.syncSmartVault(address(smartVault), true);
@@ -124,7 +124,7 @@ contract RemoveStrategyTest is IntegrationTestFixture {
             0, // total SVTs minted til now
             smartVaultStrategies,
             assetGroup,
-            Arrays.toArray(1, 1, 1),
+            Arrays.toUint16a16(1, 1, 1),
             bag.fees
         );
         smartVaultManager.syncSmartVault(address(smartVault), true);
