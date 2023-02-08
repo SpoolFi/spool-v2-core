@@ -8,8 +8,8 @@ import "../interfaces/ISwapper.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/CommonErrors.sol";
 import "../access/SpoolAccessControl.sol";
-import "../interfaces/Constants.sol";
 import "../access/SpoolAccessControllable.sol";
+import "../interfaces/Constants.sol";
 import "../libraries/ArrayMapping.sol";
 import "../libraries/SpoolUtils.sol";
 
@@ -295,6 +295,53 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
                     _dhwYields[address(strategy)][dhwIndex] = dhwInfo.yieldPercentage;
                     _dhwValue[address(strategy)][dhwIndex] = dhwInfo.valueAtDhw;
                 }
+            }
+        }
+    }
+
+    function _updateDhwYieldAndApy(address strategy, uint256 dhwIndex, int256 yieldPercentage) private {
+        if (dhwIndex > 1) {
+            unchecked {
+                int256 timeDelta = int256(block.timestamp - _dhwTimestamp[address(strategy)][dhwIndex-1]);
+
+                if (timeDelta > 0) {
+                    int256 normalizedApy = yieldPercentage * SECONDS_IN_YEAR_INT / timeDelta;
+                    int256 weight = _getRunningAverageApyWeight(timeDelta);
+                    // TODO: decide on the formula
+                    _apys[strategy] = (_apys[strategy] * (FULL_PERCENT_INT - weight) + normalizedApy * weight) / FULL_PERCENT_INT;
+                }
+            }
+        }
+    }
+
+    function _getRunningAverageApyWeight(int256 timeDelta) private pure returns(int256) {
+        // NOTE: decide on the function. ?? sigmoid function "y=2*((1/(1+e^-(0.5*x)))-0.5)"
+
+        if (timeDelta < 1 days) {
+            if (timeDelta < 4 hours) {
+                return 4_15;
+            } else if (timeDelta < 12 hours) {
+                return 12_44;
+            } else {
+                return 24_49;
+            }
+        } else {
+            if (timeDelta < 1.5 days) {
+                return 35_84;
+            } else if (timeDelta < 2 days) {
+                return 46_21;
+            } else if (timeDelta < 3 days) {
+                return 63_51;
+            } else if (timeDelta < 4 days) {
+                return 76_16;
+            } else if (timeDelta < 5 days) {
+                return 84_83;
+            } else if (timeDelta < 6 days) {
+                return 90_51;
+            } else if (timeDelta < 1 weeks) {
+                return 94_14;
+            } else {
+                return FULL_PERCENT_INT;
             }
         }
     }
