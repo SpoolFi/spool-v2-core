@@ -48,7 +48,11 @@ contract MockStrategy is Strategy {
         totalUsdValue = totalUsdValue_;
     }
 
-    function compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages) internal override {}
+    function _getYieldPercentage(int256) internal pure override returns (int256) {
+        return 0;
+    }
+
+    function compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages) internal override returns (int256 compoundYield) {}
 
     function swapAssets(address[] memory tokens, uint256[] memory toSwap, SwapInfo[] calldata swapInfo)
         internal

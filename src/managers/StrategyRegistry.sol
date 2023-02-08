@@ -7,6 +7,8 @@ import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/ISwapper.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/CommonErrors.sol";
+import "../access/SpoolAccessControl.sol";
+import "../interfaces/Constants.sol";
 import "../access/SpoolAccessControllable.sol";
 import "../libraries/ArrayMapping.sol";
 import "../libraries/SpoolUtils.sol";
@@ -76,6 +78,24 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
      */
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _assetsWithdrawn;
 
+    /**
+     * @notice Strategy value at the DHW index.
+     * @dev strategy => index => DHW value
+     */
+    mapping(address => mapping(uint256 => uint256)) internal _dhwValue;
+
+    /**
+     * @notice Amount of yield generated for a strategy since the previous DHW.
+     * @dev strategy => index => yield percentage
+     */
+    mapping(address => mapping(uint256 => int256)) internal _dhwYields;
+
+    /**
+     * @notice Running average APY.
+     * @dev strategy => apy
+     */
+    mapping(address => int256) internal _apys;
+
     constructor(
         IMasterWallet masterWallet_,
         ISpoolAccessControl accessControl_,
@@ -140,7 +160,9 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
             exchangeRates: _exchangeRates[strategy][dhwIndex].toArray(assetGroupLength),
             assetsDeposited: _assetsDeposited[strategy][dhwIndex].toArray(assetGroupLength),
             sharesMinted: _sharesMinted[strategy][dhwIndex],
-            dhwTimestamp: _dhwTimestamp[strategy][dhwIndex]
+            dhwTimestamp: _dhwTimestamp[strategy][dhwIndex],
+            totalStrategyValue: _dhwValue[strategy][dhwIndex],
+            dhwYields: _dhwYields[strategy][dhwIndex]
         });
     }
 
@@ -155,6 +177,9 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         _accessControl.grantRole(ROLE_STRATEGY, strategy);
         _currentIndexes[strategy] = 1;
         _dhwAssetRatios[strategy].setValues(IStrategy(strategy).assetRatio());
+        _dhwTimestamp[address(strategy)][0] = block.timestamp;
+
+        // should we manually set APY?
     }
 
     /**
@@ -267,6 +292,8 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
                     _sharesMinted[strategy][dhwIndex] = dhwInfo.sharesMinted;
                     _assetsWithdrawn[strategy][dhwIndex].setValues(dhwInfo.assetsWithdrawn);
                     _dhwTimestamp[strategy][dhwIndex] = block.timestamp;
+                    _dhwYields[address(strategy)][dhwIndex] = dhwInfo.yieldPercentage;
+                    _dhwValue[address(strategy)][dhwIndex] = dhwInfo.valueAtDhw;
                 }
             }
         }

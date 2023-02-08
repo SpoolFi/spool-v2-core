@@ -39,12 +39,15 @@ error NothingToSync();
  * @custom:member exchangeRates Exchange rates between assets and USD.
  * @custom:member assetsDeposited Amount of assets deposited into the strategy.
  * @custom:member sharesMinted Amount of strategy shares minted.
+ * @custom:member dhwYields TODO: DHW yield percentage.
  */
 struct StrategyAtIndex {
     uint256[] exchangeRates;
     uint256[] assetsDeposited;
     uint256 sharesMinted;
     uint256 dhwTimestamp;
+    uint256 totalStrategyValue;
+    int256 dhwYields;
 }
 
 /**

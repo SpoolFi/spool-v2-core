@@ -66,7 +66,11 @@ contract MockUniswapV2Strategy is Strategy {
 
     function swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
-    function compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages) internal override {}
+    function _getYieldPercentage(int256) internal pure override returns (int256) {
+        return 0;
+    }
+
+    function compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages) internal override returns (int256 compoundYield) {}
 
     // NOTE: IMPORTAINT - asset ratio needs to be perfect for this, otherwise assets are lost
     // can use the formula for uniswap v2 swap + add liquidity (https://blog.alphaventuredao.io/onesideduniswap/)

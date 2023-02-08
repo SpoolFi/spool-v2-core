@@ -3,7 +3,13 @@ pragma solidity 0.8.16;
 
 uint256 constant SECONDS_IN_YEAR = 31_556_926;
 
+int256 constant SECONDS_IN_YEAR_INT = 31_556_926;
+
 uint256 constant FULL_PERCENT = 100_00;
+
+int256 constant FULL_PERCENT_INT = 100_00;
+
+int256 constant YIELD_MULTIPLIER = 10e12;
 
 uint256 constant MANAGEMENT_FEE_MAX = 5_00;
 
@@ -37,3 +43,5 @@ uint256 constant MAXIMAL_WITHDRAWAL_ID = 2 ** 256 - 1;
 uint256 constant NFT_MINTED_SHARES = 10 ** 6;
 
 uint256 constant STRATEGY_COUNT_CAP = 16;
+
+uint256 constant MAX_DHW_BASE_YIELD_LIMIT = 10_00;

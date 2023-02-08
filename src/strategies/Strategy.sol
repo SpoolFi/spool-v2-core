@@ -73,7 +73,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
-    function doHardWork(StrategyDhwParameterBag calldata dhwParams) external returns (DhwInfo memory) {
+    function doHardWork(StrategyDhwParameterBag calldata dhwParams) external returns (DhwInfo memory dhwInfo) {
         _checkRole(ROLE_STRATEGY_REGISTRY, msg.sender);
 
         // assetsToDeposit[0..token.length-1]: amount of asset i to deposit
@@ -97,7 +97,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         uint256[] memory usdWorth = new uint256[](2);
 
         // Compound and get USD value.
-        compound(dhwParams.compoundSwapInfo, dhwParams.slippages);
+        dhwInfo.yieldPercentage = _getYieldPercentage(0);
+        dhwInfo.yieldPercentage += compound(dhwParams.compoundSwapInfo, dhwParams.slippages);
         usdWorth[0] = getUsdWorth(dhwParams.exchangeRates, dhwParams.priceFeedManager);
 
         uint256 matchedShares;
@@ -216,7 +217,9 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             }
         }
 
-        return DhwInfo({sharesMinted: mintedShares, assetsWithdrawn: withdrawnAssets});
+        dhwInfo.sharesMinted = mintedShares;
+        dhwInfo.assetsWithdrawn = withdrawnAssets;
+        dhwInfo.valueAtDhw = usdWorth[1]; // TODO
     }
 
     // TODO: add access control
@@ -297,7 +300,9 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
-    function compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages) internal virtual;
+    function compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages) internal virtual returns (int256 compoundYield);
+
+    function _getYieldPercentage(int256 manualYield) internal virtual returns (int256);
 
     /**
      * @dev Swaps assets.

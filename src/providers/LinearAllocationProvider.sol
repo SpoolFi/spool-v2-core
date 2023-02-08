@@ -42,7 +42,7 @@ contract AllocationProviderLinear is IAllocationProvider {
             riskSum += arrayRiskScores[i];
         }
 
-        uint8 riskt = uint8(data.riskTolerance + 10); // od 0 - 20
+        uint8 riskt = uint8(data.riskTolerance + 10); // od 0 - 20 // NOTE: some slovene :D
 
         for (uint8 i = 0; i < data.apys.length; i++) {
             uint256 apy = (data.apys[i] * FULL_PERCENT) / apySum;

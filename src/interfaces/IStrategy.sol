@@ -45,6 +45,8 @@ struct StrategyDhwParameterBag {
  */
 struct DhwInfo {
     uint256 sharesMinted;
+    int256 yieldPercentage;
+    uint256 valueAtDhw;
     uint256[] assetsWithdrawn;
 }
 

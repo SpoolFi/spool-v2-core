@@ -239,7 +239,9 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         StrategyAtIndex[] memory strategyDhwState = _strategyRegistry.strategyAtIndexBatch(strategies, dhwIndexes);
         DepositSyncResult memory result =
             DepositSyncResult(0, lastDhwSyncedTimestamp, 0, new uint256[](strategies.length));
-        for (uint256 i = 0; i < strategies.length; i++) {
+
+        // NOTE: WE LOOP OVER STRATEGIES 4 TIMES
+        for (uint256 i; i < strategies.length; ++i) {
             StrategyAtIndex memory atDhw = strategyDhwState[i];
 
             if (atDhw.dhwTimestamp > result.dhwTimestamp) {
@@ -253,7 +255,7 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         }
 
         // claim SSTs from each strategy
-        for (uint256 i = 0; i < strategies.length; i++) {
+        for (uint256 i; i < strategies.length; ++i) {
             StrategyAtIndex memory atDhw = strategyDhwState[i];
             if (atDhw.sharesMinted == 0) {
                 continue;
@@ -266,11 +268,15 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
             uint256 strategyDepositedUsd =
                 _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, atDhw.assetsDeposited, atDhw.exchangeRates);
 
+            // NOTE: what are these 2 usd values and why?
+
+            // NOTE: can strategyDepositedUsd be 0?
             result.sstShares[i] = atDhw.sharesMinted * vaultDepositedUsd / strategyDepositedUsd;
 
             // TODO: there might be dust left after all vaults are synced
         }
 
+        // NOTE: seems kinda weird to calculate based on current value, it might have changed over time so it's not deterministic new SVTs
         // get vault's USD value before claiming SSTs
         uint256 totalVaultValueBefore = SpoolUtils.getVaultTotalUsdValue(smartVault, strategies);
         // mint SVTs based on USD value of claimed SSTs
@@ -284,8 +290,10 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
 
         if (fees.depositFeePct > 0 && result.mintedSVTs > 0) {
             uint256 depositFees = result.mintedSVTs * fees.depositFeePct / FULL_PERCENT;
-            result.feeSVTs += depositFees;
-            result.mintedSVTs -= depositFees;
+            unchecked {
+                result.feeSVTs += depositFees;
+                result.mintedSVTs -= depositFees;
+            }
         }
 
         if (fees.managementFeePct > 0) {
