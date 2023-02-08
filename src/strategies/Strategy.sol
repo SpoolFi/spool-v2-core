@@ -88,13 +88,16 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         compound();
         usdWorth[0] = getUsdWorth(exchangeRates, priceFeedManager);
 
-        // Get amount of assets available to deposit + if there is anything to deposit.
+        // assetsToDeposit[0..token.length-1]: amount of asset i to deposit
+        // assetsToDeposit[token.length]: is there anything to deposit
         uint256[] memory assetsToDeposit = new uint256[](tokens.length + 1);
-        for (uint256 i; i < tokens.length; ++i) {
-            assetsToDeposit[i] = IERC20(tokens[i]).balanceOf(address(this));
+        unchecked {
+            for (uint256 i; i < tokens.length; ++i) {
+                assetsToDeposit[i] = IERC20(tokens[i]).balanceOf(address(this));
 
-            if (assetsToDeposit[i] > 0) {
-                assetsToDeposit[tokens.length] += 1;
+                if (assetsToDeposit[i] > 0) {
+                    ++assetsToDeposit[tokens.length];
+                }
             }
         }
 
@@ -107,16 +110,15 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         if (assetsToDeposit[tokens.length] > 0) {
             uint256 valueToDeposit = priceFeedManager.assetToUsdCustomPriceBulk(tokens, assetsToDeposit, exchangeRates);
 
-            if (usdWorth[0] > 0) {
-                shares[1] = totalSupply() * valueToDeposit / usdWorth[0];
-            } else {
-                shares[1] = INITIAL_SHARE_MULTIPLIER * valueToDeposit;
+            unchecked {
+                if (usdWorth[0] > 0) {
+                    shares[1] = totalSupply() * valueToDeposit / usdWorth[0];
+                } else {
+                    shares[1] = INITIAL_SHARE_MULTIPLIER * valueToDeposit;
+                }
             }
-        }
 
-        // Match withdrawals and deposits.
-        if (shares[1] > 0 && withdrawnShares > 0) {
-            // Take smaller value as matched shares.
+            // Match withdrawals and deposits by taking smaller value as matched shares.
             if (shares[1] < withdrawnShares) {
                 shares[0] = shares[1];
             } else {
@@ -131,9 +133,11 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
             // - match if needed
             if (shares[0] > 0) {
-                for (uint256 i; i < tokens.length; ++i) {
-                    withdrawnAssets[i] = assetsToDeposit[i] * shares[0] / shares[1];
-                    assetsToDeposit[i] -= withdrawnAssets[i];
+                unchecked {
+                    for (uint256 i; i < tokens.length; ++i) {
+                        withdrawnAssets[i] = assetsToDeposit[i] * shares[0] / shares[1];
+                        assetsToDeposit[i] -= withdrawnAssets[i];
+                    }
                 }
                 withdrawn = true;
             }
@@ -148,10 +152,12 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
             // - mint SSTs
             uint256 usdWorthDeposited = usdWorth[1] - usdWorth[0];
-            if (usdWorth[0] > 0) {
-                shares[2] = usdWorthDeposited * totalSupply() / usdWorth[0];
-            } else {
-                shares[2] = usdWorthDeposited * INITIAL_SHARE_MULTIPLIER;
+            unchecked {
+                if (usdWorth[0] > 0) {
+                    shares[2] = usdWorthDeposited * totalSupply() / usdWorth[0];
+                } else {
+                    shares[2] = usdWorthDeposited * INITIAL_SHARE_MULTIPLIER;
+                }
             }
             _mint(address(this), shares[2]);
 
@@ -161,8 +167,10 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
             // - match if needed
             if (shares[0] > 0) {
-                withdrawnShares -= shares[0];
-                shares[2] = shares[0];
+                unchecked {
+                    withdrawnShares -= shares[0];
+                    shares[2] = shares[0];
+                }
             }
 
             // - redeem shares from protocol
@@ -172,8 +180,10 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
             // - figure out how much was withdrawn
             usdWorth[1] = getUsdWorth(exchangeRates, priceFeedManager);
-            for (uint256 i; i < tokens.length; ++i) {
-                withdrawnAssets[i] = IERC20(tokens[i]).balanceOf(address(this));
+            unchecked {
+                for (uint256 i; i < tokens.length; ++i) {
+                    withdrawnAssets[i] = IERC20(tokens[i]).balanceOf(address(this));
+                }
             }
         } else {
             // Neither withdrawal nor deposit is needed.
@@ -181,8 +191,10 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             // - match if needed
             if (shares[0] > 0) {
                 shares[2] = withdrawnShares;
-                for (uint256 i; i < tokens.length; ++i) {
-                    withdrawnAssets[i] = assetsToDeposit[i];
+                unchecked {
+                    for (uint256 i; i < tokens.length; ++i) {
+                        withdrawnAssets[i] = assetsToDeposit[i];
+                    }
                 }
                 withdrawn = true;
             }
@@ -194,8 +206,10 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
         // Transfer withdrawn assets to master wallet if needed.
         if (withdrawn) {
-            for (uint256 i; i < tokens.length; ++i) {
-                IERC20(tokens[i]).safeTransfer(masterWallet, withdrawnAssets[i]);
+            unchecked {
+                for (uint256 i; i < tokens.length; ++i) {
+                    IERC20(tokens[i]).safeTransfer(masterWallet, withdrawnAssets[i]);
+                }
             }
         }
 
