@@ -56,8 +56,7 @@ contract DepositSwapIntegrationTest is TestFixture {
             assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         }
 
-        MockStrategy strategy =
-            new MockStrategy("Strategy", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+        MockStrategy strategy = new MockStrategy("Strategy", assetGroupRegistry, accessControl, swapper);
         {
             uint256[] memory strategyRatios = new uint256[](2);
             strategyRatios[0] = 800;

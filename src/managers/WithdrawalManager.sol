@@ -200,8 +200,15 @@ contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdr
             smartVault.burn(bag2.redeemer, bag.shares, bag2.strategies, strategySharesToRedeem);
         }
 
-        uint256[] memory assetsWithdrawn =
-            _strategyRegistry.redeemFast(bag2.strategies, strategySharesToRedeem, bag2.assetGroup);
+        uint256[] memory assetsWithdrawn = _strategyRegistry.redeemFast(
+            RedeemFastParameterBag({
+                strategies: bag2.strategies,
+                strategyShares: strategySharesToRedeem,
+                assetGroup: bag2.assetGroup,
+                withdrawalSlippages: bag2.withdrawalSlippages,
+                exchangeRateSlippages: bag2.exchangeRateSlippages
+            })
+        );
 
         // transfer assets to the redeemer
         for (uint256 i = 0; i < bag2.assetGroup.length; i++) {

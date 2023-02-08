@@ -21,11 +21,10 @@ contract MockStrategy is Strategy {
 
     constructor(
         string memory name_,
-        IStrategyRegistry strategyRegistry_,
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         ISwapper swapper_
-    ) Strategy(name_, strategyRegistry_, assetGroupRegistry_, accessControl_) {
+    ) Strategy(name_, assetGroupRegistry_, accessControl_) {
         _swapper = swapper_;
         protocol = new MockProtocol();
         protocolFees = new MockProtocol();
@@ -51,17 +50,23 @@ contract MockStrategy is Strategy {
         totalUsdValue = totalUsdValue_;
     }
 
-    function compound() internal override {}
+    function compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages) internal override {}
 
-    function swapAssets(address[] memory tokens, SwapInfo[] calldata swapInfo) internal override {
+    function swapAssets(address[] memory tokens, uint256[] memory toSwap, SwapInfo[] calldata swapInfo)
+        internal
+        override
+    {
         for (uint256 i = 0; i < tokens.length; i++) {
-            IERC20(tokens[i]).safeTransfer(address(_swapper), IERC20(tokens[i]).balanceOf(address(this)));
+            IERC20(tokens[i]).safeTransfer(address(_swapper), toSwap[i]);
         }
 
         _swapper.swap(tokens, swapInfo, address(this));
     }
 
-    function depositToProtocol(address[] memory tokens, uint256[] memory amounts) internal override {
+    function depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
+        internal
+        override
+    {
         for (uint256 i = 0; i < tokens.length; i++) {
             // deposit fees
             IERC20(tokens[i]).safeTransfer(address(protocolFees), amounts[i] * depositFee / 100_00);
@@ -88,7 +93,7 @@ contract MockStrategy is Strategy {
         return usdWorth;
     }
 
-    function redeemFromProtocol(address[] memory tokens, uint256 ssts) internal override {
+    function redeemFromProtocol(address[] calldata tokens, uint256 ssts, uint256[] calldata) internal override {
         if (ssts == 0) {
             return;
         }
@@ -114,6 +119,10 @@ contract MockStrategy is Strategy {
 
         withdrawalFee = newWithdrawalFee;
     }
+
+    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public view override {}
+
+    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
 }
 
 contract MockProtocol {

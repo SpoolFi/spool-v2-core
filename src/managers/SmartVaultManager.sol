@@ -220,19 +220,28 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return _redeem(bag, owner, owner, doFlush);
     }
 
-    function redeemFast(RedeemBag calldata bag)
-        external
-        whenNotPaused
-        onlyRegisteredSmartVault(bag.smartVault)
-        returns (uint256[] memory)
-    {
+    function redeemFast(
+        RedeemBag calldata bag,
+        uint256[][] calldata withdrawalSlippages,
+        uint256[2][] calldata exchangeRateSlippages
+    ) external whenNotPaused onlyRegisteredSmartVault(bag.smartVault) returns (uint256[] memory) {
         address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
         uint256 assetGroupId_ = _smartVaultAssetGroups[bag.smartVault];
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
 
+        if (
+            bag.nftIds.length != bag.nftAmounts.length || strategies_.length != withdrawalSlippages.length
+                || tokens.length != exchangeRateSlippages.length
+        ) {
+            revert InvalidArrayLength();
+        }
+
         _syncSmartVault(bag.smartVault, strategies_, tokens, false);
         _depositManager.claimSmartVaultTokens(bag.smartVault, bag.nftIds, bag.nftAmounts, tokens, msg.sender);
-        return _withdrawalManager.redeemFast(bag, RedeemFastExtras(strategies_, tokens, assetGroupId_, msg.sender));
+        return _withdrawalManager.redeemFast(
+            bag,
+            RedeemFastExtras(strategies_, tokens, assetGroupId_, msg.sender, withdrawalSlippages, exchangeRateSlippages)
+        );
     }
 
     function deposit(DepositBag calldata bag)
@@ -385,45 +394,63 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _syncSmartVault(smartVault, _smartVaultStrategies[smartVault], tokens, revertOnMissingDHW);
     }
 
-    function reallocate(address[] calldata smartVaults, address[] calldata strategies_) external whenNotPaused {
+    function reallocate(ReallocateParamBag calldata reallocateParams) external whenNotPaused {
         // Can only be called by a reallocator.
         _checkRole(ROLE_REALLOCATOR, msg.sender);
 
-        if (smartVaults.length == 0) {
+        if (reallocateParams.smartVaults.length == 0) {
             // Check if there is anything to reallocate.
             return;
         }
 
-        uint256 assetGroupId_ = _smartVaultAssetGroups[smartVaults[0]];
-        for (uint256 i = 0; i < smartVaults.length; ++i) {
+        if (
+            reallocateParams.strategies.length != reallocateParams.swapInfo.length
+                || reallocateParams.strategies.length != reallocateParams.depositSlippages.length
+                || reallocateParams.strategies.length != reallocateParams.withdrawalSlippages.length
+        ) {
+            revert InvalidArrayLength();
+        }
+
+        uint256 assetGroupId_ = _smartVaultAssetGroups[reallocateParams.smartVaults[0]];
+        for (uint256 i = 0; i < reallocateParams.smartVaults.length; ++i) {
+            address smartVault = reallocateParams.smartVaults[i];
+
             // Check that all smart vaults are registered.
-            _onlyRegisteredSmartVault(smartVaults[i]);
+            _onlyRegisteredSmartVault(smartVault);
 
             // Check that all smart vaults use the same asset group.
-            if (_smartVaultAssetGroups[smartVaults[i]] != assetGroupId_) {
+            if (_smartVaultAssetGroups[smartVault] != assetGroupId_) {
                 revert NotSameAssetGroup();
             }
 
             // Check that any smart vault does not have statically set allocation.
-            if (_riskManager.getRiskProvider(smartVaults[i]) == address(0)) {
+            if (_riskManager.getRiskProvider(smartVault) == address(0)) {
                 revert StaticAllocationSmartVault();
             }
 
             // Set new allocation.
-            _smartVaultAllocations[smartVaults[i]] =
-                _riskManager.calculateAllocation(smartVaults[i], _smartVaultStrategies[smartVaults[i]]);
+            _smartVaultAllocations[smartVault] =
+                _riskManager.calculateAllocation(smartVault, _smartVaultStrategies[smartVault]);
         }
 
-        ReallocationBag memory reallocationBag = ReallocationBag({
+        ReallocationParameterBag memory reallocationParameterBag = ReallocationParameterBag({
             assetGroupRegistry: _assetGroupRegistry,
             priceFeedManager: _priceFeedManager,
             masterWallet: _masterWallet,
-            assetGroupId: assetGroupId_
+            assetGroupId: assetGroupId_,
+            swapInfo: reallocateParams.swapInfo,
+            depositSlippages: reallocateParams.depositSlippages,
+            withdrawalSlippages: reallocateParams.withdrawalSlippages,
+            exchangeRateSlippages: reallocateParams.exchangeRateSlippages
         });
 
         // Do the reallocation.
         ReallocationLib.reallocate(
-            smartVaults, strategies_, reallocationBag, _smartVaultStrategies, _smartVaultAllocations
+            reallocateParams.smartVaults,
+            reallocateParams.strategies,
+            reallocationParameterBag,
+            _smartVaultStrategies,
+            _smartVaultAllocations
         );
     }
 

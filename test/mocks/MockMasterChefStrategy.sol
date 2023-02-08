@@ -15,12 +15,11 @@ contract MockMasterChefStrategy is Strategy {
 
     constructor(
         string memory name_,
-        IStrategyRegistry strategyRegistry_,
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         MockMasterChef masterChef_,
         uint256 pid_
-    ) Strategy(name_, strategyRegistry_, assetGroupRegistry_, accessControl_) {
+    ) Strategy(name_, assetGroupRegistry_, accessControl_) {
         masterChef = masterChef_;
         pid = pid_;
     }
@@ -42,9 +41,9 @@ contract MockMasterChefStrategy is Strategy {
         return _assetRatio;
     }
 
-    function swapAssets(address[] memory tokens, SwapInfo[] calldata swapInfo) internal override {}
+    function swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
-    function compound() internal override {
+    function compound(SwapInfo[] calldata, uint256[] calldata) internal override {
         uint256 assetBalanceBefore = _getAssetBalanceBefore();
         // claims rewards
         masterChef.deposit(pid, 0);
@@ -56,7 +55,10 @@ contract MockMasterChefStrategy is Strategy {
         masterChef.deposit(pid, assetBalanceDiff);
     }
 
-    function depositToProtocol(address[] memory tokens, uint256[] memory amounts) internal override {
+    function depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
+        internal
+        override
+    {
         if (amounts[0] > 0) {
             IERC20(tokens[0]).safeApprove(address(masterChef), amounts[0]);
             masterChef.deposit(pid, amounts[0]);
@@ -77,7 +79,7 @@ contract MockMasterChefStrategy is Strategy {
         return usdWorth;
     }
 
-    function redeemFromProtocol(address[] memory, uint256 ssts) internal override {
+    function redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata) internal override {
         if (ssts == 0) {
             return;
         }
@@ -108,4 +110,8 @@ contract MockMasterChefStrategy is Strategy {
             revert("MockMasterChefStrategy::_getAssetBalanceDiff: Balance after should be equal or higher");
         }
     }
+
+    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public view override {}
+
+    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
 }

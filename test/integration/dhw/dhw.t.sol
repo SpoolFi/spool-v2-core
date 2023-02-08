@@ -31,6 +31,7 @@ contract DhwTest is TestFixture {
     MockStrategy strategyB;
     MockStrategy strategyC;
     address[] smartVaultStrategies;
+    address[] assetGroup;
 
     function setUp() public {
         alice = address(0xa);
@@ -41,7 +42,7 @@ contract DhwTest is TestFixture {
 
         setUpBase();
 
-        address[] memory assetGroup = new address[](3);
+        assetGroup = new address[](3);
         assetGroup[0] = address(tokenA);
         assetGroup[1] = address(tokenB);
         assetGroup[2] = address(tokenC);
@@ -50,7 +51,7 @@ contract DhwTest is TestFixture {
         assetGroupRegistry.allowToken(address(tokenC));
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
-        strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+        strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
         uint256[] memory strategyRatios = new uint256[](3);
         strategyRatios[0] = 1000;
         strategyRatios[1] = 71;
@@ -60,18 +61,19 @@ contract DhwTest is TestFixture {
 
         strategyRatios[1] = 74;
         strategyRatios[2] = 4500;
-        strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+        strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
         strategyB.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyB));
 
         strategyRatios[1] = 76;
         strategyRatios[2] = 4600;
-        strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+        strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
         strategyC.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyC));
 
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
+        accessControl.grantRole(ROLE_STRATEGY_REGISTRY, address(strategyRegistry));
 
         {
             smartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
@@ -136,12 +138,9 @@ contract DhwTest is TestFixture {
         smartVaultManager.flushSmartVault(address(smartVault));
 
         // DHW - DEPOSIT
-        SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-        dhwSwapInfo[0] = new SwapInfo[](0);
-        dhwSwapInfo[1] = new SwapInfo[](0);
-        dhwSwapInfo[2] = new SwapInfo[](0);
-
-        strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
 
         // sync vault
         smartVaultManager.syncSmartVault(address(smartVault), true);
@@ -172,7 +171,9 @@ contract DhwTest is TestFixture {
         dhwSwapInfoWithdraw[1] = new SwapInfo[](0);
         dhwSwapInfoWithdraw[2] = new SwapInfo[](0);
         console2.log("doHardWork");
-        strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
 
         // sync vault
         console2.log("syncSmartVault");
@@ -207,6 +208,7 @@ contract DhwMatchingTest is TestFixture {
     MockStrategy private strategy;
 
     uint256 private assetGroupId;
+    address[] private assetGroup;
 
     function setUp() public {
         setUpBase();
@@ -218,9 +220,10 @@ contract DhwMatchingTest is TestFixture {
         deal(address(token), bob, 1000 ether, true);
 
         priceFeedManager.setExchangeRate(address(token), 1 * USD_DECIMALS_MULTIPLIER);
-        assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(token)));
+        assetGroup = Arrays.toArray(address(token));
+        assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
-        strategy = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+        strategy = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
         strategy.initialize(assetGroupId, Arrays.toArray(1));
         strategyRegistry.registerStrategy(address(strategy));
 
@@ -257,9 +260,9 @@ contract DhwMatchingTest is TestFixture {
 
         smartVaultManager.flushSmartVault(address(smartVault));
 
-        SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](1);
-        dhwSwapInfo[0] = new SwapInfo[](0);
-        strategyRegistry.doHardWork(Arrays.toArray(address(strategy)), dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(Arrays.toArray(address(strategy)), assetGroup));
+        vm.stopPrank();
 
         smartVaultManager.syncSmartVault(address(smartVault), true);
 
@@ -326,9 +329,9 @@ contract DhwMatchingTest is TestFixture {
 
         // dhw, sync, claim
         {
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](1);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            strategyRegistry.doHardWork(Arrays.toArray(address(strategy)), dhwSwapInfo);
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(Arrays.toArray(address(strategy)), assetGroup));
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVault), true);
 
@@ -418,9 +421,9 @@ contract DhwMatchingTest is TestFixture {
 
         // dhw, sync, claim
         {
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](1);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            strategyRegistry.doHardWork(Arrays.toArray(address(strategy)), dhwSwapInfo);
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(Arrays.toArray(address(strategy)), assetGroup));
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVault), true);
 
@@ -510,9 +513,9 @@ contract DhwMatchingTest is TestFixture {
 
         // dhw, sync, claim
         {
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](1);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            strategyRegistry.doHardWork(Arrays.toArray(address(strategy)), dhwSwapInfo);
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(Arrays.toArray(address(strategy)), assetGroup));
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVault), true);
 

@@ -157,7 +157,6 @@ contract SmartVaultManagerTest is TestFixture {
 
             MockStrategy anotherStrategy = new MockStrategy(
                 "AnotherStrategy",
-                strategyRegistry,
                 assetGroupRegistry,
                 accessControl,
                 swapper
@@ -237,9 +236,9 @@ contract SmartVaultManagerTest is TestFixture {
     }
 
     function _createStrategies() private returns (address[] memory, uint256) {
-        MockStrategy strategy1 = new MockStrategy("A", strategyRegistry, assetGroupRegistry, accessControl, swapper);
-        MockStrategy strategy2 = new MockStrategy("B", strategyRegistry, assetGroupRegistry, accessControl, swapper);
-        MockStrategy strategy3 = new MockStrategy("C", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+        MockStrategy strategy1 = new MockStrategy("A", assetGroupRegistry, accessControl, swapper);
+        MockStrategy strategy2 = new MockStrategy("B", assetGroupRegistry, accessControl, swapper);
+        MockStrategy strategy3 = new MockStrategy("C", assetGroupRegistry, accessControl, swapper);
 
         address[] memory assetGroup = new address[](2);
         assetGroup[0] = address(token1);
@@ -293,7 +292,11 @@ contract SmartVaultManagerTest is TestFixture {
         accessControl.pause();
 
         vm.expectRevert(abi.encodeWithSelector(SystemPaused.selector));
-        smartVaultManager.redeemFast(RedeemBag(address(smartVault), 1, new uint256[](0), new uint256[](0)));
+        smartVaultManager.redeemFast(
+            RedeemBag(address(smartVault), 1, new uint256[](0), new uint256[](0)),
+            new uint256[][](0),
+            new uint256[2][](0)
+        );
     }
 
     function test_flushSmartVaultRevertOnPaused() public {

@@ -64,16 +64,17 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         bag.dhwSwapInfo = new SwapInfo[][](3);
         bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
-        bag.dhwSwapInfo[0] = new SwapInfo[](0);
-        bag.dhwSwapInfo[1] = new SwapInfo[](0);
-        bag.dhwSwapInfo[2] = new SwapInfo[](0);
-
         vm.prank(alice);
         smartVaultManager.deposit(DepositBag(address(smartVault), bag.depositAmounts, alice, address(0), true));
 
         smartVaultManager.removeStrategy(smartVaultStrategies[0]);
         smartVaultStrategies = smartVaultManager.strategies(address(smartVault));
-        strategyRegistry.doHardWork(smartVaultStrategies, bag.dhwSwapInfo);
+
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(
+            generateDhwParameterBag(Arrays.toArray(address(strategyB), address(strategyC)), assetGroup)
+        );
+        vm.stopPrank();
 
         DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
             address(smartVault),
@@ -107,14 +108,12 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         bag.dhwSwapInfo = new SwapInfo[][](3);
         bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
-        bag.dhwSwapInfo[0] = new SwapInfo[](0);
-        bag.dhwSwapInfo[1] = new SwapInfo[](0);
-        bag.dhwSwapInfo[2] = new SwapInfo[](0);
-
         vm.prank(alice);
         smartVaultManager.deposit(DepositBag(address(smartVault), bag.depositAmounts, alice, address(0), true));
 
-        strategyRegistry.doHardWork(smartVaultStrategies, bag.dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
 
         smartVaultManager.removeStrategy(smartVaultStrategies[0]);
         smartVaultStrategies = smartVaultManager.strategies(address(smartVault));
@@ -151,17 +150,17 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         bag.dhwSwapInfo = new SwapInfo[][](3);
         bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
-        bag.dhwSwapInfo[0] = new SwapInfo[](0);
-        bag.dhwSwapInfo[1] = new SwapInfo[](0);
-        bag.dhwSwapInfo[2] = new SwapInfo[](0);
-
         vm.prank(alice);
         uint256 nftId =
             smartVaultManager.deposit(DepositBag(address(smartVault), bag.depositAmounts, alice, address(0), true));
 
         smartVaultManager.removeStrategy(smartVaultStrategies[0]);
         smartVaultStrategies = smartVaultManager.strategies(address(smartVault));
-        strategyRegistry.doHardWork(smartVaultStrategies, bag.dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(
+            generateDhwParameterBag(Arrays.toArray(address(strategyB), address(strategyC)), assetGroup)
+        );
+        vm.stopPrank();
 
         uint256 aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
         vm.startPrank(alice);
@@ -172,7 +171,11 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         );
         vm.stopPrank();
 
-        strategyRegistry.doHardWork(smartVaultStrategies, bag.dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(
+            generateDhwParameterBag(Arrays.toArray(address(strategyB), address(strategyC)), assetGroup)
+        );
+        vm.stopPrank();
 
         vm.startPrank(alice);
         (uint256[] memory withdrawnAssets,) = smartVaultManager.claimWithdrawal(

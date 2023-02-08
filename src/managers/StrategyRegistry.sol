@@ -15,6 +15,7 @@ import "../libraries/SpoolUtils.sol";
  * @dev Requires roles:
  * - ROLE_MASTER_WALLET_MANAGER
  * - ADMIN_ROLE_STRATEGY
+ * - ROLE_STRATEGY_REGISTRY
  */
 contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     using ArrayMapping for mapping(uint256 => uint256);
@@ -164,63 +165,110 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         _accessControl.revokeRole(ROLE_STRATEGY, strategy);
     }
 
-    /**
-     * @notice TODO: just a quick mockup so we can test withdrawals
-     */
-    function doHardWork(address[] memory strategies_, SwapInfo[][] calldata swapInfo) external {
-        uint256 assetGroupId;
-        address[] memory assetGroup;
-        uint256[] memory exchangeRates;
+    function doHardWork(DoHardWorkParameterBag calldata dhwParams) external {
+        unchecked {
+            // Can only be run by do-hard-worker.
+            _checkRole(ROLE_DO_HARD_WORKER, msg.sender);
 
-        for (uint256 i = 0; i < strategies_.length; i++) {
-            if (strategies_[i] == _ghostStrategy) {
-                continue;
+            if (
+                dhwParams.tokens.length != dhwParams.exchangeRateSlippages.length
+                    || dhwParams.strategies.length != dhwParams.swapInfo.length
+                    || dhwParams.strategies.length != dhwParams.compoundSwapInfo.length
+                    || dhwParams.strategies.length != dhwParams.strategySlippages.length
+            ) {
+                revert InvalidArrayLength();
             }
 
-            IStrategy strategy = IStrategy(strategies_[i]);
-
-            if (assetGroup.length == 0) {
-                // First strategy being processes should set asset group and exchange rates,
-                // since they are common for all strategies.
-                assetGroupId = strategy.assetGroupId();
-                assetGroup = strategy.assets();
-                exchangeRates = SpoolUtils.getExchangeRates(assetGroup, _priceFeedManager);
-            } else {
-                // Check that all strategies use same asset group.
-                if (strategy.assetGroupId() != assetGroupId) {
-                    revert NotSameAssetGroup();
+            // Get exchange rates for tokens and validate them against slippages.
+            uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(dhwParams.tokens, _priceFeedManager);
+            for (uint256 i; i < dhwParams.tokens.length; ++i) {
+                if (
+                    exchangeRates[i] < dhwParams.exchangeRateSlippages[i][0]
+                        || exchangeRates[i] > dhwParams.exchangeRateSlippages[i][1]
+                ) {
+                    revert ExchangeRateOutOfSlippages();
                 }
             }
 
-            uint256 dhwIndex = _currentIndexes[address(strategy)];
+            // Process each group of strategies in turn.
+            for (uint256 i; i < dhwParams.strategies.length; ++i) {
+                if (
+                    dhwParams.strategies[i].length != dhwParams.swapInfo[i].length
+                        || dhwParams.strategies[i].length != dhwParams.compoundSwapInfo[i].length
+                        || dhwParams.strategies[i].length != dhwParams.strategySlippages[i].length
+                ) {
+                    revert InvalidArrayLength();
+                }
 
-            // Transfer deposited assets to the strategy.
-            for (uint256 j = 0; j < assetGroup.length; j++) {
-                uint256 deposited = _assetsDeposited[address(strategy)][dhwIndex][j];
+                // Get exchange rates for this group of strategies.
+                uint256 assetGroupId = IStrategy(dhwParams.strategies[i][0]).assetGroupId();
+                address[] memory assetGroup = IStrategy(dhwParams.strategies[i][0]).assets();
+                uint256[] memory assetGroupExchangeRates = new uint256[](assetGroup.length);
 
-                if (deposited > 0) {
-                    _masterWallet.transfer(
-                        IERC20(assetGroup[j]), address(strategy), _assetsDeposited[address(strategy)][dhwIndex][j]
+                for (uint256 j; j < assetGroup.length; ++j) {
+                    bool found = false;
+
+                    for (uint256 k; k < dhwParams.tokens.length; ++k) {
+                        if (assetGroup[j] == dhwParams.tokens[k]) {
+                            assetGroupExchangeRates[j] = exchangeRates[k];
+
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        revert InvalidTokenList();
+                    }
+                }
+
+                // Process each strategy in this group.
+                uint256 numStrategies = dhwParams.strategies[i].length;
+                for (uint256 j; j < numStrategies; ++j) {
+                    address strategy = dhwParams.strategies[i][j];
+
+                    if (strategy == _ghostStrategy) {
+                        revert GhostStrategyUsed();
+                    }
+
+                    if (IStrategy(strategy).assetGroupId() != assetGroupId) {
+                        revert NotSameAssetGroup();
+                    }
+
+                    uint256 dhwIndex = _currentIndexes[strategy];
+
+                    // Transfer deposited assets to the strategy.
+                    for (uint256 k; k < assetGroup.length; ++k) {
+                        if (_assetsDeposited[strategy][dhwIndex][k] > 0) {
+                            _masterWallet.transfer(
+                                IERC20(assetGroup[k]), strategy, _assetsDeposited[strategy][dhwIndex][k]
+                            );
+                        }
+                    }
+
+                    // Do the hard work on the strategy.
+                    DhwInfo memory dhwInfo = IStrategy(strategy).doHardWork(
+                        StrategyDhwParameterBag({
+                            swapInfo: dhwParams.swapInfo[i][j],
+                            compoundSwapInfo: dhwParams.compoundSwapInfo[i][j],
+                            slippages: dhwParams.strategySlippages[i][j],
+                            assetGroup: assetGroup,
+                            exchangeRates: exchangeRates,
+                            withdrawnShares: _sharesRedeemed[strategy][dhwIndex],
+                            masterWallet: address(_masterWallet),
+                            priceFeedManager: _priceFeedManager
+                        })
                     );
+
+                    // Bookkeeping.
+                    _dhwAssetRatios[strategy].setValues(IStrategy(strategy).assetRatio());
+                    ++_currentIndexes[strategy];
+                    _exchangeRates[strategy][dhwIndex].setValues(exchangeRates);
+                    _sharesMinted[strategy][dhwIndex] = dhwInfo.sharesMinted;
+                    _assetsWithdrawn[strategy][dhwIndex].setValues(dhwInfo.assetsWithdrawn);
+                    _dhwTimestamp[strategy][dhwIndex] = block.timestamp;
                 }
             }
-
-            // Call strategy to do hard work.
-            DhwInfo memory dhwInfo = strategy.doHardWork(
-                swapInfo[i],
-                _sharesRedeemed[address(strategy)][dhwIndex],
-                address(_masterWallet),
-                exchangeRates,
-                _priceFeedManager
-            );
-
-            // Bookkeeping.
-            _dhwAssetRatios[address(strategy)].setValues(strategy.assetRatio());
-            _currentIndexes[address(strategy)]++;
-            _exchangeRates[address(strategy)][dhwIndex].setValues(exchangeRates);
-            _sharesMinted[address(strategy)][dhwIndex] = dhwInfo.sharesMinted;
-            _assetsWithdrawn[address(strategy)][dhwIndex].setValues(dhwInfo.assetsWithdrawn);
-            _dhwTimestamp[address(strategy)][dhwIndex] = block.timestamp;
         }
     }
 
@@ -262,20 +310,31 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         return indexes;
     }
 
-    function redeemFast(address[] memory strategies_, uint256[] memory strategyShares, address[] memory assetGroup)
-        external
-        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
-        returns (uint256[] memory)
-    {
-        uint256[] memory withdrawnAssets = new uint256[](assetGroup.length);
+    function redeemFast(RedeemFastParameterBag calldata redeemFastParams) external returns (uint256[] memory) {
+        _checkRole(ROLE_SMART_VAULT_MANAGER, msg.sender);
 
-        for (uint256 i = 0; i < strategies_.length; i++) {
-            uint256[] memory strategyWithdrawnAssets = IStrategy(strategies_[i]).redeemFast(
-                strategyShares[i],
+        uint256[] memory withdrawnAssets = new uint256[](redeemFastParams.assetGroup.length);
+        uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(redeemFastParams.assetGroup, _priceFeedManager);
+
+        unchecked {
+            for (uint256 i; i < exchangeRates.length; ++i) {
+                if (
+                    exchangeRates[i] < redeemFastParams.exchangeRateSlippages[i][0]
+                        || exchangeRates[i] > redeemFastParams.exchangeRateSlippages[i][1]
+                ) {
+                    revert ExchangeRateOutOfSlippages();
+                }
+            }
+        }
+
+        for (uint256 i = 0; i < redeemFastParams.strategies.length; i++) {
+            uint256[] memory strategyWithdrawnAssets = IStrategy(redeemFastParams.strategies[i]).redeemFast(
+                redeemFastParams.strategyShares[i],
                 address(_masterWallet),
-                assetGroup,
-                SpoolUtils.getExchangeRates(assetGroup, _priceFeedManager),
-                _priceFeedManager
+                redeemFastParams.assetGroup,
+                exchangeRates,
+                _priceFeedManager,
+                redeemFastParams.withdrawalSlippages[i]
             );
 
             for (uint256 j = 0; j < strategyWithdrawnAssets.length; j++) {

@@ -3,6 +3,13 @@ pragma solidity 0.8.16;
 
 import "../libraries/uint16a16Lib.sol";
 
+/**
+ * @notice Base information for redeemal.
+ * @custom:member smartVault Smart vault from which to redeem.
+ * @custom:member shares Amount of smart vault shares to redeem.
+ * @custom:member nftIds IDs of deposit NFTs to burn before redeemal.
+ * @custom:member nftAmounts Amounts of NFT shares to burn.
+ */
 struct RedeemBag {
     address smartVault;
     uint256 shares;
@@ -10,19 +17,46 @@ struct RedeemBag {
     uint256[] nftAmounts;
 }
 
+/**
+ * @notice Extra information for fast redeemal.
+ * @custom:member strategies Strategies of the smart vault.
+ * @custom:member assetGroup Asset group of the smart vault.
+ * @custom:member assetGroupId ID of the asset group of the smart vault.
+ * @custom:member redeemer Address that initiated the redeemal.
+ * @custom:member withdrawalSlippages Slippages used to guard redeemal.
+ * @custom:member exchangeRateSlippages Slippages used to constrain exchange rates for asset tokens.
+ */
 struct RedeemFastExtras {
     address[] strategies;
     address[] assetGroup;
     uint256 assetGroupId;
     address redeemer;
+    uint256[][] withdrawalSlippages;
+    uint256[2][] exchangeRateSlippages;
 }
 
+/**
+ * @notice Extra information for redeemal.
+ * @custom:member receiver Receiver of the withdraw NFT.
+ * @custom:member redeemer Address that initiated the redeemal.
+ * @custom:member flushIndex Current flush index of the smart vault.
+ */
 struct RedeemExtras {
     address receiver;
     address redeemer;
     uint256 flushIndex;
 }
 
+/**
+ * @notice Information used to claim withdrawal.
+ * @custom:member smartVault Smart vault from which to claim withdrawal.
+ * @custom:member nftIds Withdrawal NFTs to burn while claiming withdrawal.
+ * @custom:member nftAmounts Amounts of NFT shares to burn.
+ * @custom:member receiver Receiver of withdrawn assets.
+ * @custom:member executor Address that initiated the withdrawal claim.
+ * @custom:member assetGroupId ID of the asset group of the smart vault.
+ * @custom:member assetGroup Asset group of the smart vault.
+ */
 struct WithdrawalClaimBag {
     address smartVault;
     uint256[] nftIds;
@@ -87,16 +121,52 @@ interface IWithdrawalManager {
         uint256[] assetsWithdrawn
     );
 
+    /**
+     * @notice Flushes smart vaults deposits and withdrawals to the strategies.
+     * @param smartVault Smart vault to flush.
+     * @param flushIndex Current flush index of the smart vault.
+     * @param strategies Strategies of the smart vault.
+     * @return dhwIndexes current do-hard-work indexes of the strategies.
+     */
     function flushSmartVault(address smartVault, uint256 flushIndex, address[] memory strategies)
         external
-        returns (uint16a16);
+        returns (uint16a16 dhwIndexes);
 
-    function claimWithdrawal(WithdrawalClaimBag memory bag) external returns (uint256[] memory, uint256);
+    /**
+     * @notice Claims withdrawal.
+     * @param bag Parameters for claiming withdrawal.
+     * @return withdrawnAssets Amount of assets withdrawn.
+     * @return assetGroupId ID of the asset group.
+     */
+    function claimWithdrawal(WithdrawalClaimBag memory bag)
+        external
+        returns (uint256[] memory withdrawnAssets, uint256 assetGroupId);
 
+    /**
+     * @notice Syncs withdrawals between strategies and smart vault after do-hard-works.
+     * @param smartVault Smart vault to sync.
+     * @param flushIndex Smart vault's flush index to sync.
+     * @param strategies Strategies of the smart vault.
+     * @param dhwIndexes_ Strategies' do-hard-work indexes to sync.
+     */
     function syncWithdrawals(address smartVault, uint256 flushIndex, address[] memory strategies, uint16a16 dhwIndexes_)
         external;
 
-    function redeem(RedeemBag calldata bag, RedeemExtras memory bag2) external returns (uint256);
+    /**
+     * @notice Redeems smart vault shares.
+     * @param bag Base information for redeemal.
+     * @param bag2 Extra information for redeemal.
+     * @return nftId ID of the withdrawal NFT.
+     */
+    function redeem(RedeemBag calldata bag, RedeemExtras memory bag2) external returns (uint256 nftId);
 
-    function redeemFast(RedeemBag calldata bag, RedeemFastExtras memory bag2) external returns (uint256[] memory);
+    /**
+     * @notice Instantly redeems smart vault shares.
+     * @param bag Base information for redeemal.
+     * @param bag Extra information for fast redeemal.
+     * @return assets Amount of assets withdrawn.
+     */
+    function redeemFast(RedeemBag calldata bag, RedeemFastExtras memory bag2)
+        external
+        returns (uint256[] memory assets);
 }

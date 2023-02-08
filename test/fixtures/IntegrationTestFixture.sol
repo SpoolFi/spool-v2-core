@@ -52,17 +52,17 @@ contract IntegrationTestFixture is TestFixture {
         assetGroupRegistry.allowTokenBatch(assetGroup);
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         uint256[] memory strategyRatios = Arrays.toArray(1000, 71, 4300);
-        strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+        strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
         strategyA.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyA));
 
         strategyRatios = Arrays.toArray(1000, 74, 4500);
-        strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+        strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
         strategyB.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyB));
 
         strategyRatios = Arrays.toArray(1000, 76, 4600);
-        strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+        strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
         strategyC.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyC));
 
@@ -70,6 +70,7 @@ contract IntegrationTestFixture is TestFixture {
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
+        accessControl.grantRole(ROLE_STRATEGY_REGISTRY, address(strategyRegistry));
         accessControl.grantRole(ADMIN_ROLE_STRATEGY, address(strategyRegistry));
 
         priceFeedManager.setExchangeRate(address(tokenA), 1200 * USD_DECIMALS_MULTIPLIER);
