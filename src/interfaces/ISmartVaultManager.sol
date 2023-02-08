@@ -38,6 +38,11 @@ error SmartVaultNotRegisteredYet();
 error SmartVaultRegistrationNoStrategies();
 
 /**
+ * @notice Used when too many strategies were provided during smart vault registration.
+ */
+error StrategyCapExceeded();
+
+/**
  * @notice Used when user tries to configure a vault with too large management fee.
  */
 error ManagementFeeTooLarge(uint256 mgmtFeePct);
@@ -89,7 +94,7 @@ struct SmartVaultRegistrationForm {
 /* ========== INTERFACES ========== */
 
 interface ISmartVaultReallocator {
-    function allocations(address smartVault) external view returns (uint256[] memory allocations_);
+    function allocations(address smartVault) external view returns (uint16a16);
 
     function strategies(address smartVault) external view returns (address[] memory);
 
@@ -137,7 +142,7 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
 
     function getLatestFlushIndex(address smartVault) external view returns (uint256);
 
-    function allocations(address smartVault) external view returns (uint256[] memory allocations_);
+    function allocations(address smartVault) external view returns (uint16a16);
 
     function strategies(address smartVault) external view returns (address[] memory);
 

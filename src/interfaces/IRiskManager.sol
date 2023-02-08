@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
+import "../libraries/uint16a16Lib.sol";
+
 error InvalidRiskInputLength();
 error RiskScoreValueOutOfBounds(uint8 value);
 error RiskToleranceValueOutOfBounds(int8 value);
@@ -19,7 +21,7 @@ interface IRiskManager {
     function calculateAllocation(address smartVault, address[] calldata strategies)
         external
         view
-        returns (uint256[] memory allocation);
+        returns (uint16a16 allocation);
 
     function getRiskScores(address riskProvider, address[] memory strategy)
         external

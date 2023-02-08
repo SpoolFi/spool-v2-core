@@ -35,3 +35,5 @@ uint256 constant MAXIMAL_WITHDRAWAL_ID = 2 ** 256 - 1;
 
 /// @dev How many shares will be minted with a NFT
 uint256 constant NFT_MINTED_SHARES = 10 ** 6;
+
+uint256 constant STRATEGY_COUNT_CAP = 16;

@@ -13,6 +13,8 @@ struct TestBag {
 }
 
 contract RemoveStrategyTest is IntegrationTestFixture {
+    using uint16a16Lib for uint16a16;
+
     function setUp() public {
         setUpBase();
         deal(address(tokenA), alice, 1000 ether, true);
@@ -36,14 +38,14 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         smartVaultManager.removeStrategy(smartVaultStrategies[0]);
 
         address[] memory strategies2 = smartVaultManager.strategies(address(smartVault));
-        uint256[] memory allocations = smartVaultManager.allocations(address(smartVault));
+        uint16a16 allocations = smartVaultManager.allocations(address(smartVault));
 
         assertFalse(accessControl.hasRole(ROLE_STRATEGY, smartVaultStrategies[0]));
         assertEq(strategies2.length, 3);
         assertEq(strategies2[0], address(ghostStrategy));
-        assertEq(allocations[0], 0);
-        assertGt(allocations[1], 0);
-        assertGt(allocations[2], 0);
+        assertEq(allocations.get(0), 0);
+        assertGt(allocations.get(1), 0);
+        assertGt(allocations.get(2), 0);
     }
 
     function test_removeStrategy_revertInvalidStrategy() public {

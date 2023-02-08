@@ -21,7 +21,7 @@ struct DepositExtras {
     address depositor;
     address[] tokens;
     address[] strategies;
-    uint256[] allocations;
+    uint16a16 allocations;
     uint256 flushIndex;
 }
 
@@ -134,7 +134,7 @@ interface IDepositManager {
         address smartVault,
         uint256 flushIndex,
         address[] memory strategies,
-        uint256[] memory allocations,
+        uint16a16 allocations,
         address[] memory tokens
     ) external returns (uint16a16);
 

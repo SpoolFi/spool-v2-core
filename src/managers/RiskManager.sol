@@ -6,8 +6,11 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/Constants.sol";
 import "../access/SpoolAccessControl.sol";
 import "../interfaces/IAllocationProvider.sol";
+import "../libraries/uint16a16Lib.sol";
 
 contract RiskManager is IRiskManager, SpoolAccessControllable {
+    using uint16a16Lib for uint16a16;
+
     /* ========== STATE VARIABLES ========== */
 
     /// @notice Association of a risk provider to a strategy and finally to a risk score [1, 100]
@@ -33,7 +36,7 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
     function calculateAllocation(address smartVault, address[] calldata strategies)
         public
         view
-        returns (uint256[] memory)
+        returns (uint16a16 allocations)
     {
         uint16[] memory apyList = new uint16[](strategies.length);
         for (uint256 i = 0; i < strategies.length; i++) {
@@ -41,7 +44,7 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
         }
 
         IAllocationProvider allocationProvider = IAllocationProvider(_smartVaultAllocationProviders[smartVault]);
-        uint256[] memory allocations = allocationProvider.calculateAllocation(
+        uint256[] memory allocations_ = allocationProvider.calculateAllocation(
             AllocationCalculationInput({
                 strategies: strategies,
                 apys: apyList,
@@ -51,8 +54,8 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
         );
 
         for (uint256 i = 0; i < strategies.length; i++) {
-            if (strategies[i] == _ghostStrategy) {
-                allocations[i] = 0;
+            if (strategies[i] != _ghostStrategy) {
+                allocations = allocations.set(i, allocations_[i]);
             }
         }
 

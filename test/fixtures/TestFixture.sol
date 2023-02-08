@@ -16,8 +16,11 @@ import "../../src/managers/DepositManager.sol";
 import "../../src/managers/WithdrawalManager.sol";
 import "../integration/withdrawal.t.sol";
 import "../../src/providers/UniformAllocationProvider.sol";
+import "../../src/libraries/uint16a16Lib.sol";
 
 contract TestFixture is Test {
+    using uint16a16Lib for uint16a16;
+
     address internal riskProvider = address(0x1);
 
     MockGuard internal guard;

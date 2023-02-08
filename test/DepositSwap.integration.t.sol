@@ -70,7 +70,7 @@ contract DepositSwapIntegrationTest is TestFixture {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(1_000))
+                abi.encode(Arrays.toUint16a16(1_000))
             );
 
             smartVault = smartVaultFactory.deploySmartVault(

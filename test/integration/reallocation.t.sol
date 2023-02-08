@@ -183,7 +183,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(60_00, 40_00))
+                abi.encode(Arrays.toUint16a16(60_00, 40_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
         }
@@ -247,7 +247,7 @@ contract ReallocationIntegrationTest is Test {
         vm.mockCall(
             address(riskManager),
             abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(50_00, 50_00))
+            abi.encode(Arrays.toUint16a16(50_00, 50_00))
         );
 
         // reallocate
@@ -260,8 +260,8 @@ contract ReallocationIntegrationTest is Test {
         // check final state
         // - new allocation was set
         assertEq(
-            smartVaultManager.allocations(address(smartVaultA)),
-            Arrays.toArray(50_00, 50_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultA))),
+            uint16a16.unwrap(Arrays.toUint16a16(50_00, 50_00)),
             "final allocation for smart vault A"
         );
         // - assets were redistributed between strategies
@@ -330,7 +330,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(50_00, 35_00, 15_00))
+                abi.encode(Arrays.toUint16a16(50_00, 35_00, 15_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
         }
@@ -401,7 +401,7 @@ contract ReallocationIntegrationTest is Test {
         vm.mockCall(
             address(riskManager),
             abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(40_00, 30_00, 30_00))
+            abi.encode(Arrays.toUint16a16(40_00, 30_00, 30_00))
         );
 
         // reallocate
@@ -415,8 +415,8 @@ contract ReallocationIntegrationTest is Test {
         // check final state
         // - new allocation was set
         assertEq(
-            smartVaultManager.allocations(address(smartVaultA)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultA))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault A"
         );
         // - assets were redistributed between strategies
@@ -488,7 +488,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(55_00, 25_00, 20_00))
+                abi.encode(Arrays.toUint16a16(55_00, 25_00, 20_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
         }
@@ -559,7 +559,7 @@ contract ReallocationIntegrationTest is Test {
         vm.mockCall(
             address(riskManager),
             abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(40_00, 30_00, 30_00))
+            abi.encode(Arrays.toUint16a16(40_00, 30_00, 30_00))
         );
 
         // reallocate
@@ -573,8 +573,8 @@ contract ReallocationIntegrationTest is Test {
         // check final state
         // - new allocation was set
         assertEq(
-            smartVaultManager.allocations(address(smartVaultA)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultA))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault A"
         );
         // - assets were redistributed between strategies
@@ -646,7 +646,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(50_00, 30_00, 20_00))
+                abi.encode(Arrays.toUint16a16(50_00, 30_00, 20_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
         }
@@ -717,7 +717,7 @@ contract ReallocationIntegrationTest is Test {
         vm.mockCall(
             address(riskManager),
             abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(40_00, 30_00, 30_00))
+            abi.encode(Arrays.toUint16a16(40_00, 30_00, 30_00))
         );
 
         // reallocate
@@ -731,8 +731,8 @@ contract ReallocationIntegrationTest is Test {
         // check final state
         // - new allocation was set
         assertEq(
-            smartVaultManager.allocations(address(smartVaultA)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultA))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault A"
         );
         // - assets were redistributed between strategies
@@ -808,7 +808,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(60_00, 40_00))
+                abi.encode(Arrays.toUint16a16(60_00, 40_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
 
@@ -817,7 +817,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(65_00, 35_00))
+                abi.encode(Arrays.toUint16a16(65_00, 35_00))
             );
             smartVaultB = smartVaultFactory.deploySmartVault(specification);
         }
@@ -899,7 +899,7 @@ contract ReallocationIntegrationTest is Test {
         vm.mockCall(
             address(riskManager),
             abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(50_00, 50_00))
+            abi.encode(Arrays.toUint16a16(50_00, 50_00))
         );
 
         // reallocate
@@ -913,13 +913,13 @@ contract ReallocationIntegrationTest is Test {
         // check final state
         // - new allocation was set
         assertEq(
-            smartVaultManager.allocations(address(smartVaultA)),
-            Arrays.toArray(50_00, 50_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultA))),
+            uint16a16.unwrap(Arrays.toUint16a16(50_00, 50_00)),
             "final allocation for smart vault A"
         );
         assertEq(
-            smartVaultManager.allocations(address(smartVaultB)),
-            Arrays.toArray(50_00, 50_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultB))),
+            uint16a16.unwrap(Arrays.toUint16a16(50_00, 50_00)),
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
@@ -998,7 +998,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(65_00, 35_00))
+                abi.encode(Arrays.toUint16a16(65_00, 35_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
 
@@ -1007,7 +1007,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(60_00, 40_00))
+                abi.encode(Arrays.toUint16a16(60_00, 40_00))
             );
             smartVaultB = smartVaultFactory.deploySmartVault(specification);
         }
@@ -1089,7 +1089,7 @@ contract ReallocationIntegrationTest is Test {
         vm.mockCall(
             address(riskManager),
             abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(50_00, 50_00))
+            abi.encode(Arrays.toUint16a16(50_00, 50_00))
         );
 
         // reallocate
@@ -1103,13 +1103,13 @@ contract ReallocationIntegrationTest is Test {
         // check final state
         // - new allocation was set
         assertEq(
-            smartVaultManager.allocations(address(smartVaultA)),
-            Arrays.toArray(50_00, 50_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultA))),
+            uint16a16.unwrap(Arrays.toUint16a16(50_00, 50_00)),
             "final allocation for smart vault A"
         );
         assertEq(
-            smartVaultManager.allocations(address(smartVaultB)),
-            Arrays.toArray(50_00, 50_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultB))),
+            uint16a16.unwrap(Arrays.toUint16a16(50_00, 50_00)),
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
@@ -1188,7 +1188,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(60_00, 40_00))
+                abi.encode(Arrays.toUint16a16(60_00, 40_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
 
@@ -1197,7 +1197,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(60_00, 40_00))
+                abi.encode(Arrays.toUint16a16(60_00, 40_00))
             );
             smartVaultB = smartVaultFactory.deploySmartVault(specification);
         }
@@ -1279,7 +1279,7 @@ contract ReallocationIntegrationTest is Test {
         vm.mockCall(
             address(riskManager),
             abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(50_00, 50_00))
+            abi.encode(Arrays.toUint16a16(50_00, 50_00))
         );
 
         // reallocate
@@ -1293,13 +1293,13 @@ contract ReallocationIntegrationTest is Test {
         // check final state
         // - new allocation was set
         assertEq(
-            smartVaultManager.allocations(address(smartVaultA)),
-            Arrays.toArray(50_00, 50_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultA))),
+            uint16a16.unwrap(Arrays.toUint16a16(50_00, 50_00)),
             "final allocation for smart vault A"
         );
         assertEq(
-            smartVaultManager.allocations(address(smartVaultB)),
-            Arrays.toArray(50_00, 50_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultB))),
+            uint16a16.unwrap(Arrays.toUint16a16(50_00, 50_00)),
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
@@ -1380,7 +1380,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(60_00, 15_00, 25_00))
+                abi.encode(Arrays.toUint16a16(60_00, 15_00, 25_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
 
@@ -1389,7 +1389,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(55_00, 20_00, 25_00))
+                abi.encode(Arrays.toUint16a16(55_00, 20_00, 25_00))
             );
             smartVaultB = smartVaultFactory.deploySmartVault(specification);
         }
@@ -1473,7 +1473,7 @@ contract ReallocationIntegrationTest is Test {
         vm.mockCall(
             address(riskManager),
             abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(40_00, 30_00, 30_00))
+            abi.encode(Arrays.toUint16a16(40_00, 30_00, 30_00))
         );
 
         // reallocate
@@ -1487,13 +1487,13 @@ contract ReallocationIntegrationTest is Test {
         // check final state
         // - new allocation was set
         assertEq(
-            smartVaultManager.allocations(address(smartVaultA)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultA))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault A"
         );
         assertEq(
-            smartVaultManager.allocations(address(smartVaultB)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultB))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
@@ -1576,7 +1576,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(60_00, 15_00, 25_00))
+                abi.encode(Arrays.toUint16a16(60_00, 15_00, 25_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
 
@@ -1585,7 +1585,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(20_00, 45_00, 35_00))
+                abi.encode(Arrays.toUint16a16(20_00, 45_00, 35_00))
             );
             smartVaultB = smartVaultFactory.deploySmartVault(specification);
         }
@@ -1669,7 +1669,7 @@ contract ReallocationIntegrationTest is Test {
         vm.mockCall(
             address(riskManager),
             abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(40_00, 30_00, 30_00))
+            abi.encode(Arrays.toUint16a16(40_00, 30_00, 30_00))
         );
 
         // reallocate
@@ -1683,13 +1683,13 @@ contract ReallocationIntegrationTest is Test {
         // check final state
         // - new allocation was set
         assertEq(
-            smartVaultManager.allocations(address(smartVaultA)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultA))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault A"
         );
         assertEq(
-            smartVaultManager.allocations(address(smartVaultB)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultB))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
@@ -1772,7 +1772,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(60_00, 15_00, 25_00))
+                abi.encode(Arrays.toUint16a16(60_00, 15_00, 25_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
 
@@ -1781,7 +1781,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(25_00, 35_00, 40_00))
+                abi.encode(Arrays.toUint16a16(25_00, 35_00, 40_00))
             );
             smartVaultB = smartVaultFactory.deploySmartVault(specification);
         }
@@ -1865,7 +1865,7 @@ contract ReallocationIntegrationTest is Test {
         vm.mockCall(
             address(riskManager),
             abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(40_00, 30_00, 30_00))
+            abi.encode(Arrays.toUint16a16(40_00, 30_00, 30_00))
         );
 
         // reallocate
@@ -1879,13 +1879,13 @@ contract ReallocationIntegrationTest is Test {
         // check final state
         // - new allocation was set
         assertEq(
-            smartVaultManager.allocations(address(smartVaultA)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultA))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault A"
         );
         assertEq(
-            smartVaultManager.allocations(address(smartVaultB)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultB))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
@@ -1968,7 +1968,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(70_00, 20_00, 10_00))
+                abi.encode(Arrays.toUint16a16(70_00, 20_00, 10_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
 
@@ -1977,7 +1977,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(25_00, 35_00, 40_00))
+                abi.encode(Arrays.toUint16a16(25_00, 35_00, 40_00))
             );
             smartVaultB = smartVaultFactory.deploySmartVault(specification);
         }
@@ -2061,7 +2061,7 @@ contract ReallocationIntegrationTest is Test {
         vm.mockCall(
             address(riskManager),
             abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(40_00, 30_00, 30_00))
+            abi.encode(Arrays.toUint16a16(40_00, 30_00, 30_00))
         );
 
         // reallocate
@@ -2075,13 +2075,13 @@ contract ReallocationIntegrationTest is Test {
         // check final state
         // - new allocation was set
         assertEq(
-            smartVaultManager.allocations(address(smartVaultA)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultA))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault A"
         );
         assertEq(
-            smartVaultManager.allocations(address(smartVaultB)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultB))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
@@ -2164,7 +2164,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(55_00, 25_00, 20_00))
+                abi.encode(Arrays.toUint16a16(55_00, 25_00, 20_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
 
@@ -2173,7 +2173,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(10_00, 40_00, 50_00))
+                abi.encode(Arrays.toUint16a16(10_00, 40_00, 50_00))
             );
             smartVaultB = smartVaultFactory.deploySmartVault(specification);
         }
@@ -2257,7 +2257,7 @@ contract ReallocationIntegrationTest is Test {
         vm.mockCall(
             address(riskManager),
             abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(40_00, 30_00, 30_00))
+            abi.encode(Arrays.toUint16a16(40_00, 30_00, 30_00))
         );
 
         // reallocate
@@ -2271,13 +2271,13 @@ contract ReallocationIntegrationTest is Test {
         // check final state
         // - new allocation was set
         assertEq(
-            smartVaultManager.allocations(address(smartVaultA)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultA))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault A"
         );
         assertEq(
-            smartVaultManager.allocations(address(smartVaultB)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultB))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
@@ -2362,7 +2362,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(65_00, 20_00, 15_00))
+                abi.encode(Arrays.toUint16a16(65_00, 20_00, 15_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
 
@@ -2371,7 +2371,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(40_00, 35_00, 25_00))
+                abi.encode(Arrays.toUint16a16(40_00, 35_00, 25_00))
             );
             smartVaultB = smartVaultFactory.deploySmartVault(specification);
         }
@@ -2455,7 +2455,7 @@ contract ReallocationIntegrationTest is Test {
         vm.mockCall(
             address(riskManager),
             abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(40_00, 30_00, 30_00))
+            abi.encode(Arrays.toUint16a16(40_00, 30_00, 30_00))
         );
 
         // reallocate
@@ -2469,13 +2469,13 @@ contract ReallocationIntegrationTest is Test {
         // check final state
         // - new allocation was set
         assertEq(
-            smartVaultManager.allocations(address(smartVaultA)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultA))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault A"
         );
         assertEq(
-            smartVaultManager.allocations(address(smartVaultB)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultB))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
@@ -2561,7 +2561,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(55_00, 35_00, 10_00))
+                abi.encode(Arrays.toUint16a16(55_00, 35_00, 10_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
 
@@ -2570,7 +2570,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(50_00, 30_00, 20_00))
+                abi.encode(Arrays.toUint16a16(50_00, 30_00, 20_00))
             );
             smartVaultB = smartVaultFactory.deploySmartVault(specification);
         }
@@ -2654,7 +2654,7 @@ contract ReallocationIntegrationTest is Test {
         vm.mockCall(
             address(riskManager),
             abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(40_00, 30_00, 30_00))
+            abi.encode(Arrays.toUint16a16(40_00, 30_00, 30_00))
         );
 
         // reallocate
@@ -2668,13 +2668,13 @@ contract ReallocationIntegrationTest is Test {
         // check final state
         // - new allocation was set
         assertEq(
-            smartVaultManager.allocations(address(smartVaultA)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultA))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault A"
         );
         assertEq(
-            smartVaultManager.allocations(address(smartVaultB)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultB))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
@@ -2759,7 +2759,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(55_00, 35_00, 10_00))
+                abi.encode(Arrays.toUint16a16(55_00, 35_00, 10_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
 
@@ -2768,7 +2768,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(50_00, 30_00, 20_00))
+                abi.encode(Arrays.toUint16a16(50_00, 30_00, 20_00))
             );
             smartVaultB = smartVaultFactory.deploySmartVault(specification);
         }
@@ -2855,7 +2855,7 @@ contract ReallocationIntegrationTest is Test {
         vm.mockCall(
             address(riskManager),
             abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(40_00, 30_00, 30_00))
+            abi.encode(Arrays.toUint16a16(40_00, 30_00, 30_00))
         );
 
         // reallocate
@@ -2869,13 +2869,13 @@ contract ReallocationIntegrationTest is Test {
         // check final state
         // - new allocation was set
         assertEq(
-            smartVaultManager.allocations(address(smartVaultA)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultA))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault A"
         );
         assertEq(
-            smartVaultManager.allocations(address(smartVaultB)),
-            Arrays.toArray(40_00, 30_00, 30_00),
+            uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultB))),
+            uint16a16.unwrap(Arrays.toUint16a16(40_00, 30_00, 30_00)),
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
@@ -2935,7 +2935,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(60_00, 40_00))
+                abi.encode(Arrays.toUint16a16(60_00, 40_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
         }
@@ -2984,7 +2984,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(60_00, 40_00))
+                abi.encode(Arrays.toUint16a16(60_00, 40_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
         }
@@ -3034,7 +3034,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(60_00, 40_00))
+                abi.encode(Arrays.toUint16a16(60_00, 40_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
 
@@ -3087,7 +3087,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(60_00, 40_00))
+                abi.encode(Arrays.toUint16a16(60_00, 40_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
         }
@@ -3144,7 +3144,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(100_00))
+                abi.encode(Arrays.toUint16a16(100_00))
             );
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
 
@@ -3154,7 +3154,7 @@ contract ReallocationIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(100_00))
+                abi.encode(Arrays.toUint16a16(100_00))
             );
             smartVaultB = smartVaultFactory.deploySmartVault(specification);
         }

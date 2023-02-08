@@ -39,7 +39,7 @@ error IncorrectDepositRatio();
 struct DepositQueryBag1 {
     uint256[] deposit;
     uint256[] exchangeRates;
-    uint256[] allocation;
+    uint16a16 allocation;
     uint256[][] strategyRatios;
 }
 
@@ -166,7 +166,7 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         address smartVault,
         uint256 flushIndex,
         address[] memory strategies,
-        uint256[] memory allocation,
+        uint16a16 allocation,
         address[] memory tokens
     ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (uint16a16) {
         uint16a16 flushDhwIndexes;
@@ -363,7 +363,7 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
     function checkDepositRatio(
         uint256[] memory deposit,
         uint256[] memory exchangeRates,
-        uint256[] memory allocation,
+        uint16a16 allocation,
         uint256[][] memory strategyRatios
     ) public pure {
         if (deposit.length == 1) {
@@ -395,7 +395,7 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
      */
     function calculateDepositRatio(
         uint256[] memory exchangeRates,
-        uint256[] memory allocation,
+        uint16a16 allocation,
         uint256[][] memory strategyRatios
     ) public pure returns (uint256[] memory) {
         if (exchangeRates.length == 1) {
@@ -417,13 +417,13 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
      */
     function calculateFlushFactors(
         uint256[] memory exchangeRates,
-        uint256[] memory allocation,
+        uint16a16 allocation,
         uint256[][] memory strategyRatios
     ) public pure returns (uint256[][] memory) {
-        uint256[][] memory flushFactors = new uint256[][](allocation.length);
+        uint256[][] memory flushFactors = new uint256[][](strategyRatios.length);
 
         // loop over strategies
-        for (uint256 i = 0; i < allocation.length; i++) {
+        for (uint256 i = 0; i < strategyRatios.length; i++) {
             flushFactors[i] = new uint256[](exchangeRates.length);
 
             uint256 normalization = 0;
@@ -434,7 +434,7 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
 
             // loop over assets
             for (uint256 j = 0; j < exchangeRates.length; j++) {
-                flushFactors[i][j] = allocation[i] * strategyRatios[i][j] * PRECISION_MULTIPLIER / normalization;
+                flushFactors[i][j] = allocation.get(i) * strategyRatios[i][j] * PRECISION_MULTIPLIER / normalization;
             }
         }
 
@@ -503,18 +503,18 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
      */
     function _distributeDepositSingleAsset(DepositQueryBag1 memory bag) private pure returns (uint256[][] memory) {
         uint256 distributed;
-        uint256[][] memory distribution = new uint256[][](bag.allocation.length);
+        uint256[][] memory distribution = new uint256[][](bag.strategyRatios.length);
 
         uint256 totalAllocation;
-        for (uint256 i = 0; i < bag.allocation.length; ++i) {
-            totalAllocation += bag.allocation[i];
+        for (uint256 i = 0; i < bag.strategyRatios.length; ++i) {
+            totalAllocation += bag.allocation.get(i);
         }
 
         // loop over strategies
-        for (uint256 i = 0; i < bag.allocation.length; ++i) {
+        for (uint256 i = 0; i < bag.strategyRatios.length; ++i) {
             distribution[i] = new uint256[](1);
 
-            distribution[i][0] = bag.deposit[0] * bag.allocation[i] / totalAllocation;
+            distribution[i][0] = bag.deposit[0] * bag.allocation.get(i) / totalAllocation;
             distributed += distribution[i][0];
         }
 
@@ -534,10 +534,10 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         uint256[] memory idealDepositRatio = _calculateDepositRatioFromFlushFactors(flushFactors);
 
         uint256[] memory distributed = new uint256[](bag.deposit.length);
-        uint256[][] memory distribution = new uint256[][](bag.allocation.length);
+        uint256[][] memory distribution = new uint256[][](bag.strategyRatios.length);
 
         // loop over strategies
-        for (uint256 i = 0; i < bag.allocation.length; i++) {
+        for (uint256 i = 0; i < bag.strategyRatios.length; i++) {
             distribution[i] = new uint256[](bag.exchangeRates.length);
 
             // loop over assets
