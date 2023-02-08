@@ -89,7 +89,7 @@ contract DhwTest is TestFixture {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(600, 300, 100))
+                abi.encode(Arrays.toUint16a16(600, 300, 100))
             );
 
             smartVault = smartVaultFactory.deploySmartVault(

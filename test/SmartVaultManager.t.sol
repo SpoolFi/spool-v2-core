@@ -55,7 +55,7 @@ contract SmartVaultManagerTest is TestFixture {
     function test_registerSmartVault_shouldRegister() public {
         (address[] memory strategies, uint256 assetGroupId) = _createStrategies();
 
-        uint256[] memory strategyAllocations = Arrays.toArray(100, 300, 600);
+        uint16a16 strategyAllocations = Arrays.toUint16a16(100, 300, 600);
 
         vm.mockCall(
             address(riskManager),
@@ -77,18 +77,18 @@ contract SmartVaultManagerTest is TestFixture {
 
         assertEq(smartVaultManager.assetGroupId(mySmartVault), assetGroupId);
         assertEq(smartVaultManager.strategies(mySmartVault), strategies);
-        assertEq(smartVaultManager.allocations(mySmartVault), strategyAllocations);
+        assertEq(uint16a16.unwrap(smartVaultManager.allocations(mySmartVault)), uint16a16.unwrap(strategyAllocations));
         assertEq(riskManager.getRiskProvider(mySmartVault), riskProvider);
     }
 
     function test_registerSmartVault_customAllocations() public {
         (address[] memory strategies, uint256 assetGroupId) = _createStrategies();
-        uint256[] memory strategyAllocations = Arrays.toArray(100, 300, 600);
+        uint16a16 strategyAllocations = Arrays.toUint16a16(100, 300, 600);
 
         SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
             assetGroupId: assetGroupId,
             strategies: strategies,
-            strategyAllocation: strategyAllocations,
+            strategyAllocation: Arrays.toArray(100, 300, 600),
             riskTolerance: 4,
             riskProvider: address(0),
             managementFeePct: 0,
@@ -97,13 +97,13 @@ contract SmartVaultManagerTest is TestFixture {
         });
 
         smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
-        assertEq(smartVaultManager.allocations(mySmartVault), strategyAllocations);
+        assertEq(uint16a16.unwrap(smartVaultManager.allocations(mySmartVault)), uint16a16.unwrap(strategyAllocations));
     }
 
     function test_registerSmartVault_shouldRevert() public {
         (address[] memory strategies, uint256 assetGroupId) = _createStrategies();
 
-        uint256[] memory strategyAllocations = Arrays.toArray(100, 300, 600);
+        uint16a16 strategyAllocations = Arrays.toUint16a16(100, 300, 600);
 
         vm.mockCall(
             address(riskManager),
@@ -335,7 +335,7 @@ contract SmartVaultManagerTest is TestFixture {
         SmartVault smartVault_ = SmartVault(Clones.clone(smartVaultImplementation));
         smartVault_.initialize("SmartVault", assetGroupId);
 
-        uint256[] memory allocations = Arrays.toArray(600, 300, 100);
+        uint16a16 allocations = Arrays.toUint16a16(600, 300, 100);
 
         vm.mockCall(
             address(riskManager),

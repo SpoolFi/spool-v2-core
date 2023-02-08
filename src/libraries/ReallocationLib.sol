@@ -5,6 +5,7 @@ import "../interfaces/IAssetGroupRegistry.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "./ArrayMapping.sol";
+import "./uint16a16Lib.sol";
 import "./SpoolUtils.sol";
 
 struct ReallocationBag {
@@ -15,6 +16,7 @@ struct ReallocationBag {
 }
 
 library ReallocationLib {
+    using uint16a16Lib for uint16a16;
     using ArrayMapping for mapping(uint256 => uint256);
     using ArrayMapping for mapping(uint256 => address);
 
@@ -31,7 +33,7 @@ library ReallocationLib {
         address[] calldata strategies,
         ReallocationBag calldata reallocationBag,
         mapping(address => address[]) storage _smartVaultStrategies,
-        mapping(address => mapping(uint256 => uint256)) storage _smartVaultAllocations
+        mapping(address => uint16a16) storage _smartVaultAllocations
     ) public {
         // Validate provided strategies and create a per smart vault strategy mapping.
         uint256[][] memory strategyMapping = mapStrategies(smartVaults, strategies, _smartVaultStrategies);
@@ -143,7 +145,7 @@ library ReallocationLib {
     function calculateReallocation(
         address smartVault,
         address[] storage smartVaultStrategies,
-        mapping(address => mapping(uint256 => uint256)) storage _smartVaultAllocations
+        mapping(address => uint16a16) storage _smartVaultAllocations
     ) private returns (uint256[][] memory) {
         // Store length of strategies array to not read storage every time.
         uint256 smartVaultStrategiesLength = smartVaultStrategies.length;
@@ -160,12 +162,12 @@ library ReallocationLib {
         // Get sum total of target allocation.
         uint256 totalTargetAllocation;
         for (uint256 i; i < smartVaultStrategiesLength; ++i) {
-            totalTargetAllocation += _smartVaultAllocations[smartVault][i];
+            totalTargetAllocation += _smartVaultAllocations[smartVault].get(i);
         }
 
         // Compare target and current allocation.
         for (uint256 i; i < smartVaultStrategiesLength; ++i) {
-            uint256 targetValue = _smartVaultAllocations[smartVault][i] * totalUsdValue / totalTargetAllocation;
+            uint256 targetValue = _smartVaultAllocations[smartVault].get(i) * totalUsdValue / totalTargetAllocation;
             uint256 currentValue = SpoolUtils.getVaultStrategyUsdValue(smartVault, smartVaultStrategies[i]);
 
             if (targetValue > currentValue) {

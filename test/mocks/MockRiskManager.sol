@@ -8,7 +8,7 @@ import "../../src/interfaces/IRiskManager.sol";
 contract MockRiskManager is IRiskManager {
     function test_mock() external pure {}
 
-    function calculateAllocation(address, address[] calldata) external pure returns (uint256[] memory) {
+    function calculateAllocation(address, address[] calldata) external pure returns (uint16a16) {
         revert("0");
     }
 

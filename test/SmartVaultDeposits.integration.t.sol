@@ -58,7 +58,7 @@ contract depositManagerIntegrationTest is Test {
 
         // let us have a smart vault with two strategies
         // allocation is 60:40
-        uint256[] memory allocation = Arrays.toArray(60_00, 40_00);
+        uint16a16 allocation = Arrays.toUint16a16(60_00, 40_00);
         // both have same strategyRatio
         uint256[][] memory strategyRatios = new uint256[][](2);
         strategyRatios[0] = strategyRatio;

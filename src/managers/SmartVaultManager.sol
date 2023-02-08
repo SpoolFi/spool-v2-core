@@ -90,7 +90,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     mapping(address => SmartVaultFees) internal _smartVaultFees;
 
     /// @notice Smart Vault strategy allocations
-    mapping(address => mapping(uint256 => uint256)) internal _smartVaultAllocations;
+    mapping(address => uint16a16) internal _smartVaultAllocations;
 
     /// @notice Current flush index for given Smart Vault
     mapping(address => uint256) internal _flushIndexes;
@@ -171,8 +171,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /**
      * @notice SmartVault strategy allocations
      */
-    function allocations(address smartVault) external view returns (uint256[] memory) {
-        return _smartVaultAllocations[smartVault].toArray(_smartVaultStrategies[smartVault].length);
+    function allocations(address smartVault) external view returns (uint16a16) {
+        return _smartVaultAllocations[smartVault];
     }
 
     /**
@@ -300,13 +300,19 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         // set asset group
         _smartVaultAssetGroups[smartVault] = registrationForm.assetGroupId;
 
+        uint256 strategiesLength = registrationForm.strategies.length;
+
         // set strategies
-        if (registrationForm.strategies.length == 0) {
+        if (strategiesLength == 0) {
             revert SmartVaultRegistrationNoStrategies();
         }
 
+        if (strategiesLength > STRATEGY_COUNT_CAP) {
+            revert StrategyCapExceeded();
+        }
+
         // validate strategies
-        for (uint256 i = 0; i < registrationForm.strategies.length; i++) {
+        for (uint256 i = 0; i < strategiesLength; i++) {
             address strategy = registrationForm.strategies[i];
 
             if (!_accessControl.hasRole(ROLE_STRATEGY, strategy)) {
@@ -337,15 +343,14 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         // set allocation
         if (registrationForm.strategyAllocation.length == registrationForm.strategies.length) {
-            _smartVaultAllocations[smartVault].setValues(registrationForm.strategyAllocation);
+            _smartVaultAllocations[smartVault] = uint16a16.wrap(0).set(registrationForm.strategyAllocation);
         } else {
             _riskManager.setRiskProvider(smartVault, registrationForm.riskProvider);
             _riskManager.setRiskTolerance(smartVault, registrationForm.riskTolerance);
             _riskManager.setAllocationProvider(smartVault, registrationForm.allocationProvider);
 
-            _smartVaultAllocations[smartVault].setValues(
-                _riskManager.calculateAllocation(smartVault, registrationForm.strategies)
-            );
+            _smartVaultAllocations[smartVault] =
+                _riskManager.calculateAllocation(smartVault, registrationForm.strategies);
         }
 
         // update registry
@@ -361,7 +366,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             for (uint256 j = 0; j < strategies_.length; j++) {
                 if (strategies_[j] == strategy) {
                     _smartVaultStrategies[smartVault][j] = _ghostStrategy;
-                    _smartVaultAllocations[smartVault][j] = 0;
+                    _smartVaultAllocations[smartVault] = _smartVaultAllocations[smartVault].set(j, 0);
                     break;
                 }
             }
@@ -374,10 +379,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     function flushSmartVault(address smartVault) public whenNotPaused onlyRegisteredSmartVault(smartVault) {
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
-        uint256[] memory allocations_ = _smartVaultAllocations[smartVault].toArray(strategies_.length);
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
 
-        _flushSmartVault(smartVault, allocations_, strategies_, tokens);
+        _flushSmartVault(smartVault, _smartVaultAllocations[smartVault], strategies_, tokens);
     }
 
     function syncSmartVault(address smartVault, bool revertOnMissingDHW)
@@ -415,9 +419,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             }
 
             // Set new allocation.
-            _smartVaultAllocations[smartVaults[i]].setValues(
-                _riskManager.calculateAllocation(smartVaults[i], _smartVaultStrategies[smartVaults[i]])
-            );
+            _smartVaultAllocations[smartVaults[i]] =
+                _riskManager.calculateAllocation(smartVaults[i], _smartVaultStrategies[smartVaults[i]]);
         }
 
         ReallocationBag memory reallocationBag = ReallocationBag({
@@ -654,7 +657,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function _depositAssets(DepositBag calldata bag) internal returns (uint256) {
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
         address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
-        uint256[] memory allocations_ = _smartVaultAllocations[bag.smartVault].toArray(strategies_.length);
+        uint16a16 allocations_ = _smartVaultAllocations[bag.smartVault];
 
         _syncSmartVault(bag.smartVault, strategies_, tokens, false);
 
@@ -685,7 +688,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      */
     function _flushSmartVault(
         address smartVault,
-        uint256[] memory allocations_,
+        uint16a16 allocations_,
         address[] memory strategies_,
         address[] memory tokens
     ) private {

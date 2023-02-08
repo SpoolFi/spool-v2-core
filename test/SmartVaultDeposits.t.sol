@@ -10,7 +10,7 @@ contract depositManager3x3Test is Test {
     // 3 assets, 3 strategies
 
     uint256[] exchangeRates;
-    uint256[] allocation;
+    uint16a16 allocation;
     uint256[][] strategyRatios;
     DepositManager depositManager;
 
@@ -25,7 +25,7 @@ contract depositManager3x3Test is Test {
         exchangeRates = Arrays.toArray(
             1200 * USD_DECIMALS_MULTIPLIER, 16400 * USD_DECIMALS_MULTIPLIER, 270 * USD_DECIMALS_MULTIPLIER
         );
-        allocation = Arrays.toArray(600, 300, 100);
+        allocation = Arrays.toUint16a16(600, 300, 100);
 
         strategyRatios = new uint256[][](3);
         strategyRatios[0] = Arrays.toArray(1000, 71, 4300);
@@ -182,7 +182,7 @@ contract depositManager2x3Test is Test {
     // 2 assets, 3 strategies
 
     uint256[] exchangeRates;
-    uint256[] allocation;
+    uint16a16 allocation;
     uint256[][] strategyRatios;
     DepositManager depositManager;
 
@@ -195,7 +195,7 @@ contract depositManager2x3Test is Test {
             ISpoolAccessControl(address(0))
         );
         exchangeRates = Arrays.toArray(1200 * USD_DECIMALS_MULTIPLIER, 16400 * USD_DECIMALS_MULTIPLIER);
-        allocation = Arrays.toArray(600, 300, 100);
+        allocation = Arrays.toUint16a16(600, 300, 100);
 
         strategyRatios = new uint256[][](3);
         strategyRatios[0] = Arrays.toArray(1000, 71);
@@ -258,7 +258,7 @@ contract depositManager1x2Test is Test {
     // 1 asset, 2 strategies
 
     uint256[] exchangeRates;
-    uint256[] allocation;
+    uint16a16 allocation;
     uint256[][] strategyRatios;
     DepositManager depositManager;
 
@@ -272,7 +272,7 @@ contract depositManager1x2Test is Test {
         );
 
         exchangeRates = Arrays.toArray(1200 * USD_DECIMALS_MULTIPLIER);
-        allocation = Arrays.toArray(600, 400);
+        allocation = Arrays.toUint16a16(600, 400);
 
         strategyRatios = new uint256[][](2);
         strategyRatios[0] = Arrays.toArray(100_00);

@@ -130,7 +130,7 @@ contract WithdrawalIntegrationTest is Test {
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toArray(400, 600))
+                abi.encode(Arrays.toUint16a16(400, 600))
             );
 
             mySmartVault = smartVaultFactory.deploySmartVault(
