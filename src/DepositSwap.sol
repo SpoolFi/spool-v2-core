@@ -45,18 +45,19 @@ contract DepositSwap is IDepositSwap {
         address receiver
     ) external payable returns (uint256) {
         if (inTokens.length != inAmounts.length) revert InvalidArrayLength();
+        uint256 msgValue = msg.value;
 
         // Wrap eth if needed.
         if (msg.value > 0) {
-            _weth.deposit{value: msg.value}();
+            _weth.deposit{value: msgValue}();
         }
 
         // Transfer the tokens from the caller to the swapper.
         for (uint256 i = 0; i < inTokens.length; i++) {
             IERC20(inTokens[i]).safeTransferFrom(msg.sender, address(_swapper), inAmounts[i]);
 
-            if (inTokens[i] == address(_weth) && msg.value > 0) {
-                IERC20(address(_weth)).safeTransfer(address(_swapper), msg.value);
+            if (inTokens[i] == address(_weth) && msgValue > 0) {
+                IERC20(address(_weth)).safeTransfer(address(_swapper), msgValue);
             }
         }
 
