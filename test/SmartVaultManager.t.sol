@@ -71,7 +71,8 @@ contract SmartVaultManagerTest is TestFixture {
             riskProvider: riskProvider,
             managementFeePct: 0,
             depositFeePct: 0,
-            allocationProvider: address(allocationProvider)
+            allocationProvider: address(allocationProvider),
+            performanceFeePct: 0
         });
         smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
 
@@ -93,7 +94,8 @@ contract SmartVaultManagerTest is TestFixture {
             riskProvider: address(0),
             managementFeePct: 0,
             depositFeePct: 0,
-            allocationProvider: address(0)
+            allocationProvider: address(0),
+            performanceFeePct: 0
         });
 
         smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
@@ -119,7 +121,8 @@ contract SmartVaultManagerTest is TestFixture {
             riskProvider: riskProvider,
             managementFeePct: 0,
             depositFeePct: 0,
-            allocationProvider: address(allocationProvider)
+            allocationProvider: address(allocationProvider),
+            performanceFeePct: 0
         });
 
         // when not risk provider
@@ -313,7 +316,8 @@ contract SmartVaultManagerTest is TestFixture {
             riskProvider: riskProvider,
             managementFeePct: 0,
             depositFeePct: 0,
-            allocationProvider: address(allocationProvider)
+            allocationProvider: address(allocationProvider),
+            performanceFeePct: 0
         });
         smartVaultManager.registerSmartVault(address(smartVault_), registrationForm);
 

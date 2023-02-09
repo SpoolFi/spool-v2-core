@@ -72,7 +72,7 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         createVault();
         vm.clearMockedCalls();
 
-        bag.fees = SmartVaultFees(0, 0);
+        bag.fees = SmartVaultFees(0, 0, 0);
         bag.dhwSwapInfo = new SwapInfo[][](3);
         bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
@@ -116,7 +116,7 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         createVault();
         vm.clearMockedCalls();
 
-        bag.fees = SmartVaultFees(0, 0);
+        bag.fees = SmartVaultFees(0, 0, 0);
         bag.dhwSwapInfo = new SwapInfo[][](3);
         bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
@@ -158,7 +158,7 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         createVault();
         vm.clearMockedCalls();
 
-        bag.fees = SmartVaultFees(0, 0);
+        bag.fees = SmartVaultFees(0, 0, 0);
         bag.dhwSwapInfo = new SwapInfo[][](3);
         bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 

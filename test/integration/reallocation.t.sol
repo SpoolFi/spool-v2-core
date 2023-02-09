@@ -210,6 +210,7 @@ contract ReallocationIntegrationTest is Test {
             allocationProvider: address(0xabc),
             managementFeePct: 0,
             depositFeePct: 0,
+            performanceFeePct: 0,
             allowRedeemFor: false
         });
     }

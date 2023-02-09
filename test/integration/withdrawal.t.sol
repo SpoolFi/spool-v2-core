@@ -156,7 +156,8 @@ contract WithdrawalIntegrationTest is Test {
                     managementFeePct: 0,
                     depositFeePct: 0,
                     allowRedeemFor: false,
-                    allocationProvider: address(0xabc)
+                    allocationProvider: address(0xabc),
+                    performanceFeePct: 0
                 })
             );
         }

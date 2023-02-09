@@ -46,7 +46,7 @@ contract VaultSyncTest is IntegrationTestFixture {
     function test_syncVault_oneDeposit() public {
         createVault(2_00, 0);
         TestBag memory bag;
-        bag.fees = SmartVaultFees(2_00, 0);
+        bag.fees = SmartVaultFees(2_00, 0, 0);
         bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
         vm.startPrank(alice);
@@ -96,7 +96,7 @@ contract VaultSyncTest is IntegrationTestFixture {
     function test_syncVault_managementFees() public {
         createVault(2_00, 0);
         TestBag memory bag;
-        bag.fees = SmartVaultFees(2_00, 0);
+        bag.fees = SmartVaultFees(2_00, 0, 0);
         bag.vaultOwner = accessControl.smartVaultOwner(address(smartVault));
         bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
@@ -173,7 +173,7 @@ contract VaultSyncTest is IntegrationTestFixture {
         // Run simulations
         uint16a16 dhwIndexes = smartVaultManager.dhwIndexes(address(smartVault), 0);
         DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
-            address(smartVault), 0, 0, 0, smartVaultStrategies, assetGroup, dhwIndexes, SmartVaultFees(0, 3_00)
+            address(smartVault), 0, 0, 0, smartVaultStrategies, assetGroup, dhwIndexes, SmartVaultFees(0, 3_00, 0)
         );
 
         uint256 simulatedTotalSupply = smartVaultManager.getSVTTotalSupply(address(smartVault));
@@ -199,7 +199,7 @@ contract VaultSyncTest is IntegrationTestFixture {
         createVault();
         vm.clearMockedCalls();
 
-        bag.fees = SmartVaultFees(0, 0);
+        bag.fees = SmartVaultFees(0, 0, 0);
         bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
         vm.prank(alice);

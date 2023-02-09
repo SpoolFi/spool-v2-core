@@ -94,7 +94,8 @@ contract DhwSingleAssetTest is TestFixture {
                     managementFeePct: 0,
                     depositFeePct: 0,
                     allowRedeemFor: false,
-                    allocationProvider: address(allocationProvider)
+                    allocationProvider: address(allocationProvider),
+                    performanceFeePct: 0
                 })
             );
         }

@@ -402,6 +402,7 @@ contract SmartVaultFactoryTest is Test {
             guardRequestTypes: new RequestType[](0),
             managementFeePct: 0,
             depositFeePct: 0,
+            performanceFeePct: 0,
             allowRedeemFor: false
         });
     }

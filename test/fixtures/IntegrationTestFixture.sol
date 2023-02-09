@@ -108,6 +108,7 @@ contract IntegrationTestFixture is TestFixture {
                 managementFeePct: managementFeePct,
                 depositFeePct: depositFeePct,
                 allocationProvider: address(allocationProvider),
+                performanceFeePct: 0,
                 allowRedeemFor: true
             })
         );

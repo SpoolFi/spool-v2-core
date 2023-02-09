@@ -99,7 +99,8 @@ contract DhwTest is TestFixture {
                     managementFeePct: 0,
                     depositFeePct: 0,
                     allowRedeemFor: false,
-                    allocationProvider: address(allocationProvider)
+                    allocationProvider: address(allocationProvider),
+                    performanceFeePct: 0
                 })
             );
         }
@@ -303,6 +304,7 @@ contract DhwMatchingTest is TestFixture {
             allocationProvider: address(0xabc),
             managementFeePct: 0,
             depositFeePct: 0,
+            performanceFeePct: 0,
             allowRedeemFor: false
         });
         smartVault = smartVaultFactory.deploySmartVault(specification);
