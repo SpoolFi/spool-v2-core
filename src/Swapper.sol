@@ -4,7 +4,7 @@ pragma solidity 0.8.16;
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/CommonErrors.sol";
 import "./interfaces/ISwapper.sol";
-import "./access/SpoolAccessControl.sol";
+import "./access/SpoolAccessControllable.sol";
 import "./libraries/SpoolUtils.sol";
 
 contract Swapper is ISwapper, SpoolAccessControllable {

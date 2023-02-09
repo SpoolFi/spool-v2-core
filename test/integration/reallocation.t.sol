@@ -12,6 +12,7 @@ import "../../src/managers/SmartVaultManager.sol";
 import "../../src/managers/StrategyRegistry.sol";
 import "../../src/managers/UsdPriceFeedManager.sol";
 import "../../src/managers/WithdrawalManager.sol";
+import "../../src/access/SpoolAccessControl.sol";
 import "../../src/MasterWallet.sol";
 import "../../src/SmartVault.sol";
 import "../../src/SmartVaultFactory.sol";
@@ -136,7 +137,8 @@ contract ReallocationIntegrationTest is Test {
             riskProvider: riskProvider,
             allocationProvider: address(0xabc),
             managementFeePct: 0,
-            depositFeePct: 0
+            depositFeePct: 0,
+            allowRedeemFor: false
         });
     }
 

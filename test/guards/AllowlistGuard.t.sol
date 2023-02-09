@@ -6,6 +6,7 @@ import "forge-std/Test.sol";
 import "@openzeppelin/access/AccessControl.sol";
 import "../../src/interfaces/ISmartVault.sol";
 import "../../src/guards/AllowlistGuard.sol";
+import "../../src/access/SpoolAccessControl.sol";
 
 contract SmartVaultFake {}
 

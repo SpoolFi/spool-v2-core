@@ -9,9 +9,10 @@ import {IGuardManager, GuardDefinition} from "./interfaces/IGuardManager.sol";
 import {ISmartVault} from "./interfaces/ISmartVault.sol";
 import {ISmartVaultManager, SmartVaultRegistrationForm} from "./interfaces/ISmartVaultManager.sol";
 import {RequestType} from "./interfaces/RequestType.sol";
-import {ISpoolAccessControl} from "./access/SpoolAccessControl.sol";
 import {SmartVault} from "./SmartVault.sol";
 import {ISmartVaultRegistry} from "./interfaces/ISmartVaultManager.sol";
+import "./interfaces/ISpoolAccessControl.sol";
+import "./access/Roles.sol";
 
 /* ========== STRUCTS ========== */
 
@@ -30,6 +31,7 @@ import {ISmartVaultRegistry} from "./interfaces/ISmartVaultManager.sol";
  * @custom:member guardRequestTypes Request types for the smart vault.
  * @custom:member managementFeePCt Management fee percentage.
  * @custom:member depositFeePct Deposit fee percentage.
+ * @custom:member allowRedeemFor Allow vault owner to initiate redeem on behalf of others.
  */
 struct SmartVaultSpecification {
     string smartVaultName;
@@ -45,6 +47,7 @@ struct SmartVaultSpecification {
     RequestType[] guardRequestTypes;
     uint16 managementFeePct;
     uint16 depositFeePct;
+    bool allowRedeemFor;
 }
 
 /* ========== CONTRACTS ========== */
@@ -225,6 +228,10 @@ contract SmartVaultFactory is UpgradeableBeacon {
         _accessControl.grantSmartVaultOwnership(smartVaultAddress, msg.sender);
         _actionManager.setActions(smartVaultAddress, specification.actions, specification.actionRequestTypes);
         _guardManager.setGuards(smartVaultAddress, specification.guards, specification.guardRequestTypes);
+
+        if (specification.allowRedeemFor) {
+            _accessControl.grantRole(ROLE_SMART_VAULT_ALLOW_REDEEM, smartVaultAddress);
+        }
 
         _smartVaultRegistry.registerSmartVault(
             smartVaultAddress,

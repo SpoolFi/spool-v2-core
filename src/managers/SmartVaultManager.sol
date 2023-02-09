@@ -19,7 +19,7 @@ import "../interfaces/IWithdrawalManager.sol";
 import "../interfaces/CommonErrors.sol";
 import "../interfaces/Constants.sol";
 import "../interfaces/RequestType.sol";
-import "../access/SpoolAccessControl.sol";
+import "../access/SpoolAccessControllable.sol";
 import "../libraries/ArrayMapping.sol";
 import "../libraries/uint16a16Lib.sol";
 import "../libraries/ReallocationLib.sol";
@@ -207,20 +207,17 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         onlyRegisteredSmartVault(bag.smartVault)
         returns (uint256)
     {
-        address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
-        _syncSmartVault(bag.smartVault, strategies_, tokens, false);
+        return _redeem(bag, receiver, msg.sender, doFlush);
+    }
 
-        uint256 flushIndex = _flushIndexes[bag.smartVault];
-
-        _depositManager.claimSmartVaultTokens(bag.smartVault, bag.nftIds, bag.nftAmounts, tokens, msg.sender);
-        uint256 nftId = _withdrawalManager.redeem(bag, RedeemExtras(receiver, msg.sender, flushIndex));
-
-        if (doFlush) {
-            flushSmartVault(bag.smartVault);
-        }
-
-        return nftId;
+    function redeemFor(RedeemBag calldata bag, address owner, bool doFlush)
+        external
+        whenNotPaused
+        onlyRole(ROLE_SMART_VAULT_ALLOW_REDEEM, bag.smartVault)
+        onlySmartVaultRole(bag.smartVault, ROLE_SMART_VAULT_ADMIN, msg.sender)
+        returns (uint256)
+    {
+        return _redeem(bag, owner, owner, doFlush);
     }
 
     function redeemFast(RedeemBag calldata bag)
@@ -259,11 +256,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         onlyRegisteredSmartVault(smartVault)
         returns (uint256)
     {
-        address[] memory strategies_ = _smartVaultStrategies[smartVault];
-        uint256 assetGroupId_ = _smartVaultAssetGroups[smartVault];
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
-
-        _syncSmartVault(smartVault, strategies_, tokens, false);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
+        _syncSmartVault(smartVault, _smartVaultStrategies[smartVault], tokens, false);
         return _depositManager.claimSmartVaultTokens(smartVault, nftIds, nftAmounts, tokens, msg.sender);
     }
 
@@ -280,11 +274,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256[] calldata nftAmounts,
         address receiver
     ) public whenNotPaused onlyRegisteredSmartVault(smartVault) returns (uint256[] memory, uint256) {
-        address[] memory strategies_ = _smartVaultStrategies[smartVault];
         uint256 assetGroupId_ = _smartVaultAssetGroups[smartVault];
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
 
-        _syncSmartVault(smartVault, strategies_, tokens, false);
+        _syncSmartVault(smartVault, _smartVaultStrategies[smartVault], tokens, false);
         return _withdrawalManager.claimWithdrawal(
             WithdrawalClaimBag(smartVault, nftIds, nftAmounts, receiver, msg.sender, assetGroupId_, tokens)
         );
@@ -379,10 +372,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /* ========== BOOKKEEPING ========== */
 
     function flushSmartVault(address smartVault) public whenNotPaused onlyRegisteredSmartVault(smartVault) {
-        address[] memory strategies_ = _smartVaultStrategies[smartVault];
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-
-        _flushSmartVault(smartVault, _smartVaultAllocations[smartVault], strategies_, tokens);
+        _flushSmartVault(smartVault, _smartVaultAllocations[smartVault], _smartVaultStrategies[smartVault], tokens);
     }
 
     function syncSmartVault(address smartVault, bool revertOnMissingDHW)
@@ -390,9 +381,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         whenNotPaused
         onlyRegisteredSmartVault(smartVault)
     {
-        address[] memory strategies_ = _smartVaultStrategies[smartVault];
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-        _syncSmartVault(smartVault, strategies_, tokens, revertOnMissingDHW);
+        _syncSmartVault(smartVault, _smartVaultStrategies[smartVault], tokens, revertOnMissingDHW);
     }
 
     function reallocate(address[] calldata smartVaults, address[] calldata strategies_) external whenNotPaused {
@@ -647,6 +637,24 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         return newBalance;
+    }
+
+    function _redeem(RedeemBag calldata bag, address receiver, address redeemer, bool doFlush)
+        internal
+        returns (uint256)
+    {
+        address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
+        _syncSmartVault(bag.smartVault, strategies_, tokens, false);
+
+        _depositManager.claimSmartVaultTokens(bag.smartVault, bag.nftIds, bag.nftAmounts, tokens, redeemer);
+        uint256 nftId = _withdrawalManager.redeem(bag, RedeemExtras(receiver, redeemer, _flushIndexes[bag.smartVault]));
+
+        if (doFlush) {
+            flushSmartVault(bag.smartVault);
+        }
+
+        return nftId;
     }
 
     /**

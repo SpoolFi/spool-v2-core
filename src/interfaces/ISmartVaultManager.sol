@@ -67,6 +67,11 @@ error DepositFeeTooLarge(uint256 depositFeePct);
  */
 error FlushOverlap(address strategy);
 
+/**
+ * @notice Used when user tries redeem on behalf of another user, but the vault does not support it
+ */
+error RedeemForNotAllowed();
+
 /* ========== STRUCTS ========== */
 
 /**
@@ -203,29 +208,29 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
         returns (uint256 claimedAmount);
 
     /**
-     * @dev Burns exactly shares from owner and sends assets of underlying tokens to receiver.
-     *
-     * - MUST emit the Withdraw event.
-     * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the
-     *   redeem execution, and are accounted for during redeem.
-     * - MUST revert if all of shares cannot be redeemed (due to withdrawal limit being reached, slippage, the owner
-     *   not having enough shares, etc).
-     *
-     * NOTE: some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
-     * Those methods should be performed separately.
+     * @notice Initiates a withdrawal process and mints a withdrawal NFT. Once all DHWs are executed, user can
+     * use the withdrawal NFT to claim the assets.
+     * Optionally, caller can pas a list of deposit NFTs to unwrap.
+     * @param bag smart vault address, amount of shares to redeem, nft ids and amounts to burn
+     * @param receiver address that will receive the withdrawal NFT
+     * @param doFlush optionally flush the smart vault
      */
     function redeem(RedeemBag calldata bag, address receiver, bool doFlush) external returns (uint256 receipt);
 
     /**
-     * @dev Mints shares Vault shares to receiver by depositing exactly amount of underlying tokens.
-     *
-     * - MUST emit the Deposit event.
-     * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the
-     *   deposit execution, and are accounted for during deposit.
-     * - MUST revert if all of assets cannot be deposited (due to deposit limit being reached, slippage, the user not
-     *   approving enough underlying tokens to the Vault contract, etc).
-     *
-     * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
+     * @notice Initiates a withdrawal process and mints a withdrawal NFT. Once all DHWs are executed, user can
+     * use the withdrawal NFT to claim the assets.
+     * Optionally, caller can pas a list of deposit NFTs to unwrap.
+     * @param bag smart vault address, amount of shares to redeem, nft ids and amounts to burn
+     * @param owner address that owns the shares to be redeemed and will receive the withdrawal NFT
+     * @param doFlush optionally flush the smart vault
+     */
+    function redeemFor(RedeemBag calldata bag, address owner, bool doFlush) external returns (uint256 receipt);
+
+    /**
+     * @notice Initiated a deposit and mints a deposit NFT. Once all DHWs are executed, user can
+     * unwrap the deposit NDF and claim his SVTs.
+     * @param bag smartVault address, assets, NFT receiver address, referral address, doFlush
      */
     function deposit(DepositBag calldata bag) external returns (uint256 receipt);
 

@@ -4,6 +4,7 @@ pragma solidity 0.8.16;
 import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
 import "../src/managers/RiskManager.sol";
+import "../src/access/SpoolAccessControl.sol";
 import "./libraries/Arrays.sol";
 
 contract RiskManagerTest is Test {

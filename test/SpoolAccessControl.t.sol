@@ -4,7 +4,8 @@ pragma solidity 0.8.16;
 import {Test} from "forge-std/Test.sol";
 import {MissingRole} from "../src/interfaces/ISpoolAccessControl.sol";
 import "../src/access/Roles.sol";
-import {SpoolAccessControl, SpoolAccessControllable} from "../src/access/SpoolAccessControl.sol";
+import {SpoolAccessControl} from "../src/access/SpoolAccessControl.sol";
+import {SpoolAccessControllable} from "../src/access/SpoolAccessControllable.sol";
 
 bytes32 constant TEST_ROLE = keccak256("TEST_ROLE");
 bytes32 constant ANOTHER_TEST_ROLE = keccak256("ANOTHER_TEST_ROLE");

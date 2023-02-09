@@ -96,6 +96,7 @@ contract DhwTest is TestFixture {
                     riskProvider: riskProvider,
                     managementFeePct: 0,
                     depositFeePct: 0,
+                    allowRedeemFor: false,
                     allocationProvider: address(allocationProvider)
                 })
             );
@@ -236,7 +237,8 @@ contract DhwMatchingTest is TestFixture {
             riskProvider: riskProvider,
             allocationProvider: address(0xabc),
             managementFeePct: 0,
-            depositFeePct: 0
+            depositFeePct: 0,
+            allowRedeemFor: false
         });
         smartVault = smartVaultFactory.deploySmartVault(specification);
 

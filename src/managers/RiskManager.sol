@@ -4,7 +4,7 @@ pragma solidity 0.8.16;
 import "../interfaces/IRiskManager.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/Constants.sol";
-import "../access/SpoolAccessControl.sol";
+import "../access/SpoolAccessControllable.sol";
 import "../interfaces/IAllocationProvider.sol";
 import "../libraries/uint16a16Lib.sol";
 

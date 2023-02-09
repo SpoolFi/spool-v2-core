@@ -3,7 +3,8 @@ pragma solidity 0.8.16;
 
 import "../interfaces/IAssetGroupRegistry.sol";
 import "../access/Roles.sol";
-import "../access/SpoolAccessControl.sol";
+import "../access/SpoolAccessControllable.sol";
+import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
 
 /* ========== CONTRACTS ========== */
 

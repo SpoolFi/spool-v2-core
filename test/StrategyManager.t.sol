@@ -10,6 +10,7 @@ import "./libraries/Arrays.sol";
 import "../src/Swapper.sol";
 import "./mocks/MockPriceFeedManager.sol";
 import "../src/strategies/GhostStrategy.sol";
+import "../src/access/SpoolAccessControl.sol";
 
 contract StrategyRegistryTest is Test {
     IStrategyRegistry strategyRegistry;

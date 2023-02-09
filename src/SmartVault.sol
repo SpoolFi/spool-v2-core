@@ -8,7 +8,7 @@ import "@openzeppelin-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "./interfaces/CommonErrors.sol";
 import "./interfaces/ISmartVault.sol";
 import "./interfaces/RequestType.sol";
-import "./access/SpoolAccessControl.sol";
+import "./access/SpoolAccessControllable.sol";
 import "./interfaces/IGuardManager.sol";
 import "./libraries/ArrayMapping.sol";
 

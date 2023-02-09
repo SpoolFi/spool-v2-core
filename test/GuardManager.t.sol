@@ -6,6 +6,7 @@ import "forge-std/Test.sol";
 import "../src/managers/GuardManager.sol";
 import {MockGuard} from "./mocks/MockGuard.sol";
 import "./utils/GasHelpers.sol";
+import "../src/access/SpoolAccessControl.sol";
 
 contract GuardManagerTest is Test, GasHelpers {
     IGuardManager guardManager;

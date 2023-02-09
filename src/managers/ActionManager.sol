@@ -4,7 +4,7 @@ pragma solidity 0.8.16;
 import {console} from "forge-std/console.sol";
 import "@solmate/utils/SSTORE2.sol";
 import "../interfaces/IAction.sol";
-import "../access/SpoolAccessControl.sol";
+import "../access/SpoolAccessControllable.sol";
 
 contract ActionManager is IActionManager, SpoolAccessControllable {
     /* ========== STATE VARIABLES ========== */

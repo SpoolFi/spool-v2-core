@@ -9,7 +9,7 @@ import "../interfaces/IAssetGroupRegistry.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
-import "../access/SpoolAccessControl.sol";
+import "../access/SpoolAccessControllable.sol";
 
 abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrategy {
     using SafeERC20 for IERC20;

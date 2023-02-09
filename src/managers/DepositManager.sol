@@ -16,7 +16,7 @@ import "../interfaces/IAction.sol";
 import "../interfaces/RequestType.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
 import "../libraries/ArrayMapping.sol";
-import "../access/SpoolAccessControl.sol";
+import "../access/SpoolAccessControllable.sol";
 import "../interfaces/ISmartVaultManager.sol";
 import "../libraries/SpoolUtils.sol";
 import "./ActionsAndGuards.sol";

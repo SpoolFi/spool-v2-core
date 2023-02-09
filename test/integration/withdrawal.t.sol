@@ -3,6 +3,7 @@ pragma solidity 0.8.16;
 
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
+import "../../src/access/SpoolAccessControl.sol";
 import "../../src/managers/ActionManager.sol";
 import "../../src/managers/AssetGroupRegistry.sol";
 import "../../src/managers/GuardManager.sol";
@@ -147,6 +148,7 @@ contract WithdrawalIntegrationTest is Test {
                     riskProvider: riskProvider,
                     managementFeePct: 0,
                     depositFeePct: 0,
+                    allowRedeemFor: false,
                     allocationProvider: address(0xabc)
                 })
             );
@@ -248,6 +250,48 @@ contract WithdrawalIntegrationTest is Test {
         assertEq(mySmartVault.balanceOfFractional(alice, aliceWithdrawalNftId), 0, "27");
         assertEq(mySmartVault.balanceOfFractional(bob, bobWithdrawalNftId), 0, "28.1");
         assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 0, "28.2");
+    }
+
+    function test_redeemFor_revertIfNotAdmin() public {
+        accessControl.grantRole(ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM, address(this));
+        accessControl.grantRole(ROLE_SMART_VAULT_ALLOW_REDEEM, address(mySmartVault));
+
+        vm.startPrank(alice);
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SMART_VAULT_ADMIN, alice));
+        smartVaultManager.redeemFor(
+            RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0)), bob, false
+        );
+        vm.stopPrank();
+    }
+
+    function test_redeemFor_revertIfNotAllowed() public {
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(MissingRole.selector, ROLE_SMART_VAULT_ALLOW_REDEEM, address(mySmartVault))
+        );
+        smartVaultManager.redeemFor(
+            RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0)), bob, false
+        );
+    }
+
+    function test_redeemFor_ok() public {
+        accessControl.grantRole(ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM, address(this));
+        accessControl.grantRole(ROLE_SMART_VAULT_ALLOW_REDEEM, address(mySmartVault));
+        accessControl.grantSmartVaultRole(address(mySmartVault), ROLE_SMART_VAULT_ADMIN, alice);
+
+        // set initial state
+        deal(address(mySmartVault), bob, 1_000_000, true);
+        deal(address(strategyA), address(mySmartVault), 40_000_000, true);
+        deal(address(strategyB), address(mySmartVault), 10_000_000, true);
+
+        // request withdrawal
+        vm.prank(alice);
+        uint256 redeemId = smartVaultManager.redeemFor(
+            RedeemBag(address(mySmartVault), 500_000, new uint256[](0), new uint256[](0)), bob, false
+        );
+
+        assertGt(mySmartVault.balanceOf(bob, redeemId), 0);
+        assertEq(mySmartVault.balanceOf(alice, redeemId), 0);
     }
 
     function test_shouldBeAbleToWithdrawFast() public {

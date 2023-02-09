@@ -4,6 +4,7 @@ pragma solidity 0.8.16;
 import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
 import "../src/rewards/RewardManager.sol";
+import "../src/access/SpoolAccessControl.sol";
 import "./mocks/MockToken.sol";
 
 contract RewardPoolTest is Test {

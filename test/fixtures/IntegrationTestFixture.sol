@@ -66,6 +66,7 @@ contract IntegrationTestFixture is TestFixture {
         strategyC.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyC));
 
+        accessControl.grantRole(ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM, address(smartVaultFactory));
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
@@ -103,7 +104,8 @@ contract IntegrationTestFixture is TestFixture {
                 riskProvider: riskProvider,
                 managementFeePct: managementFeePct,
                 depositFeePct: depositFeePct,
-                allocationProvider: address(allocationProvider)
+                allocationProvider: address(allocationProvider),
+                allowRedeemFor: true
             })
         );
     }

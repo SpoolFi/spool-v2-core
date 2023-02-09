@@ -78,6 +78,7 @@ contract NftGateGuardDemoTest is TestFixture {
                     riskProvider: riskProvider,
                     managementFeePct: 0,
                     depositFeePct: 0,
+                    allowRedeemFor: false,
                     allocationProvider: address(allocationProvider)
                 })
             );

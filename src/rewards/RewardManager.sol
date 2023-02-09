@@ -3,7 +3,7 @@ pragma solidity 0.8.16;
 
 import "@openzeppelin/security/ReentrancyGuard.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import "../access/SpoolAccessControl.sol";
+import "../access/SpoolAccessControllable.sol";
 import "../interfaces/IRewardManager.sol";
 import "../interfaces/ISmartVault.sol";
 import "../utils/MathUtils.sol";

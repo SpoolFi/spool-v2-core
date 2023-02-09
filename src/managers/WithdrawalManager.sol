@@ -12,7 +12,7 @@ import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/ISmartVault.sol";
-import "../access/SpoolAccessControl.sol";
+import "../access/SpoolAccessControllable.sol";
 
 contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdrawalManager {
     using SafeERC20 for IERC20;

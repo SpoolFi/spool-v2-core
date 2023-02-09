@@ -2,7 +2,7 @@
 pragma solidity 0.8.16;
 
 import "../interfaces/ISmartVault.sol";
-import "../access/SpoolAccessControl.sol";
+import "../access/SpoolAccessControllable.sol";
 
 /* ========== ERRORS ========== */
 

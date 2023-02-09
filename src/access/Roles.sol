@@ -104,3 +104,13 @@ bytes32 constant ROLE_STRATEGY = keccak256("STRATEGY");
  * @dev Grants permission to manage role ROLE_STRATEGY.
  */
 bytes32 constant ADMIN_ROLE_STRATEGY = keccak256("ADMIN_STRATEGY");
+
+/**
+ * @dev Grants permission vault admins to allow redeem on behalf of other users.
+ */
+bytes32 constant ROLE_SMART_VAULT_ALLOW_REDEEM = keccak256("SMART_VAULT_ALLOW_REDEEM");
+
+/**
+ * @dev Grants permission to manage role ROLE_SMART_VAULT_ALLOW_REDEEM.
+ */
+bytes32 constant ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM = keccak256("ADMIN_SMART_VAULT_ALLOW_REDEEM");

@@ -11,6 +11,7 @@ import "./mocks/Constants.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "../src/managers/AssetGroupRegistry.sol";
 import "../src/SmartVault.sol";
+import "../src/access/SpoolAccessControl.sol";
 import "../src/managers/GuardManager.sol";
 import "./libraries/Arrays.sol";
 import "./mocks/MockSmartVaultBalance.sol";

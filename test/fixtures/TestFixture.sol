@@ -14,9 +14,12 @@ import "../../src/managers/StrategyRegistry.sol";
 import "../../src/managers/RiskManager.sol";
 import "../../src/managers/DepositManager.sol";
 import "../../src/managers/WithdrawalManager.sol";
-import "../integration/withdrawal.t.sol";
+import "../../src/access/SpoolAccessControl.sol";
 import "../../src/providers/UniformAllocationProvider.sol";
 import "../../src/libraries/uint16a16Lib.sol";
+import "../../src/SmartVaultFactory.sol";
+import "../../src/Swapper.sol";
+import "../../src/strategies/GhostStrategy.sol";
 
 contract TestFixture is Test {
     using uint16a16Lib for uint16a16;

@@ -7,7 +7,7 @@ import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/ISwapper.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/CommonErrors.sol";
-import "../access/SpoolAccessControl.sol";
+import "../access/SpoolAccessControllable.sol";
 import "../libraries/ArrayMapping.sol";
 import "../libraries/SpoolUtils.sol";
 

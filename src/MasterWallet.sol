@@ -3,7 +3,7 @@ pragma solidity 0.8.16;
 
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IMasterWallet.sol";
-import "./access/SpoolAccessControl.sol";
+import "./access/SpoolAccessControllable.sol";
 
 contract MasterWallet is IMasterWallet, SpoolAccessControllable {
     using SafeERC20 for IERC20;

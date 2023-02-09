@@ -5,7 +5,7 @@ import {console} from "forge-std/console.sol";
 import "@openzeppelin/utils/Strings.sol";
 import "@solmate/utils/SSTORE2.sol";
 import "../interfaces/IGuardManager.sol";
-import "../access/SpoolAccessControl.sol";
+import "../access/SpoolAccessControllable.sol";
 
 contract GuardManager is IGuardManager, SpoolAccessControllable {
     /* ========== STATE VARIABLES ========== */
