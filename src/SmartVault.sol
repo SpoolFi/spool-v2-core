@@ -18,33 +18,33 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
 
     /* ========== CONSTANTS ========== */
 
-    // @notice Guard manager
+    /// @notice Guard manager
     IGuardManager internal immutable _guardManager;
 
-    // @notice Asset group ID
+    /// @notice Asset group ID
     uint256 public assetGroupId;
 
-    // @notice Vault name
+    /// @notice Vault name
     string internal _vaultName;
 
     /* ========== STATE VARIABLES ========== */
 
-    // @notice Mapping from user to all of his current D-NFT IDs
+    /// @notice Mapping from user to all of his current D-NFT IDs
     mapping(address => mapping(uint256 => uint256)) private _activeUserNFTIds;
 
-    // @notice Number of active (not burned) NFTs per address
+    /// @notice Number of active (not burned) NFTs per address
     mapping(address => uint256) private _activeUserNFTCount;
 
-    // @notice Deposit metadata registry
+    /// @notice Deposit metadata registry
     mapping(uint256 => DepositMetadata) private _depositMetadata;
 
-    // @notice Withdrawal metadata registry
+    /// @notice Withdrawal metadata registry
     mapping(uint256 => WithdrawalMetadata) private _withdrawalMetadata;
 
-    // @notice Deposit NFT ID
+    /// @notice Deposit NFT ID
     uint256 private _lastDepositId;
 
-    // @notice Withdrawal NFT ID
+    /// @notice Withdrawal NFT ID
     uint256 private _lastWithdrawalId;
 
     /* ========== CONSTRUCTOR ========== */

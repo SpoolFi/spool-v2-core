@@ -7,7 +7,7 @@ interface IMasterWallet {
     /**
      * @notice Approves the amount of token the spender can use.
      * @dev Requirements:
-     * - must be called by a wallet manager
+     * - caller must have role ROLE_MASTER_WALLET_MANAGER
      * @param token Token on which to make the approval.
      * @param spender Address that is approved.
      * @param amount Amount of tokens to approve.
@@ -17,7 +17,7 @@ interface IMasterWallet {
     /**
      * @notice Resets the approval on token for spender back to 0.
      * @dev Requirements:
-     * - must be called by a wallet manager
+     * - caller must have role ROLE_MASTER_WALLET_MANAGER
      * @param token Token on which to reset the approval.
      * @param spender Address for which to reset the approval.
      */
@@ -26,7 +26,7 @@ interface IMasterWallet {
     /**
      * @notice Transfers amount of token to the recipient.
      * @dev Requirements:
-     * - must be called by a wallet manager
+     * - caller must have role ROLE_MASTER_WALLET_MANAGER
      * @param token Token to transfer.
      * @param recipient Target of the transfer.
      * @param amount Amount to transfer.

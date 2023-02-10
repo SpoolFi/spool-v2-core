@@ -88,7 +88,6 @@ contract ReallocationIntegrationTest is Test {
 
         WithdrawalManager withdrawalManager =
         new WithdrawalManager(strategyRegistry, priceFeedManager, masterWallet, guardManager, actionManager, accessControl);
-        accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(withdrawalManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(withdrawalManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(withdrawalManager));
         accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, address(0xabc));
@@ -104,7 +103,6 @@ contract ReallocationIntegrationTest is Test {
             priceFeedManager,
             address(ghostStrategy)
         );
-        accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
 

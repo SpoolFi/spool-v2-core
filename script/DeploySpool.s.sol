@@ -134,7 +134,6 @@ contract DeploySpool is Script {
         proxy = new TransparentUpgradeableProxy(address(rewardManagerImpl), address(proxyAdmin), "");
         rewardManager = RewardManager(address(proxy));
 
-        spoolAccessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         spoolAccessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
         spoolAccessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
 

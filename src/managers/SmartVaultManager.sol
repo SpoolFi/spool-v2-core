@@ -43,7 +43,6 @@ struct VaultSyncUserBag {
 
 /**
  * @dev Requires roles:
- * - ROLE_STRATEGY_CLAIMER
  * - ROLE_MASTER_WALLET_MANAGER
  * - ROLE_SMART_VAULT_MANAGER
  */
@@ -312,6 +311,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         if (registrationForm.strategyAllocation.length == registrationForm.strategies.length) {
             _smartVaultAllocations[smartVault] = uint16a16.wrap(0).set(registrationForm.strategyAllocation);
         } else {
+            // TODO: move to smart vault factory
             _riskManager.setRiskProvider(smartVault, registrationForm.riskProvider);
             _riskManager.setRiskTolerance(smartVault, registrationForm.riskTolerance);
             _riskManager.setAllocationProvider(smartVault, registrationForm.allocationProvider);

@@ -57,7 +57,6 @@ contract DhwUniswapV2Test is TestFixture {
         strategyA.initialize(assetGroupId);
         strategyRegistry.registerStrategy(address(strategyA));
 
-        accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
         accessControl.grantRole(ROLE_STRATEGY_REGISTRY, address(strategyRegistry));
 

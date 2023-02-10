@@ -34,13 +34,6 @@ bytes32 constant ROLE_SMART_VAULT_ADMIN = keccak256("SMART_VAULT_ADMIN");
 bytes32 constant ROLE_GUARD_ALLOWLIST_MANAGER = keccak256("GUARD_ALLOWLIST_MANAGER");
 
 /**
- * @dev Grants permission to claim assets from strategies.
- *
- * Should be granted to the SmartVaultManager contract.
- */
-bytes32 constant ROLE_STRATEGY_CLAIMER = keccak256("STRATEGY_CLAIMER");
-
-/**
  * @dev Grants permission to manage assets on master wallet.
  *
  * Should be granted to:

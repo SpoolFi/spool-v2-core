@@ -95,7 +95,7 @@ interface IAssetGroupRegistry {
     /**
      * @notice Allows a token to be used as an asset.
      * @dev Requirements:
-     * - can only be valled by the ROLE_SPOOL_ADMIN
+     * - can only be called by the ROLE_SPOOL_ADMIN
      * @param token Address of token to be allowed.
      */
     function allowToken(address token) external;
@@ -103,7 +103,7 @@ interface IAssetGroupRegistry {
     /**
      * @notice Allows tokens to be used as assets.
      * @dev Requirements:
-     * - can only be valled by the ROLE_SPOOL_ADMIN
+     * - can only be called by the ROLE_SPOOL_ADMIN
      * @param tokens Addresses of tokens to be allowed.
      */
     function allowTokenBatch(address[] calldata tokens) external;

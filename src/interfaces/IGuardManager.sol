@@ -57,13 +57,41 @@ struct RequestContext {
 }
 
 interface IGuardManager {
+    /**
+     * @notice Runs guards for a smart vault.
+     * @dev Reverts if any guard fails.
+     * @param smartVault Smart vault for which to run the guards.
+     * @param context Context for running the guards.
+     */
     function runGuards(address smartVault, RequestContext calldata context) external view;
-    function readGuards(address smartVaultId, RequestType requestType)
+
+    /**
+     * @notice Gets guards for smart vault and request type.
+     * @param smartVault Smart vault for which to get guards.
+     * @param requestType Request type for which to get guards.
+     * @return guards Guards for the smart vault and request type.
+     */
+    function readGuards(address smartVault, RequestType requestType)
         external
         view
-        returns (GuardDefinition[] memory);
-    function setGuards(address smartVaultId, GuardDefinition[][] calldata guards, RequestType[] calldata requestTypes)
+        returns (GuardDefinition[] memory guards);
+
+    /**
+     * @notice Sets guards for the smart vault.
+     * @dev
+     * @dev Requirements:
+     * - caller must have role ROLE_SMART_VAULT_INTEGRATOR
+     * - guards should not have been already set for the smart vault
+     * @param smartVault Smart vault for which to set the guards.
+     * @param guards Guards to set. Grouped by the request types.
+     * @param requestTypes Request types for groups of guards.
+     */
+    function setGuards(address smartVault, GuardDefinition[][] calldata guards, RequestType[] calldata requestTypes)
         external;
 
-    event GuardsInitialized(address indexed smartVaultId);
+    /**
+     * @notice Emitted when guards are set for a smart vault.
+     * @param smartVault Smart vault for which guards were set.
+     */
+    event GuardsInitialized(address indexed smartVault);
 }

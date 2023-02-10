@@ -65,7 +65,6 @@ contract DhwSingleAssetTest is TestFixture {
         strategyRegistry.registerStrategy(address(strategyC));
 
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
-        accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
         accessControl.grantRole(ROLE_STRATEGY_REGISTRY, address(strategyRegistry));

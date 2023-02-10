@@ -128,12 +128,6 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         return _vaultDeposits[smartVault][flushIdx].toArray(assetGroupLength);
     }
 
-    /**
-     * @notice Burn deposit NFTs to claim SVTs
-     * @param smartVault Vault address
-     * @param nftIds NFTs to burn
-     * @param nftAmounts NFT amounts to burn
-     */
     function claimSmartVaultTokens(
         address smartVault,
         uint256[] calldata nftIds,

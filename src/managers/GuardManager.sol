@@ -17,11 +17,6 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
 
     /* ========== EXTERNAL FUNCTIONS ========== */
 
-    /**
-     * @notice Loop through and run guards for given Smart Vault.
-     * @param smartVaultId Smart Vault address
-     * @param context Request context
-     */
     function runGuards(address smartVaultId, RequestContext calldata context) external view {
         if (guardPointer[smartVaultId][context.requestType] == address(0)) {
             return;
@@ -38,11 +33,6 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
         }
     }
 
-    /**
-     * @notice Return persisted guards for given Smart Vault
-     * @param smartVaultId Smart Vault address
-     * @return guards Array of guards
-     */
     function readGuards(address smartVaultId, RequestType requestType)
         external
         view
@@ -51,14 +41,6 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
         return _readGuards(smartVaultId, requestType);
     }
 
-    /**
-     * @notice Persist guards for given Smart Vault
-     * Requirements:
-     * - smart vault should not have prior guards initialized
-     *
-     * @param smartVaultId Smart Vault address
-     * @param guards Array of guards
-     */
     function setGuards(address smartVaultId, GuardDefinition[][] calldata guards, RequestType[] calldata requestTypes)
         public
         onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)

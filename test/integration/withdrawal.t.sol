@@ -112,7 +112,6 @@ contract WithdrawalIntegrationTest is Test {
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         accessControl.grantRole(ROLE_DO_HARD_WORKER, doHardWorker);
         accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, address(0xabc));
-        accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(withdrawalManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(depositManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(withdrawalManager));

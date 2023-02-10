@@ -70,7 +70,6 @@ contract IntegrationTestFixture is TestFixture {
 
         accessControl.grantRole(ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM, address(smartVaultFactory));
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
-        accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
         accessControl.grantRole(ROLE_STRATEGY_REGISTRY, address(strategyRegistry));
         accessControl.grantRole(ADMIN_ROLE_STRATEGY, address(strategyRegistry));

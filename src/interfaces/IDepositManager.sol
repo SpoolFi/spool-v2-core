@@ -9,6 +9,14 @@ import "./IStrategyRegistry.sol";
  */
 error InvalidAssetLengths();
 
+/**
+ * @notice Gathers input for depositing assets.
+ * @custom:member smartVault Smart vault for which the deposit is made.
+ * @custom:member assets Amounts of assets being deposited.
+ * @custom:member receiver Receiver of the deposit NFT.
+ * @custom:member referral Referral address.
+ * @custom:member doFlush If true, the smart vault will be flushed after the deposit as part of same transaction.
+ */
 struct DepositBag {
     address smartVault;
     uint256[] assets;
@@ -17,6 +25,14 @@ struct DepositBag {
     bool doFlush;
 }
 
+/**
+ * @notice Gathers extra input for depositing assets.
+ * @custom:member depositor Address making the deposit.
+ * @custom:member tokens Tokens of the smart vault.
+ * @custom:member strategies Strategies of the smart vault.
+ * @custom:member allocations Set allocation of funds between strategies.
+ * @custom:member flushIndex Current flush index of the smart vault.
+ */
 struct DepositExtras {
     address depositor;
     address[] tokens;
@@ -25,6 +41,13 @@ struct DepositExtras {
     uint256 flushIndex;
 }
 
+/**
+ * @notice Gathers return values of syncing deposits.
+ * @custom:member mintedSVTs Amount of SVTs minted.
+ * @custom:member dhwTimestamp Timestamp of the last DHW synced.
+ * @custom:member feeSVTs Amount of SVTs minted as fees.
+ * @custom:member sstShares Amount of SSTs claimed for each strategy.
+ */
 struct DepositSyncResult {
     uint256 mintedSVTs;
     uint256 dhwTimestamp;
@@ -79,7 +102,7 @@ interface IDepositManager {
      * @param assetGroup vault asset group token addresses
      * @param dhwIndexes DHW Indexes for given flush index
      * @param fees smart vault fee configuration
-     * @return number of SVTs minted and SSTs claimed
+     * @return syncResult Result of the smart vault sync.
      */
     function syncDepositsSimulate(
         address smartVault,
@@ -90,10 +113,12 @@ interface IDepositManager {
         address[] memory assetGroup,
         uint16a16 dhwIndexes,
         SmartVaultFees memory fees
-    ) external view returns (DepositSyncResult memory);
+    ) external view returns (DepositSyncResult memory syncResult);
 
     /**
      * @notice Synchronize vault deposits for completed DHW runs
+     * @dev Requirements:
+     * - caller must have role ROLE_SMART_VAULT_MANAGER
      * @param smartVault Smart Vault address
      * @param flushIndex index for which to synchronize deposits for
      * @param lastDhwSyncedTimestamp timestamp of the last synced DHW up until now
@@ -102,6 +127,7 @@ interface IDepositManager {
      * @param dhwIndexes dhw indexes for given flushIndex
      * @param assetGroup vault asset group token addresses
      * @param fees smart vault fee configuration
+     * @return syncResult Result of the smart vault sync.
      */
     function syncDeposits(
         address smartVault,
@@ -112,23 +138,31 @@ interface IDepositManager {
         uint16a16 dhwIndexes,
         address[] memory assetGroup,
         SmartVaultFees memory fees
-    ) external returns (DepositSyncResult memory);
+    ) external returns (DepositSyncResult memory syncResult);
 
     /**
-     * @notice Prepare deposits for the next flush cycle
+     * @notice Adds deposits for the next flush cycle.
+     * @dev Requirements:
+     * - caller must have role ROLE_SMART_VAULT_MANAGER
+     * @param bag Deposit parameters.
+     * @param bag2 Extra parameters.
+     * @return deposits Amount of assets deposited.
+     * @return nftId ID of the deposit NFT.
      */
     function depositAssets(DepositBag calldata bag, DepositExtras memory bag2)
         external
-        returns (uint256[] memory, uint256);
+        returns (uint256[] memory deposits, uint256 nftId);
 
     /**
      * @notice Mark deposits ready to be processed in the next DHW cycle
+     * @dev Requirements:
+     * - caller must have role ROLE_SMART_VAULT_MANAGER
      * @param smartVault Smart Vault address
      * @param flushIndex index to flush
      * @param strategies vault strategy addresses
      * @param allocations vault strategy allocations
      * @param tokens vault asset group token addresses
-     * @return DHW indexes in which the deposits will be included
+     * @return dhwIndexes DHW indexes in which the deposits will be included
      */
     function flushSmartVault(
         address smartVault,
@@ -136,7 +170,7 @@ interface IDepositManager {
         address[] memory strategies,
         uint16a16 allocations,
         address[] memory tokens
-    ) external returns (uint16a16);
+    ) external returns (uint16a16 dhwIndexes);
 
     /**
      * @notice Get the number of SVTs that are available, but haven't been claimed yet, for the given NFT
@@ -163,12 +197,15 @@ interface IDepositManager {
         returns (uint256[] memory);
 
     /**
-     * @notice Claim SVTs by burning deposit NFTs
+     * @notice Claim SVTs by burning deposit NFTs.
+     * @dev Requirements:
+     * - caller must have role ROLE_SMART_VAULT_MANAGER
      * @param smartVault Smart Vault address
      * @param nftIds NFT ids to burn
      * @param nftAmounts NFT amounts to burn (support for partial burn)
      * @param tokens vault asset group token addresses
      * @param executor address executing the claim transaction
+     * @return claimedTokens Amount of smart vault tokens claimed.
      */
     function claimSmartVaultTokens(
         address smartVault,
@@ -176,5 +213,5 @@ interface IDepositManager {
         uint256[] calldata nftAmounts,
         address[] memory tokens,
         address executor
-    ) external returns (uint256);
+    ) external returns (uint256 claimedTokens);
 }

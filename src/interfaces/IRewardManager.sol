@@ -15,6 +15,7 @@ error NewPeriodFinishLessThanBefore();
 
 interface IRewardManager {
     /* ========== STRUCTS ========== */
+
     // The reward configuration struct, containing all the necessary data of a typical Synthetix StakingReward contract
     struct RewardConfiguration {
         uint32 rewardsDuration;
