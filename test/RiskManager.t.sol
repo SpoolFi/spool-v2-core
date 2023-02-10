@@ -8,6 +8,8 @@ import "../src/access/SpoolAccessControl.sol";
 import "./libraries/Arrays.sol";
 
 contract RiskManagerTest is Test {
+    using uint16a16Lib for uint16a16;
+
     IRiskManager riskManager;
     SpoolAccessControl accessControl;
     address riskProvider = address(10);
@@ -20,6 +22,36 @@ contract RiskManagerTest is Test {
         accessControl.initialize();
 
         riskManager = new RiskManager(accessControl, address(0xabc));
+    }
+
+    function test_calculateAllocation() public {
+        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(this));
+        accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, allocationProvider);
+        accessControl.grantRole(ROLE_RISK_PROVIDER, STATIC_RISK_PROVIDER);
+
+        riskManager.setAllocationProvider(smartVault, allocationProvider);
+        riskManager.setRiskProvider(smartVault, STATIC_RISK_PROVIDER);
+
+        vm.mockCall(
+            address(0x0101), abi.encodeWithSelector(IStrategy.getAPY.selector), abi.encode(Arrays.toArray(10_00))
+        );
+
+        vm.mockCall(
+            address(0x0102), abi.encodeWithSelector(IStrategy.getAPY.selector), abi.encode(Arrays.toArray(10_00))
+        );
+
+        vm.mockCall(
+            allocationProvider,
+            abi.encodeWithSelector(IAllocationProvider.calculateAllocation.selector),
+            abi.encode(Arrays.toArray(40_00, 60_00))
+        );
+
+        uint16a16 allocations =
+            riskManager.calculateAllocation(smartVault, Arrays.toArray(address(0x0101), address(0x0102)));
+
+        assertEq(allocations.get(0), 40_00);
+        assertEq(allocations.get(1), 60_00);
+        assertEq(allocations.get(2), 0);
     }
 
     function test_setRiskScore_success() public {

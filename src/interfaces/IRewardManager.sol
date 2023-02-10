@@ -9,6 +9,9 @@ error RewardTokenAlreadyAdded(address token);
 error InvalidRewardDuration();
 error InvalidRewardToken(address token);
 error RewardTokenCapReached();
+error RewardsNotFinished();
+error NewRewardRateLessThanBefore();
+error NewPeriodFinishLessThanBefore();
 
 interface IRewardManager {
     /* ========== STRUCTS ========== */
@@ -24,7 +27,15 @@ interface IRewardManager {
 
     /* ========== FUNCTIONS ========== */
 
+    function getRewardForDuration(address smartVault, IERC20 token) external view returns (uint256);
+
     function tokenBlacklisted(address smartVault, IERC20 token) external view returns (bool);
+
+    function forceRemoveReward(address smartVault, IERC20 token) external;
+
+    function extendRewardEmission(address smartVault, IERC20 token, uint256 reward, uint32 rewardsDuration) external;
+
+    function addToken(address smartVault, IERC20 token, uint32 rewardsDuration, uint256 reward) external;
 
     /* ========== EVENTS ========== */
 

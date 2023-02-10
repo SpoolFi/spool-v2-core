@@ -315,7 +315,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         // validate strategies
-        for (uint256 i = 0; i < strategiesLength; i++) {
+        for (uint256 i; i < strategiesLength; i++) {
             address strategy = registrationForm.strategies[i];
 
             if (!_accessControl.hasRole(ROLE_STRATEGY, strategy)) {
@@ -363,7 +363,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function removeStrategy(address strategy) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
         _checkRole(ROLE_STRATEGY, strategy);
 
-        for (uint256 i = 0; i < _smartVaultsWithStrategy[strategy].length; i++) {
+        for (uint256 i; i < _smartVaultsWithStrategy[strategy].length; i++) {
             address smartVault = _smartVaultsWithStrategy[strategy][i];
             address[] memory strategies_ = _smartVaultStrategies[smartVault];
             for (uint256 j = 0; j < strategies_.length; j++) {
@@ -412,7 +412,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         uint256 assetGroupId_ = _smartVaultAssetGroups[reallocateParams.smartVaults[0]];
-        for (uint256 i = 0; i < reallocateParams.smartVaults.length; ++i) {
+        for (uint256 i; i < reallocateParams.smartVaults.length; ++i) {
             address smartVault = reallocateParams.smartVaults[i];
 
             // Check that all smart vaults are registered.
@@ -608,7 +608,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         bag2.tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
 
         // check if any have already been synced
-        for (uint256 i = 0; i < nftIds.length; i++) {
+        for (uint256 i; i < nftIds.length; i++) {
             DepositMetadata memory data = abi.decode(bag2.metadata[i], (DepositMetadata));
             if (data.flushIndex >= bag.flushIndex) {
                 continue;
@@ -649,7 +649,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             bag.lastDhwSynced = syncResult.dhwTimestamp;
 
             // if any NFTs are part of this flush cycle, simulate burn
-            for (uint256 i = 0; i < nftIds.length; i++) {
+            for (uint256 i; i < nftIds.length; i++) {
                 DepositMetadata memory data = abi.decode(bag2.metadata[i], (DepositMetadata));
                 if (data.flushIndex != bag.flushIndex) {
                     continue;
@@ -708,7 +708,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             })
         );
 
-        for (uint256 i = 0; i < deposits.length; i++) {
+        for (uint256 i; i < deposits.length; i++) {
             IERC20(tokens[i]).safeTransferFrom(msg.sender, address(_masterWallet), deposits[i]);
         }
 
@@ -742,7 +742,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         uint16a16 currentFlushDhwIndexes = _dhwIndexes[smartVault][flushIndex];
 
-        for (uint256 i = 0; i < strategies_.length; i++) {
+        for (uint256 i; i < strategies_.length; i++) {
             if (strategies_[i] == _ghostStrategy) continue;
 
             for (uint256 j = 0; j < strategies_.length; j++) {

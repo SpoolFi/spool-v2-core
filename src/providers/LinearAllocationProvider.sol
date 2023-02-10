@@ -54,9 +54,13 @@ contract AllocationProviderLinear is IAllocationProvider {
             resSum += results[i];
         }
 
+        uint256 resSum2;
         for (uint8 i = 0; i < results.length; i++) {
             results[i] = FULL_PERCENT * results[i] / resSum;
+            resSum2 += results[i];
         }
+
+        results[0] += FULL_PERCENT - resSum2;
 
         return results;
     }

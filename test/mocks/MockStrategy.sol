@@ -30,8 +30,6 @@ contract MockStrategy is Strategy {
         protocolFees = new MockProtocol();
     }
 
-    function test_mock() external pure {}
-
     function initialize(uint256 assetGroupId_, uint256[] memory ratios_) external initializer {
         __Strategy_init(assetGroupId_);
 

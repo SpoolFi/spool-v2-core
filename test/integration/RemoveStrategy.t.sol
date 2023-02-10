@@ -33,19 +33,31 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         vm.clearMockedCalls();
 
         assertEq(smartVaultManager.strategies(address(smartVault)).length, 3);
-        assertTrue(accessControl.hasRole(ROLE_STRATEGY, smartVaultStrategies[0]));
+        assertTrue(accessControl.hasRole(ROLE_STRATEGY, smartVaultStrategies[1]));
 
-        smartVaultManager.removeStrategy(smartVaultStrategies[0]);
+        smartVaultManager.removeStrategy(smartVaultStrategies[1]);
 
         address[] memory strategies2 = smartVaultManager.strategies(address(smartVault));
         uint16a16 allocations = smartVaultManager.allocations(address(smartVault));
 
-        assertFalse(accessControl.hasRole(ROLE_STRATEGY, smartVaultStrategies[0]));
+        assertFalse(accessControl.hasRole(ROLE_STRATEGY, smartVaultStrategies[1]));
         assertEq(strategies2.length, 3);
-        assertEq(strategies2[0], address(ghostStrategy));
-        assertEq(allocations.get(0), 0);
-        assertGt(allocations.get(1), 0);
+        assertEq(strategies2[1], address(ghostStrategy));
+        assertGt(allocations.get(0), 0);
+        assertEq(allocations.get(1), 0);
         assertGt(allocations.get(2), 0);
+    }
+
+    function test_removeStrategy_withoutVaults() public {
+        createVault();
+        vm.clearMockedCalls();
+
+        vm.prank(address(strategyRegistry));
+        accessControl.grantRole(ROLE_STRATEGY, address(0xabcd));
+
+        assertTrue(accessControl.hasRole(ROLE_STRATEGY, address(0xabcd)));
+        smartVaultManager.removeStrategy(address(0xabcd));
+        assertFalse(accessControl.hasRole(ROLE_STRATEGY, address(0xabcd)));
     }
 
     function test_removeStrategy_revertInvalidStrategy() public {

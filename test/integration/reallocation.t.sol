@@ -487,6 +487,18 @@ contract ReallocationIntegrationTest is Test {
             abi.encode(Arrays.toUint16a16(40_00, 30_00, 30_00))
         );
 
+        // reallocate, invalid strategy array length
+        vm.startPrank(reallocator);
+        ReallocateParamBag memory bag = generateReallocateParamBag(
+            Arrays.toArray(address(smartVaultA)),
+            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+            assetGroupRegistry.listAssetGroup(assetGroupId)
+        );
+        bag.strategies = Arrays.toArray(address(strategyA), address(strategyB));
+        vm.expectRevert(abi.encodeWithSelector(InvalidArrayLength.selector));
+        smartVaultManager.reallocate(bag);
+        vm.stopPrank();
+
         // reallocate
         vm.startPrank(reallocator);
         smartVaultManager.reallocate(

@@ -26,6 +26,7 @@ contract DhwMasterChefTest is TestFixture {
 
     MockMasterChefStrategy strategyA;
     address[] smartVaultStrategies;
+    MockMasterChef masterChef;
 
     address[] assetGroup;
 
@@ -35,7 +36,7 @@ contract DhwMasterChefTest is TestFixture {
         setUpBase();
 
         rewardsPerSecond = 1 ether;
-        MockMasterChef masterChef = new MockMasterChef(address(token), rewardsPerSecond);
+        masterChef = new MockMasterChef(address(token), rewardsPerSecond);
         masterChef.add(100, token, true);
 
         alice = address(0xa);

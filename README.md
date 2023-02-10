@@ -9,6 +9,13 @@ The Spool Protocol regularly rebalances portfolios while adhering to individual 
 
 Documentation available [here](https://archit3ct.gitbook.io/spool-v2-technical-documentation/).
 
+# Coverage
+Generate a coverage report with
+```
+#> forge coverage --report lcov
+#> genhtml lcov.info --branch-coverage --output-dir coverage`
+```
+
 ## Smart Contract Overview
 ### SmartVaultManager.sol
 This is the main entry point for all user interactions and delegates to other contracts.

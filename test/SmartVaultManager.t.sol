@@ -149,6 +149,35 @@ contract SmartVaultManagerTest is TestFixture {
             registrationForm.strategies = strategies;
         }
 
+        // when too many strategies
+        {
+            registrationForm.strategies = new address[](17);
+            for (uint256 i; i < 17; i++) {
+                registrationForm.strategies[i] = address(0x1 + uint160(i));
+            }
+
+            vm.expectRevert(abi.encodeWithSelector(StrategyCapExceeded.selector));
+            smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
+
+            registrationForm.strategies = strategies;
+        }
+
+        // when deposit fee too large
+        {
+            registrationForm.depositFeePct = 6_00;
+            vm.expectRevert(abi.encodeWithSelector(DepositFeeTooLarge.selector, 6_00));
+            smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
+            registrationForm.depositFeePct = 0;
+        }
+
+        // when management fee too large
+        {
+            registrationForm.managementFeePct = 6_00;
+            vm.expectRevert(abi.encodeWithSelector(ManagementFeeTooLarge.selector, 6_00));
+            smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
+            registrationForm.managementFeePct = 0;
+        }
+
         // when strategies don't have same asset group
         {
             address[] memory assetGroup = new address[](1);
@@ -269,7 +298,7 @@ contract SmartVaultManagerTest is TestFixture {
         return (strategies, assetGroupId);
     }
 
-    function test_depositRevertOnPaused() public {
+    function test_deposit_revertOnPaused() public {
         accessControl.grantRole(ROLE_PAUSER, address(this));
         accessControl.pause();
 
@@ -277,7 +306,7 @@ contract SmartVaultManagerTest is TestFixture {
         smartVaultManager.deposit(DepositBag(address(smartVault), new uint256[](0), address(1), address(0), false));
     }
 
-    function test_redeemRevertOnPaused() public {
+    function test_redeem_revertOnPaused() public {
         accessControl.grantRole(ROLE_PAUSER, address(this));
         accessControl.pause();
 
@@ -287,7 +316,7 @@ contract SmartVaultManagerTest is TestFixture {
         );
     }
 
-    function test_fastRedeemRevertOnPaused() public {
+    function test_fastRedeem_revertOnPaused() public {
         accessControl.grantRole(ROLE_PAUSER, address(this));
         accessControl.pause();
 
@@ -299,7 +328,7 @@ contract SmartVaultManagerTest is TestFixture {
         );
     }
 
-    function test_flushSmartVaultRevertOnPaused() public {
+    function test_flushSmartVault_revertOnPaused() public {
         accessControl.grantRole(ROLE_PAUSER, address(this));
         accessControl.pause();
 
@@ -307,7 +336,7 @@ contract SmartVaultManagerTest is TestFixture {
         smartVaultManager.flushSmartVault(address(smartVault));
     }
 
-    function test_syncSmartVaultRevertOnPaused() public {
+    function test_syncSmartVault_revertOnPaused() public {
         accessControl.grantRole(ROLE_PAUSER, address(this));
         accessControl.pause();
 
@@ -315,7 +344,7 @@ contract SmartVaultManagerTest is TestFixture {
         smartVaultManager.syncSmartVault(address(smartVault), true);
     }
 
-    function test_claimWithdrawalRevertOnPaused() public {
+    function test_claimWithdrawal_revertOnPaused() public {
         accessControl.grantRole(ROLE_PAUSER, address(this));
         accessControl.pause();
 
@@ -323,7 +352,7 @@ contract SmartVaultManagerTest is TestFixture {
         smartVaultManager.claimWithdrawal(address(smartVault), new uint256[](0), new uint256[](0), address(0));
     }
 
-    function test_claimSVTsRevertOnPaused() public {
+    function test_claimSVTs_revertOnPaused() public {
         accessControl.grantRole(ROLE_PAUSER, address(this));
         accessControl.pause();
 

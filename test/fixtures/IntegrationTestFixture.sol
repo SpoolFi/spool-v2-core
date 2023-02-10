@@ -35,7 +35,9 @@ contract IntegrationTestFixture is TestFixture {
     address[] internal assetGroup;
     uint256 internal assetGroupId;
 
-    function setUpBase() public override {
+    function test_mock() external pure override {}
+
+    function setUpBase() internal override {
         super.setUpBase();
         alice = address(0xa);
 

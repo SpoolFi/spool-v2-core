@@ -199,6 +199,68 @@ contract DhwTest is TestFixture {
         assertEq(tokenB.balanceOf(alice), tokenBInitialBalance);
         assertEq(tokenC.balanceOf(alice), tokenCInitialBalance);
     }
+
+    function test_dhw_revertInvalidParams() public {
+        // Alice deposits
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        deal(address(tokenA), alice, 100 ether, true);
+        deal(address(tokenB), alice, 100 ether, true);
+        deal(address(tokenC), alice, 500 ether, true);
+
+        vm.startPrank(alice);
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), true));
+        vm.stopPrank();
+
+        DoHardWorkParameterBag memory bag = generateDhwParameterBag(smartVaultStrategies, assetGroup);
+
+        vm.startPrank(doHardWorker);
+
+        // invalid array length
+        bag.strategies[0] = Arrays.toArray(smartVaultStrategies[0]);
+        vm.expectRevert(abi.encodeWithSelector(InvalidArrayLength.selector));
+        strategyRegistry.doHardWork(bag);
+        bag.strategies[0] = smartVaultStrategies;
+
+        // invalid slippages
+        vm.mockCall(
+            address(priceFeedManager), abi.encodeWithSelector(IUsdPriceFeedManager.assetToUsd.selector), abi.encode(20)
+        );
+        vm.expectRevert(abi.encodeWithSelector(ExchangeRateOutOfSlippages.selector));
+        strategyRegistry.doHardWork(bag);
+        vm.clearMockedCalls();
+
+        // with ghost strategy
+        bag.strategies[0][0] = address(ghostStrategy);
+        vm.expectRevert(abi.encodeWithSelector(GhostStrategyUsed.selector));
+        strategyRegistry.doHardWork(bag);
+        bag.strategies[0] = smartVaultStrategies;
+
+        // with wrong strategy asset group
+        vm.mockCall(
+            address(smartVaultStrategies[0]), abi.encodeWithSelector(IStrategy.assetGroupId.selector), abi.encode(20)
+        );
+        vm.expectRevert(abi.encodeWithSelector(NotSameAssetGroup.selector));
+        strategyRegistry.doHardWork(bag);
+        vm.clearMockedCalls();
+
+        // with ghost strategy
+        bag.strategies[0][0] = address(ghostStrategy);
+        vm.expectRevert(abi.encodeWithSelector(GhostStrategyUsed.selector));
+        strategyRegistry.doHardWork(bag);
+        bag.strategies[0] = smartVaultStrategies;
+
+        // invalid strategy slippage array lengths
+        bag.strategySlippages = new uint256[][][](0);
+        vm.expectRevert(abi.encodeWithSelector(InvalidArrayLength.selector));
+        strategyRegistry.doHardWork(bag);
+
+        vm.stopPrank();
+    }
 }
 
 contract DhwMatchingTest is TestFixture {

@@ -44,10 +44,6 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuard {
 
     /* ========== VIEWS ========== */
 
-    function lastTimeRewardApplicable(address smartVault, IERC20 token) public view returns (uint32) {
-        return uint32(MathUtils.min(block.timestamp, rewardConfiguration[smartVault][token].periodFinish));
-    }
-
     /**
      * @notice Blacklisted force-removed tokens
      */
@@ -128,11 +124,15 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuard {
         } else {
             // If extending or adding additional rewards,
             // cannot set new finish time to be less than previously configured
-            require(config.periodFinish <= newPeriodFinish, "PFS");
+            if (config.periodFinish > newPeriodFinish) {
+                revert NewPeriodFinishLessThanBefore();
+            }
             uint256 remaining = config.periodFinish - block.timestamp;
             uint256 leftover = remaining * config.rewardRate;
             uint192 newRewardRate = SafeCast.toUint192((reward * REWARD_ACCURACY + leftover) / config.rewardsDuration);
-            require(newRewardRate >= config.rewardRate, "LRR");
+            if (newRewardRate < config.rewardRate) {
+                revert NewRewardRateLessThanBefore();
+            }
 
             config.rewardRate = newRewardRate;
             emit RewardExtended(smartVault, token, reward, leftover, config.rewardsDuration, newPeriodFinish);
@@ -147,15 +147,11 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuard {
      * @dev This is meant to be an emergency function if a reward token breaks.
      *
      * Requirements:
-     *
-     * - the caller must be Spool DAO
+     * - the caller must be SPOOL ADMIN
      *
      * @param token Token address to remove
      */
-    function forceRemoveReward(address smartVault, IERC20 token)
-        external
-        onlyAdminOrVaultAdmin(smartVault, msg.sender)
-    {
+    function forceRemoveReward(address smartVault, IERC20 token) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
         tokenBlacklist[smartVault][token] = true;
         _removeReward(smartVault, token);
 
@@ -211,7 +207,9 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuard {
     }
 
     function _onlyFinished(address smartVault, IERC20 token) private view {
-        require(block.timestamp > rewardConfiguration[smartVault][token].periodFinish, "RNF");
+        if (block.timestamp <= rewardConfiguration[smartVault][token].periodFinish) {
+            revert RewardsNotFinished();
+        }
     }
 
     /* ========== MODIFIERS ========== */

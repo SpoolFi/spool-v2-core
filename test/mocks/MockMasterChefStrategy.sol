@@ -24,8 +24,6 @@ contract MockMasterChefStrategy is Strategy {
         pid = pid_;
     }
 
-    function test_mock() external pure {}
-
     function initialize(uint256 assetGroupId_) external initializer {
         __Strategy_init(assetGroupId_);
     }

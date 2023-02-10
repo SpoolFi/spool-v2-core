@@ -7,6 +7,7 @@ import "../src/managers/GuardManager.sol";
 import {MockGuard} from "./mocks/MockGuard.sol";
 import "./utils/GasHelpers.sol";
 import "../src/access/SpoolAccessControl.sol";
+import "./libraries/Arrays.sol";
 
 contract GuardManagerTest is Test, GasHelpers {
     IGuardManager guardManager;
@@ -59,10 +60,7 @@ contract GuardManagerTest is Test, GasHelpers {
         paramTypes4[1] = GuardParamType.CustomValue;
 
         bytes[] memory methodValues4 = new bytes[](2);
-        uint256[] memory numbersToSum = new uint256[](3);
-        numbersToSum[0] = uint256(2);
-        numbersToSum[1] = uint256(4);
-        numbersToSum[2] = uint256(6);
+        uint256[] memory numbersToSum = Arrays.toArray(2, 4, 6);
         methodValues4[0] = abi.encodePacked(numbersToSum);
         methodValues4[1] = abi.encode(uint256(12));
 
@@ -106,8 +104,7 @@ contract GuardManagerTest is Test, GasHelpers {
         tokens[2] = address(12);
         tokens[3] = address(13);
 
-        RequestContext memory context =
-            RequestContext(address(user), address(user), address(user), RequestType.Deposit, new uint256[](0), tokens);
+        RequestContext memory context = RequestContext(user, user, user, RequestType.Deposit, new uint256[](0), tokens);
 
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
         guardManager.runGuards(smartVaultId, context);
@@ -117,6 +114,65 @@ contract GuardManagerTest is Test, GasHelpers {
         startMeasuringGas("Test");
         guardManager.runGuards(smartVaultId, context);
         stopMeasuringGas();
+    }
+
+    function test_runGuards_resolveOwnerParam() public {
+        GuardParamType[] memory paramTypes = new GuardParamType[](1);
+        paramTypes[0] = GuardParamType.Owner;
+
+        GuardDefinition[][] memory guards = new GuardDefinition[][](2);
+        guards[0] = new GuardDefinition[](1);
+        guards[0][0] = GuardDefinition(
+            address(mockGuard), "isWhitelisted(address)", bytes32(uint256(1)), paramTypes, new bytes[](0), "<"
+        );
+
+        RequestType[] memory requestTypes = new RequestType[](1);
+        requestTypes[0] = RequestType.Deposit;
+
+        guardManager.setGuards(address(2), guards, requestTypes);
+        guardManager.runGuards(
+            address(2), RequestContext(user, user, user, RequestType.Deposit, new uint256[](0), new address[](0))
+        );
+    }
+
+    function test_runGuards_greaterThan() public {
+        GuardParamType[] memory paramTypes = new GuardParamType[](1);
+        paramTypes[0] = GuardParamType.Owner;
+
+        GuardDefinition[][] memory guards = new GuardDefinition[][](2);
+        guards[0] = new GuardDefinition[](1);
+        guards[0][0] = GuardDefinition(
+            address(mockGuard), "isWhitelisted(address)", bytes32(uint256(0)), paramTypes, new bytes[](0), ">"
+        );
+
+        RequestType[] memory requestTypes = new RequestType[](1);
+        requestTypes[0] = RequestType.Deposit;
+
+        guardManager.setGuards(address(2), guards, requestTypes);
+
+        vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
+        guardManager.runGuards(
+            address(2), RequestContext(user, user, user, RequestType.Deposit, new uint256[](0), new address[](0))
+        );
+    }
+
+    function test_runGuards_lessThanOrEqual() public {
+        GuardParamType[] memory paramTypes = new GuardParamType[](1);
+        paramTypes[0] = GuardParamType.Owner;
+
+        GuardDefinition[][] memory guards = new GuardDefinition[][](2);
+        guards[0] = new GuardDefinition[](1);
+        guards[0][0] = GuardDefinition(
+            address(mockGuard), "isWhitelisted(address)", bytes32(uint256(0)), paramTypes, new bytes[](0), "<="
+        );
+
+        RequestType[] memory requestTypes = new RequestType[](1);
+        requestTypes[0] = RequestType.Deposit;
+
+        guardManager.setGuards(address(2), guards, requestTypes);
+        guardManager.runGuards(
+            address(2), RequestContext(user, user, user, RequestType.Deposit, new uint256[](0), new address[](0))
+        );
     }
 
     function test_writeGuards() public {

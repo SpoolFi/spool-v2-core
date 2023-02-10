@@ -179,4 +179,6 @@ contract DeploySpool is Script {
 
         console.log("...deploy Spool.");
     }
+
+    function test_mock() external pure {}
 }

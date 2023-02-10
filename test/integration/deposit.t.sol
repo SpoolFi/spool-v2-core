@@ -28,6 +28,25 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         createVault();
     }
 
+    function test_deposit_revertNothingToFlushAndSync() public {
+        // Alice deposits
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        vm.expectRevert(abi.encodeWithSelector(NothingToFlush.selector));
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        vm.expectRevert(abi.encodeWithSelector(NothingToSync.selector));
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        vm.stopPrank();
+    }
+
     function test_shouldBeAbleToDeposit() public {
         // Alice deposits
         vm.startPrank(alice);
@@ -239,5 +258,80 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         assertEq(aliceBalance, expectedBalance);
         assertEq(smartVault.totalSupply(), expectedBalance);
         assertEq(smartVault.balanceOf(address(smartVault)), expectedBalance);
+    }
+
+    function test_claimWithdrawal_revertIfDepositNFT() public {
+        // Alice deposits
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
+        vm.stopPrank();
+
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
+
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        vm.startPrank(alice);
+        uint256[] memory nftIds = Arrays.toArray(aliceDepositNftId);
+        uint256[] memory nftAmounts = Arrays.toArray(NFT_MINTED_SHARES);
+        vm.expectRevert(abi.encodeWithSelector(InvalidWithdrawalNftId.selector, aliceDepositNftId));
+        smartVaultManager.claimWithdrawal(address(smartVault), nftIds, nftAmounts, alice);
+        vm.stopPrank();
+    }
+
+    function test_claimSVTs_revertInvalidNFT() public {
+        deal(address(tokenA), alice, 2000 ether, true);
+        deal(address(tokenB), alice, 2000 ether, true);
+        deal(address(tokenC), alice, 2000 ether, true);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        // Alice deposits #1
+        vm.startPrank(alice);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), true));
+        vm.stopPrank();
+
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
+
+        // Alice withdraws
+        uint256 aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
+        vm.startPrank(alice);
+        uint256 aliceWithdrawalNftId = smartVaultManager.redeem(
+            RedeemBag(
+                address(smartVault),
+                aliceBalance / 3,
+                Arrays.toArray(aliceDepositNftId),
+                Arrays.toArray(NFT_MINTED_SHARES / 2)
+            ),
+            alice,
+            false
+        );
+
+        uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES / 3);
+        uint256[] memory ids = Arrays.toArray(aliceWithdrawalNftId);
+
+        // alice tries to claim tokens with invalid NFT
+        vm.expectRevert(abi.encodeWithSelector(InvalidDepositNftId.selector, aliceWithdrawalNftId));
+        smartVaultManager.claimSmartVaultTokens(address(smartVault), ids, amounts);
+
+        vm.stopPrank();
     }
 }

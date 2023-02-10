@@ -46,7 +46,9 @@ contract TestFixture is Test {
     IStrategy internal ghostStrategy;
     SmartVaultFactory internal smartVaultFactory;
 
-    function setUpBase() public virtual {
+    function test_mock() external pure virtual {}
+
+    function setUpBase() internal virtual {
         token = new MockToken("Token", "T");
         guard = new MockGuard();
 
