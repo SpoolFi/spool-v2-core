@@ -52,7 +52,11 @@ contract MockStrategy is Strategy {
         return 0;
     }
 
-    function compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages) internal override returns (int256 compoundYield) {}
+    function compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
+        internal
+        override
+        returns (int256 compoundYield)
+    {}
 
     function swapAssets(address[] memory tokens, uint256[] memory toSwap, SwapInfo[] calldata swapInfo)
         internal

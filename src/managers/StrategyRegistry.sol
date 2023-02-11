@@ -314,19 +314,20 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     function _updateDhwYieldAndApy(address strategy, uint256 dhwIndex, int256 yieldPercentage) private {
         if (dhwIndex > 1) {
             unchecked {
-                int256 timeDelta = int256(block.timestamp - _dhwTimestamp[address(strategy)][dhwIndex-1]);
+                int256 timeDelta = int256(block.timestamp - _dhwTimestamp[address(strategy)][dhwIndex - 1]);
 
                 if (timeDelta > 0) {
                     int256 normalizedApy = yieldPercentage * SECONDS_IN_YEAR_INT / timeDelta;
                     int256 weight = _getRunningAverageApyWeight(timeDelta);
                     // TODO: decide on the formula
-                    _apys[strategy] = (_apys[strategy] * (FULL_PERCENT_INT - weight) + normalizedApy * weight) / FULL_PERCENT_INT;
+                    _apys[strategy] =
+                        (_apys[strategy] * (FULL_PERCENT_INT - weight) + normalizedApy * weight) / FULL_PERCENT_INT;
                 }
             }
         }
     }
 
-    function _getRunningAverageApyWeight(int256 timeDelta) private pure returns(int256) {
+    function _getRunningAverageApyWeight(int256 timeDelta) private pure returns (int256) {
         // NOTE: decide on the function. ?? sigmoid function "y=2*((1/(1+e^-(0.5*x)))-0.5)"
 
         if (timeDelta < 1 days) {
