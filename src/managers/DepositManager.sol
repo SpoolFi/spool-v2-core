@@ -251,23 +251,26 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         uint16a16 dhwIndexes,
         SmartVaultFees memory fees
     ) public view returns (DepositSyncResult memory) {
-        StrategyAtIndex[] memory strategyDhwState = _strategyRegistry.strategyAtIndexBatch(strategies, dhwIndexes);
-        DepositSyncResult memory result =
-            DepositSyncResult(0, lastDhwSyncedTimestamp, 0, new uint256[](strategies.length));
+        DepositSyncResult memory result;
+        {
+            uint256[] memory dhwTimestamps = _strategyRegistry.dhwTimestamps(strategies, dhwIndexes);
+            result = DepositSyncResult(0, lastDhwSyncedTimestamp, 0, new uint256[](strategies.length));
 
-        // NOTE: WE LOOP OVER STRATEGIES 4 TIMES
-        for (uint256 i; i < strategies.length; ++i) {
-            StrategyAtIndex memory atDhw = strategyDhwState[i];
+            // find last DHW timestamp of this flush index cycle
+            for (uint256 i; i < strategies.length; ++i) {
+                if (dhwTimestamps[i] > result.dhwTimestamp) {
+                    result.dhwTimestamp = dhwTimestamps[i];
+                }
+            }
 
-            if (atDhw.dhwTimestamp > result.dhwTimestamp) {
-                result.dhwTimestamp = atDhw.dhwTimestamp;
+            // skip if there were no deposits made
+            if (_vaultDeposits[smartVault][flushIndex][0] == 0) {
+                return result;
             }
         }
 
-        // skip if there were no deposits made
-        if (_vaultDeposits[smartVault][flushIndex][0] == 0) {
-            return result;
-        }
+        uint256 totalDepositedUsd;
+        StrategyAtIndex[] memory strategyDhwState = _strategyRegistry.strategyAtIndexBatch(strategies, dhwIndexes);
 
         // claim SSTs from each strategy
         for (uint256 i; i < strategies.length; ++i) {
@@ -276,27 +279,19 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
                 continue;
             }
 
-            uint256[] memory vaultDepositedAssets =
-                _vaultFlushedDeposits[smartVault][flushIndex][strategies[i]].toArray(assetGroup.length);
             uint256 vaultDepositedUsd =
-                _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, vaultDepositedAssets, atDhw.exchangeRates);
+                _getVaultDepositsValue(smartVault, flushIndex, strategies[i], atDhw.exchangeRates, assetGroup);
             uint256 strategyDepositedUsd =
                 _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, atDhw.assetsDeposited, atDhw.exchangeRates);
 
-            // NOTE: what are these 2 usd values and why?
-
-            // NOTE: can strategyDepositedUsd be 0?
             result.sstShares[i] = atDhw.sharesMinted * vaultDepositedUsd / strategyDepositedUsd;
-
+            totalDepositedUsd += result.sstShares[i] * atDhw.totalStrategyValue / atDhw.totalSSTs;
             // TODO: there might be dust left after all vaults are synced
         }
 
-        // NOTE: seems kinda weird to calculate based on current value, it might have changed over time so it's not deterministic new SVTs
         // get vault's USD value before claiming SSTs
         uint256 totalVaultValueBefore = SpoolUtils.getVaultTotalUsdValue(smartVault, strategies);
-        // mint SVTs based on USD value of claimed SSTs
-        uint256 totalVaultValueAfter = SpoolUtils.getVaultTotalUsdValue(smartVault, strategies, result.sstShares);
-        uint256 totalDepositedUsd = totalVaultValueAfter - totalVaultValueBefore;
+
         if (totalVaultValueBefore == 0) {
             result.mintedSVTs = totalDepositedUsd * INITIAL_SHARE_MULTIPLIER;
         } else {
@@ -319,6 +314,20 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         }
 
         return result;
+    }
+
+    function _getVaultDepositsValue(
+        address smartVault,
+        uint256 flushIndex,
+        address strategy,
+        uint256[] memory exchangeRates,
+        address[] memory assetGroup
+    ) private view returns (uint256) {
+        return _priceFeedManager.assetToUsdCustomPriceBulk(
+            assetGroup,
+            _vaultFlushedDeposits[smartVault][flushIndex][strategy].toArray(assetGroup.length),
+            exchangeRates
+        );
     }
 
     function depositAssets(DepositBag calldata bag, DepositExtras memory bag2)

@@ -323,11 +323,11 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
             // mint new ecosystem fee SSTs
             uint256 newEcosystemFeeSsts = totalYieldShares * platformFees.ecosystemFeePct / FULL_PERCENT;
-            _mint(platformFees.ecosystemFeeReciever, newEcosystemFeeSsts);
+            _mint(platformFees.ecosystemFeeReceiver, newEcosystemFeeSsts);
 
             // mint new treasury fee SSTs
             uint256 newTreasuryFeeSsts = totalYieldShares * platformFees.treasuryFeePct / FULL_PERCENT;
-            _mint(platformFees.treasuryFeeReciever, newTreasuryFeeSsts);
+            _mint(platformFees.treasuryFeeReceiver, newTreasuryFeeSsts);
 
             unchecked {
                 sharesMinted = newEcosystemFeeSsts + newTreasuryFeeSsts;
