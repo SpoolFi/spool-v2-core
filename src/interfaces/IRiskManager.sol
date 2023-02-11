@@ -29,7 +29,7 @@ interface IRiskManager {
      * @param strategy Strategies.
      * @return riskScores Risk scores for strategies.
      */
-    function getRiskScores(address riskProvider, address[] memory strategy)
+    function getRiskScores(address riskProvider, address[] calldata strategy)
         external
         view
         returns (uint8[] memory riskScores);

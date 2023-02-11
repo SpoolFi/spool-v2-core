@@ -12,7 +12,7 @@ contract MockRiskManager is IRiskManager {
         revert("0");
     }
 
-    function getRiskScores(address, address[] memory) external pure virtual returns (uint8[] memory) {
+    function getRiskScores(address, address[] calldata) external pure virtual returns (uint8[] memory) {
         revert("0");
     }
 

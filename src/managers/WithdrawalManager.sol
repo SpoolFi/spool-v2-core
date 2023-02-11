@@ -68,7 +68,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         _masterWallet = masterWallet_;
     }
 
-    function flushSmartVault(address smartVault, uint256 flushIndex, address[] memory strategies)
+    function flushSmartVault(address smartVault, uint256 flushIndex, address[] calldata strategies)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint16a16)
@@ -111,7 +111,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         return withdrawnAssets;
     }
 
-    function claimWithdrawal(WithdrawalClaimBag memory bag)
+    function claimWithdrawal(WithdrawalClaimBag calldata bag)
         public
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256[] memory, uint256)
@@ -156,10 +156,12 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         return (withdrawnAssets, bag.assetGroupId);
     }
 
-    function syncWithdrawals(address smartVault, uint256 flushIndex, address[] memory strategies, uint16a16 dhwIndexes_)
-        external
-        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
-    {
+    function syncWithdrawals(
+        address smartVault,
+        uint256 flushIndex,
+        address[] calldata strategies,
+        uint16a16 dhwIndexes_
+    ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
         if (_withdrawnVaultShares[smartVault][flushIndex] == 0) {
             return;
         }
@@ -171,7 +173,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         _withdrawnAssets[smartVault][flushIndex].setValues(withdrawnAssets_);
     }
 
-    function redeem(RedeemBag calldata bag, RedeemExtras memory bag2)
+    function redeem(RedeemBag calldata bag, RedeemExtras calldata bag2)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256)
@@ -190,7 +192,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         return redeemId;
     }
 
-    function redeemFast(RedeemBag calldata bag, RedeemFastExtras memory bag2)
+    function redeemFast(RedeemBag calldata bag, RedeemFastExtras calldata bag2)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256[] memory)

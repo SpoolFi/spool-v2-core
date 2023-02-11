@@ -41,7 +41,7 @@ library SpoolUtils {
      * @param priceFeedManager_ USD price feed mananger.
      * @return exchangeRates Exchange rates for tokens.
      */
-    function getExchangeRates(address[] memory tokens_, IUsdPriceFeedManager priceFeedManager_)
+    function getExchangeRates(address[] calldata tokens_, IUsdPriceFeedManager priceFeedManager_)
         public
         view
         returns (uint256[] memory)

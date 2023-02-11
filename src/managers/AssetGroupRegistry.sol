@@ -32,7 +32,7 @@ contract AssetGroupRegistry is IAssetGroupRegistry, SpoolAccessControllable, Ini
 
     constructor(ISpoolAccessControl accessControl_) SpoolAccessControllable(accessControl_) {}
 
-    function initialize(address[] memory allowedTokens_) external initializer {
+    function initialize(address[] calldata allowedTokens_) external initializer {
         for (uint256 i = 0; i < allowedTokens_.length; i++) {
             _allowToken(allowedTokens_[i]);
         }

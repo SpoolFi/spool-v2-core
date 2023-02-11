@@ -62,7 +62,7 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
         return allocations;
     }
 
-    function getRiskScores(address riskProvider, address[] memory strategies) public view returns (uint8[] memory) {
+    function getRiskScores(address riskProvider, address[] calldata strategies) public view returns (uint8[] memory) {
         uint8[] memory riskScores = new uint8[](strategies.length);
         for (uint256 i = 0; i < strategies.length; i++) {
             riskScores[i] =

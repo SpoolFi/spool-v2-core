@@ -138,7 +138,7 @@ interface IStrategyRegistry {
      */
     function doHardWork(DoHardWorkParameterBag calldata dhwParams) external;
 
-    function addDeposits(address[] memory strategies_, uint256[][] memory amounts) external returns (uint16a16);
+    function addDeposits(address[] calldata strategies_, uint256[][] calldata amounts) external returns (uint16a16);
 
     /**
      * @notice Adds withdrawals to the strategies to be processed on DHW.
@@ -148,7 +148,7 @@ interface IStrategyRegistry {
      * @param strategyShares Amount of strategy shares to be withdrawns.
      * @return strategyIndexes Current indexes for the strategies.
      */
-    function addWithdrawals(address[] memory strategies_, uint256[] memory strategyShares)
+    function addWithdrawals(address[] calldata strategies_, uint256[] calldata strategyShares)
         external
         returns (uint16a16 strategyIndexes);
 
@@ -171,7 +171,7 @@ interface IStrategyRegistry {
      * @param strategyShares Amount of strategy shares that was withdrawn.
      * @return assetsWithdrawn Amount of assets withdrawn from strategies.
      */
-    function claimWithdrawals(address[] memory strategies_, uint16a16 dhwIndexes, uint256[] memory strategyShares)
+    function claimWithdrawals(address[] calldata strategies_, uint16a16 dhwIndexes, uint256[] calldata strategyShares)
         external
         view
         returns (uint256[] memory assetsWithdrawn);

@@ -331,7 +331,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         for (uint256 i; i < _smartVaultsWithStrategy[strategy].length; i++) {
             address smartVault = _smartVaultsWithStrategy[strategy][i];
             address[] memory strategies_ = _smartVaultStrategies[smartVault];
-            for (uint256 j; j < strategies_.length; j++) {
+            for (uint256 j; j < strategies_.length; ++j) {
                 if (strategies_[j] == strategy) {
                     _smartVaultStrategies[smartVault][j] = _ghostStrategy;
                     _smartVaultAllocations[smartVault] = _smartVaultAllocations[smartVault].set(j, 0);
@@ -545,9 +545,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
             DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(
                 smartVault,
-                bag.flushIndex,
-                bag.lastDhwSynced,
-                bag.oldTotalSVTs + bag.newSVTs,
+                [bag.flushIndex, bag.lastDhwSynced, bag.oldTotalSVTs + bag.newSVTs],
                 strategies_,
                 tokens,
                 indexes,
@@ -613,9 +611,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
             DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(
                 smartVault,
-                bag.flushIndex,
-                bag.lastDhwSynced,
-                bag.oldTotalSVTs + bag.newSVTs,
+                [bag.flushIndex, bag.lastDhwSynced, bag.oldTotalSVTs + bag.newSVTs],
                 bag2.strategies,
                 bag2.tokens,
                 indexes,
@@ -723,7 +719,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         for (uint256 i; i < strategies_.length; i++) {
             if (strategies_[i] == _ghostStrategy) continue;
 
-            for (uint256 j; j < strategies_.length; j++) {
+            for (uint256 j; j < strategies_.length; ++j) {
                 if (flushDhwIndexes.get(i) == currentFlushDhwIndexes.get(i)) {
                     revert FlushOverlap(strategies_[i]);
                 }

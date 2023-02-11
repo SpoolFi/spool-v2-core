@@ -95,9 +95,7 @@ interface IDepositManager {
     /**
      * @notice Simulate vault synchronization (i.e. DHW was completed, but vault wasn't synced yet)
      * @param smartVault Smart Vault address
-     * @param flushIndex vault flush index for which to simulate sync
-     * @param lastDhwSyncedTimestamp timestamp of the last synced DHW up until now
-     * @param oldTotalSVTs amount of SVTs up until this simulation
+     * @param bag flush index, lastDhwSyncedTimestamp, oldTotalSVTs
      * @param strategies strategy addresses
      * @param assetGroup vault asset group token addresses
      * @param dhwIndexes DHW Indexes for given flush index
@@ -106,13 +104,14 @@ interface IDepositManager {
      */
     function syncDepositsSimulate(
         address smartVault,
-        uint256 flushIndex,
-        uint256 lastDhwSyncedTimestamp,
-        uint256 oldTotalSVTs,
-        address[] memory strategies,
-        address[] memory assetGroup,
+        uint256[3] memory bag,
+        //uint256 flushIndex,
+        //uint256 lastDhwSyncedTimestamp,
+        //uint256 oldTotalSVTs,
+        address[] calldata strategies,
+        address[] calldata assetGroup,
         uint16a16 dhwIndexes,
-        SmartVaultFees memory fees
+        SmartVaultFees calldata fees
     ) external view returns (DepositSyncResult memory syncResult);
 
     /**
@@ -134,10 +133,10 @@ interface IDepositManager {
         uint256 flushIndex,
         uint256 lastDhwSyncedTimestamp,
         uint256 oldTotalSVTs,
-        address[] memory strategies,
+        address[] calldata strategies,
         uint16a16 dhwIndexes,
-        address[] memory assetGroup,
-        SmartVaultFees memory fees
+        address[] calldata assetGroup,
+        SmartVaultFees calldata fees
     ) external returns (DepositSyncResult memory syncResult);
 
     /**
@@ -149,7 +148,7 @@ interface IDepositManager {
      * @return deposits Amount of assets deposited.
      * @return nftId ID of the deposit NFT.
      */
-    function depositAssets(DepositBag calldata bag, DepositExtras memory bag2)
+    function depositAssets(DepositBag calldata bag, DepositExtras calldata bag2)
         external
         returns (uint256[] memory deposits, uint256 nftId);
 
@@ -167,9 +166,9 @@ interface IDepositManager {
     function flushSmartVault(
         address smartVault,
         uint256 flushIndex,
-        address[] memory strategies,
+        address[] calldata strategies,
         uint16a16 allocations,
-        address[] memory tokens
+        address[] calldata tokens
     ) external returns (uint16a16 dhwIndexes);
 
     /**
@@ -185,7 +184,7 @@ interface IDepositManager {
         DepositMetadata memory data,
         uint256 nftShares,
         uint256 mintedSVTs,
-        address[] memory tokens
+        address[] calldata tokens
     ) external view returns (uint256);
 
     /**
@@ -211,7 +210,7 @@ interface IDepositManager {
         address smartVault,
         uint256[] calldata nftIds,
         uint256[] calldata nftAmounts,
-        address[] memory tokens,
+        address[] calldata tokens,
         address executor
     ) external returns (uint256 claimedTokens);
 }

@@ -128,7 +128,7 @@ interface IWithdrawalManager {
      * @param strategies Strategies of the smart vault.
      * @return dhwIndexes current do-hard-work indexes of the strategies.
      */
-    function flushSmartVault(address smartVault, uint256 flushIndex, address[] memory strategies)
+    function flushSmartVault(address smartVault, uint256 flushIndex, address[] calldata strategies)
         external
         returns (uint16a16 dhwIndexes);
 
@@ -138,7 +138,7 @@ interface IWithdrawalManager {
      * @return withdrawnAssets Amount of assets withdrawn.
      * @return assetGroupId ID of the asset group.
      */
-    function claimWithdrawal(WithdrawalClaimBag memory bag)
+    function claimWithdrawal(WithdrawalClaimBag calldata bag)
         external
         returns (uint256[] memory withdrawnAssets, uint256 assetGroupId);
 
@@ -149,8 +149,12 @@ interface IWithdrawalManager {
      * @param strategies Strategies of the smart vault.
      * @param dhwIndexes_ Strategies' do-hard-work indexes to sync.
      */
-    function syncWithdrawals(address smartVault, uint256 flushIndex, address[] memory strategies, uint16a16 dhwIndexes_)
-        external;
+    function syncWithdrawals(
+        address smartVault,
+        uint256 flushIndex,
+        address[] calldata strategies,
+        uint16a16 dhwIndexes_
+    ) external;
 
     /**
      * @notice Redeems smart vault shares.
@@ -158,7 +162,7 @@ interface IWithdrawalManager {
      * @param bag2 Extra information for redeemal.
      * @return nftId ID of the withdrawal NFT.
      */
-    function redeem(RedeemBag calldata bag, RedeemExtras memory bag2) external returns (uint256 nftId);
+    function redeem(RedeemBag calldata bag, RedeemExtras calldata bag2) external returns (uint256 nftId);
 
     /**
      * @notice Instantly redeems smart vault shares.

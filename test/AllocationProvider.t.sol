@@ -12,7 +12,7 @@ import "../src/providers/ExponentialAllocationProvider.sol";
 contract FixedRM is MockRiskManager {
     function test_mock_() external pure {}
 
-    function getRiskScores(address riskProvider, address[] memory strategies)
+    function getRiskScores(address riskProvider, address[] calldata strategies)
         external
         pure
         override

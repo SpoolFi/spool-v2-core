@@ -66,9 +66,7 @@ contract VaultSyncTest is IntegrationTestFixture {
 
         DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
             address(smartVault),
-            0, // flush index
-            0, // first dhw timestamp
-            0, // total SVTs minted til now
+            [uint256(0), 0, 0], // flush index, first dhw timestamp, total SVTs minted til now
             smartVaultStrategies,
             assetGroup,
             Arrays.toUint16a16(1, 1, 1),
@@ -130,9 +128,7 @@ contract VaultSyncTest is IntegrationTestFixture {
         uint16a16 dhwIndexes = smartVaultManager.dhwIndexes(address(smartVault), 1);
         DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
             address(smartVault),
-            1,
-            dhwTimestamp,
-            vaultSupplyBefore,
+            [1, dhwTimestamp, vaultSupplyBefore],
             smartVaultStrategies,
             assetGroup,
             dhwIndexes,
@@ -173,7 +169,12 @@ contract VaultSyncTest is IntegrationTestFixture {
         // Run simulations
         uint16a16 dhwIndexes = smartVaultManager.dhwIndexes(address(smartVault), 0);
         DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
-            address(smartVault), 0, 0, 0, smartVaultStrategies, assetGroup, dhwIndexes, SmartVaultFees(0, 3_00, 0)
+            address(smartVault),
+            [uint256(0), 0, 0],
+            smartVaultStrategies,
+            assetGroup,
+            dhwIndexes,
+            SmartVaultFees(0, 3_00, 0)
         );
 
         uint256 simulatedTotalSupply = smartVaultManager.getSVTTotalSupply(address(smartVault));

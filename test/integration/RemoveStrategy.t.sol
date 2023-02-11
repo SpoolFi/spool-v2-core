@@ -90,9 +90,7 @@ contract RemoveStrategyTest is IntegrationTestFixture {
 
         DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
             address(smartVault),
-            0, // flush index
-            0, // first dhw timestamp
-            0, // total SVTs minted til now
+            [uint256(0), 0, 0], // flush index, first dhw timestamp, total SVTs minted til now
             smartVaultStrategies,
             assetGroup,
             Arrays.toUint16a16(1, 1, 1),
@@ -132,9 +130,7 @@ contract RemoveStrategyTest is IntegrationTestFixture {
 
         DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
             address(smartVault),
-            0, // flush index
-            0, // first dhw timestamp
-            0, // total SVTs minted til now
+            [uint256(0), 0, 0], // flush index, first dhw timestamp, total SVTs minted til now
             smartVaultStrategies,
             assetGroup,
             Arrays.toUint16a16(1, 1, 1),

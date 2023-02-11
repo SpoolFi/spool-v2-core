@@ -87,7 +87,10 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
     /**
      * @notice Fractional balance of a NFT array (0 - NFT_MINTED_SHARES)
      */
-    function balanceOfFractionalBatch(address account, uint256[] memory ids) external view returns (uint256[] memory);
+    function balanceOfFractionalBatch(address account, uint256[] calldata ids)
+        external
+        view
+        returns (uint256[] memory);
 
     /**
      * @notice Retrieves a list of active NFTs for User.
@@ -122,7 +125,8 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
      * @param strategies Strategies to which release the shares to
      * @param shares Amount of strategy shares to release
      */
-    function burn(address owner, uint256 vaultShares, address[] memory strategies, uint256[] memory shares) external;
+    function burn(address owner, uint256 vaultShares, address[] calldata strategies, uint256[] calldata shares)
+        external;
 
     /**
      * @notice Mint a new Withdrawal NFT
@@ -150,7 +154,7 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
      * @param receiver Address that will receive the NFT
      * @param metadata Metadata to store for minted NFT
      */
-    function mintDepositNFT(address receiver, DepositMetadata memory metadata) external returns (uint256 receipt);
+    function mintDepositNFT(address receiver, DepositMetadata calldata metadata) external returns (uint256 receipt);
 
     /**
      * @notice Transfers smart vault tokens.

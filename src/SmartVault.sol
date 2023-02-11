@@ -117,7 +117,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
     /**
      * @notice Fractional balance of a NFT array (0 - NFT_MINTED_SHARES)
      */
-    function balanceOfFractionalBatch(address account, uint256[] memory ids) public view returns (uint256[] memory) {
+    function balanceOfFractionalBatch(address account, uint256[] calldata ids) public view returns (uint256[] memory) {
         uint256[] memory batchBalances = new uint256[](ids.length);
 
         for (uint256 i = 0; i < ids.length; ++i) {
@@ -159,7 +159,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         _mint(receiver, vaultShares);
     }
 
-    function burn(address owner, uint256 vaultShares, address[] memory strategies, uint256[] memory shares)
+    function burn(address owner, uint256 vaultShares, address[] calldata strategies, uint256[] calldata shares)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
     {
@@ -192,7 +192,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         _transfer(address(this), claimer, amount);
     }
 
-    function mintDepositNFT(address receiver, DepositMetadata memory metadata)
+    function mintDepositNFT(address receiver, DepositMetadata calldata metadata)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256)

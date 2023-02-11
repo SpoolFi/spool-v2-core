@@ -132,9 +132,11 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         address smartVault,
         uint256[] calldata nftIds,
         uint256[] calldata nftAmounts,
-        address[] memory tokens,
+        address[] calldata tokens,
         address executor
-    ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (uint256) {
+    ) external returns (uint256) {
+        _checkRole(ROLE_SMART_VAULT_MANAGER, msg.sender);
+
         // NOTE:
         // - here we are passing ids into the request context instead of amounts
         // - here we passing empty array as tokens
@@ -180,22 +182,21 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
     function flushSmartVault(
         address smartVault,
         uint256 flushIndex,
-        address[] memory strategies,
+        address[] calldata strategies,
         uint16a16 allocation,
-        address[] memory tokens
-    ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (uint16a16) {
+        address[] calldata tokens
+    ) external returns (uint16a16) {
+        _checkRole(ROLE_SMART_VAULT_MANAGER, msg.sender);
         uint16a16 flushDhwIndexes;
 
         if (_vaultDeposits[smartVault][flushIndex][0] > 0) {
             // handle deposits
             uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(tokens, _priceFeedManager);
-            uint256[] memory deposits = _vaultDeposits[smartVault][flushIndex].toArray(tokens.length);
-
             _flushExchangeRates[smartVault][flushIndex].setValues(exchangeRates);
 
             uint256[][] memory distribution = distributeDeposit(
                 DepositQueryBag1({
-                    deposit: deposits,
+                    deposit: _vaultDeposits[smartVault][flushIndex].toArray(tokens.length),
                     exchangeRates: exchangeRates,
                     allocation: allocation,
                     strategyRatios: SpoolUtils.getStrategyRatiosAtLastDhw(strategies, _strategyRegistry)
@@ -219,14 +220,15 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         uint256 flushIndex,
         uint256 lastDhwSyncedTimestamp,
         uint256 oldTotalSVTs,
-        address[] memory strategies,
+        address[] calldata strategies,
         uint16a16 dhwIndexes,
-        address[] memory assetGroup,
+        address[] calldata assetGroup,
         SmartVaultFees memory fees
-    ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (DepositSyncResult memory) {
+    ) external returns (DepositSyncResult memory) {
+        _checkRole(ROLE_SMART_VAULT_MANAGER, msg.sender);
         // mint SVTs based on USD value of claimed SSTs
         DepositSyncResult memory syncResult = syncDepositsSimulate(
-            smartVault, flushIndex, lastDhwSyncedTimestamp, oldTotalSVTs, strategies, assetGroup, dhwIndexes, fees
+            smartVault, [flushIndex, lastDhwSyncedTimestamp, oldTotalSVTs], strategies, assetGroup, dhwIndexes, fees
         );
 
         if (syncResult.mintedSVTs > 0) {
@@ -243,18 +245,19 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
 
     function syncDepositsSimulate(
         address smartVault,
-        uint256 flushIndex,
-        uint256 lastDhwSyncedTimestamp,
-        uint256 oldTotalSVTs,
-        address[] memory strategies,
-        address[] memory assetGroup,
+        uint256[3] memory bag,
+        //uint256 flushIndex,
+        //uint256 lastDhwSyncedTimestamp,
+        //uint256 oldTotalSVTs,
+        address[] calldata strategies,
+        address[] calldata assetGroup,
         uint16a16 dhwIndexes,
         SmartVaultFees memory fees
     ) public view returns (DepositSyncResult memory) {
         DepositSyncResult memory result;
         {
             uint256[] memory dhwTimestamps = _strategyRegistry.dhwTimestamps(strategies, dhwIndexes);
-            result = DepositSyncResult(0, lastDhwSyncedTimestamp, 0, new uint256[](strategies.length));
+            result = DepositSyncResult(0, bag[1], 0, new uint256[](strategies.length));
 
             // find last DHW timestamp of this flush index cycle
             for (uint256 i; i < strategies.length; ++i) {
@@ -264,7 +267,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             }
 
             // skip if there were no deposits made
-            if (_vaultDeposits[smartVault][flushIndex][0] == 0) {
+            if (_vaultDeposits[smartVault][bag[0]][0] == 0) {
                 return result;
             }
         }
@@ -280,7 +283,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             }
 
             uint256 vaultDepositedUsd =
-                _getVaultDepositsValue(smartVault, flushIndex, strategies[i], atDhw.exchangeRates, assetGroup);
+                _getVaultDepositsValue(smartVault, bag[0], strategies[i], atDhw.exchangeRates, assetGroup);
             uint256 strategyDepositedUsd =
                 _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, atDhw.assetsDeposited, atDhw.exchangeRates);
 
@@ -308,9 +311,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
 
         if (fees.managementFeePct > 0) {
             // % of all SVTs minted until now, excluding the ones held by the vault owner
-            result.feeSVTs += _calculateManagementFees(
-                lastDhwSyncedTimestamp, result.dhwTimestamp, oldTotalSVTs, fees.managementFeePct
-            );
+            result.feeSVTs += _calculateManagementFees(bag[1], result.dhwTimestamp, bag[2], fees.managementFeePct);
         }
 
         return result;
@@ -330,7 +331,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         );
     }
 
-    function depositAssets(DepositBag calldata bag, DepositExtras memory bag2)
+    function depositAssets(DepositBag calldata bag, DepositExtras calldata bag2)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256[] memory, uint256)
@@ -502,7 +503,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         DepositMetadata memory data,
         uint256 nftShares,
         uint256 mintedSVTs,
-        address[] memory tokens
+        address[] calldata tokens
     ) public view returns (uint256) {
         uint256[] memory totalDepositedAssets;
         uint256[] memory exchangeRates;

@@ -211,9 +211,9 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
     /**
      * @notice Add strategy to registry
-     * @dev no need to check msg.sender, he needs a specific role to be allowed to grant ROLE_STRATEGY
      */
     function registerStrategy(address strategy) external {
+        _checkRole(ROLE_SPOOL_ADMIN, msg.sender);
         if (_accessControl.hasRole(ROLE_STRATEGY, strategy)) revert StrategyAlreadyRegistered({address_: strategy});
 
         _accessControl.grantRole(ROLE_STRATEGY, strategy);
@@ -341,7 +341,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         }
     }
 
-    function addDeposits(address[] memory strategies_, uint256[][] memory amounts)
+    function addDeposits(address[] calldata strategies_, uint256[][] calldata amounts)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint16a16)
@@ -361,7 +361,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         return indexes;
     }
 
-    function addWithdrawals(address[] memory strategies_, uint256[] memory strategyShares)
+    function addWithdrawals(address[] calldata strategies_, uint256[] calldata strategyShares)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint16a16)
@@ -416,7 +416,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         return withdrawnAssets;
     }
 
-    function claimWithdrawals(address[] memory strategies_, uint16a16 dhwIndexes, uint256[] memory strategyShares)
+    function claimWithdrawals(address[] calldata strategies_, uint16a16 dhwIndexes, uint256[] calldata strategyShares)
         external
         view
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)

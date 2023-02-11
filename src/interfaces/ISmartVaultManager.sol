@@ -168,7 +168,7 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
 
     /**
      * @notice Removes strategy from vaults, and optionally removes it from the system as well.
-     * @param strategy Strategy address to remove.@param
+     * @param strategy Strategy address to remove.
      * @param fromVaultsOnly Whether to remove the strategy from vaults or from the system as well.
      */
     function removeStrategy(address strategy, bool fromVaultsOnly) external;
