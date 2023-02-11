@@ -306,14 +306,6 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         return result;
     }
 
-    struct DhwStrategyInfo {
-        uint128 totalStrategyValue;
-        uint128 totalSSTs;
-        uint128 dhwYields;
-        uint128 mintedSSTs;
-        uint32 timestamp;
-    }
-
     function depositAssets(DepositBag calldata bag, DepositExtras memory bag2)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)

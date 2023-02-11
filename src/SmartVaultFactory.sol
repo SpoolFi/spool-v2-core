@@ -244,6 +244,9 @@ contract SmartVaultFactory is UpgradeableBeacon {
         if (specification.depositFeePct > DEPOSIT_FEE_MAX) {
             revert DepositFeeTooLarge(specification.depositFeePct);
         }
+        if (specification.performanceFeePct > SV_PERFORMANCE_FEE_MAX) {
+            revert PerformanceFeeTooLarge(specification.performanceFeePct);
+        }
     }
 
     /**

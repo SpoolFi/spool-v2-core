@@ -45,7 +45,9 @@ error TreasuryFeeTooLarge(uint256 treasuryFeePct);
  * @custom:member exchangeRates Exchange rates between assets and USD.
  * @custom:member assetsDeposited Amount of assets deposited into the strategy.
  * @custom:member sharesMinted Amount of strategy shares minted.
- * @custom:member dhwYields TODO: DHW yield percentage.
+ * @custom:member dhwTimestamp Timestamp of the DHW index.
+ * @custom:member totalStrategyValue Total strategy value at the end of the DHW.
+ * @custom:member dhwYields DHW yield percentage from the previous DHW.
  */
 struct StrategyAtIndex {
     uint256[] exchangeRates;

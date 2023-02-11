@@ -88,6 +88,12 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     mapping(address => mapping(uint256 => uint256)) internal _dhwValue;
 
     /**
+     * @notice Total strategy shares at the DHW index.
+     * @dev strategy => index => total shares
+     */
+    mapping(address => mapping(uint256 => uint256)) internal _dhwSsts;
+
+    /**
      * @notice Amount of yield generated for a strategy since the previous DHW.
      * @dev strategy => index => yield percentage
      */
@@ -306,55 +312,8 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
                     _dhwTimestamp[strategy][dhwIndex] = block.timestamp;
                     _dhwYields[address(strategy)][dhwIndex] = dhwInfo.yieldPercentage;
                     _dhwValue[address(strategy)][dhwIndex] = dhwInfo.valueAtDhw;
+                    _dhwSsts[address(strategy)][dhwIndex] = dhwInfo.totalSstsAtDhw;
                 }
-            }
-        }
-    }
-
-    function _updateDhwYieldAndApy(address strategy, uint256 dhwIndex, int256 yieldPercentage) private {
-        if (dhwIndex > 1) {
-            unchecked {
-                int256 timeDelta = int256(block.timestamp - _dhwTimestamp[address(strategy)][dhwIndex - 1]);
-
-                if (timeDelta > 0) {
-                    int256 normalizedApy = yieldPercentage * SECONDS_IN_YEAR_INT / timeDelta;
-                    int256 weight = _getRunningAverageApyWeight(timeDelta);
-                    // TODO: decide on the formula
-                    _apys[strategy] =
-                        (_apys[strategy] * (FULL_PERCENT_INT - weight) + normalizedApy * weight) / FULL_PERCENT_INT;
-                }
-            }
-        }
-    }
-
-    function _getRunningAverageApyWeight(int256 timeDelta) private pure returns (int256) {
-        // NOTE: decide on the function. ?? sigmoid function "y=2*((1/(1+e^-(0.5*x)))-0.5)"
-
-        if (timeDelta < 1 days) {
-            if (timeDelta < 4 hours) {
-                return 4_15;
-            } else if (timeDelta < 12 hours) {
-                return 12_44;
-            } else {
-                return 24_49;
-            }
-        } else {
-            if (timeDelta < 1.5 days) {
-                return 35_84;
-            } else if (timeDelta < 2 days) {
-                return 46_21;
-            } else if (timeDelta < 3 days) {
-                return 63_51;
-            } else if (timeDelta < 4 days) {
-                return 76_16;
-            } else if (timeDelta < 5 days) {
-                return 84_83;
-            } else if (timeDelta < 6 days) {
-                return 90_51;
-            } else if (timeDelta < 1 weeks) {
-                return 94_14;
-            } else {
-                return FULL_PERCENT_INT;
             }
         }
     }
@@ -469,8 +428,20 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         return totalWithdrawnAssets;
     }
 
-    function setEcosystemFee(uint96 ecosystemFeePct_) external {
+    function setEcosystemFee(uint96 ecosystemFeePct_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
         _setEcosystemFee(ecosystemFeePct_);
+    }
+
+    function setEcosystemFeeReciever(address ecosystemFeePct_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        _setEcosystemFeeReciever(ecosystemFeePct_);
+    }
+
+    function setTreasuryFee(uint96 treasuryFeePct_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        _setTreasuryFee(treasuryFeePct_);
+    }
+
+    function setTreasuryFeeReciever(address treasuryFeeReciever_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        _setTreasuryFeeReciever(treasuryFeeReciever_);
     }
 
     function _setEcosystemFee(uint96 ecosystemFeePct_) private {
@@ -481,20 +452,12 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         _platformFees.ecosystemFeePct = ecosystemFeePct_;
     }
 
-    function setEcosystemFeeReciever(address ecosystemFeePct_) external {
-        _setEcosystemFeeReciever(ecosystemFeePct_);
-    }
-
     function _setEcosystemFeeReciever(address ecosystemFeeReciever_) private {
         if (ecosystemFeeReciever_ != address(0)) {
             revert ConfigurationAddressZero();
         }
 
         _platformFees.ecosystemFeeReciever = ecosystemFeeReciever_;
-    }
-
-    function setTreasuryFee(uint96 treasuryFeePct_) external {
-        _setTreasuryFee(treasuryFeePct_);
     }
 
     function _setTreasuryFee(uint96 treasuryFeePct_) private {
@@ -505,15 +468,59 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         _platformFees.treasuryFeePct = treasuryFeePct_;
     }
 
-    function setTreasuryFeeReciever(address treasuryFeeReciever_) external {
-        _setTreasuryFeeReciever(treasuryFeeReciever_);
-    }
-
     function _setTreasuryFeeReciever(address treasuryFeeReciever_) private {
         if (treasuryFeeReciever_ != address(0)) {
             revert ConfigurationAddressZero();
         }
 
         _platformFees.treasuryFeeReciever = treasuryFeeReciever_;
+    }
+
+    function _updateDhwYieldAndApy(address strategy, uint256 dhwIndex, int256 yieldPercentage) private {
+        if (dhwIndex > 1) {
+            unchecked {
+                int256 timeDelta = int256(block.timestamp - _dhwTimestamp[address(strategy)][dhwIndex - 1]);
+
+                if (timeDelta > 0) {
+                    int256 normalizedApy = yieldPercentage * SECONDS_IN_YEAR_INT / timeDelta;
+                    int256 weight = _getRunningAverageApyWeight(timeDelta);
+                    // TODO: decide on the formula
+                    _apys[strategy] =
+                        (_apys[strategy] * (FULL_PERCENT_INT - weight) + normalizedApy * weight) / FULL_PERCENT_INT;
+                }
+            }
+        }
+    }
+
+    function _getRunningAverageApyWeight(int256 timeDelta) private pure returns (int256) {
+        // NOTE: decide on the function. ?? sigmoid function "y=2*((1/(1+e^-(0.5*x)))-0.5)"
+
+        if (timeDelta < 1 days) {
+            if (timeDelta < 4 hours) {
+                return 4_15;
+            } else if (timeDelta < 12 hours) {
+                return 12_44;
+            } else {
+                return 24_49;
+            }
+        } else {
+            if (timeDelta < 1.5 days) {
+                return 35_84;
+            } else if (timeDelta < 2 days) {
+                return 46_21;
+            } else if (timeDelta < 3 days) {
+                return 63_51;
+            } else if (timeDelta < 4 days) {
+                return 76_16;
+            } else if (timeDelta < 5 days) {
+                return 84_83;
+            } else if (timeDelta < 6 days) {
+                return 90_51;
+            } else if (timeDelta < 1 weeks) {
+                return 94_14;
+            } else {
+                return FULL_PERCENT_INT;
+            }
+        }
     }
 }

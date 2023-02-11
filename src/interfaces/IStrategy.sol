@@ -42,12 +42,16 @@ struct StrategyDhwParameterBag {
  * @notice Information about results of the do hard work.
  * @custom:member sharesMinted Amount of strategy shares minted.
  * @custom:member assetsWithdrawn Amount of assets withdrawn.
+ * @custom:member yieldPercentage Yield percentage from the previous DHW.
+ * @custom:member valueAtDhw Value of the strategy at the end of DHW.
+ * @custom:member totalSstsAtDhw Total SSTs at the end of DHW.
  */
 struct DhwInfo {
     uint256 sharesMinted;
+    uint256[] assetsWithdrawn;
     int256 yieldPercentage;
     uint256 valueAtDhw;
-    uint256[] assetsWithdrawn;
+    uint256 totalSstsAtDhw;
 }
 
 error IsGhostStrategy();

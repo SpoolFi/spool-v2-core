@@ -62,6 +62,12 @@ struct WithdrawalMetadata {
     uint256 flushIndex;
 }
 
+/**
+ * @notice Holds all smart vault fee percentages.
+ * @custom:member managementFeePct Management fee of the smart vault.
+ * @custom:member depositFeePct Deposit fee of the smart vault.
+ * @custom:member performanceFeePct Performance fee of the smart vault.
+ */
 struct SmartVaultFees {
     uint16 managementFeePct;
     uint16 depositFeePct;

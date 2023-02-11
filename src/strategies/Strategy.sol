@@ -210,8 +210,6 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             usdWorth[1] = usdWorth[0];
         }
 
-        totalUsdValue = usdWorth[1];
-
         // Transfer withdrawn assets to master wallet if needed.
         if (withdrawn) {
             unchecked {
@@ -223,7 +221,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
         dhwInfo.sharesMinted = mintedShares;
         dhwInfo.assetsWithdrawn = withdrawnAssets;
-        dhwInfo.valueAtDhw = usdWorth[1]; // TODO
+        dhwInfo.valueAtDhw = usdWorth[1];
+        dhwInfo.totalSstsAtDhw = totalSupply();
     }
 
     // TODO: add access control

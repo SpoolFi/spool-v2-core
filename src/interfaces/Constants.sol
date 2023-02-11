@@ -17,6 +17,8 @@ uint256 constant MANAGEMENT_FEE_MAX = 5_00;
 
 uint256 constant DEPOSIT_FEE_MAX = 5_00;
 
+uint256 constant SV_PERFORMANCE_FEE_MAX = 20_00;
+
 uint256 constant ECOSYSTEM_FEE_MAX = 20_00;
 
 uint256 constant TREASURY_FEE_MAX = 10_00;
