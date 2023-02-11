@@ -3,38 +3,40 @@ pragma solidity 0.8.16;
 
 import "../external/interfaces/chainlink/AggregatorV3Interface.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
+import "../access/SpoolAccessControllable.sol";
+import "../access/Roles.sol";
 
-/* ========== ERRORS ========== */
-
-/**
- * @notice Emitted when asset is invalid.
- * @param asset Invalid asset.
- */
-error InvalidAsset(address asset);
-
-/**
- * @notice Emitted when price returned by price aggregator is negative or zero.
- * @param price Actual price returned by price aggregator.
- */
-error NonPositivePrice(int256 price);
-
-contract UsdPriceFeedManager is IUsdPriceFeedManager {
+contract UsdPriceFeedManager is IUsdPriceFeedManager, SpoolAccessControllable {
     /* ========== STATE VARIABLES ========== */
 
+    /// @notice Number of decimals used by the asset.
     mapping(address => uint256) public assetDecimals;
+
+    /// @notice Multiplier needed by the asset.
     mapping(address => uint256) public assetMultiplier;
+
+    /// @notice Price aggregator for the asset.
     mapping(address => AggregatorV3Interface) public assetPriceAggregator;
+
+    /// @notice Multiplier needed by the price aggregator for the asset.
     mapping(address => uint256) public assetPriceAggregatorMultiplier;
+
+    /// @notice Whether the asset can be used.
     mapping(address => bool) public assetValidity;
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor() {}
+    /**
+     * @param accessControl_ Access control for Spool ecosystem.
+     */
+    constructor(ISpoolAccessControl accessControl_) SpoolAccessControllable(accessControl_) {}
 
     /* ========== ADMIN FUNCTIONS ========== */
 
-    // TODO: access control
-    function setAsset(address asset, uint256 decimals, AggregatorV3Interface priceAggregator, bool validity) external {
+    function setAsset(address asset, uint256 decimals, AggregatorV3Interface priceAggregator, bool validity)
+        external
+        onlyRole(ROLE_SPOOL_ADMIN, msg.sender)
+    {
         assetDecimals[asset] = decimals;
         assetMultiplier[asset] = 10 ** decimals;
         assetPriceAggregator[asset] = priceAggregator;

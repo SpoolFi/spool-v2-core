@@ -19,10 +19,10 @@ import "../interfaces/IWithdrawalManager.sol";
 import "../interfaces/CommonErrors.sol";
 import "../interfaces/Constants.sol";
 import "../interfaces/RequestType.sol";
-import "../access/SpoolAccessControllable.sol";
 import "../libraries/ArrayMapping.sol";
 import "../libraries/uint16a16Lib.sol";
 import "../libraries/ReallocationLib.sol";
+import "../access/SpoolAccessControllable.sol";
 
 struct VaultSyncBag {
     address vaultOwner;
@@ -241,12 +241,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return _depositAssets(bag);
     }
 
-    /**
-     * @notice Burn deposit NFTs to claim SVTs
-     * @param smartVault Vault address
-     * @param nftIds NFTs to burn
-     * @param nftAmounts NFT amounts to burn
-     */
     function claimSmartVaultTokens(address smartVault, uint256[] calldata nftIds, uint256[] calldata nftAmounts)
         public
         whenNotPaused
@@ -258,13 +252,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return _depositManager.claimSmartVaultTokens(smartVault, nftIds, nftAmounts, tokens, msg.sender);
     }
 
-    /**
-     * @notice Burn withdrawal NFTs to claim assets
-     * @param smartVault Vault address
-     * @param nftIds NFTs to burn
-     * @param nftAmounts NFT amounts to burn
-     * @param receiver Address to which to transfer claimed assets
-     */
     function claimWithdrawal(
         address smartVault,
         uint256[] calldata nftIds,
@@ -357,13 +344,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         );
     }
 
-    function syncSmartVault(address smartVault, bool revertOnMissingDHW) external whenNotPaused {
+    function syncSmartVault(address smartVault, bool revertIfError) external whenNotPaused {
         _onlyRegisteredSmartVault(smartVault);
         _syncSmartVault(
             smartVault,
             _smartVaultStrategies[smartVault],
             _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]),
-            revertOnMissingDHW
+            revertIfError
         );
     }
 

@@ -35,7 +35,7 @@ contract DepositSwapIntegrationTest is TestFixture {
         bob = address(0xb);
         swapperAdmin = address(0xc);
 
-        accessControl.grantRole(ROLE_SWAPPER_ADMIN, swapperAdmin);
+        accessControl.grantRole(ROLE_SPOOL_ADMIN, swapperAdmin);
 
         tokenA = new MockToken("Token A", "TA");
         tokenB = new MockToken("Token B", "TB");

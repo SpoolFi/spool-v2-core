@@ -103,6 +103,12 @@ library SpoolUtils {
         return totalUsdValue;
     }
 
+    /**
+     * @notice Gets USD value of smart vault's share in a strategy.
+     * @param smartVault Smart vault.
+     * @param strategyAddress Strategy.
+     * @return usdValue USD value of the smart vault's share in the strategy.
+     */
     function getVaultStrategyUsdValue(address smartVault, address strategyAddress) public view returns (uint256) {
         IStrategy strategy = IStrategy(strategyAddress);
         uint256 totalSupply = strategy.totalSupply();

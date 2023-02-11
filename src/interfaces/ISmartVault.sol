@@ -80,97 +80,128 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /**
-     * @notice Fractional balance of a NFT (0 - NFT_MINTED_SHARES)
+     * @notice Fractional balance of a NFT (0 - NFT_MINTED_SHARES).
+     * @param account Account to check the balance for.
+     * @param id ID of the NFT to check.
+     * @return fractionalBalance Fractional balance of account for the NFT.
      */
-    function balanceOfFractional(address account, uint256 id) external view returns (uint256);
+    function balanceOfFractional(address account, uint256 id) external view returns (uint256 fractionalBalance);
 
     /**
-     * @notice Fractional balance of a NFT array (0 - NFT_MINTED_SHARES)
+     * @notice Fractional balance of a NFTs (0 - NFT_MINTED_SHARES).
+     * @param account Account to check the balance for.
+     * @param ids IDs of the NFTs to check.
+     * @return fractionalBalances Fractional balances of account for each requested NFT.
      */
     function balanceOfFractionalBatch(address account, uint256[] calldata ids)
         external
         view
-        returns (uint256[] memory);
+        returns (uint256[] memory fractionalBalances);
 
     /**
-     * @notice Retrieves a list of active NFTs for User.
+     * @notice Retrieves a list of active NFTs for account.
+     * @param account Account to check.
+     * @return nftIds IDs of active NFTs.
      */
-    function activeUserNFTIds(address userAddress) external view returns (uint256[] memory nftIds);
+    function activeUserNFTIds(address account) external view returns (uint256[] memory nftIds);
 
     /**
+     * @notice Gets the asset group used by the smart vault.
      * @return id ID of the asset group.
      */
     function assetGroupId() external view returns (uint256 id);
 
     /**
+     * @notice Gets the name of the smart vault.
      * @return name Name of the vault.
      */
     function vaultName() external view returns (string memory name);
 
+    /**
+     * @notice Gets metadata for NFTs.
+     * @param nftIds IDs of NFTs.
+     * @return metadata Metadata for each requested NFT.
+     */
     function getMetadata(uint256[] calldata nftIds) external view returns (bytes[] memory metadata);
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice Mint ERC20 SVTs for given receiver address
-     * @param receiver Address to mint to
-     * @param vaultShares Amount of tokens to mint
+     * @notice Mints smart vault tokens for receiver.
+     * @dev Requirements:
+     * - caller must have role ROLE_SMART_VAULT_MANAGER
+     * @param receiver REceiver of minted tokens.
+     * @param vaultShares Amount of tokens to mint.
      */
     function mint(address receiver, uint256 vaultShares) external;
 
     /**
-     * @notice Burn SVTs and release strategy shares back to strategies
-     * @param owner Address for which to burn SVTs
-     * @param vaultShares Amount of SVTs to burn
-     * @param strategies Strategies to which release the shares to
-     * @param shares Amount of strategy shares to release
+     * @notice Burns smart vault tokens and releases strategy shares back to strategies.
+     * @dev Requirements:
+     * - caller must have role ROLE_SMART_VAULT_MANAGER
+     * @param owner Address for which to burn the tokens.
+     * @param vaultShares Amount of tokens to burn.
+     * @param strategies Strategies for which to release the strategy shares.
+     * @param shares Amounts of strategy shares to release.
      */
     function burn(address owner, uint256 vaultShares, address[] calldata strategies, uint256[] calldata shares)
         external;
 
     /**
-     * @notice Mint a new Withdrawal NFT
-     * @dev Supply of minted NFT is NFT_MINTED_SHARES (for partial burning)
-     * @param receiver Address that will receive the NFT
-     * @param metadata Metadata to store for minted NFT
+     * @notice Mints a new withdrawal NFT.
+     * @dev Supply of minted NFT is NFT_MINTED_SHARES (for partial burning).
+     * Requirements:
+     * - caller must have role ROLE_SMART_VAULT_MANAGER
+     * @param receiver Address that will receive the NFT.
+     * @param metadata Metadata to store for minted NFT.
+     * @return id ID of the minted NFT.
      */
-    function mintWithdrawalNFT(address receiver, WithdrawalMetadata memory metadata)
-        external
-        returns (uint256 receipt);
+    function mintWithdrawalNFT(address receiver, WithdrawalMetadata calldata metadata) external returns (uint256 id);
 
     /**
-     * @notice Burn NFTs and return their metadata
-     * @param owner Owner of NFTs
-     * @param nftIds NFTs to burn
-     * @param nftAmounts NFT shares to burn (partial burn)
+     * @notice Mints a new deposit NFT.
+     * @dev Supply of minted NFT is NFT_MINTED_SHARES (for partial burning).
+     * Requirements:
+     * - caller must have role ROLE_SMART_VAULT_MANAGER
+     * @param receiver Address that will receive the NFT.
+     * @param metadata Metadata to store for minted NFT.
+     * @return id ID of the minted NFT.
+     */
+    function mintDepositNFT(address receiver, DepositMetadata calldata metadata) external returns (uint256 id);
+
+    /**
+     * @notice Burns NFTs and returns their metadata.
+     * Allows for partial burning.
+     * @dev Requirements:
+     * - caller must have role ROLE_SMART_VAULT_MANAGER
+     * @param owner Owner of NFTs to burn.
+     * @param nftIds IDs of NFTs to burn.
+     * @param nftAmounts NFT shares to burn (partial burn).
+     * @return metadata Metadata for each burned NFT.
      */
     function burnNFTs(address owner, uint256[] calldata nftIds, uint256[] calldata nftAmounts)
         external
         returns (bytes[] memory metadata);
 
     /**
-     * @notice Mint a new Deposit NFT
-     * @dev Supply of minted NFT is NFT_MINTED_SHARES (for partial burning)
-     * @param receiver Address that will receive the NFT
-     * @param metadata Metadata to store for minted NFT
-     */
-    function mintDepositNFT(address receiver, DepositMetadata calldata metadata) external returns (uint256 receipt);
-
-    /**
      * @notice Transfers smart vault tokens.
      * @dev Requirements:
+     * - caller must have role ROLE_SMART_VAULT_MANAGER
      * - spender must have approprite allowance set
      * @param from Address from which tokens will be transferred.
      * @param to Address to which tokens will be transferred.
      * @param amount Amount of tokens to transfer.
      * @param spender Executor of transfer.
+     * @return success True if transfer was successful.
      */
-    function transferFromSpender(address from, address to, uint256 amount, address spender) external returns (bool);
+    function transferFromSpender(address from, address to, uint256 amount, address spender)
+        external
+        returns (bool success);
 
     /**
      * @notice Transfers unclaimed shares to claimer.
      * @dev Requirements:
-     * - can only be called from smart vault manager.
+     * - caller must have role ROLE_SMART_VAULT_MANAGER
      * @param claimer Address that claims the shares.
      * @param amount Amount of shares to transfer.
      */

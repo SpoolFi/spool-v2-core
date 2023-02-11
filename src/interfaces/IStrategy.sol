@@ -7,7 +7,7 @@ import "./ISwapper.sol";
 import "./IUsdPriceFeedManager.sol";
 
 /**
- * @notice Strict holding information how to swap the asset
+ * @notice Struct holding information how to swap the assets.
  * @custom:member slippage minumum output amount
  * @custom:member path swap path, first byte represents an action (e.g. Uniswap V2 custom swap), rest is swap specific path
  */
@@ -54,7 +54,16 @@ struct DhwInfo {
     uint256 totalSstsAtDhw;
 }
 
+/**
+ * @notice Used when ghost strategy is called.
+ */
 error IsGhostStrategy();
+
+/**
+ * @notice Used when user is not allowed to redeem fast.
+ * @param user User that tried to redeem fast.
+ */
+error NotFastRedeemer(address user);
 
 interface IStrategy is IERC20Upgradeable {
     /* ========== EVENTS ========== */
@@ -70,22 +79,26 @@ interface IStrategy is IERC20Upgradeable {
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
-     * @notice Returns APY value of the strategy
+     * @notice Gets APY value of the strategy
+     * @return apy APY for the strategy.
      */
-    function getAPY() external view returns (uint16);
+    function getAPY() external view returns (uint16 apy);
 
     /**
-     * @return name Name of the strategy
+     * @notice Gets strategy name.
+     * @return name Name of the strategy.
      */
     function strategyName() external view returns (string memory name);
 
     /**
-     * @return value Total value of strategy in USD.
+     * @notice Gets value of the strategy.
+     * @return value Total value of the strategy in USD.
      */
     function totalUsdValue() external view returns (uint256 value);
 
     /**
-     * @notice
+     * @notice Gets required ratio between underlying assets.
+     * @return ratio Required asset ratio for the strategy.
      */
     function assetRatio() external view returns (uint256[] memory ratio);
 
@@ -96,12 +109,10 @@ interface IStrategy is IERC20Upgradeable {
     function assetGroupId() external view returns (uint256 id);
 
     /**
-     * @dev Returns the address of the underlying token used for the Vault for accounting, depositing, and withdrawing.
-     *
-     * - MUST be an ERC-20 token contract.
-     * - MUST NOT revert.
+     * @notice Gets underlying assets for the strategy.
+     * @return assets Addresses of the underlying assets.
      */
-    function assets() external view returns (address[] memory assetTokenAddresses);
+    function assets() external view returns (address[] memory assets);
 
     /**
      * @dev Performs slippages check before depositing.
@@ -124,17 +135,35 @@ interface IStrategy is IERC20Upgradeable {
      * - compounds rewards
      * - deposits into the protocol
      * - withdraws from the protocol
+     * @dev Requirements:
+     * - caller must have role ROLE_STRATEGY_REGISTRY
      * @param dhwParams Parameters for the do hard work.
      * @return info Information about do the performed hard work.
      */
     function doHardWork(StrategyDhwParameterBag calldata dhwParams) external returns (DhwInfo memory info);
 
-    function claimShares(address claimer, uint256 amount) external;
+    /**
+     * @notice Claims strategy shares after do-hard-work.
+     * @dev Requirements:
+     * - caller must have role ROLE_SMART_VAULT_MANAGER
+     * @param smartVault Smart vault claiming shares.
+     * @param amount Amount of strategy shares to claim.
+     */
+    function claimShares(address smartVault, uint256 amount) external;
 
+    /**
+     * @notice Releases shares back to strategy.
+     * @dev Requirements:
+     * - caller must have role ROLE_SMART_VAULT_MANAGER
+     * @param smartVault Smart vault releasing shares.
+     * @param amount Amount of strategy shares to release.
+     */
     function releaseShares(address smartVault, uint256 amount) external;
 
     /**
      * @notice Instantly redeems strategy shares for assets.
+     * @dev Requirements:
+     * - caller must have either role ROLE_SMART_VAULT_MANAGER or role ROLE_STRATEGY_REGISTRY
      * @param shares Amount of shares to redeem.
      * @param masterWallet Address of the master wallet.
      * @param assetGroup Asset group of the strategy.
@@ -154,6 +183,8 @@ interface IStrategy is IERC20Upgradeable {
 
     /**
      * @notice Instantly deposits into the protocol.
+     * @dev Requirements:
+     * - caller must have role ROLE_SMART_VAULT_MANAGER
      * @param assetGroup Asset group of the strategy.
      * @param exchangeRates Asset to USD exchange rates.
      * @param priceFeedManager Price feed manager contract.
@@ -172,6 +203,8 @@ interface IStrategy is IERC20Upgradeable {
     /**
      * @notice Instantly withdraws assets, bypassing shares mechanism.
      * Transfers withdrawn assets to the emergency withdrawal wallet.
+     * @dev Requirements:
+     * - caller must have role ROLE_STRATEGY_REGISTRY
      * @param assetGroup Asset group of the strategy.
      * @param slippages Slippages to guard redeeming.
      * @param recipient Recipient address

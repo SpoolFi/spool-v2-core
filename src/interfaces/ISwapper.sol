@@ -55,7 +55,7 @@ interface ISwapper {
     /**
      * @notice Updates list of exchanges that can be used in a swap.
      * @dev Requirements:
-     *   - can only be called by user granted ROLE_SWAPPER_ADMIN
+     *   - can only be called by user granted ROLE_SPOOL_ADMIN
      *   - exchanges and allowed arrays need to be of same length
      * @param exchanges Addresses of exchanges.
      * @param allowed Whether an exchange is allowed to be used in a swap.

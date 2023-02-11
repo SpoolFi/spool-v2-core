@@ -3,6 +3,7 @@ pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
 import "../src/external/interfaces/chainlink/AggregatorV3Interface.sol";
+import "../src/access/SpoolAccessControl.sol";
 import "../src/managers/UsdPriceFeedManager.sol";
 import "./mocks/MockAggregatorV3.sol";
 
@@ -18,7 +19,10 @@ contract UsdPriceFeedManagerTest is Test {
     UsdPriceFeedManager usdPriceFeedManager;
 
     function setUp() public {
-        usdPriceFeedManager = new UsdPriceFeedManager();
+        SpoolAccessControl accessControl = new SpoolAccessControl();
+        accessControl.initialize();
+
+        usdPriceFeedManager = new UsdPriceFeedManager(accessControl);
 
         daiUsdPriceAggregator = new MockAggregatorV3(8, "Dai-Usd", 1);
         usdcUsdPriceAggregator = new MockAggregatorV3(8, "Usdc-Usd", 1);
@@ -60,6 +64,12 @@ contract UsdPriceFeedManagerTest is Test {
         assertEq(address(usdPriceFeedManager.assetPriceAggregator(amplAddress)), address(amplUsdPriceAggregator));
         assertEq(usdPriceFeedManager.assetPriceAggregatorMultiplier(amplAddress), 1);
         assertEq(usdPriceFeedManager.assetValidity(amplAddress), true);
+    }
+
+    function test_setAsset_shouldRevertWhenNotCalledByAdmin() public {
+        vm.prank(address(0x123));
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SPOOL_ADMIN, address(0x123)));
+        usdPriceFeedManager.setAsset(daiAddress, 18, daiUsdPriceAggregator, true);
     }
 
     function test_assetToUsd_shouldConvert() public {

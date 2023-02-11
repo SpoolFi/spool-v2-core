@@ -3,11 +3,12 @@ pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
 import "../src/external/interfaces/chainlink/AggregatorV3Interface.sol";
+import "../src/access/SpoolAccessControl.sol";
 import "../src/libraries/SpoolUtils.sol";
+import "../src/managers/DepositManager.sol";
 import "../src/managers/UsdPriceFeedManager.sol";
 import "./libraries/Arrays.sol";
 import "./mocks/MockAggregatorV3.sol";
-import "../src/managers/DepositManager.sol";
 
 contract depositManagerIntegrationTest is Test {
     uint256 daiDecimals = 18;
@@ -24,15 +25,18 @@ contract depositManagerIntegrationTest is Test {
     DepositManager depositManager;
 
     function setUp() public {
+        SpoolAccessControl accessControl = new SpoolAccessControl();
+        accessControl.initialize();
+
         depositManager = new DepositManager(
             IStrategyRegistry(address(0)),
             IUsdPriceFeedManager(address(0)),
             IGuardManager(address(0)),
             IActionManager(address(0)),
-            ISpoolAccessControl(address(0))
+            accessControl
         );
 
-        usdPriceFeedManager = new UsdPriceFeedManager();
+        usdPriceFeedManager = new UsdPriceFeedManager(accessControl);
 
         daiUsdPriceAggregator = new MockAggregatorV3(8, "Dai-Usd", 1);
         usdcUsdPriceAggregator = new MockAggregatorV3(8, "Usdc-Usd", 1);

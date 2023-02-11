@@ -49,7 +49,7 @@ contract Swapper is ISwapper, SpoolAccessControllable {
 
     function updateExchangeAllowlist(address[] calldata exchanges, bool[] calldata allowed)
         external
-        onlyRole(ROLE_SWAPPER_ADMIN, msg.sender)
+        onlyRole(ROLE_SPOOL_ADMIN, msg.sender)
     {
         if (exchanges.length != allowed.length) {
             revert InvalidArrayLength();
