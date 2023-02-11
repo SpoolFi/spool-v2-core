@@ -57,6 +57,13 @@ bytes32 constant ROLE_MASTER_WALLET_MANAGER = keccak256("MASTER_WALLET_MANAGER")
 bytes32 constant ROLE_SMART_VAULT_MANAGER = keccak256("SMART_VAULT_MANAGER");
 
 /**
+ * @dev Marks a contract as a strategy registry.
+ *
+ * Should be granted to the StrategyRegistry contract.
+ */
+bytes32 constant ROLE_STRATEGY_REGISTRY = keccak256("STRATEGY_REGISTRY");
+
+/**
  * @dev Grants permission to act as a risk provider.
  *
  * Should be granted to whoever is allowed to provide risk scores.
@@ -114,3 +121,8 @@ bytes32 constant ROLE_SMART_VAULT_ALLOW_REDEEM = keccak256("SMART_VAULT_ALLOW_RE
  * @dev Grants permission to manage role ROLE_SMART_VAULT_ALLOW_REDEEM.
  */
 bytes32 constant ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM = keccak256("ADMIN_SMART_VAULT_ALLOW_REDEEM");
+
+/**
+ * @dev Grants permission to run do hard work.
+ */
+bytes32 constant ROLE_DO_HARD_WORKER = keccak256("DO_HARD_WORKER");

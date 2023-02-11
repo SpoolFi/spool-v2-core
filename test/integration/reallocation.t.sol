@@ -28,11 +28,11 @@ contract ReallocationIntegrationTest is Test {
     address private alice;
 
     address private reallocator;
+    address private doHardWorker;
     address private riskProvider;
 
     MockToken private tokenA;
     MockToken private tokenB;
-    MockToken private tokenC;
 
     SmartVaultManager private smartVaultManager;
     StrategyRegistry private strategyRegistry;
@@ -49,7 +49,6 @@ contract ReallocationIntegrationTest is Test {
 
         tokenA = new MockToken("Token A", "TA");
         tokenB = new MockToken("Token B", "TB");
-        tokenC = new MockToken("Token C", "TC");
 
         accessControl = new SpoolAccessControl();
         accessControl.initialize();
@@ -58,18 +57,21 @@ contract ReallocationIntegrationTest is Test {
         accessControl.grantRole(ROLE_REALLOCATOR, reallocator);
         riskProvider = address(0x2);
         IStrategy ghostStrategy = new GhostStrategy();
+        doHardWorker = address(0x3);
+        accessControl.grantRole(ROLE_DO_HARD_WORKER, doHardWorker);
 
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
 
         masterWallet = new MasterWallet(accessControl);
 
         assetGroupRegistry = new AssetGroupRegistry(accessControl);
-        assetGroupRegistry.initialize(Arrays.toArray(address(tokenA), address(tokenB), address(tokenC)));
+        assetGroupRegistry.initialize(Arrays.toArray(address(tokenA), address(tokenB)));
 
         priceFeedManager = new MockPriceFeedManager();
 
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager, address(ghostStrategy));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
+        accessControl.grantRole(ROLE_STRATEGY_REGISTRY, address(strategyRegistry));
         accessControl.grantRole(ADMIN_ROLE_STRATEGY, address(strategyRegistry));
 
         IActionManager actionManager = new ActionManager(accessControl);
@@ -120,7 +122,77 @@ contract ReallocationIntegrationTest is Test {
 
         deal(address(tokenA), alice, 1000 ether, true);
         deal(address(tokenB), alice, 1000 ether, true);
-        deal(address(tokenC), alice, 1000 ether, true);
+    }
+
+    function generateDhwParameterBag(address[] memory strategies, address[] memory assetGroup)
+        private
+        view
+        returns (DoHardWorkParameterBag memory)
+    {
+        address[][] memory strategyGroups = new address[][](1);
+        strategyGroups[0] = strategies;
+
+        SwapInfo[][][] memory swapInfo = new SwapInfo[][][](1);
+        swapInfo[0] = new SwapInfo[][](strategies.length);
+        SwapInfo[][][] memory compoundSwapInfo = new SwapInfo[][][](1);
+        compoundSwapInfo[0] = new SwapInfo[][](strategies.length);
+
+        uint256[][][] memory strategySlippages = new uint256[][][](1);
+        strategySlippages[0] = new uint256[][](strategies.length);
+
+        for (uint256 i; i < strategies.length; ++i) {
+            swapInfo[0][i] = new SwapInfo[](0);
+            compoundSwapInfo[0][i] = new SwapInfo[](0);
+            strategySlippages[0][i] = new uint256[](0);
+        }
+
+        uint256[2][] memory exchangeRateSlippages = new uint256[2][](assetGroup.length);
+
+        for (uint256 i; i < assetGroup.length; ++i) {
+            exchangeRateSlippages[i][0] = priceFeedManager.exchangeRates(assetGroup[i]);
+            exchangeRateSlippages[i][1] = priceFeedManager.exchangeRates(assetGroup[i]);
+        }
+
+        return DoHardWorkParameterBag({
+            strategies: strategyGroups,
+            swapInfo: swapInfo,
+            compoundSwapInfo: compoundSwapInfo,
+            strategySlippages: strategySlippages,
+            tokens: assetGroup,
+            exchangeRateSlippages: exchangeRateSlippages
+        });
+    }
+
+    function generateReallocateParamBag(
+        address[] memory smartVaults,
+        address[] memory strategies,
+        address[] memory assetGroup
+    ) private view returns (ReallocateParamBag memory) {
+        SwapInfo[][] memory reallocationSwapInfo = new SwapInfo[][](strategies.length);
+        uint256[][] memory depositSlippages = new uint256[][](strategies.length);
+        uint256[][] memory withdrawalSlippages = new uint256[][](strategies.length);
+
+        for (uint256 i; i < strategies.length; ++i) {
+            reallocationSwapInfo[i] = new SwapInfo[](0);
+
+            depositSlippages[i] = new uint256[](0);
+            withdrawalSlippages[i] = new uint256[](0);
+        }
+
+        uint256[2][] memory exchangeRateSlippages = new uint256[2][](assetGroup.length);
+        for (uint256 i; i < assetGroup.length; ++i) {
+            exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(assetGroup[i]);
+            exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(assetGroup[i]);
+        }
+
+        return ReallocateParamBag({
+            smartVaults: smartVaults,
+            strategies: strategies,
+            swapInfo: reallocationSwapInfo,
+            depositSlippages: depositSlippages,
+            withdrawalSlippages: withdrawalSlippages,
+            exchangeRateSlippages: exchangeRateSlippages
+        });
     }
 
     function _getSmartVaultSpecification() private view returns (SmartVaultSpecification memory) {
@@ -166,11 +238,11 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyA;
         MockStrategy strategyB;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
         }
@@ -209,10 +281,14 @@ contract ReallocationIntegrationTest is Test {
             // flush, DHW, sync
             smartVaultManager.flushSmartVault(address(smartVaultA));
 
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](2);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            dhwSwapInfo[1] = new SwapInfo[](0);
-            strategyRegistry.doHardWork(Arrays.toArray(address(strategyA), address(strategyB)), dhwSwapInfo);
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(
+                generateDhwParameterBag(
+                    Arrays.toArray(address(strategyA), address(strategyB)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
+            );
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
 
@@ -255,7 +331,11 @@ contract ReallocationIntegrationTest is Test {
         // reallocate
         vm.startPrank(reallocator);
         smartVaultManager.reallocate(
-            Arrays.toArray(address(smartVaultA)), Arrays.toArray(address(strategyA), address(strategyB))
+            generateReallocateParamBag(
+                Arrays.toArray(address(smartVaultA)),
+                Arrays.toArray(address(strategyA), address(strategyB)),
+                assetGroupRegistry.listAssetGroup(assetGroupId)
+            )
         );
         vm.stopPrank();
 
@@ -309,15 +389,15 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
             strategyC.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
@@ -356,13 +436,14 @@ contract ReallocationIntegrationTest is Test {
             // flush, DHW, sync
             smartVaultManager.flushSmartVault(address(smartVaultA));
 
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            dhwSwapInfo[1] = new SwapInfo[](0);
-            dhwSwapInfo[2] = new SwapInfo[](0);
+            vm.startPrank(doHardWorker);
             strategyRegistry.doHardWork(
-                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+                generateDhwParameterBag(
+                    Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
             );
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
 
@@ -409,8 +490,11 @@ contract ReallocationIntegrationTest is Test {
         // reallocate
         vm.startPrank(reallocator);
         smartVaultManager.reallocate(
-            Arrays.toArray(address(smartVaultA)),
-            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+            generateReallocateParamBag(
+                Arrays.toArray(address(smartVaultA)),
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                assetGroupRegistry.listAssetGroup(assetGroupId)
+            )
         );
         vm.stopPrank();
 
@@ -467,15 +551,15 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
             strategyC.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
@@ -514,13 +598,14 @@ contract ReallocationIntegrationTest is Test {
             // flush, DHW, sync
             smartVaultManager.flushSmartVault(address(smartVaultA));
 
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            dhwSwapInfo[1] = new SwapInfo[](0);
-            dhwSwapInfo[2] = new SwapInfo[](0);
+            vm.startPrank(doHardWorker);
             strategyRegistry.doHardWork(
-                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+                generateDhwParameterBag(
+                    Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
             );
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
 
@@ -567,8 +652,11 @@ contract ReallocationIntegrationTest is Test {
         // reallocate
         vm.startPrank(reallocator);
         smartVaultManager.reallocate(
-            Arrays.toArray(address(smartVaultA)),
-            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+            generateReallocateParamBag(
+                Arrays.toArray(address(smartVaultA)),
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                assetGroupRegistry.listAssetGroup(assetGroupId)
+            )
         );
         vm.stopPrank();
 
@@ -625,15 +713,15 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
             strategyC.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
@@ -672,13 +760,14 @@ contract ReallocationIntegrationTest is Test {
             // flush, DHW, sync
             smartVaultManager.flushSmartVault(address(smartVaultA));
 
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            dhwSwapInfo[1] = new SwapInfo[](0);
-            dhwSwapInfo[2] = new SwapInfo[](0);
+            vm.startPrank(doHardWorker);
             strategyRegistry.doHardWork(
-                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+                generateDhwParameterBag(
+                    Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
             );
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
 
@@ -725,8 +814,11 @@ contract ReallocationIntegrationTest is Test {
         // reallocate
         vm.startPrank(reallocator);
         smartVaultManager.reallocate(
-            Arrays.toArray(address(smartVaultA)),
-            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+            generateReallocateParamBag(
+                Arrays.toArray(address(smartVaultA)),
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                assetGroupRegistry.listAssetGroup(assetGroupId)
+            )
         );
         vm.stopPrank();
 
@@ -786,15 +878,15 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
             strategyC.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
@@ -846,13 +938,14 @@ contract ReallocationIntegrationTest is Test {
             smartVaultManager.flushSmartVault(address(smartVaultA));
             smartVaultManager.flushSmartVault(address(smartVaultB));
 
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            dhwSwapInfo[1] = new SwapInfo[](0);
-            dhwSwapInfo[2] = new SwapInfo[](0);
+            vm.startPrank(doHardWorker);
             strategyRegistry.doHardWork(
-                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+                generateDhwParameterBag(
+                    Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
             );
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -907,8 +1000,11 @@ contract ReallocationIntegrationTest is Test {
         // reallocate
         vm.startPrank(reallocator);
         smartVaultManager.reallocate(
-            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
-            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+            generateReallocateParamBag(
+                Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                assetGroupRegistry.listAssetGroup(assetGroupId)
+            )
         );
         vm.stopPrank();
 
@@ -976,15 +1072,15 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
             strategyC.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
@@ -1036,13 +1132,14 @@ contract ReallocationIntegrationTest is Test {
             smartVaultManager.flushSmartVault(address(smartVaultA));
             smartVaultManager.flushSmartVault(address(smartVaultB));
 
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            dhwSwapInfo[1] = new SwapInfo[](0);
-            dhwSwapInfo[2] = new SwapInfo[](0);
+            vm.startPrank(doHardWorker);
             strategyRegistry.doHardWork(
-                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+                generateDhwParameterBag(
+                    Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
             );
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -1097,8 +1194,11 @@ contract ReallocationIntegrationTest is Test {
         // reallocate
         vm.startPrank(reallocator);
         smartVaultManager.reallocate(
-            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
-            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+            generateReallocateParamBag(
+                Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                assetGroupRegistry.listAssetGroup(assetGroupId)
+            )
         );
         vm.stopPrank();
 
@@ -1166,15 +1266,15 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
             strategyC.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
@@ -1226,13 +1326,14 @@ contract ReallocationIntegrationTest is Test {
             smartVaultManager.flushSmartVault(address(smartVaultA));
             smartVaultManager.flushSmartVault(address(smartVaultB));
 
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            dhwSwapInfo[1] = new SwapInfo[](0);
-            dhwSwapInfo[2] = new SwapInfo[](0);
+            vm.startPrank(doHardWorker);
             strategyRegistry.doHardWork(
-                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+                generateDhwParameterBag(
+                    Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
             );
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -1287,8 +1388,11 @@ contract ReallocationIntegrationTest is Test {
         // reallocate
         vm.startPrank(reallocator);
         smartVaultManager.reallocate(
-            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
-            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+            generateReallocateParamBag(
+                Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                assetGroupRegistry.listAssetGroup(assetGroupId)
+            )
         );
         vm.stopPrank();
 
@@ -1358,15 +1462,15 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
             strategyC.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
@@ -1418,13 +1522,14 @@ contract ReallocationIntegrationTest is Test {
             smartVaultManager.flushSmartVault(address(smartVaultA));
             smartVaultManager.flushSmartVault(address(smartVaultB));
 
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            dhwSwapInfo[1] = new SwapInfo[](0);
-            dhwSwapInfo[2] = new SwapInfo[](0);
+            vm.startPrank(doHardWorker);
             strategyRegistry.doHardWork(
-                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+                generateDhwParameterBag(
+                    Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
             );
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -1481,8 +1586,11 @@ contract ReallocationIntegrationTest is Test {
         // reallocate
         vm.startPrank(reallocator);
         smartVaultManager.reallocate(
-            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
-            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+            generateReallocateParamBag(
+                Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                assetGroupRegistry.listAssetGroup(assetGroupId)
+            )
         );
         vm.stopPrank();
 
@@ -1554,15 +1662,15 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
             strategyC.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
@@ -1614,13 +1722,14 @@ contract ReallocationIntegrationTest is Test {
             smartVaultManager.flushSmartVault(address(smartVaultA));
             smartVaultManager.flushSmartVault(address(smartVaultB));
 
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            dhwSwapInfo[1] = new SwapInfo[](0);
-            dhwSwapInfo[2] = new SwapInfo[](0);
+            vm.startPrank(doHardWorker);
             strategyRegistry.doHardWork(
-                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+                generateDhwParameterBag(
+                    Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
             );
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -1677,8 +1786,11 @@ contract ReallocationIntegrationTest is Test {
         // reallocate
         vm.startPrank(reallocator);
         smartVaultManager.reallocate(
-            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
-            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+            generateReallocateParamBag(
+                Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                assetGroupRegistry.listAssetGroup(assetGroupId)
+            )
         );
         vm.stopPrank();
 
@@ -1750,15 +1862,15 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
             strategyC.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
@@ -1810,13 +1922,14 @@ contract ReallocationIntegrationTest is Test {
             smartVaultManager.flushSmartVault(address(smartVaultA));
             smartVaultManager.flushSmartVault(address(smartVaultB));
 
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            dhwSwapInfo[1] = new SwapInfo[](0);
-            dhwSwapInfo[2] = new SwapInfo[](0);
+            vm.startPrank(doHardWorker);
             strategyRegistry.doHardWork(
-                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+                generateDhwParameterBag(
+                    Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
             );
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -1873,8 +1986,11 @@ contract ReallocationIntegrationTest is Test {
         // reallocate
         vm.startPrank(reallocator);
         smartVaultManager.reallocate(
-            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
-            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+            generateReallocateParamBag(
+                Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                assetGroupRegistry.listAssetGroup(assetGroupId)
+            )
         );
         vm.stopPrank();
 
@@ -1946,15 +2062,15 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
             strategyC.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
@@ -2006,13 +2122,14 @@ contract ReallocationIntegrationTest is Test {
             smartVaultManager.flushSmartVault(address(smartVaultA));
             smartVaultManager.flushSmartVault(address(smartVaultB));
 
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            dhwSwapInfo[1] = new SwapInfo[](0);
-            dhwSwapInfo[2] = new SwapInfo[](0);
+            vm.startPrank(doHardWorker);
             strategyRegistry.doHardWork(
-                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+                generateDhwParameterBag(
+                    Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
             );
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -2069,8 +2186,11 @@ contract ReallocationIntegrationTest is Test {
         // reallocate
         vm.startPrank(reallocator);
         smartVaultManager.reallocate(
-            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
-            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+            generateReallocateParamBag(
+                Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                assetGroupRegistry.listAssetGroup(assetGroupId)
+            )
         );
         vm.stopPrank();
 
@@ -2142,15 +2262,15 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
             strategyC.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
@@ -2202,13 +2322,14 @@ contract ReallocationIntegrationTest is Test {
             smartVaultManager.flushSmartVault(address(smartVaultA));
             smartVaultManager.flushSmartVault(address(smartVaultB));
 
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            dhwSwapInfo[1] = new SwapInfo[](0);
-            dhwSwapInfo[2] = new SwapInfo[](0);
+            vm.startPrank(doHardWorker);
             strategyRegistry.doHardWork(
-                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+                generateDhwParameterBag(
+                    Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
             );
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -2265,8 +2386,11 @@ contract ReallocationIntegrationTest is Test {
         // reallocate
         vm.startPrank(reallocator);
         smartVaultManager.reallocate(
-            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
-            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+            generateReallocateParamBag(
+                Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                assetGroupRegistry.listAssetGroup(assetGroupId)
+            )
         );
         vm.stopPrank();
 
@@ -2339,16 +2463,16 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
             strategyA.setWithdrawalFee(20_00);
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
             strategyC.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
@@ -2400,13 +2524,14 @@ contract ReallocationIntegrationTest is Test {
             smartVaultManager.flushSmartVault(address(smartVaultA));
             smartVaultManager.flushSmartVault(address(smartVaultB));
 
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            dhwSwapInfo[1] = new SwapInfo[](0);
-            dhwSwapInfo[2] = new SwapInfo[](0);
+            vm.startPrank(doHardWorker);
             strategyRegistry.doHardWork(
-                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+                generateDhwParameterBag(
+                    Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
             );
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -2463,8 +2588,11 @@ contract ReallocationIntegrationTest is Test {
         // reallocate
         vm.startPrank(reallocator);
         smartVaultManager.reallocate(
-            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
-            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+            generateReallocateParamBag(
+                Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                assetGroupRegistry.listAssetGroup(assetGroupId)
+            )
         );
         vm.stopPrank();
 
@@ -2538,16 +2666,16 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
             strategyA.setWithdrawalFee(20_00);
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
             strategyC.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
@@ -2599,13 +2727,14 @@ contract ReallocationIntegrationTest is Test {
             smartVaultManager.flushSmartVault(address(smartVaultA));
             smartVaultManager.flushSmartVault(address(smartVaultB));
 
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            dhwSwapInfo[1] = new SwapInfo[](0);
-            dhwSwapInfo[2] = new SwapInfo[](0);
+            vm.startPrank(doHardWorker);
             strategyRegistry.doHardWork(
-                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+                generateDhwParameterBag(
+                    Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
             );
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -2662,8 +2791,11 @@ contract ReallocationIntegrationTest is Test {
         // reallocate
         vm.startPrank(reallocator);
         smartVaultManager.reallocate(
-            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
-            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+            generateReallocateParamBag(
+                Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                assetGroupRegistry.listAssetGroup(assetGroupId)
+            )
         );
         vm.stopPrank();
 
@@ -2737,15 +2869,15 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
             strategyC.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
@@ -2797,13 +2929,14 @@ contract ReallocationIntegrationTest is Test {
             smartVaultManager.flushSmartVault(address(smartVaultA));
             smartVaultManager.flushSmartVault(address(smartVaultB));
 
-            SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-            dhwSwapInfo[0] = new SwapInfo[](0);
-            dhwSwapInfo[1] = new SwapInfo[](0);
-            dhwSwapInfo[2] = new SwapInfo[](0);
+            vm.startPrank(doHardWorker);
             strategyRegistry.doHardWork(
-                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)), dhwSwapInfo
+                generateDhwParameterBag(
+                    Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
             );
+            vm.stopPrank();
 
             smartVaultManager.syncSmartVault(address(smartVaultA), true);
             smartVaultManager.syncSmartVault(address(smartVaultB), true);
@@ -2863,8 +2996,11 @@ contract ReallocationIntegrationTest is Test {
         // reallocate
         vm.startPrank(reallocator);
         smartVaultManager.reallocate(
-            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
-            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC))
+            generateReallocateParamBag(
+                Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+                Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+                assetGroupRegistry.listAssetGroup(assetGroupId)
+            )
         );
         vm.stopPrank();
 
@@ -2918,11 +3054,11 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyA;
         MockStrategy strategyB;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
         }
@@ -2944,10 +3080,13 @@ contract ReallocationIntegrationTest is Test {
 
         // reallocate
         vm.startPrank(alice);
-        address[] memory smartVaults = Arrays.toArray(address(smartVaultA));
-        address[] memory strategies = Arrays.toArray(address(strategyA), address(strategyB));
+        ReallocateParamBag memory reallocationParams = generateReallocateParamBag(
+            Arrays.toArray(address(smartVaultA)),
+            Arrays.toArray(address(strategyA), address(strategyB)),
+            assetGroupRegistry.listAssetGroup(assetGroupId)
+        );
         vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_REALLOCATOR, alice));
-        smartVaultManager.reallocate(smartVaults, strategies);
+        smartVaultManager.reallocate(reallocationParams);
         vm.stopPrank();
     }
 
@@ -2967,11 +3106,11 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyA;
         MockStrategy strategyB;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
         }
@@ -2996,10 +3135,13 @@ contract ReallocationIntegrationTest is Test {
 
         // reallocate
         vm.startPrank(reallocator);
-        address[] memory smartVaults = Arrays.toArray(address(smartVaultA));
-        address[] memory strategies = Arrays.toArray(address(strategyA), address(strategyB));
+        ReallocateParamBag memory reallocationParams = generateReallocateParamBag(
+            Arrays.toArray(address(smartVaultA)),
+            Arrays.toArray(address(strategyA), address(strategyB)),
+            assetGroupRegistry.listAssetGroup(assetGroupId)
+        );
         vm.expectRevert(SystemPaused.selector);
-        smartVaultManager.reallocate(smartVaults, strategies);
+        smartVaultManager.reallocate(reallocationParams);
         vm.stopPrank();
     }
 
@@ -3016,11 +3158,11 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyA;
         MockStrategy strategyB;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
         }
@@ -3045,10 +3187,13 @@ contract ReallocationIntegrationTest is Test {
 
         // reallocate
         vm.startPrank(reallocator);
-        address[] memory smartVaults = Arrays.toArray(address(smartVaultA), address(smartVaultB));
-        address[] memory strategies = Arrays.toArray(address(strategyA), address(strategyB));
+        ReallocateParamBag memory reallocationParams = generateReallocateParamBag(
+            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+            Arrays.toArray(address(strategyA), address(strategyB)),
+            assetGroupRegistry.listAssetGroup(assetGroupId)
+        );
         vm.expectRevert(SmartVaultNotRegisteredYet.selector);
-        smartVaultManager.reallocate(smartVaults, strategies);
+        smartVaultManager.reallocate(reallocationParams);
         vm.stopPrank();
     }
 
@@ -3066,15 +3211,15 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
             strategyC.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
@@ -3096,17 +3241,23 @@ contract ReallocationIntegrationTest is Test {
 
         // reallocate
         vm.startPrank(reallocator);
-        address[] memory smartVaults = Arrays.toArray(address(smartVaultA));
-        address[] memory strategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
+        ReallocateParamBag memory reallocationParams = generateReallocateParamBag(
+            Arrays.toArray(address(smartVaultA)),
+            Arrays.toArray(address(strategyA), address(strategyB), address(strategyC)),
+            assetGroupRegistry.listAssetGroup(assetGroupId)
+        );
         vm.expectRevert(InvalidStrategies.selector);
-        smartVaultManager.reallocate(smartVaults, strategies);
+        smartVaultManager.reallocate(reallocationParams);
         vm.stopPrank();
 
         vm.startPrank(reallocator);
-        smartVaults = Arrays.toArray(address(smartVaultA));
-        strategies = Arrays.toArray(address(strategyA));
+        reallocationParams = generateReallocateParamBag(
+            Arrays.toArray(address(smartVaultA)),
+            Arrays.toArray(address(strategyA)),
+            assetGroupRegistry.listAssetGroup(assetGroupId)
+        );
         vm.expectRevert(InvalidStrategies.selector);
-        smartVaultManager.reallocate(smartVaults, strategies);
+        smartVaultManager.reallocate(reallocationParams);
         vm.stopPrank();
     }
 
@@ -3126,11 +3277,11 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyA;
         MockStrategy strategyB;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId1, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId2, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
         }
@@ -3163,10 +3314,13 @@ contract ReallocationIntegrationTest is Test {
 
         // reallocate
         vm.startPrank(reallocator);
-        address[] memory smartVaults = Arrays.toArray(address(smartVaultA), address(smartVaultB));
-        address[] memory strategies = Arrays.toArray(address(strategyA), address(strategyB));
+        ReallocateParamBag memory reallocationParams = generateReallocateParamBag(
+            Arrays.toArray(address(smartVaultA), address(smartVaultB)),
+            Arrays.toArray(address(strategyA), address(strategyB)),
+            assetGroupRegistry.listAssetGroup(assetGroupId1)
+        );
         vm.expectRevert(NotSameAssetGroup.selector);
-        smartVaultManager.reallocate(smartVaults, strategies);
+        smartVaultManager.reallocate(reallocationParams);
         vm.stopPrank();
     }
 
@@ -3183,11 +3337,11 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyA;
         MockStrategy strategyB;
         {
-            strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
             strategyA.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
             strategyB.initialize(assetGroupId, Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
         }
@@ -3205,10 +3359,13 @@ contract ReallocationIntegrationTest is Test {
 
         // reallocate
         vm.startPrank(reallocator);
-        address[] memory smartVaults = Arrays.toArray(address(smartVaultA));
-        address[] memory strategies = Arrays.toArray(address(strategyA), address(strategyB));
+        ReallocateParamBag memory reallocationParams = generateReallocateParamBag(
+            Arrays.toArray(address(smartVaultA)),
+            Arrays.toArray(address(strategyA), address(strategyB)),
+            assetGroupRegistry.listAssetGroup(assetGroupId)
+        );
         vm.expectRevert(StaticAllocationSmartVault.selector);
-        smartVaultManager.reallocate(smartVaults, strategies);
+        smartVaultManager.reallocate(reallocationParams);
         vm.stopPrank();
     }
 }

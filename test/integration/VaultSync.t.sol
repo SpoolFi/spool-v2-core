@@ -47,14 +47,9 @@ contract VaultSyncTest is IntegrationTestFixture {
         createVault(2_00, 0);
         TestBag memory bag;
         bag.fees = SmartVaultFees(2_00, 0);
-        bag.dhwSwapInfo = new SwapInfo[][](3);
         bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
         vm.startPrank(alice);
-
-        bag.dhwSwapInfo[0] = new SwapInfo[](0);
-        bag.dhwSwapInfo[1] = new SwapInfo[](0);
-        bag.dhwSwapInfo[2] = new SwapInfo[](0);
 
         tokenA.approve(address(smartVaultManager), 100 ether);
         tokenB.approve(address(smartVaultManager), 100 ether);
@@ -64,7 +59,9 @@ contract VaultSyncTest is IntegrationTestFixture {
 
         vm.stopPrank();
 
-        strategyRegistry.doHardWork(smartVaultStrategies, bag.dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
         uint256 dhwTimestamp = block.timestamp;
 
         DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
@@ -100,13 +97,8 @@ contract VaultSyncTest is IntegrationTestFixture {
         createVault(2_00, 0);
         TestBag memory bag;
         bag.fees = SmartVaultFees(2_00, 0);
-        bag.dhwSwapInfo = new SwapInfo[][](3);
         bag.vaultOwner = accessControl.smartVaultOwner(address(smartVault));
         bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
-
-        bag.dhwSwapInfo[0] = new SwapInfo[](0);
-        bag.dhwSwapInfo[1] = new SwapInfo[](0);
-        bag.dhwSwapInfo[2] = new SwapInfo[](0);
 
         vm.startPrank(alice);
 
@@ -114,7 +106,9 @@ contract VaultSyncTest is IntegrationTestFixture {
         smartVaultManager.deposit(DepositBag(address(smartVault), bag.depositAmounts, alice, address(0), true));
         vm.stopPrank();
 
-        strategyRegistry.doHardWork(smartVaultStrategies, bag.dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
         uint256 dhwTimestamp = block.timestamp;
 
         skip(30 * 24 * 60 * 60); // 1 month
@@ -126,7 +120,9 @@ contract VaultSyncTest is IntegrationTestFixture {
         // Should have no fees after syncing first DHW
         assertEq(smartVault.balanceOf(bag.vaultOwner), 0);
 
-        strategyRegistry.doHardWork(smartVaultStrategies, bag.dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
 
         uint256 dhw2Timestamp = block.timestamp;
         uint256 vaultSupplyBefore = smartVault.totalSupply();
@@ -159,10 +155,6 @@ contract VaultSyncTest is IntegrationTestFixture {
 
     function test_syncVault_depositFees() public {
         createVault(0, 3_00);
-        SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-        dhwSwapInfo[0] = new SwapInfo[](0);
-        dhwSwapInfo[1] = new SwapInfo[](0);
-        dhwSwapInfo[2] = new SwapInfo[](0);
 
         {
             vm.startPrank(alice);
@@ -173,7 +165,9 @@ contract VaultSyncTest is IntegrationTestFixture {
             smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), true));
             vm.stopPrank();
 
-            strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+            vm.stopPrank();
         }
 
         // Run simulations
@@ -206,17 +200,15 @@ contract VaultSyncTest is IntegrationTestFixture {
         vm.clearMockedCalls();
 
         bag.fees = SmartVaultFees(0, 0);
-        bag.dhwSwapInfo = new SwapInfo[][](3);
         bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
-
-        bag.dhwSwapInfo[0] = new SwapInfo[](0);
-        bag.dhwSwapInfo[1] = new SwapInfo[](0);
-        bag.dhwSwapInfo[2] = new SwapInfo[](0);
 
         vm.prank(alice);
         uint256 nftId =
             smartVaultManager.deposit(DepositBag(address(smartVault), bag.depositAmounts, alice, address(0), true));
-        strategyRegistry.doHardWork(smartVaultStrategies, bag.dhwSwapInfo);
+
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
 
         uint256 aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
         vm.startPrank(alice);
@@ -227,7 +219,9 @@ contract VaultSyncTest is IntegrationTestFixture {
         );
         vm.stopPrank();
 
-        strategyRegistry.doHardWork(smartVaultStrategies, bag.dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
 
         vm.startPrank(alice);
         (uint256[] memory withdrawnAssets,) = smartVaultManager.claimWithdrawal(

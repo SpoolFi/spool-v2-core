@@ -5,26 +5,27 @@ import "forge-std/Test.sol";
 import "../mocks/MockGuard.sol";
 import "../mocks/MockToken.sol";
 import "../mocks/MockPriceFeedManager.sol";
-import "../../src/managers/GuardManager.sol";
-import "../../src/managers/SmartVaultManager.sol";
+import "../../src/access/SpoolAccessControl.sol";
+import "../../src/libraries/uint16a16Lib.sol";
 import "../../src/managers/ActionManager.sol";
 import "../../src/managers/AssetGroupRegistry.sol";
-import "../../src/MasterWallet.sol";
-import "../../src/managers/StrategyRegistry.sol";
-import "../../src/managers/RiskManager.sol";
 import "../../src/managers/DepositManager.sol";
+import "../../src/managers/GuardManager.sol";
+import "../../src/managers/RiskManager.sol";
+import "../../src/managers/SmartVaultManager.sol";
+import "../../src/managers/StrategyRegistry.sol";
 import "../../src/managers/WithdrawalManager.sol";
-import "../../src/access/SpoolAccessControl.sol";
 import "../../src/providers/UniformAllocationProvider.sol";
-import "../../src/libraries/uint16a16Lib.sol";
+import "../../src/strategies/GhostStrategy.sol";
+import "../../src/MasterWallet.sol";
 import "../../src/SmartVaultFactory.sol";
 import "../../src/Swapper.sol";
-import "../../src/strategies/GhostStrategy.sol";
 
 contract TestFixture is Test {
     using uint16a16Lib for uint16a16;
 
-    address internal riskProvider = address(0x1);
+    address internal riskProvider = address(0x111);
+    address internal doHardWorker = address(0x222);
 
     MockGuard internal guard;
     MockToken internal token;
@@ -96,10 +97,51 @@ contract TestFixture is Test {
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(depositManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(withdrawalManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
+        accessControl.grantRole(ROLE_STRATEGY_REGISTRY, address(strategyRegistry));
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(withdrawalManager));
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
+        accessControl.grantRole(ROLE_DO_HARD_WORKER, doHardWorker);
         accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, address(allocationProvider));
         accessControl.grantRole(ADMIN_ROLE_STRATEGY, address(strategyRegistry));
+    }
+
+    function generateDhwParameterBag(address[] memory strategies, address[] memory assetGroup)
+        internal
+        view
+        returns (DoHardWorkParameterBag memory)
+    {
+        address[][] memory strategyGroups = new address[][](1);
+        strategyGroups[0] = strategies;
+
+        SwapInfo[][][] memory swapInfo = new SwapInfo[][][](1);
+        swapInfo[0] = new SwapInfo[][](strategies.length);
+        SwapInfo[][][] memory compoundSwapInfo = new SwapInfo[][][](1);
+        compoundSwapInfo[0] = new SwapInfo[][](strategies.length);
+
+        uint256[][][] memory strategySlippages = new uint256[][][](1);
+        strategySlippages[0] = new uint256[][](strategies.length);
+
+        for (uint256 i; i < strategies.length; ++i) {
+            swapInfo[0][i] = new SwapInfo[](0);
+            compoundSwapInfo[0][i] = new SwapInfo[](0);
+            strategySlippages[0][i] = new uint256[](0);
+        }
+
+        uint256[2][] memory exchangeRateSlippages = new uint256[2][](assetGroup.length);
+
+        for (uint256 i; i < assetGroup.length; ++i) {
+            exchangeRateSlippages[i][0] = priceFeedManager.exchangeRates(assetGroup[i]);
+            exchangeRateSlippages[i][1] = priceFeedManager.exchangeRates(assetGroup[i]);
+        }
+
+        return DoHardWorkParameterBag({
+            strategies: strategyGroups,
+            swapInfo: swapInfo,
+            compoundSwapInfo: compoundSwapInfo,
+            strategySlippages: strategySlippages,
+            tokens: assetGroup,
+            exchangeRateSlippages: exchangeRateSlippages
+        });
     }
 }

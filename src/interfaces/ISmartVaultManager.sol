@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
-import "./ISmartVault.sol";
 import "./IDepositManager.sol";
+import "./ISmartVault.sol";
+import "./ISwapper.sol";
 import "./IWithdrawalManager.sol";
 
 /* ========== ERRORS ========== */
@@ -96,27 +97,25 @@ struct SmartVaultRegistrationForm {
     uint16 depositFeePct;
 }
 
-/* ========== INTERFACES ========== */
-
-interface ISmartVaultReallocator {
-    function allocations(address smartVault) external view returns (uint16a16);
-
-    function strategies(address smartVault) external view returns (address[] memory);
-
-    function assetGroupId(address smartVault) external view returns (uint256 assetGroupId_);
-
-    /**
-     * @notice Reallocates smart vaults.
-     * @dev Requirements:
-     * - caller must have a ROLE_REALLOCATOR role
-     * - smart vaults must be registered
-     * - smart vaults must use same asset group
-     * - strategies must represent a set of strategies used by smart vaults
-     * @param smartVaults Smart vaults to reallocate.
-     * @param strategies_ Set of strategies involved in the reallocation.
-     */
-    function reallocate(address[] calldata smartVaults, address[] calldata strategies_) external;
+/**
+ * @notice Parameters for reallocation.
+ * @param smartVaults Smart vaults to reallocate.
+ * @param strategies Set of strategies involved in the reallocation.
+ * @param swapInfo Information for swapping assets before depositing into the protocol.
+ * @param depositSlippages Slippages used to constrain depositing into the protocol.
+ * @param withdrawalSlippages Slippages used to contrain withdrawal from the protocol.
+ * @param exchangeRateSlippages Slippages used to constratrain exchange rates for asset tokens.
+ */
+struct ReallocateParamBag {
+    address[] smartVaults;
+    address[] strategies;
+    SwapInfo[][] swapInfo;
+    uint256[][] depositSlippages;
+    uint256[][] withdrawalSlippages;
+    uint256[2][] exchangeRateSlippages;
 }
+
+/* ========== INTERFACES ========== */
 
 interface ISmartVaultBalance {
     /**
@@ -159,7 +158,16 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
 
     function flushSmartVault(address smartVault) external;
 
-    function reallocate(address[] calldata smartVaults, address[] calldata strategies_) external;
+    /**
+     * @notice Reallocates smart vaults.
+     * @dev Requirements:
+     * - caller must have a ROLE_REALLOCATOR role
+     * - smart vaults must be registered
+     * - smart vaults must use same asset group
+     * - strategies must represent a set of strategies used by smart vaults
+     * @param reallocateParams Paramaters for reallocation.
+     */
+    function reallocate(ReallocateParamBag calldata reallocateParams) external;
 
     function removeStrategy(address strategy) external;
 
@@ -171,9 +179,16 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
 
     /**
      * @notice Instantly redeems smart vault shares for assets.
+     * @param bag Parameters for fast redeemal.
+     * @param withdrawalSlippages Slippages guarding redeemal.
+     * @param exchangeRateSlippages Slippages used to constrain exchange rates for asset tokens.
      * @return withdrawnAssets Amount of assets withdrawn.
      */
-    function redeemFast(RedeemBag calldata bag) external returns (uint256[] memory withdrawnAssets);
+    function redeemFast(
+        RedeemBag calldata bag,
+        uint256[][] calldata withdrawalSlippages,
+        uint256[2][] calldata exchangeRateSlippages
+    ) external returns (uint256[] memory withdrawnAssets);
 
     /**
      * @notice Claims withdrawal of assets by burning withdrawal NFT.

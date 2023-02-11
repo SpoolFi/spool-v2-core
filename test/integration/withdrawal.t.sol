@@ -28,8 +28,11 @@ contract WithdrawalIntegrationTest is Test {
     address private alice;
     address private bob;
 
+    address doHardWorker;
+
     MockToken tokenA;
     MockToken tokenB;
+    address[] assetGroup;
 
     MockStrategy strategyA;
     MockStrategy strategyB;
@@ -44,12 +47,14 @@ contract WithdrawalIntegrationTest is Test {
     SpoolAccessControl accessControl;
     IDepositManager depositManager;
     IWithdrawalManager withdrawalManager;
+    MockPriceFeedManager priceFeedManager;
 
     function setUp() public {
         alice = address(0xa);
         bob = address(0xb);
 
         address riskProvider = address(0x1);
+        doHardWorker = address(0x2);
 
         tokenA = new MockToken("Token A", "TA");
         tokenB = new MockToken("Token B", "TB");
@@ -60,7 +65,7 @@ contract WithdrawalIntegrationTest is Test {
 
         swapper = new Swapper(accessControl);
 
-        address[] memory assetGroup = new address[](2);
+        assetGroup = new address[](2);
         assetGroup[0] = address(tokenA);
         assetGroup[1] = address(tokenB);
         assetGroupRegistry = new AssetGroupRegistry(accessControl);
@@ -68,7 +73,7 @@ contract WithdrawalIntegrationTest is Test {
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
         IStrategy ghostStrategy = new GhostStrategy();
-        IUsdPriceFeedManager priceFeedManager = new MockPriceFeedManager();
+        priceFeedManager = new MockPriceFeedManager();
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager, address(ghostStrategy));
         IActionManager actionManager = new ActionManager(accessControl);
         IGuardManager guardManager = new GuardManager(accessControl);
@@ -92,7 +97,7 @@ contract WithdrawalIntegrationTest is Test {
 
         accessControl.grantRole(ADMIN_ROLE_STRATEGY, address(strategyRegistry));
 
-        strategyA = new MockStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+        strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
         uint256[] memory strategyRatios = new uint256[](2);
         strategyRatios[0] = 1_000;
         strategyRatios[1] = 68;
@@ -100,17 +105,19 @@ contract WithdrawalIntegrationTest is Test {
         strategyRegistry.registerStrategy(address(strategyA));
 
         strategyRatios[1] = 67;
-        strategyB = new MockStrategy("StratB", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+        strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
         strategyB.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyB));
 
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
+        accessControl.grantRole(ROLE_DO_HARD_WORKER, doHardWorker);
         accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, address(0xabc));
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(withdrawalManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(depositManager));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(withdrawalManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
+        accessControl.grantRole(ROLE_STRATEGY_REGISTRY, address(strategyRegistry));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(withdrawalManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(depositManager));
 
@@ -153,6 +160,45 @@ contract WithdrawalIntegrationTest is Test {
                 })
             );
         }
+    }
+
+    function generateDhwParameterBag(address[] memory strategies, address[] memory assetGroup_)
+        internal
+        view
+        returns (DoHardWorkParameterBag memory)
+    {
+        address[][] memory strategyGroups = new address[][](1);
+        strategyGroups[0] = strategies;
+
+        SwapInfo[][][] memory swapInfo = new SwapInfo[][][](1);
+        swapInfo[0] = new SwapInfo[][](strategies.length);
+        SwapInfo[][][] memory compoundSwapInfo = new SwapInfo[][][](1);
+        compoundSwapInfo[0] = new SwapInfo[][](strategies.length);
+
+        uint256[][][] memory strategySlippages = new uint256[][][](1);
+        strategySlippages[0] = new uint256[][](strategies.length);
+
+        for (uint256 i; i < strategies.length; ++i) {
+            swapInfo[0][i] = new SwapInfo[](0);
+            compoundSwapInfo[0][i] = new SwapInfo[](0);
+            strategySlippages[0][i] = new uint256[](0);
+        }
+
+        uint256[2][] memory exchangeRateSlippages = new uint256[2][](assetGroup_.length);
+
+        for (uint256 i; i < assetGroup_.length; ++i) {
+            exchangeRateSlippages[i][0] = priceFeedManager.exchangeRates(assetGroup_[i]);
+            exchangeRateSlippages[i][1] = priceFeedManager.exchangeRates(assetGroup_[i]);
+        }
+
+        return DoHardWorkParameterBag({
+            strategies: strategyGroups,
+            swapInfo: swapInfo,
+            compoundSwapInfo: compoundSwapInfo,
+            strategySlippages: strategySlippages,
+            tokens: assetGroup,
+            exchangeRateSlippages: exchangeRateSlippages
+        });
     }
 
     function test_shouldBeAbleToWithdraw() public {
@@ -203,12 +249,9 @@ contract WithdrawalIntegrationTest is Test {
         assertEq(strategyB.balanceOf(address(strategyB)), 6_400_000, "12");
 
         // DHW
-
-        SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](2);
-        dhwSwapInfo[0] = new SwapInfo[](0);
-        dhwSwapInfo[1] = new SwapInfo[](0);
-
-        strategyRegistry.doHardWork(mySmartVaultStrategies, dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(mySmartVaultStrategies, assetGroup));
+        vm.stopPrank();
 
         // check state
         // - strategy tokens are burned
@@ -306,9 +349,21 @@ contract WithdrawalIntegrationTest is Test {
         deal(address(tokenB), address(strategyB.protocol()), 0.67 ether, true);
 
         // withdraw fast
+        uint256[][] memory withdrawalSlippages = new uint256[][](2);
+        withdrawalSlippages[0] = new uint256[](0);
+        withdrawalSlippages[1] = new uint256[](0);
+
+        uint256[2][] memory exchangeRateSlippages = new uint256[2][](2);
+        exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(address(tokenA));
+        exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(address(tokenA));
+        exchangeRateSlippages[1][0] = priceFeedManager.exchangeRates(address(tokenB));
+        exchangeRateSlippages[1][1] = priceFeedManager.exchangeRates(address(tokenB));
+
         vm.startPrank(alice);
         uint256[] memory withdrawnAssets = smartVaultManager.redeemFast(
-            RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0))
+            RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0)),
+            withdrawalSlippages,
+            exchangeRateSlippages
         );
 
         // check return

@@ -32,8 +32,7 @@ contract TimelockGuardDemoTest is Test, TestFixture {
         setUpBase();
 
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(token)));
-        MockStrategy strategy =
-            new MockStrategy("Strategy", strategyRegistry, assetGroupRegistry, accessControl, swapper);
+        MockStrategy strategy = new MockStrategy("Strategy", assetGroupRegistry, accessControl, swapper);
         {
             uint256[] memory strategyRatios = new uint256[](1);
             strategyRatios[0] = 1_000;

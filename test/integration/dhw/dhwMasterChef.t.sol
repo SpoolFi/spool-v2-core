@@ -27,6 +27,8 @@ contract DhwMasterChefTest is TestFixture {
     MockMasterChefStrategy strategyA;
     address[] smartVaultStrategies;
 
+    address[] assetGroup;
+
     uint256 rewardsPerSecond;
 
     function setUp() public {
@@ -38,15 +40,17 @@ contract DhwMasterChefTest is TestFixture {
 
         alice = address(0xa);
         bob = address(0xb);
-        uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(token)));
 
-        strategyA =
-            new MockMasterChefStrategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, masterChef, 0);
+        assetGroup = Arrays.toArray(address(token));
+        uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+
+        strategyA = new MockMasterChefStrategy("StratA", assetGroupRegistry, accessControl, masterChef, 0);
         strategyA.initialize(assetGroupId);
         strategyRegistry.registerStrategy(address(strategyA));
 
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
+        accessControl.grantRole(ROLE_STRATEGY_REGISTRY, address(strategyRegistry));
 
         {
             smartVaultStrategies = Arrays.toArray(address(strategyA));
@@ -103,10 +107,9 @@ contract DhwMasterChefTest is TestFixture {
         smartVaultManager.flushSmartVault(address(smartVault));
 
         // DHW - DEPOSIT
-        SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](1);
-        dhwSwapInfo[0] = new SwapInfo[](0);
-
-        strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
 
         // skip 2 seconds to produce 2 * 10**18 yield, only goes to alice
         uint256 firstYieldSeconds = 2;
@@ -145,8 +148,9 @@ contract DhwMasterChefTest is TestFixture {
         smartVaultManager.flushSmartVault(address(smartVault));
 
         // DHW - DEPOSIT
-
-        strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
 
         // skip 2 seconds to produce 10**18 yield, distributes between alice and bob
         uint256 secondYieldSeconds = 1;
@@ -183,10 +187,10 @@ contract DhwMasterChefTest is TestFixture {
             smartVaultManager.flushSmartVault(address(smartVault));
 
             // DHW - WITHDRAW
-            SwapInfo[][] memory dhwSwapInfoWithdraw = new SwapInfo[][](1);
-            dhwSwapInfoWithdraw[0] = new SwapInfo[](0);
             console2.log("doHardWork");
-            strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+            vm.stopPrank();
 
             // sync vault
             console2.log("syncSmartVault");

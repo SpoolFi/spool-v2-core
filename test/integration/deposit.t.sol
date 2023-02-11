@@ -59,12 +59,9 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         smartVaultManager.flushSmartVault(address(smartVault));
 
         // DHW
-        SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-        dhwSwapInfo[0] = new SwapInfo[](0);
-        dhwSwapInfo[1] = new SwapInfo[](0);
-        dhwSwapInfo[2] = new SwapInfo[](0);
-
-        strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
 
         // check state
         // - tokens were routed to the protocol
@@ -136,12 +133,9 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         smartVaultManager.flushSmartVault(address(smartVault));
 
         // DHW
-        SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-        dhwSwapInfo[0] = new SwapInfo[](0);
-        dhwSwapInfo[1] = new SwapInfo[](0);
-        dhwSwapInfo[2] = new SwapInfo[](0);
-
-        strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
 
         // sync vault
         smartVaultManager.syncSmartVault(address(smartVault), true);
@@ -200,11 +194,6 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         vm.stopPrank();
 
         // DHW
-        SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](3);
-        dhwSwapInfo[0] = new SwapInfo[](0);
-        dhwSwapInfo[1] = new SwapInfo[](0);
-        dhwSwapInfo[2] = new SwapInfo[](0);
-
         // balance before DHW should be 0
         aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
         assertEq(smartVault.totalSupply(), 0);
@@ -212,7 +201,9 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         assertEq(smartVault.balanceOf(alice), 0);
         assertEq(aliceBalance, 0);
 
-        strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
 
         // balance after DHW, before vault sync
         // should simulate sync

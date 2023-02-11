@@ -20,12 +20,14 @@ import "../../mocks/MockToken.sol";
 import "../../mocks/MockPriceFeedManager.sol";
 import "../../fixtures/TestFixture.sol";
 
-contract dhwUniswapV2 is TestFixture {
+contract DhwUniswapV2Test is TestFixture {
     address private alice;
     address private bob;
 
     MockToken tokenA;
     MockToken tokenB;
+
+    address[] assetGroup;
 
     UniswapV2Setup uniswapV2Setup;
 
@@ -44,20 +46,20 @@ contract dhwUniswapV2 is TestFixture {
         alice = address(0xa);
         bob = address(0xb);
 
-        address[] memory assetGroup = new address[](2);
+        assetGroup = new address[](2);
         assetGroup[0] = address(tokenA);
         assetGroup[1] = address(tokenB);
         assetGroupRegistry.allowToken(address(tokenA));
         assetGroupRegistry.allowToken(address(tokenB));
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
-        strategyA =
-        new MockUniswapV2Strategy("StratA", strategyRegistry, assetGroupRegistry, accessControl, uniswapV2Setup.router());
+        strategyA = new MockUniswapV2Strategy("StratA", assetGroupRegistry, accessControl, uniswapV2Setup.router());
         strategyA.initialize(assetGroupId);
         strategyRegistry.registerStrategy(address(strategyA));
 
         accessControl.grantRole(ROLE_STRATEGY_CLAIMER, address(smartVaultManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
+        accessControl.grantRole(ROLE_STRATEGY_REGISTRY, address(strategyRegistry));
 
         {
             smartVaultStrategies = Arrays.toArray(address(strategyA));
@@ -116,11 +118,9 @@ contract dhwUniswapV2 is TestFixture {
         smartVaultManager.flushSmartVault(address(smartVault));
 
         // DHW - DEPOSIT
-        SwapInfo[][] memory dhwSwapInfo = new SwapInfo[][](2);
-        dhwSwapInfo[0] = new SwapInfo[](0);
-        dhwSwapInfo[1] = new SwapInfo[](0);
-
-        strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
 
         // produce 50% yield for Alice
         uint256 firstYieldPercentage = 50_00;
@@ -161,8 +161,9 @@ contract dhwUniswapV2 is TestFixture {
         smartVaultManager.flushSmartVault(address(smartVault));
 
         // DHW - DEPOSIT
-
-        strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
 
         // produce 25% yield for Alice and Bob
         uint256 secondYieldPercentage = 25_00;
@@ -199,10 +200,10 @@ contract dhwUniswapV2 is TestFixture {
             smartVaultManager.flushSmartVault(address(smartVault));
 
             // DHW - WITHDRAW
-            SwapInfo[][] memory dhwSwapInfoWithdraw = new SwapInfo[][](1);
-            dhwSwapInfoWithdraw[0] = new SwapInfo[](0);
             console2.log("doHardWork");
-            strategyRegistry.doHardWork(smartVaultStrategies, dhwSwapInfo);
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+            vm.stopPrank();
 
             // sync vault
             console2.log("syncSmartVault");

@@ -10,3 +10,8 @@ error InvalidArrayLength();
  * @notice Used when group of smart vaults or strategies do not have same asset group.
  */
 error NotSameAssetGroup();
+
+/**
+ * @notice Used when fetched exchange rate is out of slippage range.
+ */
+error ExchangeRateOutOfSlippages();

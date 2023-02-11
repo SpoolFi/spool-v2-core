@@ -31,11 +31,7 @@ contract GhostStrategy is IERC20Upgradeable, IStrategy {
         return new address[](0);
     }
 
-    function doHardWork(SwapInfo[] calldata, uint256, address, uint256[] calldata, IUsdPriceFeedManager)
-        external
-        pure
-        returns (DhwInfo memory)
-    {
+    function doHardWork(StrategyDhwParameterBag calldata) external pure returns (DhwInfo memory) {
         revert IsGhostStrategy();
     }
 
@@ -47,19 +43,24 @@ contract GhostStrategy is IERC20Upgradeable, IStrategy {
         revert IsGhostStrategy();
     }
 
-    function redeemFast(uint256, address, address[] memory, uint256[] memory, IUsdPriceFeedManager)
-        external
-        pure
-        returns (uint256[] memory)
-    {
+    function redeemFast(
+        uint256,
+        address,
+        address[] calldata,
+        uint256[] calldata,
+        IUsdPriceFeedManager,
+        uint256[] calldata
+    ) external pure returns (uint256[] memory) {
         revert IsGhostStrategy();
     }
 
-    function depositFast(address[] calldata, uint256[] calldata, IUsdPriceFeedManager)
-        external
-        pure
-        returns (uint256)
-    {
+    function depositFast(
+        address[] calldata,
+        uint256[] calldata,
+        IUsdPriceFeedManager,
+        uint256[] calldata,
+        SwapInfo[] calldata
+    ) external pure returns (uint256) {
         revert IsGhostStrategy();
     }
 
@@ -84,6 +85,14 @@ contract GhostStrategy is IERC20Upgradeable, IStrategy {
     }
 
     function transferFrom(address, address, uint256) external pure returns (bool) {
+        revert IsGhostStrategy();
+    }
+
+    function beforeDepositCheck(uint256[] memory, uint256[] calldata) external pure {
+        revert IsGhostStrategy();
+    }
+
+    function beforeRedeemalCheck(uint256, uint256[] calldata) external pure {
         revert IsGhostStrategy();
     }
 }

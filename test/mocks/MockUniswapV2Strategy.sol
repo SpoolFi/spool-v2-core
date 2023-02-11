@@ -19,11 +19,10 @@ contract MockUniswapV2Strategy is Strategy {
 
     constructor(
         string memory name_,
-        IStrategyRegistry strategyRegistry_,
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         IUniswapV2Router02 uniswapRouter_
-    ) Strategy(name_, strategyRegistry_, assetGroupRegistry_, accessControl_) {
+    ) Strategy(name_, assetGroupRegistry_, accessControl_) {
         uniswapRouter = uniswapRouter_;
         uniswapFactory = IUniswapV2Factory(uniswapRouter_.factory());
     }
@@ -65,13 +64,16 @@ contract MockUniswapV2Strategy is Strategy {
         return _assetRatio;
     }
 
-    function swapAssets(address[] memory tokens, SwapInfo[] calldata swapInfo) internal override {}
+    function swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
-    function compound() internal override {}
+    function compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages) internal override {}
 
     // NOTE: IMPORTAINT - asset ratio needs to be perfect for this, otherwise assets are lost
     // can use the formula for uniswap v2 swap + add liquidity (https://blog.alphaventuredao.io/onesideduniswap/)
-    function depositToProtocol(address[] memory tokens, uint256[] memory amounts) internal override {
+    function depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
+        internal
+        override
+    {
         // TODO: add reserves and tokens ratio check
 
         if (amounts[0] > 0) {
@@ -110,7 +112,7 @@ contract MockUniswapV2Strategy is Strategy {
         return usdWorth * lpBalance / uniswapPair.totalSupply();
     }
 
-    function redeemFromProtocol(address[] memory, uint256 ssts) internal override {
+    function redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata) internal override {
         if (ssts == 0) {
             return;
         }
@@ -124,4 +126,8 @@ contract MockUniswapV2Strategy is Strategy {
         // NOTE: add slippage
         uniswapPair.burn(address(this));
     }
+
+    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public view override {}
+
+    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
 }
