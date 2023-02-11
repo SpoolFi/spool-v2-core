@@ -313,7 +313,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         // set smart vault fees
-        _smartVaultFees[smartVault] = SmartVaultFees(registrationForm.managementFeePct, registrationForm.depositFeePct);
+        _smartVaultFees[smartVault] = SmartVaultFees(registrationForm.managementFeePct, registrationForm.depositFeePct, registrationForm.performanceFeePct);
 
         // set allocation
         if (registrationForm.strategyAllocation.length == registrationForm.strategies.length) {

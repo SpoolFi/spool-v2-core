@@ -62,6 +62,7 @@ struct SmartVaultSpecification {
     RequestType[] guardRequestTypes;
     uint16 managementFeePct;
     uint16 depositFeePct;
+    uint16 performanceFeePct;
     bool allowRedeemFor;
 }
 
@@ -284,7 +285,8 @@ contract SmartVaultFactory is UpgradeableBeacon {
                 riskProvider: specification.riskProvider,
                 managementFeePct: specification.managementFeePct,
                 depositFeePct: specification.depositFeePct,
-                allocationProvider: specification.allocationProvider
+                allocationProvider: specification.allocationProvider,
+                performanceFeePct: specification.performanceFeePct
             })
         );
     }

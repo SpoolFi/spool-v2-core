@@ -23,6 +23,9 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
     IAssetGroupRegistry internal immutable _assetGroupRegistry;
 
+    // TODO: remove
+    IStrategyRegistry internal _strategyRegistry;
+
     // @notice Name of the strategy
     string private _strategyName;
 
@@ -324,7 +327,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         }
     }
 
-    function compound( /* TODO: ADD PARAMS */ ) internal virtual returns (int256 compoundYield);
+    function compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages) internal virtual returns (int256 compoundYield);
 
     function _getYieldPercentage(int256 manualYield) internal virtual returns (int256);
 

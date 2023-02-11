@@ -65,6 +65,7 @@ struct WithdrawalMetadata {
 struct SmartVaultFees {
     uint16 managementFeePct;
     uint16 depositFeePct;
+    uint16 performanceFeePct;
 }
 
 /* ========== INTERFACES ========== */

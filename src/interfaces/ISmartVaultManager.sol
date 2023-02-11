@@ -85,6 +85,7 @@ struct SmartVaultRegistrationForm {
     int8 riskTolerance;
     uint16 managementFeePct;
     uint16 depositFeePct;
+    uint16 performanceFeePct;
 }
 
 /**
