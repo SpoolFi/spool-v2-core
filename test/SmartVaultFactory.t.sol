@@ -120,6 +120,17 @@ contract SmartVaultFactoryTest is Test {
             specification.strategies = before;
         }
 
+        // - validate strategy duplicates
+        {
+            address[] memory before = specification.strategies;
+
+            specification.strategies = Arrays.toArray(specification.strategies[0], specification.strategies[0]);
+            vm.expectRevert(StrategiesNotUnique.selector);
+            factory.deploySmartVault(specification);
+
+            specification.strategies = before;
+        }
+
         // - validate strategy validity
         {
             vm.mockCall(

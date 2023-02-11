@@ -29,6 +29,11 @@ error SmartVaultRegistrationNoStrategies();
  */
 error StrategyCapExceeded();
 
+/**
+ * @notice Used when user has duplicated strategies when creating a new vault
+ */
+error StrategiesNotUnique();
+
 /* ========== STRUCTS ========== */
 
 /**
@@ -234,6 +239,12 @@ contract SmartVaultFactory is UpgradeableBeacon {
 
                 if (IStrategy(specification.strategies[i]).assetGroupId() != specification.assetGroupId) {
                     revert NotSameAssetGroup();
+                }
+
+                for (uint256 j = i + 1; j < specification.strategies.length; ++j) {
+                    if (specification.strategies[i] == specification.strategies[j]) {
+                        revert StrategiesNotUnique();
+                    }
                 }
             }
         }
