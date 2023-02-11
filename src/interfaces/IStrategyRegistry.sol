@@ -45,7 +45,6 @@ error TreasuryFeeTooLarge(uint256 treasuryFeePct);
  * @custom:member exchangeRates Exchange rates between assets and USD.
  * @custom:member assetsDeposited Amount of assets deposited into the strategy.
  * @custom:member sharesMinted Amount of strategy shares minted.
- * @custom:member dhwTimestamp Timestamp of the DHW index.
  * @custom:member totalStrategyValue Total strategy value at the end of the DHW.
  * @custom:member dhwYields DHW yield percentage from the previous DHW.
  */
@@ -53,7 +52,7 @@ struct StrategyAtIndex {
     uint256[] exchangeRates;
     uint256[] assetsDeposited;
     uint256 sharesMinted;
-    uint256 dhwTimestamp;
+    uint256 totalSSTs;
     uint256 totalStrategyValue;
     int256 dhwYields;
 }
@@ -93,9 +92,9 @@ struct RedeemFastParameterBag {
 }
 
 struct PlatformFees {
-    address ecosystemFeeReciever;
-    uint128 ecosystemFeePct;
-    address treasuryFeeReciever;
+    address ecosystemFeeReceiver;
+    uint96 ecosystemFeePct;
+    address treasuryFeeReceiver;
     uint96 treasuryFeePct;
 }
 
@@ -107,6 +106,10 @@ interface IStrategyRegistry {
     function emergencyWithdrawalWallet() external view returns (address);
     function currentIndex(address[] calldata strategies) external view returns (uint256[] memory);
     function depositedAssets(address strategy, uint256 dhwIndex) external view returns (uint256[] memory);
+    function dhwTimestamps(address[] calldata strategies, uint16a16 dhwIndexes)
+        external
+        view
+        returns (uint256[] memory);
     function strategyAtIndex(address strategy, uint256 dhwIndex) external view returns (StrategyAtIndex memory);
     function strategyAtIndexBatch(address[] calldata strategies, uint16a16 dhwIndexes)
         external
@@ -124,6 +127,10 @@ interface IStrategyRegistry {
 
     function registerStrategy(address strategy) external;
     function removeStrategy(address strategy) external;
+    function setEcosystemFee(uint96 ecosystemFeePct_) external;
+    function setEcosystemFeeReceiver(address ecosystemFeePct_) external;
+    function setTreasuryFee(uint96 treasuryFeePct_) external;
+    function setTreasuryFeeReceiver(address treasuryFeeReceiver_) external;
 
     /**
      * @notice Does hard work on multiple strategies.

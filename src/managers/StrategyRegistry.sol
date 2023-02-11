@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
+import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/ISwapper.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/CommonErrors.sol";
-import "../access/SpoolAccessControl.sol";
 import "../access/SpoolAccessControllable.sol";
 import "../interfaces/Constants.sol";
 import "../libraries/ArrayMapping.sol";
@@ -19,8 +19,8 @@ import "../libraries/SpoolUtils.sol";
  * - ADMIN_ROLE_STRATEGY
  * - ROLE_STRATEGY_REGISTRY
  */
-// TODO add Initilizable
-contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, SpoolAccessControllable {
+
+contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializable, SpoolAccessControllable {
     using ArrayMappingUint256 for mapping(uint256 => uint256);
     using uint16a16Lib for uint16a16;
 
@@ -119,9 +119,16 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, SpoolAcces
         _ghostStrategy = ghostStrategy_;
     }
 
-    function initialize(uint96 ecosystemFeePct_, uint96 treasuryFeePct_) external /* TODO: initializer */ {
+    function initialize(
+        uint96 ecosystemFeePct_,
+        uint96 treasuryFeePct_,
+        address ecosystemFeeReceiver_,
+        address treasuryFeeReceiver_
+    ) external initializer {
         _setEcosystemFee(ecosystemFeePct_);
         _setTreasuryFee(treasuryFeePct_);
+        _setEcosystemFeeReceiver(ecosystemFeeReceiver_);
+        _setTreasuryFeeReceiver(treasuryFeeReceiver_);
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -154,6 +161,19 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, SpoolAcces
         return _dhwAssetRatios[strategy].toArray(IStrategy(strategy).assets().length);
     }
 
+    function dhwTimestamps(address[] calldata strategies, uint16a16 dhwIndexes)
+        external
+        view
+        returns (uint256[] memory)
+    {
+        uint256[] memory result = new uint256[](strategies.length);
+        for (uint256 i; i < strategies.length; i++) {
+            result[i] = _dhwTimestamp[strategies[i]][dhwIndexes.get(i)];
+        }
+
+        return result;
+    }
+
     /**
      * @notice Get state of a strategy for a given DHW index
      */
@@ -181,8 +201,8 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, SpoolAcces
             exchangeRates: _exchangeRates[strategy][dhwIndex].toArray(assetGroupLength),
             assetsDeposited: _assetsDeposited[strategy][dhwIndex].toArray(assetGroupLength),
             sharesMinted: _sharesMinted[strategy][dhwIndex],
-            dhwTimestamp: _dhwTimestamp[strategy][dhwIndex],
             totalStrategyValue: _dhwValue[strategy][dhwIndex],
+            totalSSTs: _dhwSsts[strategy][dhwIndex],
             dhwYields: _dhwYields[strategy][dhwIndex]
         });
     }
@@ -437,16 +457,16 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, SpoolAcces
         _setEcosystemFee(ecosystemFeePct_);
     }
 
-    function setEcosystemFeeReciever(address ecosystemFeePct_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
-        _setEcosystemFeeReciever(ecosystemFeePct_);
+    function setEcosystemFeeReceiver(address ecosystemFeePct_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        _setEcosystemFeeReceiver(ecosystemFeePct_);
     }
 
     function setTreasuryFee(uint96 treasuryFeePct_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
         _setTreasuryFee(treasuryFeePct_);
     }
 
-    function setTreasuryFeeReciever(address treasuryFeeReciever_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
-        _setTreasuryFeeReciever(treasuryFeeReciever_);
+    function setTreasuryFeeReceiver(address treasuryFeeReceiver_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        _setTreasuryFeeReceiver(treasuryFeeReceiver_);
     }
 
     function setEmergencyWithdrawalWallet(address address_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
@@ -490,12 +510,12 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, SpoolAcces
         _platformFees.ecosystemFeePct = ecosystemFeePct_;
     }
 
-    function _setEcosystemFeeReciever(address ecosystemFeeReciever_) private {
-        if (ecosystemFeeReciever_ != address(0)) {
+    function _setEcosystemFeeReceiver(address ecosystemFeeReceiver_) private {
+        if (ecosystemFeeReceiver_ == address(0)) {
             revert ConfigurationAddressZero();
         }
 
-        _platformFees.ecosystemFeeReciever = ecosystemFeeReciever_;
+        _platformFees.ecosystemFeeReceiver = ecosystemFeeReceiver_;
     }
 
     function _setTreasuryFee(uint96 treasuryFeePct_) private {
@@ -506,19 +526,18 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, SpoolAcces
         _platformFees.treasuryFeePct = treasuryFeePct_;
     }
 
-    function _setTreasuryFeeReciever(address treasuryFeeReciever_) private {
-        if (treasuryFeeReciever_ != address(0)) {
+    function _setTreasuryFeeReceiver(address treasuryFeeReceiver_) private {
+        if (treasuryFeeReceiver_ == address(0)) {
             revert ConfigurationAddressZero();
         }
 
-        _platformFees.treasuryFeeReciever = treasuryFeeReciever_;
+        _platformFees.treasuryFeeReceiver = treasuryFeeReceiver_;
     }
 
-    function _updateDhwYieldAndApy(address strategy, uint256 dhwIndex, int256 yieldPercentage) private {
+    function _updateDhwYieldAndApy(address strategy, uint256 dhwIndex, int256 yieldPercentage) internal {
         if (dhwIndex > 1) {
             unchecked {
                 int256 timeDelta = int256(block.timestamp - _dhwTimestamp[address(strategy)][dhwIndex - 1]);
-
                 if (timeDelta > 0) {
                     int256 normalizedApy = yieldPercentage * SECONDS_IN_YEAR_INT / timeDelta;
                     int256 weight = _getRunningAverageApyWeight(timeDelta);
@@ -530,7 +549,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, SpoolAcces
         }
     }
 
-    function _getRunningAverageApyWeight(int256 timeDelta) private pure returns (int256) {
+    function _getRunningAverageApyWeight(int256 timeDelta) internal pure returns (int256) {
         // NOTE: decide on the function. ?? sigmoid function "y=2*((1/(1+e^-(0.5*x)))-0.5)"
 
         if (timeDelta < 1 days) {

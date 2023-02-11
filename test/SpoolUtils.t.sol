@@ -140,9 +140,7 @@ contract SpoolUtilsTest is Test {
             );
         }
 
-        uint256 totalValue =
-            SpoolUtils.getVaultTotalUsdValue(address(0x1), strategies, new uint256[](strategies.length));
-
+        uint256 totalValue = SpoolUtils.getVaultTotalUsdValue(address(0x1), strategies);
         assertEq(totalValue, 500000);
     }
 
