@@ -451,7 +451,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, SpoolAcces
 
     function setEmergencyWithdrawalWallet(address address_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
         if (address_ == address(0)) {
-            revert AddressZero();
+            revert ConfigurationAddressZero();
         }
 
         emergencyWithdrawalWallet = address_;
@@ -464,7 +464,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, SpoolAcces
         bool removeStrategies
     ) external onlyRole(ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, msg.sender) {
         if (emergencyWithdrawalWallet == address(0)) {
-            revert AddressZero();
+            revert ConfigurationAddressZero();
         }
 
         for (uint256 i = 0; i < strategies.length; i++) {

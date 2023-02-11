@@ -19,7 +19,6 @@ import "../libraries/ArrayMapping.sol";
 import "../access/SpoolAccessControllable.sol";
 import "../interfaces/ISmartVaultManager.sol";
 import "../libraries/SpoolUtils.sol";
-import "./ActionsAndGuards.sol";
 import "../interfaces/IDepositManager.sol";
 import "../interfaces/Constants.sol";
 
@@ -53,7 +52,7 @@ struct ClaimTokensLocalBag {
     DepositMetadata data;
 }
 
-contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositManager {
+contract DepositManager is SpoolAccessControllable, IDepositManager {
     using SafeERC20 for IERC20;
     using uint16a16Lib for uint16a16;
     using ArrayMappingUint256 for mapping(uint256 => uint256);
@@ -76,6 +75,12 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
 
     /// @notice Price feed manager
     IUsdPriceFeedManager private immutable _priceFeedManager;
+
+    // @notice Guard manager
+    IGuardManager internal immutable _guardManager;
+
+    // @notice Action manager
+    IActionManager internal immutable _actionManager;
 
     /**
      * @notice Exchange rates for vault, at given flush index
@@ -108,7 +113,9 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         IGuardManager guardManager_,
         IActionManager actionManager_,
         ISpoolAccessControl accessControl_
-    ) ActionsAndGuards(guardManager_, actionManager_) SpoolAccessControllable(accessControl_) {
+    ) SpoolAccessControllable(accessControl_) {
+        _guardManager = guardManager_;
+        _actionManager = actionManager_;
         _strategyRegistry = strategyRegistry_;
         _priceFeedManager = priceFeedManager_;
     }
@@ -137,7 +144,17 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         // NOTE:
         // - here we are passing ids into the request context instead of amounts
         // - here we passing empty array as tokens
-        _runGuards(smartVault, executor, executor, executor, nftIds, new address[](0), RequestType.BurnNFT);
+        _guardManager.runGuards(
+            smartVault,
+            RequestContext({
+                receiver: executor,
+                executor: executor,
+                owner: executor,
+                requestType: RequestType.BurnNFT,
+                assets: nftIds,
+                tokens: new address[](0)
+            })
+        );
 
         ClaimTokensLocalBag memory bag;
         ISmartVault vault = ISmartVault(smartVault);
@@ -324,11 +341,28 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         }
 
         // run guards and actions
-        _runGuards(
-            bag.smartVault, bag2.depositor, bag.receiver, bag2.depositor, bag.assets, bag2.tokens, RequestType.Deposit
+        _guardManager.runGuards(
+            bag.smartVault,
+            RequestContext({
+                receiver: bag.receiver,
+                executor: bag2.depositor,
+                owner: bag2.depositor,
+                requestType: RequestType.Deposit,
+                tokens: bag2.tokens,
+                assets: bag.assets
+            })
         );
-        _runActions(
-            bag.smartVault, bag2.depositor, bag.receiver, bag2.depositor, bag.assets, bag2.tokens, RequestType.Deposit
+
+        _actionManager.runActions(
+            ActionContext({
+                smartVault: bag.smartVault,
+                recipient: bag.receiver,
+                executor: bag2.depositor,
+                owner: bag2.depositor,
+                requestType: RequestType.Deposit,
+                tokens: bag2.tokens,
+                amounts: bag.assets
+            })
         );
 
         // check if assets are in correct ratio

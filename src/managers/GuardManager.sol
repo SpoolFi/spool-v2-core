@@ -23,7 +23,7 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
      * @param context Request context
      */
     function runGuards(address smartVaultId, RequestContext calldata context) external view {
-        if (!guardsInitialized[smartVaultId]) {
+        if (guardPointer[smartVaultId][context.requestType] == address(0)) {
             return;
         }
 
@@ -61,9 +61,10 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
      */
     function setGuards(address smartVaultId, GuardDefinition[][] calldata guards, RequestType[] calldata requestTypes)
         public
-        hasNoGuards(smartVaultId)
         onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)
     {
+        _guardsNotInitialized(smartVaultId);
+
         for (uint256 i = 0; i < requestTypes.length; i++) {
             _writeGuards(smartVaultId, requestTypes[i], guards[i]);
         }
@@ -71,17 +72,6 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
         guardsInitialized[smartVaultId] = true;
         emit GuardsInitialized(smartVaultId);
     }
-
-    /* ========== MODIFIERS ========== */
-
-    /**
-     * @notice Reverts if smart vault already has guards initialized
-     */
-    modifier hasNoGuards(address smartVaultId) {
-        _guardsNotInitialized(smartVaultId);
-        _;
-    }
-    /* ========== PUBLIC FUNCTIONS ========== */
 
     /* ========== INTERNAL FUNCTIONS ========== */
 

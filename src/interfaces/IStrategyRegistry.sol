@@ -41,11 +41,6 @@ error EcosystemFeeTooLarge(uint256 ecosystemFeePct);
 error TreasuryFeeTooLarge(uint256 treasuryFeePct);
 
 /**
- * @notice Used when address parameter is zero.
- */
-error AddressZero();
-
-/**
  * @notice Represents change of state for a strategy during a DHW.
  * @custom:member exchangeRates Exchange rates between assets and USD.
  * @custom:member assetsDeposited Amount of assets deposited into the strategy.

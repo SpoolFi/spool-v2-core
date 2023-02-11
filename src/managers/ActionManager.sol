@@ -15,8 +15,11 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
     // @notice Action address whitelist
     mapping(address => bool) public actionWhitelisted;
 
+    // @notice Does vault have any actions
+    mapping(address => mapping(RequestType => bool)) private actionsExist;
+
     // @notice Action registry
-    mapping(address => mapping(uint256 => address[])) public actions;
+    mapping(address => mapping(RequestType => address[])) public actions;
 
     constructor(ISpoolAccessControl accessControl) SpoolAccessControllable(accessControl) {}
 
@@ -31,12 +34,13 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
     function setActions(address smartVault, IAction[] calldata actions_, RequestType[] calldata requestTypes)
         external
         onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)
-        notInitialized(smartVault)
     {
+        _checkInitialized(smartVault);
         for (uint256 i; i < actions_.length; i++) {
             IAction action = actions_[i];
             _onlyWhitelistedAction(address(action));
-            actions[smartVault][uint8(requestTypes[i])].push(address(action));
+            actions[smartVault][requestTypes[i]].push(address(action));
+            actionsExist[smartVault][requestTypes[i]] = actions_.length > 0;
         }
 
         actionsInitialized[smartVault] = true;
@@ -44,18 +48,14 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
 
     /**
      * @notice Run actions for smart vault with given context
-     * @param smartVault SmartVault address
      * @param actionCtx action execution context
      */
-    function runActions(address smartVault, ActionContext calldata actionCtx)
-        external
-        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
-    {
-        if (!actionsInitialized[smartVault]) {
+    function runActions(ActionContext calldata actionCtx) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
+        if (!actionsExist[actionCtx.smartVault][actionCtx.requestType]) {
             return;
         }
 
-        address[] memory actions_ = actions[smartVault][uint8(actionCtx.requestType)];
+        address[] memory actions_ = actions[actionCtx.smartVault][actionCtx.requestType];
 
         for (uint256 i; i < actions_.length; i++) {
             _executeAction(actions_[i], actionCtx);
@@ -76,17 +76,13 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
 
     /* ========== PRIVATE FUNCTIONS ========== */
 
-    // TODO: Question: should smart vault address be in action context?
     function _executeAction(address action_, ActionContext memory actionCtx) private {
         IAction(action_).executeAction(actionCtx);
     }
 
-    function _isInitialized(address smartVault, bool initialized) private view {
-        if (initialized && actionsInitialized[smartVault] != initialized) {
-            revert ActionsInitialized({smartVault: smartVault});
-        }
-        if (!initialized && actionsInitialized[smartVault] != initialized) {
-            revert ActionsNotInitialized({smartVault: smartVault});
+    function _checkInitialized(address smartVault) private view {
+        if (actionsInitialized[smartVault]) {
+            revert ActionsAlreadyInitialized({smartVault: smartVault});
         }
     }
 
@@ -94,15 +90,5 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
         if (!actionWhitelisted[action]) {
             revert InvalidAction({address_: action});
         }
-    }
-
-    /* ========== MODIFIERS ========== */
-
-    /**
-     * @notice Reverts if actions have already been initialized for given smart vault
-     */
-    modifier notInitialized(address smartVault) {
-        _isInitialized(smartVault, false);
-        _;
     }
 }

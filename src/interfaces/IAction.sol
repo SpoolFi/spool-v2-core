@@ -5,8 +5,7 @@ import "./RequestType.sol";
 
 error InvalidAction(address address_);
 error ActionStatusAlreadySet();
-error ActionsInitialized(address smartVault);
-error ActionsNotInitialized(address smartVault);
+error ActionsAlreadyInitialized(address smartVault);
 
 /**
  * @custom:member recipient In case of deposit, recipient of deposit NFT; in case of withdrawal, recipient of assets.
@@ -14,6 +13,7 @@ error ActionsNotInitialized(address smartVault);
  * @custom:member owner In case of deposit, owner of assets; in case of withdrawal, owner of withdrawal NFT.
  */
 struct ActionContext {
+    address smartVault;
     address recipient;
     address executor;
     address owner;
@@ -29,7 +29,7 @@ interface IAction {
 
 interface IActionManager {
     function setActions(address smartVault, IAction[] calldata actions, RequestType[] calldata requestTypes) external;
-    function runActions(address smartVault, ActionContext calldata actionCtx) external;
+    function runActions(ActionContext calldata actionCtx) external;
     function whitelistAction(address action, bool whitelist) external;
 
     event ActionListed(address indexed action, bool whitelisted);

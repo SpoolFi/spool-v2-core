@@ -5,16 +5,18 @@ import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/ISmartVault.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/ISmartVaultManager.sol";
-import "./ActionsAndGuards.sol";
 import "../interfaces/IWithdrawalManager.sol";
 import "../libraries/ArrayMapping.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/ISmartVault.sol";
+import "../interfaces/IGuardManager.sol";
+import "../interfaces/IAction.sol";
+import "../interfaces/RequestType.sol";
 import "../access/SpoolAccessControllable.sol";
 
-contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdrawalManager {
+contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
     using SafeERC20 for IERC20;
     using ArrayMappingUint256 for mapping(uint256 => uint256);
 
@@ -45,6 +47,12 @@ contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdr
     /// @notice Master wallet
     IMasterWallet private immutable _masterWallet;
 
+    // @notice Guard manager
+    IGuardManager internal immutable _guardManager;
+
+    // @notice Action manager
+    IActionManager internal immutable _actionManager;
+
     constructor(
         IStrategyRegistry strategyRegistry_,
         IUsdPriceFeedManager priceFeedManager_,
@@ -52,7 +60,9 @@ contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdr
         IGuardManager guardManager_,
         IActionManager actionManager_,
         ISpoolAccessControl accessControl_
-    ) ActionsAndGuards(guardManager_, actionManager_) SpoolAccessControllable(accessControl_) {
+    ) SpoolAccessControllable(accessControl_) {
+        _guardManager = guardManager_;
+        _actionManager = actionManager_;
         _strategyRegistry = strategyRegistry_;
         _priceFeedManager = priceFeedManager_;
         _masterWallet = masterWallet_;
@@ -122,14 +132,16 @@ contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdr
             }
         }
 
-        _runActions(
-            bag.smartVault,
-            bag.executor,
-            bag.receiver,
-            bag.executor,
-            withdrawnAssets,
-            bag.assetGroup,
-            RequestType.Withdrawal
+        _actionManager.runActions(
+            ActionContext({
+                smartVault: bag.smartVault,
+                recipient: bag.receiver,
+                executor: bag.executor,
+                owner: bag.executor,
+                requestType: RequestType.Withdrawal,
+                tokens: bag.assetGroup,
+                amounts: withdrawnAssets
+            })
         );
 
         for (uint256 i = 0; i < bag.assetGroup.length; i++) {
@@ -229,6 +241,16 @@ contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdr
         assets[0] = shares;
         address[] memory tokens = new address[](1);
         tokens[0] = address(smartVault);
-        _runGuards(address(smartVault), redeemer, receiver, redeemer, assets, tokens, RequestType.Withdrawal);
+        _guardManager.runGuards(
+            address(smartVault),
+            RequestContext({
+                receiver: receiver,
+                executor: redeemer,
+                owner: redeemer,
+                requestType: RequestType.Withdrawal,
+                assets: assets,
+                tokens: tokens
+            })
+        );
     }
 }

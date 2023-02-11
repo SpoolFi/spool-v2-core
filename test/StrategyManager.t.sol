@@ -71,7 +71,7 @@ contract StrategyRegistryTest is Test {
     function test_setEmergencyWithdrawalWallet_revertAddressZero() public {
         accessControl.grantRole(ROLE_SPOOL_ADMIN, address(0xa));
         vm.prank(address(0xa));
-        vm.expectRevert(abi.encodeWithSelector(AddressZero.selector));
+        vm.expectRevert(abi.encodeWithSelector(ConfigurationAddressZero.selector));
         strategyRegistry.setEmergencyWithdrawalWallet(address(0));
     }
 

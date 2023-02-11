@@ -63,10 +63,11 @@ contract ActionManagerTest is Test {
         address[] memory tokens = new address[](1);
         uint256[] memory amounts = new uint256[](1);
 
-        ActionContext memory actionContext =
-            ActionContext(address(user), address(user), address(user), RequestType.Deposit, tokens, amounts);
+        ActionContext memory actionContext = ActionContext(
+            smartVaultId, address(user), address(user), address(user), RequestType.Deposit, tokens, amounts
+        );
 
         vm.prank(smartVaultId);
-        actionManager.runActions(smartVaultId, actionContext);
+        actionManager.runActions(actionContext);
     }
 }

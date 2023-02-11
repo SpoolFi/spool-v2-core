@@ -448,7 +448,7 @@ contract WithdrawalIntegrationTest is Test {
 
         accessControl.grantRole(ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, alice);
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(AddressZero.selector));
+        vm.expectRevert(abi.encodeWithSelector(ConfigurationAddressZero.selector));
         strategyRegistry.emergencyWithdraw(mySmartVaultStrategies, assetGroup, withdrawalSlippages, true);
     }
 
