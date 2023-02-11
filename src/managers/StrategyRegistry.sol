@@ -19,6 +19,7 @@ import "../libraries/SpoolUtils.sol";
  * - ADMIN_ROLE_STRATEGY
  * - ROLE_STRATEGY_REGISTRY
  */
+// TODO add Initilizable
 contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     using ArrayMappingUint256 for mapping(uint256 => uint256);
     using uint16a16Lib for uint16a16;
@@ -32,6 +33,8 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     IUsdPriceFeedManager immutable _priceFeedManager;
 
     address private immutable _ghostStrategy;
+
+    PlatformFees internal _platformFees;
 
     /// @notice Current DHW index for strategies
     mapping(address => uint256) internal _currentIndexes;
@@ -107,7 +110,16 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         _ghostStrategy = ghostStrategy_;
     }
 
+    function initialize(uint96 ecosystemFeePct_, uint96 treasuryFeePct_) external /* TODO: initializer */ {
+        _setEcosystemFee(ecosystemFeePct_);
+        _setTreasuryFee(treasuryFeePct_);
+    }
+
     /* ========== VIEW FUNCTIONS ========== */
+
+    function platformFees() external view returns (PlatformFees memory) {
+        return _platformFees;
+    }
 
     /**
      * @notice Deposits for given strategy and DHW index
@@ -454,5 +466,53 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         }
 
         return totalWithdrawnAssets;
+    }
+
+    function setEcosystemFee(uint96 ecosystemFeePct_) external {
+        _setEcosystemFee(ecosystemFeePct_);
+    }
+
+    function _setEcosystemFee(uint96 ecosystemFeePct_) private {
+        if (ecosystemFeePct_ > TREASURY_FEE_MAX) {
+            revert EcosystemFeeTooLarge(ecosystemFeePct_);
+        }
+
+        _platformFees.ecosystemFeePct = ecosystemFeePct_;
+    }
+
+    function setEcosystemFeeReciever(address ecosystemFeePct_) external {
+        _setEcosystemFeeReciever(ecosystemFeePct_);
+    }
+
+    function _setEcosystemFeeReciever(address ecosystemFeeReciever_) private {
+        if (ecosystemFeeReciever_ != address(0)) {
+            revert ConfigurationAddressZero();
+        }
+
+        _platformFees.ecosystemFeeReciever = ecosystemFeeReciever_;
+    }
+
+    function setTreasuryFee(uint96 treasuryFeePct_) external {
+        _setTreasuryFee(treasuryFeePct_);
+    }
+
+    function _setTreasuryFee(uint96 treasuryFeePct_) private {
+        if (treasuryFeePct_ > TREASURY_FEE_MAX) {
+            revert TreasuryFeeTooLarge(treasuryFeePct_);
+        }
+
+        _platformFees.treasuryFeePct = treasuryFeePct_;
+    }
+
+    function setTreasuryFeeReciever(address treasuryFeeReciever_) external {
+        _setTreasuryFeeReciever(treasuryFeeReciever_);
+    }
+
+    function _setTreasuryFeeReciever(address treasuryFeeReciever_) private {
+        if (treasuryFeeReciever_ != address(0)) {
+            revert ConfigurationAddressZero();
+        }
+
+        _platformFees.treasuryFeeReciever = treasuryFeeReciever_;
     }
 }

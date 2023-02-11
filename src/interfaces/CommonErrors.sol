@@ -12,6 +12,11 @@ error InvalidArrayLength();
 error NotSameAssetGroup();
 
 /**
+ * @notice Used when configuring an address with a zero address.
+ */
+error ConfigurationAddressZero();
+
+/**
  * @notice Used when fetched exchange rate is out of slippage range.
  */
 error ExchangeRateOutOfSlippages();

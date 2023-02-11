@@ -34,6 +34,12 @@ error GhostStrategyUsed();
  */
 error NothingToSync();
 
+/// @notice Used when system tries to configure a too large ecosystem fee.
+error EcosystemFeeTooLarge(uint256 ecosystemFeePct);
+
+/// @notice Used when system tries to configure a too large treasury fee.
+error TreasuryFeeTooLarge(uint256 treasuryFeePct);
+
 /**
  * @notice Represents change of state for a strategy during a DHW.
  * @custom:member exchangeRates Exchange rates between assets and USD.
@@ -82,6 +88,13 @@ struct RedeemFastParameterBag {
     address[] assetGroup;
     uint256[][] withdrawalSlippages;
     uint256[2][] exchangeRateSlippages;
+}
+
+struct PlatformFees {
+    address ecosystemFeeReciever;
+    uint128 ecosystemFeePct;
+    address treasuryFeeReciever;
+    uint96 treasuryFeePct;
 }
 
 /* ========== INTERFACES ========== */
@@ -152,4 +165,6 @@ interface IStrategyRegistry {
         external
         view
         returns (uint256[] memory assetsWithdrawn);
+
+    function platformFees() external view returns (PlatformFees memory);
 }

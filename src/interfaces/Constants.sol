@@ -9,11 +9,17 @@ uint256 constant FULL_PERCENT = 100_00;
 
 int256 constant FULL_PERCENT_INT = 100_00;
 
-int256 constant YIELD_MULTIPLIER = 10e12;
+int256 constant YIELD_FULL_PERCENT_INT = 10e12;
+
+uint256 constant YIELD_FULL_PERCENT = uint256(YIELD_FULL_PERCENT_INT);
 
 uint256 constant MANAGEMENT_FEE_MAX = 5_00;
 
 uint256 constant DEPOSIT_FEE_MAX = 5_00;
+
+uint256 constant ECOSYSTEM_FEE_MAX = 20_00;
+
+uint256 constant TREASURY_FEE_MAX = 10_00;
 
 uint8 constant MAX_RISK_SCORE = 10_0;
 

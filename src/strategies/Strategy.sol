@@ -6,6 +6,7 @@ import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/utils/math/Math.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
+import "../interfaces/Constants.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
@@ -300,7 +301,30 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
-    function compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages) internal virtual returns (int256 compoundYield);
+    function _collectPlatformFees(int256 yieldPct) internal virtual returns (uint256 sharesMinted) {
+        if (yieldPct > 0) {
+            uint256 uint256YieldPct = uint256(yieldPct);
+
+            PlatformFees memory platformFees = _strategyRegistry.platformFees();
+
+            uint256 totalYieldShares = ((totalSupply() * YIELD_FULL_PERCENT) / (YIELD_FULL_PERCENT + uint256YieldPct))
+                * uint256YieldPct / YIELD_FULL_PERCENT;
+
+            // mint new ecosystem fee SSTs
+            uint256 newEcosystemFeeSsts = totalYieldShares * platformFees.ecosystemFeePct / FULL_PERCENT;
+            _mint(platformFees.ecosystemFeeReciever, newEcosystemFeeSsts);
+
+            // mint new treasury fee SSTs
+            uint256 newTreasuryFeeSsts = totalYieldShares * platformFees.treasuryFeePct / FULL_PERCENT;
+            _mint(platformFees.treasuryFeeReciever, newTreasuryFeeSsts);
+
+            unchecked {
+                sharesMinted = newEcosystemFeeSsts + newTreasuryFeeSsts;
+            }
+        }
+    }
+
+    function compound( /* TODO: ADD PARAMS */ ) internal virtual returns (int256 compoundYield);
 
     function _getYieldPercentage(int256 manualYield) internal virtual returns (int256);
 
