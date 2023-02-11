@@ -219,6 +219,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             }
         }
 
+        totalUsdValue = usdWorth[1];
+
         dhwInfo.sharesMinted = mintedShares;
         dhwInfo.assetsWithdrawn = withdrawnAssets;
         dhwInfo.valueAtDhw = usdWorth[1];
