@@ -26,8 +26,12 @@ import "../interfaces/Constants.sol";
 /**
  * @notice Used when deposit is not made in correct asset ratio.
  */
-
 error IncorrectDepositRatio();
+
+/**
+ * @notice Used when deposit recipient is vault owner.
+ */
+error VaultOwnerNotAllowedToDeposit();
 
 /**
  * @notice Contains parameters for distributeDeposit call.
@@ -311,6 +315,10 @@ contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositMa
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256[] memory, uint256)
     {
+        if (_accessControl.smartVaultOwner(bag.smartVault) == bag.receiver) {
+            revert VaultOwnerNotAllowedToDeposit();
+        }
+
         if (bag2.tokens.length != bag.assets.length) {
             revert InvalidAssetLengths();
         }

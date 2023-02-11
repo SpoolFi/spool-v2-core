@@ -440,4 +440,54 @@ contract WithdrawalIntegrationTest is Test {
         assertEq(tokenA.balanceOf(address(strategyB.protocol())), 4 ether);
         assertEq(tokenB.balanceOf(address(strategyB.protocol())), 0.268 ether);
     }
+
+    function test_emergencyWithdraw_revertRecipientZeroAddress() public {
+        uint256[][] memory withdrawalSlippages = new uint256[][](2);
+        withdrawalSlippages[0] = new uint256[](0);
+        withdrawalSlippages[1] = new uint256[](0);
+
+        accessControl.grantRole(ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, alice);
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(AddressZero.selector));
+        strategyRegistry.emergencyWithdraw(mySmartVaultStrategies, assetGroup, withdrawalSlippages, true);
+    }
+
+    function test_emergencyWithdraw_revertMissingRole() public {
+        uint256[][] memory withdrawalSlippages = new uint256[][](2);
+        withdrawalSlippages[0] = new uint256[](0);
+        withdrawalSlippages[1] = new uint256[](0);
+
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, alice));
+        strategyRegistry.emergencyWithdraw(mySmartVaultStrategies, assetGroup, withdrawalSlippages, true);
+    }
+
+    function test_emergencyWithdraw_ok() public {
+        // set initial state
+        deal(address(strategyA), address(mySmartVault), 40_000_000, true);
+        deal(address(strategyB), address(mySmartVault), 10_000_000, true);
+        deal(address(tokenA), address(strategyA.protocol()), 40 ether, true);
+        deal(address(tokenB), address(strategyA.protocol()), 2.72 ether, true);
+        deal(address(tokenA), address(strategyB.protocol()), 10 ether, true);
+        deal(address(tokenB), address(strategyB.protocol()), 0.67 ether, true);
+
+        // withdraw fast
+        uint256[][] memory withdrawalSlippages = new uint256[][](2);
+        withdrawalSlippages[0] = new uint256[](0);
+        withdrawalSlippages[1] = new uint256[](0);
+
+        strategyRegistry.setEmergencyWithdrawalWallet(address(0xabc));
+
+        accessControl.grantRole(ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, alice);
+        vm.prank(alice);
+        strategyRegistry.emergencyWithdraw(mySmartVaultStrategies, assetGroup, withdrawalSlippages, true);
+
+        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 0);
+        assertEq(tokenB.balanceOf(address(strategyA.protocol())), 0);
+        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 0);
+        assertEq(tokenB.balanceOf(address(strategyB.protocol())), 0);
+
+        assertEq(tokenA.balanceOf(address(0xabc)), 40 ether + 10 ether);
+        assertEq(tokenB.balanceOf(address(0xabc)), 2.72 ether + 0.67 ether);
+    }
 }

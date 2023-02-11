@@ -56,5 +56,8 @@ contract GhostStrategyTest is Test {
         s.redeemFast(
             0, address(1), new address[](0), new uint256[](0), IUsdPriceFeedManager(address(0)), new uint256[](0)
         );
+
+        vm.expectRevert(abi.encodeWithSelector(IsGhostStrategy.selector));
+        s.emergencyWithdraw(new address[](0), new uint256[](0), address(0));
     }
 }

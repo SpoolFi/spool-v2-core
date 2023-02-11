@@ -303,6 +303,13 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         _transfer(smartVault, address(this), amount);
     }
 
+    function emergencyWithdraw(address[] calldata assetGroup, uint256[] calldata slippages, address recipient)
+        external
+        onlyRole(ROLE_STRATEGY_REGISTRY, msg.sender)
+    {
+        emergencyWithdrawImpl(assetGroup, slippages, recipient);
+    }
+
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
     function _collectPlatformFees(int256 yieldPct) internal virtual returns (uint256 sharesMinted) {
@@ -362,6 +369,10 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
      * @param slippages Slippages to guard redeemal.
      */
     function redeemFromProtocol(address[] calldata tokens, uint256 ssts, uint256[] calldata slippages)
+        internal
+        virtual;
+
+    function emergencyWithdrawImpl(address[] calldata assetGroup, uint256[] calldata slippages, address recipient)
         internal
         virtual;
 

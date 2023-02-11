@@ -201,22 +201,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== DEPOSIT/WITHDRAW ========== */
 
-    function redeem(RedeemBag calldata bag, address receiver, bool doFlush)
-        external
-        whenNotPaused
-        onlyRegisteredSmartVault(bag.smartVault)
-        returns (uint256)
-    {
+    function redeem(RedeemBag calldata bag, address receiver, bool doFlush) external whenNotPaused returns (uint256) {
         return _redeem(bag, receiver, msg.sender, doFlush);
     }
 
-    function redeemFor(RedeemBag calldata bag, address owner, bool doFlush)
-        external
-        whenNotPaused
-        onlyRole(ROLE_SMART_VAULT_ALLOW_REDEEM, bag.smartVault)
-        onlySmartVaultRole(bag.smartVault, ROLE_SMART_VAULT_ADMIN, msg.sender)
-        returns (uint256)
-    {
+    function redeemFor(RedeemBag calldata bag, address owner, bool doFlush) external whenNotPaused returns (uint256) {
+        _checkRole(ROLE_SMART_VAULT_ALLOW_REDEEM, bag.smartVault);
+        _checkSmartVaultRole(bag.smartVault, ROLE_SMART_VAULT_ADMIN, msg.sender);
         return _redeem(bag, owner, owner, doFlush);
     }
 
@@ -224,7 +215,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         RedeemBag calldata bag,
         uint256[][] calldata withdrawalSlippages,
         uint256[2][] calldata exchangeRateSlippages
-    ) external whenNotPaused onlyRegisteredSmartVault(bag.smartVault) returns (uint256[] memory) {
+    ) external whenNotPaused returns (uint256[] memory) {
+        _onlyRegisteredSmartVault(bag.smartVault);
+
         address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
         uint256 assetGroupId_ = _smartVaultAssetGroups[bag.smartVault];
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
@@ -244,12 +237,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         );
     }
 
-    function deposit(DepositBag calldata bag)
-        external
-        whenNotPaused
-        onlyRegisteredSmartVault(bag.smartVault)
-        returns (uint256)
-    {
+    function deposit(DepositBag calldata bag) external whenNotPaused returns (uint256) {
+        _onlyRegisteredSmartVault(bag.smartVault);
         return _depositAssets(bag);
     }
 
@@ -262,9 +251,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function claimSmartVaultTokens(address smartVault, uint256[] calldata nftIds, uint256[] calldata nftAmounts)
         public
         whenNotPaused
-        onlyRegisteredSmartVault(smartVault)
         returns (uint256)
     {
+        _onlyRegisteredSmartVault(smartVault);
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
         _syncSmartVault(smartVault, _smartVaultStrategies[smartVault], tokens, false);
         return _depositManager.claimSmartVaultTokens(smartVault, nftIds, nftAmounts, tokens, msg.sender);
@@ -282,7 +271,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256[] calldata nftIds,
         uint256[] calldata nftAmounts,
         address receiver
-    ) public whenNotPaused onlyRegisteredSmartVault(smartVault) returns (uint256[] memory, uint256) {
+    ) public whenNotPaused returns (uint256[] memory, uint256) {
+        _onlyRegisteredSmartVault(smartVault);
         uint256 assetGroupId_ = _smartVaultAssetGroups[smartVault];
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
 
@@ -297,8 +287,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm)
         external
         whenNotPaused
-        onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)
     {
+        _checkRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender);
+
         if (_smartVaultRegistry[smartVault]) {
             revert SmartVaultAlreadyRegistered();
         }
@@ -333,13 +324,14 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _smartVaultRegistry[smartVault] = true;
     }
 
-    function removeStrategy(address strategy) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+    function removeStrategy(address strategy, bool fromVaultsOnly) external {
+        _checkRole(ROLE_SPOOL_ADMIN, msg.sender);
         _checkRole(ROLE_STRATEGY, strategy);
 
         for (uint256 i; i < _smartVaultsWithStrategy[strategy].length; i++) {
             address smartVault = _smartVaultsWithStrategy[strategy][i];
             address[] memory strategies_ = _smartVaultStrategies[smartVault];
-            for (uint256 j = 0; j < strategies_.length; j++) {
+            for (uint256 j; j < strategies_.length; j++) {
                 if (strategies_[j] == strategy) {
                     _smartVaultStrategies[smartVault][j] = _ghostStrategy;
                     _smartVaultAllocations[smartVault] = _smartVaultAllocations[smartVault].set(j, 0);
@@ -348,12 +340,15 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             }
         }
 
-        _strategyRegistry.removeStrategy(strategy);
+        if (fromVaultsOnly) {
+            _strategyRegistry.removeStrategy(strategy);
+        }
     }
 
     /* ========== BOOKKEEPING ========== */
 
-    function flushSmartVault(address smartVault) public whenNotPaused onlyRegisteredSmartVault(smartVault) {
+    function flushSmartVault(address smartVault) public whenNotPaused {
+        _onlyRegisteredSmartVault(smartVault);
         _flushSmartVault(
             smartVault,
             _smartVaultAllocations[smartVault],
@@ -362,11 +357,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         );
     }
 
-    function syncSmartVault(address smartVault, bool revertOnMissingDHW)
-        external
-        whenNotPaused
-        onlyRegisteredSmartVault(smartVault)
-    {
+    function syncSmartVault(address smartVault, bool revertOnMissingDHW) external whenNotPaused {
+        _onlyRegisteredSmartVault(smartVault);
         _syncSmartVault(
             smartVault,
             _smartVaultStrategies[smartVault],
@@ -655,6 +647,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         internal
         returns (uint256)
     {
+        _onlyRegisteredSmartVault(bag.smartVault);
+
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
         _syncSmartVault(bag.smartVault, _smartVaultStrategies[bag.smartVault], tokens, false);
 
@@ -729,7 +723,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         for (uint256 i; i < strategies_.length; i++) {
             if (strategies_[i] == _ghostStrategy) continue;
 
-            for (uint256 j = 0; j < strategies_.length; j++) {
+            for (uint256 j; j < strategies_.length; j++) {
                 if (flushDhwIndexes.get(i) == currentFlushDhwIndexes.get(i)) {
                     revert FlushOverlap(strategies_[i]);
                 }
@@ -746,12 +740,5 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         if (!_smartVaultRegistry[smartVault]) {
             revert SmartVaultNotRegisteredYet();
         }
-    }
-
-    /* ========== MODIFIERS ========== */
-
-    modifier onlyRegisteredSmartVault(address smartVault) {
-        _onlyRegisteredSmartVault(smartVault);
-        _;
     }
 }

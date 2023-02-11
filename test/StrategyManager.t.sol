@@ -13,7 +13,7 @@ import "../src/strategies/GhostStrategy.sol";
 import "../src/access/SpoolAccessControl.sol";
 
 contract StrategyRegistryTest is Test {
-    IStrategyRegistry strategyRegistry;
+    StrategyRegistry strategyRegistry;
     SpoolAccessControl accessControl;
 
     function setUp() public {
@@ -60,6 +60,27 @@ contract StrategyRegistryTest is Test {
 
         strategyRegistry.removeStrategy(strategy);
         assertFalse(accessControl.hasRole(ROLE_STRATEGY, strategy));
+    }
+
+    function test_setEmergencyWithdrawalWallet_revertMissingRole() public {
+        vm.prank(address(0xa));
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SPOOL_ADMIN, address(0xa)));
+        strategyRegistry.setEmergencyWithdrawalWallet(address(0xb));
+    }
+
+    function test_setEmergencyWithdrawalWallet_revertAddressZero() public {
+        accessControl.grantRole(ROLE_SPOOL_ADMIN, address(0xa));
+        vm.prank(address(0xa));
+        vm.expectRevert(abi.encodeWithSelector(AddressZero.selector));
+        strategyRegistry.setEmergencyWithdrawalWallet(address(0));
+    }
+
+    function test_setEmergencyWithdrawalWallet_ok() public {
+        accessControl.grantRole(ROLE_SPOOL_ADMIN, address(0xa));
+        vm.prank(address(0xa));
+        strategyRegistry.setEmergencyWithdrawalWallet(address(0xb));
+
+        assertEq(strategyRegistry.emergencyWithdrawalWallet(), address(0xb));
     }
 }
 

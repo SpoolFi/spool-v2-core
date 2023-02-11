@@ -126,3 +126,8 @@ bytes32 constant ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM = keccak256("ADMIN_SMART_VA
  * @dev Grants permission to run do hard work.
  */
 bytes32 constant ROLE_DO_HARD_WORKER = keccak256("DO_HARD_WORKER");
+
+/**
+ * @dev Grants permission to immediately withdraw assets in case of emergency.
+ */
+bytes32 constant ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR = keccak256("EMERGENCY_WITHDRAWAL_EXECUTOR");

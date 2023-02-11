@@ -110,6 +110,12 @@ contract DhwTest is TestFixture {
         priceFeedManager.setExchangeRate(address(tokenC), 270 * 10 ** 26);
     }
 
+    function test_strategyNames() public {
+        assertEq(strategyA.strategyName(), "StratA");
+        assertEq(strategyA.name(), "Strategy Share Token");
+        assertEq(strategyA.symbol(), "SST");
+    }
+
     function test_dhwSimple() public {
         uint256 tokenAInitialBalance = 100 ether;
         uint256 tokenBInitialBalance = 10 ether;

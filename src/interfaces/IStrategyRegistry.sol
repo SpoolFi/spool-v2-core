@@ -41,6 +41,11 @@ error EcosystemFeeTooLarge(uint256 ecosystemFeePct);
 error TreasuryFeeTooLarge(uint256 treasuryFeePct);
 
 /**
+ * @notice Used when address parameter is zero.
+ */
+error AddressZero();
+
+/**
  * @notice Represents change of state for a strategy during a DHW.
  * @custom:member exchangeRates Exchange rates between assets and USD.
  * @custom:member assetsDeposited Amount of assets deposited into the strategy.
@@ -104,6 +109,7 @@ struct PlatformFees {
 interface IStrategyRegistry {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
+    function emergencyWithdrawalWallet() external view returns (address);
     function currentIndex(address[] calldata strategies) external view returns (uint256[] memory);
     function depositedAssets(address strategy, uint256 dhwIndex) external view returns (uint256[] memory);
     function strategyAtIndex(address strategy, uint256 dhwIndex) external view returns (StrategyAtIndex memory);
@@ -169,4 +175,28 @@ interface IStrategyRegistry {
         returns (uint256[] memory assetsWithdrawn);
 
     function platformFees() external view returns (PlatformFees memory);
+}
+
+interface IEmergencyWithdrawal {
+    event StrategyEmergencyWithdrawn(address indexed strategy);
+
+    /**
+     * @notice Set a new address that will receive assets withdrawn if emergency withdrawal is executed
+     * @param address_ address
+     */
+    function setEmergencyWithdrawalWallet(address address_) external;
+
+    /**
+     * @notice Instantly withdraws assets from a strategy, bypassing shares mechanism.
+     * @param strategies Addresses of strategies.
+     * @param assetGroup Asset group of the smart vault.
+     * @param withdrawalSlippages Slippages to guard withdrawal.
+     * @param removeStrategies Whether to remove strategies from the system after withdrawal.
+     */
+    function emergencyWithdraw(
+        address[] calldata strategies,
+        address[] calldata assetGroup,
+        uint256[][] calldata withdrawalSlippages,
+        bool removeStrategies
+    ) external;
 }

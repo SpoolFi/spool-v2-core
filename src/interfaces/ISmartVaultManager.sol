@@ -166,7 +166,12 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
      */
     function reallocate(ReallocateParamBag calldata reallocateParams) external;
 
-    function removeStrategy(address strategy) external;
+    /**
+     * @notice Removes strategy from vaults, and optionally removes it from the system as well.
+     * @param strategy Strategy address to remove.@param
+     * @param fromVaultsOnly Whether to remove the strategy from vaults or from the system as well.
+     */
+    function removeStrategy(address strategy, bool fromVaultsOnly) external;
 
     /**
      * @notice Syncs smart vault with strategies.

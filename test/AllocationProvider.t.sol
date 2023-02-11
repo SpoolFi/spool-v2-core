@@ -131,6 +131,11 @@ contract AllocationProviderTest is Test {
 
         uint256[] memory results = ap.calculateAllocation(input);
 
+        // reverts with invalid apy list length
+        input.apys = new uint16[](0);
+        vm.expectRevert(abi.encodeWithSelector(ApysOrRiskScoresLengthMismatch.selector, 0, 3));
+        ap.calculateAllocation(input);
+
         uint256 sum;
         for (uint8 i = 0; i < results.length; i++) {
             sum += results[i];

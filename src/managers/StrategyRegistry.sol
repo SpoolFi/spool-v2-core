@@ -20,7 +20,7 @@ import "../libraries/SpoolUtils.sol";
  * - ROLE_STRATEGY_REGISTRY
  */
 // TODO add Initilizable
-contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
+contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, SpoolAccessControllable {
     using ArrayMappingUint256 for mapping(uint256 => uint256);
     using uint16a16Lib for uint16a16;
 
@@ -35,6 +35,9 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
     address private immutable _ghostStrategy;
 
     PlatformFees internal _platformFees;
+
+    /// @notice Address to transfer withdrawn assets to in case of an emergency withdrawal.
+    address public override emergencyWithdrawalWallet;
 
     /// @notice Current DHW index for strategies
     mapping(address => uint256) internal _currentIndexes;
@@ -188,6 +191,7 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
 
     /**
      * @notice Add strategy to registry
+     * @dev no need to check msg.sender, he needs a specific role to be allowed to grant ROLE_STRATEGY
      */
     function registerStrategy(address strategy) external {
         if (_accessControl.hasRole(ROLE_STRATEGY, strategy)) revert StrategyAlreadyRegistered({address_: strategy});
@@ -204,11 +208,10 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
      * @notice Remove strategy from registry
      */
     function removeStrategy(address strategy) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
-        if (!_accessControl.hasRole(ROLE_STRATEGY, strategy)) revert InvalidStrategy({address_: strategy});
-        _accessControl.revokeRole(ROLE_STRATEGY, strategy);
+        _removeStrategy(strategy);
     }
 
-    function doHardWork(DoHardWorkParameterBag calldata dhwParams) external {
+    function doHardWork(DoHardWorkParameterBag calldata dhwParams) external whenNotPaused {
         unchecked {
             // Can only be run by do-hard-worker.
             _checkRole(ROLE_DO_HARD_WORKER, msg.sender);
@@ -356,9 +359,11 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         return indexes;
     }
 
-    function redeemFast(RedeemFastParameterBag calldata redeemFastParams) external returns (uint256[] memory) {
-        _checkRole(ROLE_SMART_VAULT_MANAGER, msg.sender);
-
+    function redeemFast(RedeemFastParameterBag calldata redeemFastParams)
+        external
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+        returns (uint256[] memory)
+    {
         uint256[] memory withdrawnAssets = new uint256[](redeemFastParams.assetGroup.length);
         uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(redeemFastParams.assetGroup, _priceFeedManager);
 
@@ -444,6 +449,39 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
         _setTreasuryFeeReciever(treasuryFeeReciever_);
     }
 
+    function setEmergencyWithdrawalWallet(address address_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        if (address_ == address(0)) {
+            revert AddressZero();
+        }
+
+        emergencyWithdrawalWallet = address_;
+    }
+
+    function emergencyWithdraw(
+        address[] calldata strategies,
+        address[] calldata assetGroup,
+        uint256[][] calldata withdrawalSlippages,
+        bool removeStrategies
+    ) external onlyRole(ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, msg.sender) {
+        if (emergencyWithdrawalWallet == address(0)) {
+            revert AddressZero();
+        }
+
+        for (uint256 i = 0; i < strategies.length; i++) {
+            if (strategies[i] == _ghostStrategy) {
+                continue;
+            }
+
+            IStrategy(strategies[i]).emergencyWithdraw(assetGroup, withdrawalSlippages[i], emergencyWithdrawalWallet);
+
+            emit StrategyEmergencyWithdrawn(strategies[i]);
+
+            if (removeStrategies) {
+                _removeStrategy(strategies[i]);
+            }
+        }
+    }
+
     function _setEcosystemFee(uint96 ecosystemFeePct_) private {
         if (ecosystemFeePct_ > TREASURY_FEE_MAX) {
             revert EcosystemFeeTooLarge(ecosystemFeePct_);
@@ -522,5 +560,12 @@ contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
                 return FULL_PERCENT_INT;
             }
         }
+    }
+
+    /* ========== PRIVATE FUNCTIONS ========== */
+
+    function _removeStrategy(address strategy) private {
+        if (!_accessControl.hasRole(ROLE_STRATEGY, strategy)) revert InvalidStrategy({address_: strategy});
+        _accessControl.revokeRole(ROLE_STRATEGY, strategy);
     }
 }

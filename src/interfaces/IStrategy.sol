@@ -168,4 +168,14 @@ interface IStrategy is IERC20Upgradeable {
         uint256[] calldata slippages,
         SwapInfo[] calldata swapInfo
     ) external returns (uint256 sstsMinted);
+
+    /**
+     * @notice Instantly withdraws assets, bypassing shares mechanism.
+     * Transfers withdrawn assets to the emergency withdrawal wallet.
+     * @param assetGroup Asset group of the strategy.
+     * @param slippages Slippages to guard redeeming.
+     * @param recipient Recipient address
+     */
+    function emergencyWithdraw(address[] calldata assetGroup, uint256[] calldata slippages, address recipient)
+        external;
 }

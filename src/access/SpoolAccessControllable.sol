@@ -43,7 +43,7 @@ abstract contract SpoolAccessControllable {
      * @param role Role to check for.
      * @param account Account to check.
      */
-    function _checkSmartVaultRole(address smartVault, bytes32 role, address account) private view {
+    function _checkSmartVaultRole(address smartVault, bytes32 role, address account) internal view {
         if (!_accessControl.hasSmartVaultRole(smartVault, role, account)) {
             revert MissingRole(role, account);
         }
