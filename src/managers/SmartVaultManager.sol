@@ -412,6 +412,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         uint256 assetGroupId_ = _smartVaultAssetGroups[reallocateParams.smartVaults[0]];
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
         for (uint256 i; i < reallocateParams.smartVaults.length; ++i) {
             address smartVault = reallocateParams.smartVaults[i];
 
@@ -427,6 +428,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             if (_riskManager.getRiskProvider(smartVault) == address(0)) {
                 revert StaticAllocationSmartVault();
             }
+
+            // Sync smart vault.
+            _syncSmartVault(smartVault, _smartVaultStrategies[smartVault], tokens, false);
 
             // Set new allocation.
             _smartVaultAllocations[smartVault] =
