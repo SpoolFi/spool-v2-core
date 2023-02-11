@@ -52,8 +52,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     using uint16a16Lib for uint16a16;
     using SafeERC20 for IERC20;
-    using ArrayMapping for mapping(uint256 => uint256);
-    using ArrayMapping for mapping(uint256 => address);
+    using ArrayMappingUint256 for mapping(uint256 => uint256);
+    using ArrayMappingAddress for mapping(uint256 => address);
 
     IDepositManager private immutable _depositManager;
 
@@ -297,52 +297,23 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm)
         external
         whenNotPaused
-        onlyUnregisteredSmartVault(smartVault)
         onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)
     {
+        if (_smartVaultRegistry[smartVault]) {
+            revert SmartVaultAlreadyRegistered();
+        }
+
         // set asset group
         _smartVaultAssetGroups[smartVault] = registrationForm.assetGroupId;
 
-        uint256 strategiesLength = registrationForm.strategies.length;
-
-        // set strategies
-        if (strategiesLength == 0) {
-            revert SmartVaultRegistrationNoStrategies();
-        }
-
-        if (strategiesLength > STRATEGY_COUNT_CAP) {
-            revert StrategyCapExceeded();
-        }
-
-        // validate strategies
-        for (uint256 i; i < strategiesLength; i++) {
-            address strategy = registrationForm.strategies[i];
-
-            if (!_accessControl.hasRole(ROLE_STRATEGY, strategy)) {
-                revert InvalidStrategy(strategy);
-            }
-
-            // check that strategies use same asset group as smart vault
-            if (IStrategy(strategy).assetGroupId() != registrationForm.assetGroupId) {
-                revert NotSameAssetGroup();
-            }
-
-            _smartVaultsWithStrategy[strategy].push(smartVault);
-        }
-
-        // check that management fee is not too big
-        if (registrationForm.managementFeePct > MANAGEMENT_FEE_MAX) {
-            revert ManagementFeeTooLarge(registrationForm.managementFeePct);
-        }
-        // check that deposit fee is not too big
-        if (registrationForm.depositFeePct > DEPOSIT_FEE_MAX) {
-            revert DepositFeeTooLarge(registrationForm.depositFeePct);
-        }
-        // set smart vault fees
-        _smartVaultFees[smartVault] = SmartVaultFees(registrationForm.managementFeePct, registrationForm.depositFeePct);
-
         // set strategies
         _smartVaultStrategies[smartVault] = registrationForm.strategies;
+        for (uint256 i; i < registrationForm.strategies.length; i++) {
+            _smartVaultsWithStrategy[registrationForm.strategies[i]].push(smartVault);
+        }
+
+        // set smart vault fees
+        _smartVaultFees[smartVault] = SmartVaultFees(registrationForm.managementFeePct, registrationForm.depositFeePct);
 
         // set allocation
         if (registrationForm.strategyAllocation.length == registrationForm.strategies.length) {
@@ -381,8 +352,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /* ========== BOOKKEEPING ========== */
 
     function flushSmartVault(address smartVault) public whenNotPaused onlyRegisteredSmartVault(smartVault) {
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-        _flushSmartVault(smartVault, _smartVaultAllocations[smartVault], _smartVaultStrategies[smartVault], tokens);
+        _flushSmartVault(
+            smartVault,
+            _smartVaultAllocations[smartVault],
+            _smartVaultStrategies[smartVault],
+            _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault])
+        );
     }
 
     function syncSmartVault(address smartVault, bool revertOnMissingDHW)
@@ -390,8 +365,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         whenNotPaused
         onlyRegisteredSmartVault(smartVault)
     {
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-        _syncSmartVault(smartVault, _smartVaultStrategies[smartVault], tokens, revertOnMissingDHW);
+        _syncSmartVault(
+            smartVault,
+            _smartVaultStrategies[smartVault],
+            _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]),
+            revertOnMissingDHW
+        );
     }
 
     function reallocate(ReallocateParamBag calldata reallocateParams) external whenNotPaused {
@@ -674,9 +653,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         internal
         returns (uint256)
     {
-        address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
-        _syncSmartVault(bag.smartVault, strategies_, tokens, false);
+        _syncSmartVault(bag.smartVault, _smartVaultStrategies[bag.smartVault], tokens, false);
 
         _depositManager.claimSmartVaultTokens(bag.smartVault, bag.nftIds, bag.nftAmounts, tokens, redeemer);
         uint256 nftId = _withdrawalManager.redeem(bag, RedeemExtras(receiver, redeemer, _flushIndexes[bag.smartVault]));
@@ -762,12 +740,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         emit SmartVaultFlushed(smartVault, flushIndex);
     }
 
-    function _onlyUnregisteredSmartVault(address smartVault) internal view {
-        if (_smartVaultRegistry[smartVault]) {
-            revert SmartVaultAlreadyRegistered();
-        }
-    }
-
     function _onlyRegisteredSmartVault(address smartVault) internal view {
         if (!_smartVaultRegistry[smartVault]) {
             revert SmartVaultNotRegisteredYet();
@@ -775,11 +747,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     }
 
     /* ========== MODIFIERS ========== */
-
-    modifier onlyUnregisteredSmartVault(address smartVault) {
-        _onlyUnregisteredSmartVault(smartVault);
-        _;
-    }
 
     modifier onlyRegisteredSmartVault(address smartVault) {
         _onlyRegisteredSmartVault(smartVault);

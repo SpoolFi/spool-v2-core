@@ -13,6 +13,21 @@ import {SmartVault} from "./SmartVault.sol";
 import {ISmartVaultRegistry} from "./interfaces/ISmartVaultManager.sol";
 import "./interfaces/ISpoolAccessControl.sol";
 import "./access/Roles.sol";
+import "./interfaces/Constants.sol";
+import "./interfaces/CommonErrors.sol";
+import "./interfaces/IStrategy.sol";
+
+/* ========== ERRORS ========== */
+
+/**
+ * @notice Used when no strategy was provided during smart vault registration.
+ */
+error SmartVaultRegistrationNoStrategies();
+
+/**
+ * @notice Used when too many strategies were provided during smart vault registration.
+ */
+error StrategyCapExceeded();
 
 /* ========== STRUCTS ========== */
 
@@ -202,6 +217,32 @@ contract SmartVaultFactory is UpgradeableBeacon {
      */
     function _validateSpecification(SmartVaultSpecification calldata specification) private view {
         _assetGroupRegistry.validateAssetGroup(specification.assetGroupId);
+
+        if (specification.strategies.length == 0) {
+            revert SmartVaultRegistrationNoStrategies();
+        }
+        if (specification.strategies.length > STRATEGY_COUNT_CAP) {
+            revert StrategyCapExceeded();
+        }
+
+        unchecked {
+            for (uint256 i; i < specification.strategies.length; ++i) {
+                if (!_accessControl.hasRole(ROLE_STRATEGY, specification.strategies[i])) {
+                    revert InvalidStrategy(specification.strategies[i]);
+                }
+
+                if (IStrategy(specification.strategies[i]).assetGroupId() != specification.assetGroupId) {
+                    revert NotSameAssetGroup();
+                }
+            }
+        }
+
+        if (specification.managementFeePct > MANAGEMENT_FEE_MAX) {
+            revert ManagementFeeTooLarge(specification.managementFeePct);
+        }
+        if (specification.depositFeePct > DEPOSIT_FEE_MAX) {
+            revert DepositFeeTooLarge(specification.depositFeePct);
+        }
     }
 
     /**

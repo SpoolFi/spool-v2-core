@@ -52,7 +52,7 @@ struct ClaimTokensLocalBag {
 contract DepositManager is ActionsAndGuards, SpoolAccessControllable, IDepositManager {
     using SafeERC20 for IERC20;
     using uint16a16Lib for uint16a16;
-    using ArrayMapping for mapping(uint256 => uint256);
+    using ArrayMappingUint256 for mapping(uint256 => uint256);
 
     uint256 constant INITIAL_SHARE_MULTIPLIER = 1000;
 

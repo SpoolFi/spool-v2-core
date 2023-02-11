@@ -16,7 +16,7 @@ import "../access/SpoolAccessControllable.sol";
 
 contract WithdrawalManager is ActionsAndGuards, SpoolAccessControllable, IWithdrawalManager {
     using SafeERC20 for IERC20;
-    using ArrayMapping for mapping(uint256 => uint256);
+    using ArrayMappingUint256 for mapping(uint256 => uint256);
 
     /**
      * @notice Withdrawn vault shares at given flush index

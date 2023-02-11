@@ -14,7 +14,7 @@ import "./libraries/ArrayMapping.sol";
 
 contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessControllable, ISmartVault {
     using SafeERC20 for IERC20;
-    using ArrayMapping for mapping(uint256 => uint256);
+    using ArrayMappingUint256 for mapping(uint256 => uint256);
 
     /* ========== CONSTANTS ========== */
 

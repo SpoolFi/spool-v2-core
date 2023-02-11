@@ -18,7 +18,7 @@ import "../libraries/SpoolUtils.sol";
  * - ROLE_STRATEGY_REGISTRY
  */
 contract StrategyRegistry is IStrategyRegistry, SpoolAccessControllable {
-    using ArrayMapping for mapping(uint256 => uint256);
+    using ArrayMappingUint256 for mapping(uint256 => uint256);
     using uint16a16Lib for uint16a16;
 
     /* ========== STATE VARIABLES ========== */

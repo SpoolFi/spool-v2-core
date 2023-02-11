@@ -7,12 +7,6 @@ import "../libraries/uint16a16Lib.sol";
 /* ========== ERRORS ========== */
 
 /**
- * @notice Used when invalida strategy is provided.
- * @param address_ Address of the invalid strategy.
- */
-error InvalidStrategy(address address_);
-
-/**
  * @notice Used when trying to register an already registered strategy.
  * @param address_ Address of already registered strategy.
  */

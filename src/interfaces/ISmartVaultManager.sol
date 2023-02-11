@@ -34,16 +34,6 @@ error SmartVaultAlreadyRegistered();
 error SmartVaultNotRegisteredYet();
 
 /**
- * @notice Used when no strategy was provided during smart vault registration.
- */
-error SmartVaultRegistrationNoStrategies();
-
-/**
- * @notice Used when too many strategies were provided during smart vault registration.
- */
-error StrategyCapExceeded();
-
-/**
  * @notice Used when user tries to configure a vault with too large management fee.
  */
 error ManagementFeeTooLarge(uint256 mgmtFeePct);

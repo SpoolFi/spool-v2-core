@@ -34,8 +34,8 @@ struct ReallocationParameterBag {
 
 library ReallocationLib {
     using uint16a16Lib for uint16a16;
-    using ArrayMapping for mapping(uint256 => uint256);
-    using ArrayMapping for mapping(uint256 => address);
+    using ArrayMappingUint256 for mapping(uint256 => uint256);
+    using ArrayMappingAddress for mapping(uint256 => address);
 
     /**
      * @notice Reallocates smart vaults.

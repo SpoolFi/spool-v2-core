@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
-library ArrayMapping {
+library ArrayMappingUint256 {
     /**
-     * @notice Map mapping(uint256 => uint256)) values to an array
+     * @notice Map mapping(uint256 => uint256)) values to an array.
      */
     function toArray(mapping(uint256 => uint256) storage _self, uint256 length)
         external
@@ -17,6 +17,20 @@ library ArrayMapping {
         return arrayOut;
     }
 
+    /**
+     * @notice Set array values to mapping slots.
+     */
+    function setValues(mapping(uint256 => uint256) storage _self, uint256[] calldata values) external {
+        for (uint256 i = 0; i < values.length; ++i) {
+            _self[i] = values[i];
+        }
+    }
+}
+
+library ArrayMappingAddress {
+    /**
+     * @notice Map mapping(uint256 => address)) values to an array.
+     */
     function toArray(mapping(uint256 => address) storage _self, uint256 length)
         external
         view
@@ -30,14 +44,8 @@ library ArrayMapping {
     }
 
     /**
-     * @notice Set array values to mapping slots
+     * @notice Set array values to mapping slots.
      */
-    function setValues(mapping(uint256 => uint256) storage _self, uint256[] calldata values) external {
-        for (uint256 i = 0; i < values.length; ++i) {
-            _self[i] = values[i];
-        }
-    }
-
     function setValues(mapping(uint256 => address) storage _self, address[] calldata values) external {
         for (uint256 i = 0; i < values.length; ++i) {
             _self[i] = values[i];

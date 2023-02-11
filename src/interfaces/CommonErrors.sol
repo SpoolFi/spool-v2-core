@@ -15,3 +15,9 @@ error NotSameAssetGroup();
  * @notice Used when fetched exchange rate is out of slippage range.
  */
 error ExchangeRateOutOfSlippages();
+
+/**
+ * @notice Used when invalida strategy is provided.
+ * @param address_ Address of the invalid strategy.
+ */
+error InvalidStrategy(address address_);

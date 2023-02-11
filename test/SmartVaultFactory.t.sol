@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
-import {Test} from "forge-std/Test.sol";
-import {IAccessControlUpgradeable} from "@openzeppelin-upgradeable/access/IAccessControlUpgradeable.sol";
-import {IActionManager, IAction} from "../src/interfaces/IAction.sol";
-import {IAssetGroupRegistry} from "../src/interfaces/IAssetGroupRegistry.sol";
+import "forge-std/Test.sol";
+import "@openzeppelin-upgradeable/access/IAccessControlUpgradeable.sol";
+import "../src/interfaces/IAction.sol";
+import "../src/interfaces/IAssetGroupRegistry.sol";
 import "../src/interfaces/IGuardManager.sol";
-import {RequestType} from "../src/interfaces/RequestType.sol";
-import {ISmartVault} from "../src/interfaces/ISmartVault.sol";
-import {ISmartVaultManager} from "../src/interfaces/ISmartVaultManager.sol";
-import {ISpoolAccessControl} from "../src/interfaces/ISpoolAccessControl.sol";
-import {SmartVault} from "../src/SmartVault.sol";
-import {SmartVaultFactory, SmartVaultSpecification} from "../src/SmartVaultFactory.sol";
-import {Arrays} from "./libraries/Arrays.sol";
+import "../src/interfaces/RequestType.sol";
+import "../src/interfaces/ISmartVault.sol";
+import "../src/interfaces/ISmartVaultManager.sol";
+import "../src/interfaces/ISpoolAccessControl.sol";
+import "../src/interfaces/IStrategy.sol";
+import "../src/SmartVault.sol";
+import "../src/SmartVaultFactory.sol";
+import "./libraries/Arrays.sol";
 
 contract SmartVaultVariant is SmartVault {
     uint256 private immutable _testValue;
@@ -33,6 +34,8 @@ contract SmartVaultVariant is SmartVault {
 contract SmartVaultFactoryTest is Test {
     event SmartVaultDeployed(address indexed smartVault, address indexed deployer);
 
+    address strategy;
+
     SmartVaultFactory private factory;
 
     ISpoolAccessControl accessControl;
@@ -42,9 +45,15 @@ contract SmartVaultFactoryTest is Test {
     IAssetGroupRegistry assetGroupRegistry;
 
     function setUp() public {
+        strategy = address(0x01);
+        vm.mockCall(strategy, abi.encodeWithSelector(IStrategy.assetGroupId.selector), abi.encode(1));
+
         accessControl = ISpoolAccessControl(address(0x1));
         vm.mockCall(
             address(accessControl), abi.encodeWithSelector(IAccessControlUpgradeable.grantRole.selector), abi.encode(0)
+        );
+        vm.mockCall(
+            address(accessControl), abi.encodeWithSelector(IAccessControlUpgradeable.hasRole.selector), abi.encode(true)
         );
 
         actionManager = IActionManager(address(0x2));
@@ -88,12 +97,75 @@ contract SmartVaultFactoryTest is Test {
     }
 
     function test_deploySmartVault_shouldValidateSpecification() public {
+        SmartVaultSpecification memory specification = _getSpecification();
+
         // - validate asset group
         vm.expectCall(
             address(assetGroupRegistry), abi.encodeWithSelector(IAssetGroupRegistry.validateAssetGroup.selector)
         );
+        factory.deploySmartVault(specification);
 
-        factory.deploySmartVault(_getSpecification());
+        // - validate number of strategies
+        {
+            address[] memory before = specification.strategies;
+
+            specification.strategies = new address[](0);
+            vm.expectRevert(SmartVaultRegistrationNoStrategies.selector);
+            factory.deploySmartVault(specification);
+
+            specification.strategies = new address[](STRATEGY_COUNT_CAP + 1);
+            vm.expectRevert(StrategyCapExceeded.selector);
+            factory.deploySmartVault(specification);
+
+            specification.strategies = before;
+        }
+
+        // - validate strategy validity
+        {
+            vm.mockCall(
+                address(accessControl),
+                abi.encodeWithSelector(IAccessControlUpgradeable.hasRole.selector),
+                abi.encode(false)
+            );
+
+            vm.expectRevert(abi.encodeWithSelector(InvalidStrategy.selector, strategy));
+            factory.deploySmartVault(specification);
+
+            vm.mockCall(
+                address(accessControl),
+                abi.encodeWithSelector(IAccessControlUpgradeable.hasRole.selector),
+                abi.encode(true)
+            );
+        }
+
+        // - validate strategies asset group
+        {
+            vm.mockCall(strategy, abi.encodeWithSelector(IStrategy.assetGroupId.selector), abi.encode(2));
+
+            vm.expectRevert(NotSameAssetGroup.selector);
+            factory.deploySmartVault(specification);
+
+            vm.mockCall(strategy, abi.encodeWithSelector(IStrategy.assetGroupId.selector), abi.encode(1));
+        }
+
+        // - validate fees
+        {
+            uint16 before = specification.managementFeePct;
+
+            specification.managementFeePct = uint16(MANAGEMENT_FEE_MAX) + 1;
+            vm.expectRevert(abi.encodeWithSelector(ManagementFeeTooLarge.selector, specification.managementFeePct));
+            factory.deploySmartVault(specification);
+
+            specification.managementFeePct = before;
+
+            before = specification.depositFeePct;
+
+            specification.depositFeePct = uint16(DEPOSIT_FEE_MAX) + 1;
+            vm.expectRevert(abi.encodeWithSelector(DepositFeeTooLarge.selector, specification.depositFeePct));
+            factory.deploySmartVault(specification);
+
+            specification.depositFeePct = before;
+        }
     }
 
     function test_deploySmartVault_shouldIntegrateSmartVault() public {
@@ -125,12 +197,75 @@ contract SmartVaultFactoryTest is Test {
     }
 
     function test_deploySmartVaultDeterministically_shouldValidateSpecification() public {
+        SmartVaultSpecification memory specification = _getSpecification();
+
         // - validate asset group
         vm.expectCall(
             address(assetGroupRegistry), abi.encodeWithSelector(IAssetGroupRegistry.validateAssetGroup.selector)
         );
+        factory.deploySmartVaultDeterministically(specification, bytes32(uint256(123)));
 
-        factory.deploySmartVaultDeterministically(_getSpecification(), bytes32(uint256(123)));
+        // - validate number of strategies
+        {
+            address[] memory before = specification.strategies;
+
+            specification.strategies = new address[](0);
+            vm.expectRevert(SmartVaultRegistrationNoStrategies.selector);
+            factory.deploySmartVaultDeterministically(specification, bytes32(uint256(123)));
+
+            specification.strategies = new address[](STRATEGY_COUNT_CAP + 1);
+            vm.expectRevert(StrategyCapExceeded.selector);
+            factory.deploySmartVaultDeterministically(specification, bytes32(uint256(123)));
+
+            specification.strategies = before;
+        }
+
+        // - validate strategy validity
+        {
+            vm.mockCall(
+                address(accessControl),
+                abi.encodeWithSelector(IAccessControlUpgradeable.hasRole.selector),
+                abi.encode(false)
+            );
+
+            vm.expectRevert(abi.encodeWithSelector(InvalidStrategy.selector, strategy));
+            factory.deploySmartVaultDeterministically(specification, bytes32(uint256(123)));
+
+            vm.mockCall(
+                address(accessControl),
+                abi.encodeWithSelector(IAccessControlUpgradeable.hasRole.selector),
+                abi.encode(true)
+            );
+        }
+
+        // - validate strategies asset group
+        {
+            vm.mockCall(strategy, abi.encodeWithSelector(IStrategy.assetGroupId.selector), abi.encode(2));
+
+            vm.expectRevert(NotSameAssetGroup.selector);
+            factory.deploySmartVaultDeterministically(specification, bytes32(uint256(123)));
+
+            vm.mockCall(strategy, abi.encodeWithSelector(IStrategy.assetGroupId.selector), abi.encode(1));
+        }
+
+        // - validate fees
+        {
+            uint16 before = specification.managementFeePct;
+
+            specification.managementFeePct = uint16(MANAGEMENT_FEE_MAX) + 1;
+            vm.expectRevert(abi.encodeWithSelector(ManagementFeeTooLarge.selector, specification.managementFeePct));
+            factory.deploySmartVaultDeterministically(specification, bytes32(uint256(123)));
+
+            specification.managementFeePct = before;
+
+            before = specification.depositFeePct;
+
+            specification.depositFeePct = uint16(DEPOSIT_FEE_MAX) + 1;
+            vm.expectRevert(abi.encodeWithSelector(DepositFeeTooLarge.selector, specification.depositFeePct));
+            factory.deploySmartVaultDeterministically(specification, bytes32(uint256(123)));
+
+            specification.depositFeePct = before;
+        }
     }
 
     function test_deploySmartVaultDeterministically_shouldIntegrateSmartVault() public {
@@ -252,11 +387,11 @@ contract SmartVaultFactoryTest is Test {
 
     /* ========== HELPERS ========== */
 
-    function _getSpecification() private pure returns (SmartVaultSpecification memory) {
+    function _getSpecification() private view returns (SmartVaultSpecification memory) {
         return SmartVaultSpecification({
             smartVaultName: "MySmartVault",
             assetGroupId: 1,
-            strategies: Arrays.toArray(address(0x6)),
+            strategies: Arrays.toArray(strategy),
             strategyAllocation: new uint256[](0),
             riskTolerance: 4,
             riskProvider: address(0x7),
