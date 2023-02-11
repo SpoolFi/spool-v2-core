@@ -16,6 +16,7 @@ import "./access/Roles.sol";
 import "./interfaces/Constants.sol";
 import "./interfaces/CommonErrors.sol";
 import "./interfaces/IStrategy.sol";
+import "./interfaces/IRiskManager.sol";
 
 /* ========== ERRORS ========== */
 
@@ -114,6 +115,11 @@ contract SmartVaultFactory is UpgradeableBeacon {
      */
     IAssetGroupRegistry immutable _assetGroupRegistry;
 
+    /**
+     * @notice Risk manager contract.
+     */
+    IRiskManager immutable _riskManager;
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -122,13 +128,15 @@ contract SmartVaultFactory is UpgradeableBeacon {
         IActionManager actionManager_,
         IGuardManager guardManager_,
         ISmartVaultRegistry smartVaultRegistry_,
-        IAssetGroupRegistry assetGroupRegistry_
+        IAssetGroupRegistry assetGroupRegistry_,
+        IRiskManager riskManager_
     ) UpgradeableBeacon(implementation) {
         _accessControl = accessControl_;
         _actionManager = actionManager_;
         _guardManager = guardManager_;
         _smartVaultRegistry = smartVaultRegistry_;
         _assetGroupRegistry = assetGroupRegistry_;
+        _riskManager = riskManager_;
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
@@ -289,17 +297,21 @@ contract SmartVaultFactory is UpgradeableBeacon {
             _accessControl.grantRole(ROLE_SMART_VAULT_ALLOW_REDEEM, smartVaultAddress);
         }
 
+        // set allocation
+        if (specification.strategyAllocation.length == 0) {
+            _riskManager.setRiskProvider(smartVaultAddress, specification.riskProvider);
+            _riskManager.setRiskTolerance(smartVaultAddress, specification.riskTolerance);
+            _riskManager.setAllocationProvider(smartVaultAddress, specification.allocationProvider);
+        }
+
         _smartVaultRegistry.registerSmartVault(
             smartVaultAddress,
             SmartVaultRegistrationForm({
                 assetGroupId: specification.assetGroupId,
                 strategies: specification.strategies,
                 strategyAllocation: specification.strategyAllocation,
-                riskTolerance: specification.riskTolerance,
-                riskProvider: specification.riskProvider,
                 managementFeePct: specification.managementFeePct,
                 depositFeePct: specification.depositFeePct,
-                allocationProvider: specification.allocationProvider,
                 performanceFeePct: specification.performanceFeePct
             })
         );

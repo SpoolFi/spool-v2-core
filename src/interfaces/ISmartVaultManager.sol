@@ -75,9 +75,6 @@ error RedeemForNotAllowed();
  * @custom:member assetGroupId Underlying asset group of the smart vault.
  * @custom:member strategies Strategies used by the smart vault.
  * @custom:member strategyAllocation Optional. If empty array, values will be calculated on the spot.
- * @custom:member riskProvider Risk provider used by the smart vault.
- * @custom:member allocationProvider Allocation provider used by the smart vault.
- * @custom:member riskTolerance Risk appetite of the smart vault.
  * @custom:member managementFeePct Management fee of the smart vault.
  * @custom:member depositFeePct Deposit fee of the smart vault.
  * @custom:member performanceFeePct Performance fee of the smart vault.
@@ -86,9 +83,6 @@ struct SmartVaultRegistrationForm {
     uint256 assetGroupId;
     address[] strategies;
     uint256[] strategyAllocation;
-    address riskProvider;
-    address allocationProvider;
-    int8 riskTolerance;
     uint16 managementFeePct;
     uint16 depositFeePct;
     uint16 performanceFeePct;

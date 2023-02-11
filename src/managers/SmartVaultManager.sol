@@ -145,9 +145,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             return ownerSVTs + fees;
         }
 
-        ISmartVault smartVault = ISmartVault(smartVaultAddress);
-        uint256 currentBalance = smartVault.balanceOf(userAddress);
-        uint256[] memory nftIds = smartVault.activeUserNFTIds(userAddress);
+        uint256 currentBalance = ISmartVault(smartVaultAddress).balanceOf(userAddress);
+        uint256[] memory nftIds = ISmartVault(smartVaultAddress).activeUserNFTIds(userAddress);
 
         if (nftIds.length > 0) {
             currentBalance += _simulateNFTBurn(smartVaultAddress, userAddress, nftIds);
@@ -298,11 +297,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         if (registrationForm.strategyAllocation.length == registrationForm.strategies.length) {
             _smartVaultAllocations[smartVault] = uint16a16.wrap(0).set(registrationForm.strategyAllocation);
         } else {
-            // TODO: move to smart vault factory
-            _riskManager.setRiskProvider(smartVault, registrationForm.riskProvider);
-            _riskManager.setRiskTolerance(smartVault, registrationForm.riskTolerance);
-            _riskManager.setAllocationProvider(smartVault, registrationForm.allocationProvider);
-
             _smartVaultAllocations[smartVault] =
                 _riskManager.calculateAllocation(smartVault, registrationForm.strategies);
         }

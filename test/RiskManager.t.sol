@@ -26,7 +26,7 @@ contract RiskManagerTest is Test {
     }
 
     function test_calculateAllocation() public {
-        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(this));
+        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(this));
         accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, allocationProvider);
         accessControl.grantRole(ROLE_RISK_PROVIDER, STATIC_RISK_PROVIDER);
 
@@ -107,7 +107,7 @@ contract RiskManagerTest is Test {
 
     function test_setRiskProvider_success() public {
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
-        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, actor);
+        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, actor);
         vm.prank(actor);
         riskManager.setRiskProvider(smartVault, riskProvider);
 
@@ -117,12 +117,12 @@ contract RiskManagerTest is Test {
     function test_setRiskProvider_revertMissingRole() public {
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         vm.prank(actor);
-        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SMART_VAULT_MANAGER, actor));
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SMART_VAULT_INTEGRATOR, actor));
         riskManager.setRiskProvider(smartVault, riskProvider);
     }
 
     function test_setRiskProvider_revertInvalidProvider() public {
-        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, actor);
+        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, actor);
         vm.prank(actor);
         vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_RISK_PROVIDER, riskProvider));
         riskManager.setRiskProvider(smartVault, riskProvider);
@@ -130,7 +130,7 @@ contract RiskManagerTest is Test {
 
     function test_setAllocationProvider_success() public {
         accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, allocationProvider);
-        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, actor);
+        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, actor);
         vm.prank(actor);
         riskManager.setAllocationProvider(smartVault, allocationProvider);
 
@@ -140,19 +140,19 @@ contract RiskManagerTest is Test {
     function test_setAllocationProvider_revertMissingRole() public {
         accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, allocationProvider);
         vm.prank(actor);
-        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SMART_VAULT_MANAGER, actor));
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SMART_VAULT_INTEGRATOR, actor));
         riskManager.setAllocationProvider(smartVault, allocationProvider);
     }
 
     function test_setAllocationProvider_revertInvalidProvider() public {
-        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, actor);
+        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, actor);
         vm.prank(actor);
         vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_ALLOCATION_PROVIDER, allocationProvider));
         riskManager.setAllocationProvider(smartVault, allocationProvider);
     }
 
     function test_setRiskTolerance_success() public {
-        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, actor);
+        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, actor);
         vm.prank(actor);
         riskManager.setRiskTolerance(smartVault, 1_0);
 
@@ -161,12 +161,12 @@ contract RiskManagerTest is Test {
 
     function test_setRiskTolerance_revertMissingRole() public {
         vm.prank(actor);
-        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SMART_VAULT_MANAGER, actor));
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SMART_VAULT_INTEGRATOR, actor));
         riskManager.setRiskTolerance(smartVault, 1_0);
     }
 
     function test_setRiskTolerance_revertRiskToleranceOutOfBounds() public {
-        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, actor);
+        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, actor);
         vm.prank(actor);
         vm.expectRevert(abi.encodeWithSelector(RiskToleranceValueOutOfBounds.selector, 12));
         riskManager.setRiskTolerance(smartVault, 12);

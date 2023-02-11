@@ -91,7 +91,7 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
 
     function setRiskTolerance(address smartVault, int8 riskTolerance)
         external
-        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+        onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)
     {
         if (riskTolerance > MAX_RISK_TOLERANCE || riskTolerance < MIN_RISK_TOLERANCE) {
             revert RiskToleranceValueOutOfBounds(riskTolerance);
@@ -104,7 +104,7 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
     function setRiskProvider(address smartVault, address riskProvider)
         external
         onlyRole(ROLE_RISK_PROVIDER, riskProvider)
-        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+        onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)
     {
         _smartVaultRiskProviders[smartVault] = riskProvider;
         emit RiskProviderSet(smartVault, riskProvider);
@@ -113,7 +113,7 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
     function setAllocationProvider(address smartVault, address allocationProvider)
         external
         onlyRole(ROLE_ALLOCATION_PROVIDER, allocationProvider)
-        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+        onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)
     {
         _smartVaultAllocationProviders[smartVault] = allocationProvider;
         emit AllocationProviderSet(smartVault, allocationProvider);

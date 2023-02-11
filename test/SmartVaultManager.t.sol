@@ -67,11 +67,8 @@ contract SmartVaultManagerTest is TestFixture {
             assetGroupId: assetGroupId,
             strategies: strategies,
             strategyAllocation: new uint256[](0),
-            riskTolerance: 4,
-            riskProvider: riskProvider,
             managementFeePct: 0,
             depositFeePct: 0,
-            allocationProvider: address(allocationProvider),
             performanceFeePct: 0
         });
         smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
@@ -79,7 +76,6 @@ contract SmartVaultManagerTest is TestFixture {
         assertEq(smartVaultManager.assetGroupId(mySmartVault), assetGroupId);
         assertEq(smartVaultManager.strategies(mySmartVault), strategies);
         assertEq(uint16a16.unwrap(smartVaultManager.allocations(mySmartVault)), uint16a16.unwrap(strategyAllocations));
-        assertEq(riskManager.getRiskProvider(mySmartVault), riskProvider);
     }
 
     function test_registerSmartVault_customAllocations() public {
@@ -90,11 +86,8 @@ contract SmartVaultManagerTest is TestFixture {
             assetGroupId: assetGroupId,
             strategies: strategies,
             strategyAllocation: Arrays.toArray(100, 300, 600),
-            riskTolerance: 4,
-            riskProvider: address(0),
             managementFeePct: 0,
             depositFeePct: 0,
-            allocationProvider: address(0),
             performanceFeePct: 0
         });
 
@@ -117,22 +110,10 @@ contract SmartVaultManagerTest is TestFixture {
             assetGroupId: assetGroupId,
             strategies: strategies,
             strategyAllocation: new uint256[](0),
-            riskTolerance: 4,
-            riskProvider: riskProvider,
             managementFeePct: 0,
             depositFeePct: 0,
-            allocationProvider: address(allocationProvider),
             performanceFeePct: 0
         });
-
-        // when not risk provider
-        {
-            registrationForm.riskProvider = address(0xabc);
-            vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_RISK_PROVIDER, address(0xabc)));
-            smartVaultManager.registerSmartVault(mySmartVault, registrationForm);
-
-            registrationForm.riskProvider = riskProvider;
-        }
 
         // when smart vault already registered
         {
@@ -312,11 +293,8 @@ contract SmartVaultManagerTest is TestFixture {
             assetGroupId: assetGroupId,
             strategies: strategies,
             strategyAllocation: new uint256[](0),
-            riskTolerance: 4,
-            riskProvider: riskProvider,
             managementFeePct: 0,
             depositFeePct: 0,
-            allocationProvider: address(allocationProvider),
             performanceFeePct: 0
         });
         smartVaultManager.registerSmartVault(address(smartVault_), registrationForm);

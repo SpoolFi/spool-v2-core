@@ -14,6 +14,7 @@ import "../src/interfaces/IStrategy.sol";
 import "../src/SmartVault.sol";
 import "../src/SmartVaultFactory.sol";
 import "./libraries/Arrays.sol";
+import "../src/managers/RiskManager.sol";
 
 contract SmartVaultVariant is SmartVault {
     uint256 private immutable _testValue;
@@ -43,6 +44,7 @@ contract SmartVaultFactoryTest is Test {
     IGuardManager guardManager;
     ISmartVaultManager smartVaultManager;
     IAssetGroupRegistry assetGroupRegistry;
+    IRiskManager riskManager;
 
     function setUp() public {
         strategy = address(0x01);
@@ -76,6 +78,7 @@ contract SmartVaultFactoryTest is Test {
             abi.encode(0)
         );
 
+        riskManager = new RiskManager(accessControl, address(0xabc));
         address implementation1 = address(new SmartVaultVariant(accessControl, guardManager, 1));
 
         factory = new SmartVaultFactory(
@@ -84,7 +87,8 @@ contract SmartVaultFactoryTest is Test {
             actionManager,
             guardManager,
             smartVaultManager,
-            assetGroupRegistry
+            assetGroupRegistry,
+            riskManager
         );
     }
 

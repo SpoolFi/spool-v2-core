@@ -96,7 +96,8 @@ contract TestFixture is Test {
             actionManager,
             guardManager,
             smartVaultManager,
-            assetGroupRegistry
+            assetGroupRegistry,
+            riskManager
         );
 
         accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
