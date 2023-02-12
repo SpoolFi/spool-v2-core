@@ -4,6 +4,7 @@ pragma solidity 0.8.16;
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "./ISwapper.sol";
+import "./IStrategyRegistry.sol";
 import "./IUsdPriceFeedManager.sol";
 
 /**
@@ -26,6 +27,8 @@ struct SwapData {
  * @custom:member withdrawnShares Strategy shares withdrawn by smart vault.
  * @custom:member masterWallet Master wallet.
  * @custom:member priceFeedManager Price feed manager.
+ * @custom:member baseYield Base yield value, manual input for specific strategies.
+ * @custom:member platformFees Platform fees info.
  */
 struct StrategyDhwParameterBag {
     SwapInfo[] swapInfo;
@@ -36,6 +39,9 @@ struct StrategyDhwParameterBag {
     uint256 withdrawnShares;
     address masterWallet;
     IUsdPriceFeedManager priceFeedManager;
+    int256 baseYield;
+    // NOTE: where to put the struct?
+    PlatformFees platformFees;
 }
 
 /**
@@ -182,6 +188,25 @@ interface IStrategy is IERC20Upgradeable {
     ) external returns (uint256[] memory assetsWithdrawn);
 
     /**
+     * @notice Instantly redeems strategy shares for assets.
+     * @param shares Amount of shares to redeem.
+     * @param redeemer Address of he redeemer, owner of SSTs.
+     * @param assetGroup Asset group of the strategy.
+     * @param exchangeRates Asset to USD exchange rates.
+     * @param priceFeedManager Price feed manager contract.
+     * @param slippages Slippages to guard redeeming.
+     * @return assetsWithdrawn Amount of assets withdrawn.
+     */
+    function redeemShares(
+        uint256 shares,
+        address redeemer,
+        address[] calldata assetGroup,
+        uint256[] calldata exchangeRates,
+        IUsdPriceFeedManager priceFeedManager,
+        uint256[] calldata slippages
+    ) external returns (uint256[] memory assetsWithdrawn);
+
+    /**
      * @notice Instantly deposits into the protocol.
      * @dev Requirements:
      * - caller must have role ROLE_SMART_VAULT_MANAGER
@@ -205,10 +230,9 @@ interface IStrategy is IERC20Upgradeable {
      * Transfers withdrawn assets to the emergency withdrawal wallet.
      * @dev Requirements:
      * - caller must have role ROLE_STRATEGY_REGISTRY
-     * @param assetGroup Asset group of the strategy.
      * @param slippages Slippages to guard redeeming.
      * @param recipient Recipient address
      */
-    function emergencyWithdraw(address[] calldata assetGroup, uint256[] calldata slippages, address recipient)
+    function emergencyWithdraw(uint256[] calldata slippages, address recipient)
         external;
 }

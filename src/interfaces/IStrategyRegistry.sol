@@ -79,6 +79,7 @@ struct DoHardWorkParameterBag {
     uint256[][][] strategySlippages;
     address[] tokens;
     uint256[2][] exchangeRateSlippages;
+    int256[] baseYields;
 }
 
 /**
@@ -309,13 +310,11 @@ interface IEmergencyWithdrawal {
      * @dev Requirements:
      * - caller must have role ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR
      * @param strategies Addresses of strategies.
-     * @param assetGroup Asset group of the smart vault.
      * @param withdrawalSlippages Slippages to guard withdrawal.
      * @param removeStrategies Whether to remove strategies from the system after withdrawal.
      */
     function emergencyWithdraw(
         address[] calldata strategies,
-        address[] calldata assetGroup,
         uint256[][] calldata withdrawalSlippages,
         bool removeStrategies
     ) external;

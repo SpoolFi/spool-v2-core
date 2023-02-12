@@ -21,7 +21,7 @@ contract StrategyRegistryTest is Test {
         accessControl.initialize();
         strategyRegistry =
         new StrategyRegistryStub(new MasterWallet(accessControl), accessControl, new MockPriceFeedManager(), address(new GhostStrategy()));
-        strategyRegistry.initialize(5_00, 5_00, address(0xc), address(0xc));
+        strategyRegistry.initialize(5_00, 5_00, address(0xc), address(0xc), address(0xb));
 
         accessControl.grantRole(ADMIN_ROLE_STRATEGY, address(strategyRegistry));
     }

@@ -122,12 +122,14 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         uint96 ecosystemFeePct_,
         uint96 treasuryFeePct_,
         address ecosystemFeeReceiver_,
-        address treasuryFeeReceiver_
+        address treasuryFeeReceiver_,
+        address emergencyWithdrawalWallet_
     ) external initializer {
         _setEcosystemFee(ecosystemFeePct_);
         _setTreasuryFee(treasuryFeePct_);
         _setEcosystemFeeReceiver(ecosystemFeeReceiver_);
         _setTreasuryFeeReceiver(treasuryFeeReceiver_);
+        _setEmergencyWithdrawalWallet(emergencyWithdrawalWallet_);
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -309,7 +311,10 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                             exchangeRates: exchangeRates,
                             withdrawnShares: _sharesRedeemed[strategy][dhwIndex],
                             masterWallet: address(_masterWallet),
-                            priceFeedManager: _priceFeedManager
+                            priceFeedManager: _priceFeedManager,
+                            baseYield: dhwParams.baseYields[i],
+                            // NOTE: try to read only once and save into memory
+                            platformFees: _platformFees
                         })
                     );
 
@@ -456,36 +461,52 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         _setTreasuryFeeReceiver(treasuryFeeReceiver_);
     }
 
-    function setEmergencyWithdrawalWallet(address address_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
-        if (address_ == address(0)) {
-            revert ConfigurationAddressZero();
-        }
-
-        emergencyWithdrawalWallet = address_;
+    function setEmergencyWithdrawalWallet(address emergencyWithdrawalWallet_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        _setEmergencyWithdrawalWallet(emergencyWithdrawalWallet_);
     }
 
     function emergencyWithdraw(
         address[] calldata strategies,
-        address[] calldata assetGroup,
         uint256[][] calldata withdrawalSlippages,
         bool removeStrategies
     ) external onlyRole(ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, msg.sender) {
-        if (emergencyWithdrawalWallet == address(0)) {
-            revert ConfigurationAddressZero();
-        }
-
         for (uint256 i = 0; i < strategies.length; i++) {
+            _checkRole(ROLE_STRATEGY, strategies[i]);
             if (strategies[i] == _ghostStrategy) {
                 continue;
             }
 
-            IStrategy(strategies[i]).emergencyWithdraw(assetGroup, withdrawalSlippages[i], emergencyWithdrawalWallet);
+            IStrategy(strategies[i]).emergencyWithdraw(withdrawalSlippages[i], emergencyWithdrawalWallet);
 
             emit StrategyEmergencyWithdrawn(strategies[i]);
 
             if (removeStrategies) {
                 _removeStrategy(strategies[i]);
             }
+        }
+    }
+
+    function redeemStrategyShares(
+        address[] calldata strategies,
+        uint256[] calldata shares,
+        uint256[][] calldata withdrawalSlippages
+    ) external {
+        for (uint256 i; i < strategies.length; ++i) {
+            _checkRole(ROLE_STRATEGY, strategies[i]);
+            if (strategies[i] == _ghostStrategy) {
+                continue;
+            }
+
+            uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(IStrategy(strategies[i]).assets(), _priceFeedManager);
+
+            IStrategy(strategies[i]).redeemShares(
+                shares[i],
+                msg.sender,
+                IStrategy(strategies[i]).assets(),
+                exchangeRates,
+                _priceFeedManager,
+                withdrawalSlippages[i]
+            );
         }
     }
 
@@ -519,6 +540,14 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         }
 
         _platformFees.treasuryFeeReceiver = treasuryFeeReceiver_;
+    }
+
+    function _setEmergencyWithdrawalWallet(address emergencyWithdrawalWallet_) private {
+        if (emergencyWithdrawalWallet_ == address(0)) {
+            revert ConfigurationAddressZero();
+        }
+
+        emergencyWithdrawalWallet = emergencyWithdrawalWallet_;
     }
 
     function _updateDhwYieldAndApy(address strategy, uint256 dhwIndex, int256 yieldPercentage) internal {

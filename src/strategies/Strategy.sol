@@ -19,12 +19,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
     /* ========== STATE VARIABLES ========== */
 
-    uint256 internal constant INITIAL_SHARE_MULTIPLIER = 1000;
-
     IAssetGroupRegistry internal immutable _assetGroupRegistry;
-
-    // TODO: remove
-    IStrategyRegistry internal _strategyRegistry;
 
     // @notice Name of the strategy
     string private _strategyName;
@@ -61,7 +56,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         return _assetGroupId;
     }
 
-    function assets() external view returns (address[] memory) {
+    function assets() public view returns (address[] memory) {
         return _assetGroupRegistry.listAssetGroup(_assetGroupId);
     }
 
@@ -93,6 +88,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             }
         }
 
+        // NOTE: is this on the right place?
         beforeDepositCheck(assetsToDeposit, dhwParams.slippages);
         beforeRedeemalCheck(dhwParams.withdrawnShares, dhwParams.slippages);
 
@@ -101,8 +97,12 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         uint256[] memory usdWorth = new uint256[](2);
 
         // Compound and get USD value.
-        dhwInfo.yieldPercentage = _getYieldPercentage(0);
+        dhwInfo.yieldPercentage = _getYieldPercentage(dhwParams.baseYield);
         dhwInfo.yieldPercentage += _compound(dhwParams.compoundSwapInfo, dhwParams.slippages);
+
+        // collect fees, mint SVTs relative to the yield generated
+        _collectPlatformFees(dhwInfo.yieldPercentage, dhwParams.platformFees);
+
         usdWorth[0] = _getUsdWorth(dhwParams.exchangeRates, dhwParams.priceFeedManager);
 
         uint256 matchedShares;
@@ -189,6 +189,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             // - figure out how much was withdrawn
             usdWorth[1] = _getUsdWorth(dhwParams.exchangeRates, dhwParams.priceFeedManager);
             unchecked {
+                // NOTE: this works with checking what's left on the contract
                 for (uint256 i; i < dhwParams.assetGroup.length; ++i) {
                     withdrawnAssets[i] = IERC20(dhwParams.assetGroup[i]).balanceOf(address(this));
                 }
@@ -242,22 +243,39 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             revert NotFastRedeemer(msg.sender);
         }
 
-        // redeem shares from protocol
-        _redeemFromProtocol(assetGroup, shares, slippages);
-        _burn(address(this), shares);
-
-        totalUsdValue = _getUsdWorth(exchangeRates, priceFeedManager);
-
-        // transfer assets to master wallet
-        uint256[] memory assetsWithdrawn = new uint256[](assetGroup.length);
-        for (uint256 i = 0; i < assetGroup.length; i++) {
-            assetsWithdrawn[i] = IERC20(assetGroup[i]).balanceOf(address(this));
-            IERC20(assetGroup[i]).safeTransfer(masterWallet, assetsWithdrawn[i]);
-        }
-
-        return assetsWithdrawn;
+        return _redeemShares(
+            shares,
+            address(this),
+            masterWallet,
+            assetGroup,
+            exchangeRates,
+            priceFeedManager,
+            slippages
+        );
     }
 
+    function redeemShares(
+        uint256 shares,
+        address redeemer,
+        address[] calldata assetGroup,
+        uint256[] calldata exchangeRates,
+        IUsdPriceFeedManager priceFeedManager,
+        uint256[] calldata slippages
+    ) external returns (uint256[] memory) {
+        _checkRole(ROLE_STRATEGY_REGISTRY, msg.sender);
+
+        return _redeemShares(
+            shares,
+            redeemer,
+            redeemer,
+            assetGroup,
+            exchangeRates,
+            priceFeedManager,
+            slippages
+        );
+    }
+
+    // NOTE: is only called when reallocating
     function depositFast(
         address[] calldata assetGroup,
         uint256[] calldata exchangeRates,
@@ -308,20 +326,49 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         _transfer(smartVault, address(this), amount);
     }
 
-    function emergencyWithdraw(address[] calldata assetGroup, uint256[] calldata slippages, address recipient)
+    function emergencyWithdraw(uint256[] calldata slippages, address recipient)
         external
         onlyRole(ROLE_STRATEGY_REGISTRY, msg.sender)
     {
-        _emergencyWithdrawImpl(assetGroup, slippages, recipient);
+        _emergencyWithdrawImpl(slippages, recipient);
     }
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
-    function _collectPlatformFees(int256 yieldPct) internal virtual returns (uint256 sharesMinted) {
+    function _redeemShares(
+        uint256 shares,
+        address shareOwner,
+        address recipient,
+        address[] calldata assetGroup,
+        uint256[] calldata exchangeRates,
+        IUsdPriceFeedManager priceFeedManager,
+        uint256[] calldata slippages
+    ) internal virtual returns (uint256[] memory) {
+        // redeem shares from protocol
+        uint256[] memory assetsWithdrawn = _redeemFromProtocolAndReturnAssets(assetGroup, shares, slippages);
+        // NOTE: try to move before redeem
+        _burn(shareOwner, shares);
+
+        // NOTE: i don't like users manipulating this
+        totalUsdValue = _getUsdWorth(exchangeRates, priceFeedManager);
+
+        // transfer assets to master wallet
+        for (uint256 i; i < assetGroup.length; i++) {
+            IERC20(assetGroup[i]).safeTransfer(recipient, assetsWithdrawn[i]);
+        }
+
+        return assetsWithdrawn;
+    }
+
+    /**
+     * @notice Calculate and mint platform performance fees based on the yield generated.
+     * @param yieldPct Yield generated since previous DHW. Full percent is `YIELD_FULL_PERCENT`.
+     * @param platformFees Platform fees info, containing information of the sice and recipient of the fees (SSTs).
+     * @return sharesMinted Returns newly minted shares representing the platform performance fees.
+     */
+    function _collectPlatformFees(int256 yieldPct, PlatformFees calldata platformFees) internal virtual returns (uint256 sharesMinted) {
         if (yieldPct > 0) {
             uint256 uint256YieldPct = uint256(yieldPct);
-
-            PlatformFees memory platformFees = _strategyRegistry.platformFees();
 
             uint256 totalYieldShares = ((totalSupply() * YIELD_FULL_PERCENT) / (YIELD_FULL_PERCENT + uint256YieldPct))
                 * uint256YieldPct / YIELD_FULL_PERCENT;
@@ -337,6 +384,23 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             unchecked {
                 sharesMinted = newEcosystemFeeSsts + newTreasuryFeeSsts;
             }
+        }
+    }
+
+    function _redeemFromProtocolAndReturnAssets(address[] calldata tokens, uint256 ssts, uint256[] calldata slippages)
+        internal
+        virtual
+        returns (uint256[] memory withdrawnAssets)
+    {
+        withdrawnAssets = new uint256[](tokens.length);
+        for (uint256 i; i < tokens.length; ++i) {
+            withdrawnAssets[i] = IERC20(tokens[i]).balanceOf(address(this));
+        }
+
+        _redeemFromProtocol(tokens, ssts, slippages);
+
+        for (uint256 i; i < tokens.length; ++i) {
+            withdrawnAssets[i] = IERC20(tokens[i]).balanceOf(address(this)) - withdrawnAssets[i];
         }
     }
 
@@ -377,7 +441,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         internal
         virtual;
 
-    function _emergencyWithdrawImpl(address[] calldata assetGroup, uint256[] calldata slippages, address recipient)
+    function _emergencyWithdrawImpl(uint256[] calldata slippages, address recipient)
         internal
         virtual;
 

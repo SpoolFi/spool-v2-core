@@ -54,6 +54,17 @@ contract GhostStrategy is IERC20Upgradeable, IStrategy {
         revert IsGhostStrategy();
     }
 
+    function redeemShares(
+        uint256,
+        address,
+        address[] calldata,
+        uint256[] calldata,
+        IUsdPriceFeedManager,
+        uint256[] calldata
+    ) external pure returns (uint256[] memory) {
+        revert IsGhostStrategy();
+    }
+
     function depositFast(
         address[] calldata,
         uint256[] calldata,
@@ -96,7 +107,7 @@ contract GhostStrategy is IERC20Upgradeable, IStrategy {
         revert IsGhostStrategy();
     }
 
-    function emergencyWithdraw(address[] calldata, uint256[] calldata, address) external pure {
+    function emergencyWithdraw(uint256[] calldata, address) external pure {
         revert IsGhostStrategy();
     }
 }

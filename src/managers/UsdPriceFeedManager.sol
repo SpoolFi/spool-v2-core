@@ -108,7 +108,7 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager, SpoolAccessControllable {
             /* uint80 answeredInRound */
         ) = assetPriceAggregator[asset].latestRoundData();
 
-        if (answer <= 0) {
+        if (answer < 1) {
             revert NonPositivePrice({price: answer});
         }
 

@@ -66,3 +66,5 @@ uint256 constant STRATEGY_COUNT_CAP = 16;
 
 /// @dev Maximal DHW base yield. Expressed in terms of FULL_PERCENT.
 uint256 constant MAX_DHW_BASE_YIELD_LIMIT = 10_00;
+
+uint256 constant INITIAL_SHARE_MULTIPLIER = 1000;

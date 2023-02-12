@@ -191,13 +191,16 @@ contract WithdrawalIntegrationTest is Test {
             exchangeRateSlippages[i][1] = priceFeedManager.exchangeRates(assetGroup_[i]);
         }
 
+        int256[] memory baseYields = new int256[](strategies.length);
+
         return DoHardWorkParameterBag({
             strategies: strategyGroups,
             swapInfo: swapInfo,
             compoundSwapInfo: compoundSwapInfo,
             strategySlippages: strategySlippages,
             tokens: assetGroup,
-            exchangeRateSlippages: exchangeRateSlippages
+            exchangeRateSlippages: exchangeRateSlippages,
+            baseYields: baseYields
         });
     }
 
@@ -440,17 +443,6 @@ contract WithdrawalIntegrationTest is Test {
         assertEq(tokenB.balanceOf(address(strategyB.protocol())), 0.268 ether);
     }
 
-    function test_emergencyWithdraw_revertRecipientZeroAddress() public {
-        uint256[][] memory withdrawalSlippages = new uint256[][](2);
-        withdrawalSlippages[0] = new uint256[](0);
-        withdrawalSlippages[1] = new uint256[](0);
-
-        accessControl.grantRole(ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, alice);
-        vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(ConfigurationAddressZero.selector));
-        strategyRegistry.emergencyWithdraw(mySmartVaultStrategies, assetGroup, withdrawalSlippages, true);
-    }
-
     function test_emergencyWithdraw_revertMissingRole() public {
         uint256[][] memory withdrawalSlippages = new uint256[][](2);
         withdrawalSlippages[0] = new uint256[](0);
@@ -458,7 +450,7 @@ contract WithdrawalIntegrationTest is Test {
 
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, alice));
-        strategyRegistry.emergencyWithdraw(mySmartVaultStrategies, assetGroup, withdrawalSlippages, true);
+        strategyRegistry.emergencyWithdraw(mySmartVaultStrategies, withdrawalSlippages, true);
     }
 
     function test_emergencyWithdraw_ok() public {
@@ -479,7 +471,7 @@ contract WithdrawalIntegrationTest is Test {
 
         accessControl.grantRole(ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, alice);
         vm.prank(alice);
-        strategyRegistry.emergencyWithdraw(mySmartVaultStrategies, assetGroup, withdrawalSlippages, true);
+        strategyRegistry.emergencyWithdraw(mySmartVaultStrategies, withdrawalSlippages, true);
 
         assertEq(tokenA.balanceOf(address(strategyA.protocol())), 0);
         assertEq(tokenB.balanceOf(address(strategyA.protocol())), 0);

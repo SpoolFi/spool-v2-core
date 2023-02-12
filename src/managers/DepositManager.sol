@@ -57,8 +57,6 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
     using uint16a16Lib for uint16a16;
     using ArrayMappingUint256 for mapping(uint256 => uint256);
 
-    uint256 constant INITIAL_SHARE_MULTIPLIER = 1000;
-
     /**
      * @dev Precission multiplier for internal calculations.
      */

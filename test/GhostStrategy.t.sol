@@ -19,6 +19,7 @@ contract GhostStrategyTest is Test {
         assertEq(s.allowance(address(1), address(2)), 0);
 
         vm.expectRevert(abi.encodeWithSelector(IsGhostStrategy.selector));
+        PlatformFees memory platformFees;
         s.doHardWork(
             StrategyDhwParameterBag(
                 new SwapInfo[](0),
@@ -28,7 +29,9 @@ contract GhostStrategyTest is Test {
                 new uint256[](0),
                 0,
                 address(0),
-                IUsdPriceFeedManager(address(0))
+                IUsdPriceFeedManager(address(0)),
+                0,
+                platformFees
             )
         );
 
@@ -58,6 +61,6 @@ contract GhostStrategyTest is Test {
         );
 
         vm.expectRevert(abi.encodeWithSelector(IsGhostStrategy.selector));
-        s.emergencyWithdraw(new address[](0), new uint256[](0), address(0));
+        s.emergencyWithdraw(new uint256[](0), address(0));
     }
 }

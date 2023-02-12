@@ -135,13 +135,16 @@ contract TestFixture is Test {
             exchangeRateSlippages[i][1] = priceFeedManager.exchangeRates(assetGroup[i]);
         }
 
+        int256[] memory baseYields = new int256[](strategies.length);
+
         return DoHardWorkParameterBag({
             strategies: strategyGroups,
             swapInfo: swapInfo,
             compoundSwapInfo: compoundSwapInfo,
             strategySlippages: strategySlippages,
             tokens: assetGroup,
-            exchangeRateSlippages: exchangeRateSlippages
+            exchangeRateSlippages: exchangeRateSlippages,
+            baseYields: baseYields
         });
     }
 }

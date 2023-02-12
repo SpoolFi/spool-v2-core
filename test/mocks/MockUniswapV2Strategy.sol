@@ -139,7 +139,7 @@ contract MockUniswapV2Strategy is Strategy {
 
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
 
-    function _emergencyWithdrawImpl(address[] calldata assetGroup, uint256[] calldata slippages, address recipient)
+    function _emergencyWithdrawImpl(uint256[] calldata slippages, address recipient)
         internal
         pure
         override
