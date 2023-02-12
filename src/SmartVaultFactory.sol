@@ -35,6 +35,11 @@ error StrategyCapExceeded();
  */
 error StrategiesNotUnique();
 
+/**
+ * @notice Used when the number of allocation values is less than the number of strategies.
+ */
+error InvalidStrategyAllocationsLength();
+
 /* ========== STRUCTS ========== */
 
 /**
@@ -79,6 +84,8 @@ struct SmartVaultSpecification {
  * - ROLE_SMART_VAULT_INTEGRATOR
  */
 contract SmartVaultFactory is UpgradeableBeacon {
+    using uint16a16Lib for uint16a16;
+
     /* ========== EVENTS ========== */
 
     /**
@@ -241,6 +248,13 @@ contract SmartVaultFactory is UpgradeableBeacon {
 
         unchecked {
             for (uint256 i; i < specification.strategies.length; ++i) {
+                if (
+                    uint16a16.unwrap(specification.strategyAllocation) > 0
+                        && specification.strategyAllocation.get(i) == 0
+                ) {
+                    revert InvalidStrategyAllocationsLength();
+                }
+
                 if (!_accessControl.hasRole(ROLE_STRATEGY, specification.strategies[i])) {
                     revert InvalidStrategy(specification.strategies[i]);
                 }

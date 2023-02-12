@@ -33,6 +33,8 @@ contract SmartVaultVariant is SmartVault {
 }
 
 contract SmartVaultFactoryTest is Test {
+    using uint16a16Lib for uint16a16;
+
     event SmartVaultDeployed(address indexed smartVault, address indexed deployer);
 
     address strategy;
@@ -143,12 +145,24 @@ contract SmartVaultFactoryTest is Test {
         // - validate strategy duplicates
         {
             address[] memory before = specification.strategies;
-
             specification.strategies = Arrays.toArray(specification.strategies[0], specification.strategies[0]);
             vm.expectRevert(StrategiesNotUnique.selector);
             factory.deploySmartVault(specification);
 
             specification.strategies = before;
+        }
+
+        // - validate allocations length
+        {
+            address[] memory before = specification.strategies;
+            specification.strategyAllocation = uint16a16.wrap(0).set(1, 10_00);
+            specification.strategies = Arrays.toArray(specification.strategies[0], specification.strategies[0]);
+
+            vm.expectRevert(InvalidStrategyAllocationsLength.selector);
+            factory.deploySmartVault(specification);
+
+            specification.strategies = before;
+            specification.strategyAllocation = uint16a16.wrap(0);
         }
 
         // - validate strategy validity
