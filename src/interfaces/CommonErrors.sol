@@ -17,6 +17,11 @@ error NotSameAssetGroup();
 error ConfigurationAddressZero();
 
 /**
+ * @notice Used when constructor or intializer parameters are invalid.
+ */
+error InvalidConfiguration();
+
+/**
  * @notice Used when fetched exchange rate is out of slippage range.
  */
 error ExchangeRateOutOfSlippages();

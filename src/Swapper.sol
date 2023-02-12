@@ -26,24 +26,29 @@ contract Swapper is ISwapper, SpoolAccessControllable {
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
-    function swap(address[] calldata tokens, SwapInfo[] calldata swapInfo, address receiver) external {
+    function swap(address[] calldata tokens, SwapInfo[] calldata swapInfo, address receiver)
+        external
+        returns (uint256[] memory tokenAmounts)
+    {
         // Perform the swaps.
-        for (uint256 i = 0; i < swapInfo.length; i++) {
+        for (uint256 i; i < swapInfo.length; ++i) {
             if (!exchangeAllowlist[swapInfo[i].swapTarget]) {
                 revert ExchangeNotAllowed(swapInfo[i].swapTarget);
             }
 
-            IERC20(swapInfo[i].token).safeApprove(swapInfo[i].swapTarget, swapInfo[i].amountIn);
+            _approveMax(IERC20(swapInfo[i].token), swapInfo[i].swapTarget);
 
             (bool success, bytes memory data) = swapInfo[i].swapTarget.call(swapInfo[i].swapCallData);
             if (!success) revert(SpoolUtils.getRevertMsg(data));
-
-            IERC20(swapInfo[i].token).safeApprove(swapInfo[i].swapTarget, 0);
         }
 
         // Return unswapped tokens.
-        for (uint256 i = 0; i < tokens.length; i++) {
-            IERC20(tokens[i]).safeTransfer(receiver, IERC20(tokens[i]).balanceOf(address(this)));
+        tokenAmounts = new uint256[](tokens.length);
+        for (uint256 i; i < tokens.length; ++i) {
+            tokenAmounts[i] = IERC20(tokens[i]).balanceOf(address(this));
+            if (tokenAmounts[i] > 0) {
+                IERC20(tokens[i]).safeTransfer(receiver, tokenAmounts[i]);
+            }
         }
     }
 
@@ -59,6 +64,12 @@ contract Swapper is ISwapper, SpoolAccessControllable {
             exchangeAllowlist[exchanges[i]] = allowed[i];
 
             emit ExchangeAllowlistUpdated(exchanges[i], allowed[i]);
+        }
+    }
+
+    function _approveMax(IERC20 token, address spender) private {
+        if (token.allowance(address(this), spender) == 0) {
+            token.safeApprove(spender, type(uint256).max);
         }
     }
 

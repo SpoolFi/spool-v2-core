@@ -7,10 +7,10 @@ import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/utils/math/Math.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
 import "../interfaces/Constants.sol";
+import "../interfaces/CommonErrors.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
-import "../interfaces/CommonErrors.sol";
 import "../access/SpoolAccessControllable.sol";
 import "../access/SpoolAccessControl.sol";
 
@@ -390,6 +390,27 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
         for (uint256 i; i < tokens.length; ++i) {
             withdrawnAssets[i] = IERC20(tokens[i]).balanceOf(address(this)) - withdrawnAssets[i];
+        }
+    }
+
+    function _calculateYieldPercentage(uint256 previousValue, uint256 increaseValue)
+        internal
+        pure
+        returns (int256 yieldPercentage)
+    {
+        if (previousValue > 0 && increaseValue > 0) {
+            yieldPercentage = int256(increaseValue * YIELD_FULL_PERCENT / previousValue);
+        }
+    }
+
+    function _resetAndApprove(IERC20 token, address spender, uint256 amount) internal {
+        _resetAllowance(token, spender);
+        token.safeApprove(spender, amount);
+    }
+
+    function _resetAllowance(IERC20 token, address spender) internal {
+        if (token.allowance(address(this), spender) > 0) {
+            token.safeApprove(spender, 0);
         }
     }
 

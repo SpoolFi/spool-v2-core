@@ -50,7 +50,9 @@ interface ISwapper {
      * @param swapInfo Information needed to perform the swap.
      * @param receiver Receiver of unswapped tokens.
      */
-    function swap(address[] calldata tokens, SwapInfo[] calldata swapInfo, address receiver) external;
+    function swap(address[] calldata tokens, SwapInfo[] calldata swapInfo, address receiver)
+        external
+        returns (uint256[] memory tokenAmounts);
 
     /**
      * @notice Updates list of exchanges that can be used in a swap.
