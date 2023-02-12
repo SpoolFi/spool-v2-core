@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
 uint32 constant SECONDS_IN_DAY = 86400;
