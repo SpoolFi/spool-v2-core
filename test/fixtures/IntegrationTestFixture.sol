@@ -68,12 +68,6 @@ contract IntegrationTestFixture is TestFixture {
         strategyC.initialize(assetGroupId, strategyRatios);
         strategyRegistry.registerStrategy(address(strategyC));
 
-        accessControl.grantRole(ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM, address(smartVaultFactory));
-        accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
-        accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
-        accessControl.grantRole(ROLE_STRATEGY_REGISTRY, address(strategyRegistry));
-        accessControl.grantRole(ADMIN_ROLE_STRATEGY, address(strategyRegistry));
-
         priceFeedManager.setExchangeRate(address(tokenA), 1200 * USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenB), 16400 * USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenC), 270 * USD_DECIMALS_MULTIPLIER);

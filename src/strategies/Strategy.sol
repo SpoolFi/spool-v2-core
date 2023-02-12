@@ -21,16 +21,14 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
     IAssetGroupRegistry internal immutable _assetGroupRegistry;
 
-    // @notice Name of the strategy
+    /// @notice Name of the strategy
     string private _strategyName;
 
-    /**
-     * @notice ID of the asset group used by the strategy.
-     */
+    /// @notice ID of the asset group used by the strategy.
     uint256 internal _assetGroupId;
 
-    // @notice Total value (in USD) of assets managed by the strategy.
-    // @dev Should be updated in DHW with deposits, withdrawals and yields.
+    /// @notice Total value (in USD) of assets managed by the strategy.
+    /// @dev Should be updated in DHW with deposits, withdrawals and yields.
     uint256 public totalUsdValue = 0;
 
     constructor(

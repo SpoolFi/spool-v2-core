@@ -62,7 +62,7 @@ contract CompoundV2Strategy is Strategy {
     function initialize(uint256 assetGroupId_, ICErc20 cToken_) external initializer {
         __Strategy_init(assetGroupId_);
 
-        if (address(cToken_) != address(0)) {
+        if (address(cToken_) == address(0)) {
             revert ConfigurationAddressZero();
         }
 
@@ -73,7 +73,7 @@ contract CompoundV2Strategy is Strategy {
         }
 
         address[] memory markets = new address[](1);
-        markets[0] = address(cToken);
+        markets[0] = address(cToken_);
         uint256[] memory results = comptroller.enterMarkets(markets);
 
         if (results[0] > 0) {
@@ -86,7 +86,7 @@ contract CompoundV2Strategy is Strategy {
 
     // NOTE: looks weird
     function assetRatio() external pure override returns (uint256[] memory) {
-        uint256[] memory _assetRatio = new uint256[](0);
+        uint256[] memory _assetRatio = new uint256[](1);
         _assetRatio[0] = 1;
         return _assetRatio;
     }
@@ -162,8 +162,7 @@ contract CompoundV2Strategy is Strategy {
             return;
         }
 
-        uint256 cTokenBalance = cToken.balanceOf(address(this));
-        uint256 cTokenWithdrawAmount = (cTokenBalance * ssts) / totalSupply();
+        uint256 cTokenWithdrawAmount = (cToken.balanceOf(address(this)) * ssts) / totalSupply();
 
         if (cTokenWithdrawAmount > 0) {
             if (cToken.redeem(cTokenWithdrawAmount) > 0) {

@@ -112,6 +112,7 @@ contract TestFixture is Test {
         accessControl.grantRole(ROLE_DO_HARD_WORKER, doHardWorker);
         accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, address(allocationProvider));
         accessControl.grantRole(ADMIN_ROLE_STRATEGY, address(strategyRegistry));
+        accessControl.grantRole(ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM, address(smartVaultFactory));
     }
 
     function generateDhwParameterBag(address[] memory strategies, address[] memory assetGroup)
