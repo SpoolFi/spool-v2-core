@@ -82,7 +82,7 @@ error RedeemForNotAllowed();
 struct SmartVaultRegistrationForm {
     uint256 assetGroupId;
     address[] strategies;
-    uint256[] strategyAllocation;
+    uint16a16 strategyAllocation;
     uint16 managementFeePct;
     uint16 depositFeePct;
     uint16 performanceFeePct;

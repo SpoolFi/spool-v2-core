@@ -58,7 +58,7 @@ struct SmartVaultSpecification {
     string smartVaultName;
     uint256 assetGroupId;
     address[] strategies;
-    uint256[] strategyAllocation;
+    uint16a16 strategyAllocation;
     int8 riskTolerance;
     address riskProvider;
     address allocationProvider;
@@ -297,11 +297,15 @@ contract SmartVaultFactory is UpgradeableBeacon {
             _accessControl.grantRole(ROLE_SMART_VAULT_ALLOW_REDEEM, smartVaultAddress);
         }
 
+        uint16a16 allocations = specification.strategyAllocation;
+
         // set allocation
-        if (specification.strategyAllocation.length == 0) {
+        if (uint16a16.unwrap(allocations) == 0) {
             _riskManager.setRiskProvider(smartVaultAddress, specification.riskProvider);
             _riskManager.setRiskTolerance(smartVaultAddress, specification.riskTolerance);
             _riskManager.setAllocationProvider(smartVaultAddress, specification.allocationProvider);
+
+            allocations = _riskManager.calculateAllocation(smartVaultAddress, specification.strategies);
         }
 
         _smartVaultRegistry.registerSmartVault(
@@ -309,7 +313,7 @@ contract SmartVaultFactory is UpgradeableBeacon {
             SmartVaultRegistrationForm({
                 assetGroupId: specification.assetGroupId,
                 strategies: specification.strategies,
-                strategyAllocation: specification.strategyAllocation,
+                strategyAllocation: allocations,
                 managementFeePct: specification.managementFeePct,
                 depositFeePct: specification.depositFeePct,
                 performanceFeePct: specification.performanceFeePct

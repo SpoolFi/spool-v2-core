@@ -72,7 +72,7 @@ contract NftGateGuardDemoTest is TestFixture {
                     guards: guards,
                     guardRequestTypes: guardRequestTypes,
                     strategies: Arrays.toArray(address(strategy)),
-                    strategyAllocation: new uint256[](0),
+                    strategyAllocation: uint16a16.wrap(0),
                     riskTolerance: 4,
                     riskProvider: riskProvider,
                     managementFeePct: 0,

@@ -57,16 +57,10 @@ contract SmartVaultManagerTest is TestFixture {
 
         uint16a16 strategyAllocations = Arrays.toUint16a16(100, 300, 600);
 
-        vm.mockCall(
-            address(riskManager),
-            abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(strategyAllocations)
-        );
-
         SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
             assetGroupId: assetGroupId,
             strategies: strategies,
-            strategyAllocation: new uint256[](0),
+            strategyAllocation: strategyAllocations,
             managementFeePct: 0,
             depositFeePct: 0,
             performanceFeePct: 0
@@ -85,7 +79,7 @@ contract SmartVaultManagerTest is TestFixture {
         SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
             assetGroupId: assetGroupId,
             strategies: strategies,
-            strategyAllocation: Arrays.toArray(100, 300, 600),
+            strategyAllocation: Arrays.toUint16a16(100, 300, 600),
             managementFeePct: 0,
             depositFeePct: 0,
             performanceFeePct: 0
@@ -109,7 +103,7 @@ contract SmartVaultManagerTest is TestFixture {
         SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
             assetGroupId: assetGroupId,
             strategies: strategies,
-            strategyAllocation: new uint256[](0),
+            strategyAllocation: uint16a16.wrap(0),
             managementFeePct: 0,
             depositFeePct: 0,
             performanceFeePct: 0
@@ -281,18 +275,10 @@ contract SmartVaultManagerTest is TestFixture {
         SmartVault smartVault_ = SmartVault(Clones.clone(smartVaultImplementation));
         smartVault_.initialize("SmartVault", assetGroupId);
 
-        uint16a16 allocations = Arrays.toUint16a16(600, 300, 100);
-
-        vm.mockCall(
-            address(riskManager),
-            abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(allocations)
-        );
-
         SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
             assetGroupId: assetGroupId,
             strategies: strategies,
-            strategyAllocation: new uint256[](0),
+            strategyAllocation: Arrays.toUint16a16(600, 300, 100),
             managementFeePct: 0,
             depositFeePct: 0,
             performanceFeePct: 0

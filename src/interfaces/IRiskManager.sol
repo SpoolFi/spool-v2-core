@@ -60,7 +60,7 @@ interface IRiskManager {
     /**
      * @notice Sets risk provider for a smart vault.
      * @dev Requirements:
-     * - caller must have role ROLE_SMART_VAULT_MANAGER
+     * - caller must have role ROLE_SMART_VAULT_INTEGRATOR
      * - risk provider must have role ROLE_RISK_PROVIDER
      * @param smartVault Smart vault.
      * @param riskProvider_ Risk provider to set.
@@ -70,7 +70,7 @@ interface IRiskManager {
     /**
      * @notice Sets allocation provider for a smart vault.
      * @dev Requirements:
-     * - caller must have role ROLE_SMART_VAULT_MANAGER
+     * - caller must have role ROLE_SMART_VAULT_INTEGRATOR
      * - allocation provider must have role ROLE_ALLOCATION_PROVIDER
      * @param smartVault Smart vault.
      * @param allocationProvider Allocation provider to set.
@@ -89,7 +89,7 @@ interface IRiskManager {
     /**
      * @notice Sets risk tolerance for a smart vault.
      * @dev Requirements:
-     * - caller must have role ROLE_SMART_VAULT_MANAGER
+     * - caller must have role ROLE_SMART_VAULT_INTEGRATOR
      * - risk tolerance must be within valid bounds
      * @param smartVault Smart vault.
      * @param riskTolerance Risk tolerance to set.

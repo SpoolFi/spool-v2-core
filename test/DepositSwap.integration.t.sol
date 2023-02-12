@@ -81,7 +81,7 @@ contract DepositSwapIntegrationTest is TestFixture {
                     guards: new GuardDefinition[][](0),
                     guardRequestTypes: new RequestType[](0),
                     strategies: Arrays.toArray(address(strategy)),
-                    strategyAllocation: new uint256[](0),
+                    strategyAllocation: uint16a16.wrap(0),
                     riskTolerance: 4,
                     riskProvider: riskProvider,
                     managementFeePct: 0,

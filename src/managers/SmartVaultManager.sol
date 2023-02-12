@@ -294,12 +294,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         );
 
         // set allocation
-        if (registrationForm.strategyAllocation.length == registrationForm.strategies.length) {
-            _smartVaultAllocations[smartVault] = uint16a16.wrap(0).set(registrationForm.strategyAllocation);
-        } else {
-            _smartVaultAllocations[smartVault] =
-                _riskManager.calculateAllocation(smartVault, registrationForm.strategies);
-        }
+        _smartVaultAllocations[smartVault] = registrationForm.strategyAllocation;
 
         // update registry
         _smartVaultRegistry[smartVault] = true;

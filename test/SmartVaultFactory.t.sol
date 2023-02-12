@@ -45,6 +45,8 @@ contract SmartVaultFactoryTest is Test {
     ISmartVaultManager smartVaultManager;
     IAssetGroupRegistry assetGroupRegistry;
     IRiskManager riskManager;
+    IStrategyRegistry strategyRegistry;
+    IAllocationProvider allocProvider;
 
     function setUp() public {
         strategy = address(0x01);
@@ -78,7 +80,21 @@ contract SmartVaultFactoryTest is Test {
             abi.encode(0)
         );
 
-        riskManager = new RiskManager(accessControl, address(0xabc));
+        strategyRegistry = IStrategyRegistry(address(0x6));
+        vm.mockCall(
+            address(strategyRegistry),
+            abi.encodeWithSelector(IStrategyRegistry.strategyAPYs.selector),
+            abi.encode(new int256[](0))
+        );
+
+        allocProvider = IAllocationProvider(address(0x8));
+        vm.mockCall(
+            address(allocProvider),
+            abi.encodeWithSelector(IAllocationProvider.calculateAllocation.selector),
+            abi.encode(Arrays.toArray(0))
+        );
+
+        riskManager = new RiskManager(accessControl, strategyRegistry, address(0xabc));
         address implementation1 = address(new SmartVaultVariant(accessControl, guardManager, 1));
 
         factory = new SmartVaultFactory(
@@ -407,10 +423,10 @@ contract SmartVaultFactoryTest is Test {
             smartVaultName: "MySmartVault",
             assetGroupId: 1,
             strategies: Arrays.toArray(strategy),
-            strategyAllocation: new uint256[](0),
+            strategyAllocation: uint16a16.wrap(0),
             riskTolerance: 4,
             riskProvider: address(0x7),
-            allocationProvider: address(0xabc),
+            allocationProvider: address(allocProvider),
             actions: new IAction[](0),
             actionRequestTypes: new RequestType[](0),
             guards: new GuardDefinition[][](0),

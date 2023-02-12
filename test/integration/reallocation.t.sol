@@ -206,7 +206,7 @@ contract ReallocationIntegrationTest is Test {
             guards: new GuardDefinition[][](0),
             guardRequestTypes: new RequestType[](0),
             strategies: new address[](0),
-            strategyAllocation: new uint256[](0),
+            strategyAllocation: uint16a16.wrap(0),
             riskTolerance: 4,
             riskProvider: riskProvider,
             allocationProvider: address(0xabc),
@@ -3367,7 +3367,7 @@ contract ReallocationIntegrationTest is Test {
             SmartVaultSpecification memory specification = _getSmartVaultSpecification();
             specification.smartVaultName = "SmartVaultA";
             specification.assetGroupId = assetGroupId;
-            specification.strategyAllocation = Arrays.toArray(60_00, 40_00);
+            specification.strategyAllocation = Arrays.toUint16a16(60_00, 40_00);
             specification.strategies = Arrays.toArray(address(strategyA), address(strategyB));
             smartVaultA = smartVaultFactory.deploySmartVault(specification);
         }
