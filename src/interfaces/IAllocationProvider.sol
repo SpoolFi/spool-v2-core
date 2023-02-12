@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 /**
  * @notice Used when number of provided APYs or risk scores does not match number of provided strategies.

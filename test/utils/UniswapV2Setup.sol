@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 import "../external/uniswap/UniswapV2Factory.sol";
 import "../external/uniswap/UniswapV2Router02.sol";

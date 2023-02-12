@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 import "@openzeppelin-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/IERC20Upgradeable.sol";

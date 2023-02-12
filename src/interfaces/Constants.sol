@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 /// @dev Number of seconds in an average year.
 uint256 constant SECONDS_IN_YEAR = 31_556_926;

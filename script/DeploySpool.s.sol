@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 import "forge-std/Script.sol";
 import {IWETH9} from "../src/external/interfaces/weth/WETH9.sol";
