@@ -29,8 +29,11 @@ contract SmartVaultManagerTest is TestFixture {
     MockToken token2;
 
     function setUp() public {
-        token1 = new MockToken("Token1", "T1");
-        token2 = new MockToken("Token2", "T2");
+        address[] memory assetGroup =
+            Arrays.sort(Arrays.toArray(address(new MockToken("Token", "T")), address(new MockToken("Token", "T"))));
+
+        token1 = MockToken(assetGroup[0]);
+        token2 = MockToken(assetGroup[1]);
 
         setUpBase();
 

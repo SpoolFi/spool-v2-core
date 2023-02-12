@@ -27,9 +27,16 @@ contract AssetGroupRegistryTest is Test {
         spoolAdmin = address(0xa);
         user = address(0xb);
 
-        tokenA = new MockToken("TokenA", "TA");
-        tokenB = new MockToken("TokenB", "TB");
-        tokenC = new MockToken("TokenC", "TC");
+        address[] memory assetGroup = Arrays.sort(
+            Arrays.toArray(
+                address(new MockToken("Token", "T")),
+                address(new MockToken("Token", "T")),
+                address(new MockToken("Token", "T"))
+            )
+        );
+        tokenA = MockToken(assetGroup[0]);
+        tokenB = MockToken(assetGroup[1]);
+        tokenC = MockToken(assetGroup[2]);
 
         vm.startPrank(spoolAdmin);
         accessControl = new SpoolAccessControl();
@@ -147,21 +154,6 @@ contract AssetGroupRegistryTest is Test {
         assertEq(assetGroupId, 1);
     }
 
-    function test_registerAssetGroup_willRegisterAssetGroupWithSameTokensInDifferentOrder() public {
-        address[] memory assetGroup1 = Arrays.toArray(address(tokenA), address(tokenB));
-        address[] memory assetGroup2 = Arrays.toArray(address(tokenB), address(tokenA));
-
-        vm.prank(spoolAdmin);
-        uint256 assetGroupId1 = assetGroupRegistry.registerAssetGroup(assetGroup1);
-
-        vm.prank(spoolAdmin);
-        uint256 assetGroupId2 = assetGroupRegistry.registerAssetGroup(assetGroup2);
-
-        assertEq(assetGroupId1, 1);
-        assertEq(assetGroupId2, 2);
-        assertEq(assetGroupRegistry.numberOfAssetGroups(), 2);
-    }
-
     function test_validateAssetGroup_shouldPassForValidAssetGroup() public {
         address[] memory assetGroup = Arrays.toArray(address(tokenA), address(tokenB));
 
@@ -222,9 +214,10 @@ contract AssetGroupRegistryTest is Test {
         assertEq(assetGroupRegistry.numberOfAssetGroups(), 1);
 
         vm.prank(spoolAdmin);
+        vm.expectRevert(abi.encodeWithSelector(UnsortedArray.selector));
         assetGroupRegistry.registerAssetGroup(assetGroup2);
 
-        assertEq(assetGroupRegistry.numberOfAssetGroups(), 2);
+        assertEq(assetGroupRegistry.numberOfAssetGroups(), 1);
     }
 
     function test_listAssetGroup_shouldListAssetGroup() public {

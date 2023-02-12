@@ -35,8 +35,10 @@ contract DhwUniswapV2Test is TestFixture {
     address[] smartVaultStrategies;
 
     function setUp() public {
-        tokenA = new MockToken("Token A", "TA");
-        tokenB = new MockToken("Token B", "TB");
+        assetGroup =
+            Arrays.sort(Arrays.toArray(address(new MockToken("Token", "T")), address(new MockToken("Token", "T"))));
+        tokenA = MockToken(assetGroup[0]);
+        tokenB = MockToken(assetGroup[1]);
 
         setUpBase();
 

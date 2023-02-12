@@ -94,6 +94,10 @@ contract AssetGroupRegistry is IAssetGroupRegistry, SpoolAccessControllable, Ini
         }
 
         for (uint256 i = 0; i < assets.length; i++) {
+            if (i > 0 && assets[i] < assets[i - 1]) {
+                revert UnsortedArray();
+            }
+
             if (!_assetAllowlist[assets[i]]) {
                 revert TokenNotAllowed(assets[i]);
             }

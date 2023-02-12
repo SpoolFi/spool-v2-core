@@ -56,8 +56,11 @@ contract WithdrawalIntegrationTest is Test {
         address riskProvider = address(0x1);
         doHardWorker = address(0x2);
 
-        tokenA = new MockToken("Token A", "TA");
-        tokenB = new MockToken("Token B", "TB");
+        assetGroup =
+            Arrays.sort(Arrays.toArray(address(new MockToken("Token", "T")), address(new MockToken("Token", "T"))));
+
+        tokenA = MockToken(assetGroup[0]);
+        tokenB = MockToken(assetGroup[1]);
 
         accessControl = new SpoolAccessControl();
         accessControl.initialize();
@@ -65,9 +68,6 @@ contract WithdrawalIntegrationTest is Test {
 
         swapper = new Swapper(accessControl);
 
-        assetGroup = new address[](2);
-        assetGroup[0] = address(tokenA);
-        assetGroup[1] = address(tokenB);
         assetGroupRegistry = new AssetGroupRegistry(accessControl);
         assetGroupRegistry.initialize(assetGroup);
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);

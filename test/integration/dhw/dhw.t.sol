@@ -36,16 +36,19 @@ contract DhwTest is TestFixture {
     function setUp() public {
         alice = address(0xa);
 
-        tokenA = new MockToken("Token A", "TA");
-        tokenB = new MockToken("Token B", "TB");
-        tokenC = new MockToken("Token C", "TC");
+        assetGroup = Arrays.sort(
+            Arrays.toArray(
+                address(new MockToken("Token", "T")),
+                address(new MockToken("Token", "T")),
+                address(new MockToken("Token", "T"))
+            )
+        );
+        tokenA = MockToken(assetGroup[0]);
+        tokenB = MockToken(assetGroup[1]);
+        tokenC = MockToken(assetGroup[2]);
 
         setUpBase();
 
-        assetGroup = new address[](3);
-        assetGroup[0] = address(tokenA);
-        assetGroup[1] = address(tokenB);
-        assetGroup[2] = address(tokenC);
         assetGroupRegistry.allowToken(address(tokenA));
         assetGroupRegistry.allowToken(address(tokenB));
         assetGroupRegistry.allowToken(address(tokenC));

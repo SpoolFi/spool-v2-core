@@ -28,6 +28,11 @@ error TokenNotAllowed(address token);
  */
 error AssetGroupAlreadyExists(uint256 assetGroupId);
 
+/**
+ * @notice Used when given array is unsorted.
+ */
+error UnsortedArray();
+
 /* ========== INTERFACES ========== */
 
 interface IAssetGroupRegistry {

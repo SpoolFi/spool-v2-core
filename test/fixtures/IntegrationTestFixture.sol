@@ -41,16 +41,22 @@ contract IntegrationTestFixture is TestFixture {
         super.setUpBase();
         alice = address(0xa);
 
-        tokenA = new MockToken("Token A", "TA");
-        tokenB = new MockToken("Token B", "TB");
-        tokenC = new MockToken("Token C", "TC");
+        assetGroup = Arrays.sort(
+            Arrays.toArray(
+                address(new MockToken("Token", "T")),
+                address(new MockToken("Token", "T")),
+                address(new MockToken("Token", "T"))
+            )
+        );
+        tokenA = MockToken(assetGroup[0]);
+        tokenB = MockToken(assetGroup[1]);
+        tokenC = MockToken(assetGroup[2]);
 
         // set initial state
         deal(address(tokenA), alice, 100 ether, true);
         deal(address(tokenB), alice, 10 ether, true);
         deal(address(tokenC), alice, 500 ether, true);
 
-        assetGroup = Arrays.toArray(address(tokenA), address(tokenB), address(tokenC));
         assetGroupRegistry.allowTokenBatch(assetGroup);
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         uint256[] memory strategyRatios = Arrays.toArray(1000, 71, 4300);
