@@ -218,7 +218,7 @@ contract StrategyRegistryTest is Test {
         strategyRegistry.updateDhwYieldAndApy(address(0xa), 2, 5_00);
 
         // TODO: @ryptoc manually check APY update
-        console.logInt(strategyRegistry.getAPY(address(0xa)));
+        console.logInt(strategyRegistry.strategyAPYs(Arrays.toArray(address(0xa)))[0]);
     }
 }
 
@@ -248,10 +248,6 @@ contract StrategyRegistryStub is StrategyRegistry {
 
     function setDhwTimestamp(address strategy, uint256 dhwIndex, uint256 timestamp) external {
         _dhwTimestamp[strategy][dhwIndex] = timestamp;
-    }
-
-    function getAPY(address strategy) external view returns (int256) {
-        return _apys[strategy];
     }
 
     function setAPY(address strategy, int256 value) external {

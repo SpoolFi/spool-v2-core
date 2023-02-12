@@ -7,10 +7,6 @@ import "../interfaces/IStrategy.sol";
 contract GhostStrategy is IERC20Upgradeable, IStrategy {
     constructor() {}
 
-    function getAPY() external pure returns (uint16) {
-        return 0;
-    }
-
     function strategyName() external pure returns (string memory) {
         return "Ghost strategy";
     }

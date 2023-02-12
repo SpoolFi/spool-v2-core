@@ -152,6 +152,15 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         return indexes;
     }
 
+    function strategyAPYs(address[] calldata strategies) external view returns (int256[] memory) {
+        int256[] memory apys = new int256[](strategies.length);
+        for (uint256 i; i < strategies.length; ++i) {
+            apys[i] = _apys[strategies[i]];
+        }
+
+        return apys;
+    }
+
     function assetRatioAtLastDhw(address strategy) external view returns (uint256[] memory) {
         return _dhwAssetRatios[strategy].toArray(IStrategy(strategy).assets().length);
     }

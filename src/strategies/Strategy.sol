@@ -50,8 +50,6 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
-    function getAPY() external view virtual returns (uint16);
-
     function assetGroupId() external view returns (uint256) {
         return _assetGroupId;
     }

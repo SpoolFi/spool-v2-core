@@ -321,10 +321,11 @@ contract ExponentialAllocationProvider is IAllocationProvider {
         uint8 riskt = uint8(data.riskTolerance + 10); // from 0 - 20
         int256 _100 = fromInt(100);
         for (uint8 i = 0; i < data.apys.length; i++) {
+            uint256 uintApy = (data.apys[i] > 0 ? uint256(data.apys[i]) : 0);
             int256 partRiskTolerance = fromUint(uint256(riskArray[uint8(20 - riskt)]));
 
             partRiskTolerance = div(partRiskTolerance, _100);
-            int256 partApy = fromUint(data.apys[i]);
+            int256 partApy = fromUint(uintApy);
             partApy = div(partApy, _100);
 
             int256 apy = exp_2(mul(partRiskTolerance, log_2(partApy)));

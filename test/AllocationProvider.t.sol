@@ -45,9 +45,9 @@ contract AllocationProviderTest is Test {
     address strategy2 = address(102);
     address strategy3 = address(103);
 
-    uint16 apy_strategy1 = 124; // 1.24%
-    uint16 apy_strategy2 = 220; // 2.20%
-    uint16 apy_strategy3 = 400; // 4.0%
+    int256 apy_strategy1 = 124; // 1.24%
+    int256 apy_strategy2 = 220; // 2.20%
+    int256 apy_strategy3 = 400; // 4.0%
 
     address riskProvider = address(100);
 
@@ -59,7 +59,7 @@ contract AllocationProviderTest is Test {
         strategies[1] = strategy2;
         strategies[2] = strategy3;
 
-        uint16[] memory apys = new uint16[](3);
+        int256[] memory apys = new int256[](3);
         apys[0] = apy_strategy1;
         apys[1] = apy_strategy2;
         apys[2] = apy_strategy3;
@@ -88,7 +88,7 @@ contract AllocationProviderTest is Test {
         strategies[1] = strategy2;
         strategies[2] = strategy3;
 
-        uint16[] memory apys = new uint16[](3);
+        int256[] memory apys = new int256[](3);
         apys[0] = apy_strategy1;
         apys[1] = apy_strategy2;
         apys[2] = apy_strategy3;
@@ -118,7 +118,7 @@ contract AllocationProviderTest is Test {
         strategies[1] = strategy2;
         strategies[2] = strategy3;
 
-        uint16[] memory apys = new uint16[](3);
+        int256[] memory apys = new int256[](3);
         apys[0] = apy_strategy1;
         apys[1] = apy_strategy2;
         apys[2] = apy_strategy3;
@@ -132,7 +132,7 @@ contract AllocationProviderTest is Test {
         uint256[] memory results = ap.calculateAllocation(input);
 
         // reverts with invalid apy list length
-        input.apys = new uint16[](0);
+        input.apys = new int256[](0);
         vm.expectRevert(abi.encodeWithSelector(ApysOrRiskScoresLengthMismatch.selector, 0, 3));
         ap.calculateAllocation(input);
 

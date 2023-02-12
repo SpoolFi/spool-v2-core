@@ -85,12 +85,6 @@ interface IStrategy is IERC20Upgradeable {
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
-     * @notice Gets APY value of the strategy
-     * @return apy APY for the strategy.
-     */
-    function getAPY() external view returns (uint16 apy);
-
-    /**
      * @notice Gets strategy name.
      * @return name Name of the strategy.
      */

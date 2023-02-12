@@ -2,6 +2,7 @@
 pragma solidity 0.8.16;
 
 import "../interfaces/IRiskManager.sol";
+import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/Constants.sol";
 import "../access/SpoolAccessControllable.sol";
@@ -27,8 +28,14 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
 
     address private immutable _ghostStrategy;
 
-    constructor(ISpoolAccessControl accessControl, address ghostStrategy) SpoolAccessControllable(accessControl) {
+    /// @notice Strategy registry address
+    IStrategyRegistry private immutable _strategyRegistry;
+
+    constructor(ISpoolAccessControl accessControl, IStrategyRegistry strategyRegistry_, address ghostStrategy)
+        SpoolAccessControllable(accessControl)
+    {
         _ghostStrategy = ghostStrategy;
+        _strategyRegistry = strategyRegistry_;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -38,11 +45,7 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
         view
         returns (uint16a16 allocations)
     {
-        uint16[] memory apyList = new uint16[](strategies.length);
-        for (uint256 i = 0; i < strategies.length; i++) {
-            apyList[i] = IStrategy(strategies[i]).getAPY();
-        }
-
+        int256[] memory apyList = _strategyRegistry.strategyAPYs(strategies);
         IAllocationProvider allocationProvider = IAllocationProvider(_smartVaultAllocationProviders[smartVault]);
         uint256[] memory allocations_ = allocationProvider.calculateAllocation(
             AllocationCalculationInput({

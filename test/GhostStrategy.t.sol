@@ -8,7 +8,6 @@ contract GhostStrategyTest is Test {
     function test_strategyDoesNothing() public {
         IStrategy s = new GhostStrategy();
 
-        assertEq(s.getAPY(), 0);
         assertEq(s.strategyName(), "Ghost strategy");
         assertEq(s.totalUsdValue(), 0);
         assertEq(s.assetGroupId(), 0);

@@ -67,9 +67,10 @@ contract TestFixture is Test {
         masterWallet = new MasterWallet(accessControl);
         priceFeedManager = new MockPriceFeedManager();
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager, address(ghostStrategy));
-        strategyRegistry.initialize(0, 0, ecosystemFeeRecipient, treasuryFeeRecipient, emergencyWithdrawalRecipient);
 
-        riskManager = new RiskManager(accessControl, address(ghostStrategy));
+        strategyRegistry.initialize(0, 0, ecosystemFeeRecipient, treasuryFeeRecipient, emergencyWithdrawalRecipient);
+        riskManager = new RiskManager(accessControl, strategyRegistry, address(ghostStrategy));
+
         allocationProvider = new UniformAllocationProvider();
         depositManager =
             new DepositManager(strategyRegistry, priceFeedManager, guardManager, actionManager, accessControl);

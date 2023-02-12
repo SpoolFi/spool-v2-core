@@ -77,7 +77,7 @@ contract ReallocationIntegrationTest is Test {
         IActionManager actionManager = new ActionManager(accessControl);
         IGuardManager guardManager = new GuardManager(accessControl);
 
-        riskManager = new RiskManager(accessControl, address(ghostStrategy));
+        riskManager = new RiskManager(accessControl, strategyRegistry, address(ghostStrategy));
 
         swapper = new Swapper(accessControl);
 

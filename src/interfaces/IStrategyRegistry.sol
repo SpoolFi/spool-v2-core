@@ -132,6 +132,12 @@ interface IStrategyRegistry {
     function currentIndex(address[] calldata strategies) external view returns (uint256[] memory dhwIndexes);
 
     /**
+     * @notice Returns current strategy APYs.
+     * @param strategies Strategies.
+     */
+    function strategyAPYs(address[] calldata strategies) external view returns (int256[] memory apys);
+
+    /**
      * @notice Returns assets deposited into a do-hard-work index for a strategy.
      * @param strategy Strategy.
      * @param dhwIndex Do-hard-work index.

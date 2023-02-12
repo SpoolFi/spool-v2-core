@@ -15,7 +15,7 @@ error ApysOrRiskScoresLengthMismatch(uint256, uint256);
  */
 struct AllocationCalculationInput {
     address[] strategies;
-    uint16[] apys;
+    int256[] apys;
     uint8[] riskScores;
     int8 riskTolerance;
 }

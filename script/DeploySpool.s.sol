@@ -82,13 +82,6 @@ contract DeploySpool is Script {
         proxy = new TransparentUpgradeableProxy(address(guardManagerImpl), address(proxyAdmin), "");
         guardManager = GuardManager(address(proxy));
 
-        proxy = new TransparentUpgradeableProxy(
-            address(new RiskManager(spoolAccessControl, address(ghostStrategy))),
-            address(proxyAdmin),
-            ""
-        );
-        riskManager = RiskManager(address(proxy));
-
         proxy =
         new TransparentUpgradeableProxy(address(new UsdPriceFeedManager(spoolAccessControl)), address(proxyAdmin), "");
         usdPriceFeedManager = UsdPriceFeedManager(address(proxy));
@@ -103,6 +96,10 @@ contract DeploySpool is Script {
         strategyRegistry = StrategyRegistry(address(proxy));
 
         spoolAccessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
+
+        proxy = new TransparentUpgradeableProxy(
+        address(new RiskManager(spoolAccessControl, strategyRegistry, address(ghostStrategy))), address(proxyAdmin), "" );
+        riskManager = RiskManager(address(proxy));
 
         {
             DepositManager depositManagerImpl =

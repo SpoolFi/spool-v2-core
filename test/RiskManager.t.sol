@@ -16,12 +16,13 @@ contract RiskManagerTest is Test {
     address allocationProvider = address(11);
     address smartVault = address(100);
     address actor = actor;
+    address strategyRegistry = address(0x0101);
 
     function setUp() public {
         accessControl = new SpoolAccessControl();
         accessControl.initialize();
 
-        riskManager = new RiskManager(accessControl, address(0xabc));
+        riskManager = new RiskManager(accessControl, IStrategyRegistry(strategyRegistry), address(0xabc));
     }
 
     function test_calculateAllocation() public {
@@ -33,11 +34,9 @@ contract RiskManagerTest is Test {
         riskManager.setRiskProvider(smartVault, STATIC_RISK_PROVIDER);
 
         vm.mockCall(
-            address(0x0101), abi.encodeWithSelector(IStrategy.getAPY.selector), abi.encode(Arrays.toArray(10_00))
-        );
-
-        vm.mockCall(
-            address(0x0102), abi.encodeWithSelector(IStrategy.getAPY.selector), abi.encode(Arrays.toArray(10_00))
+            strategyRegistry,
+            abi.encodeWithSelector(IStrategyRegistry.strategyAPYs.selector),
+            abi.encode(Arrays.toArray(10_00, 10_00))
         );
 
         vm.mockCall(
