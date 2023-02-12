@@ -519,7 +519,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     }
 
     function _setEcosystemFee(uint96 ecosystemFeePct_) private {
-        if (ecosystemFeePct_ > TREASURY_FEE_MAX) {
+        if (ecosystemFeePct_ > ECOSYSTEM_FEE_MAX) {
             revert EcosystemFeeTooLarge(ecosystemFeePct_);
         }
 

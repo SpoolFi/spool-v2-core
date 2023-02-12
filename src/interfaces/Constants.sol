@@ -14,7 +14,7 @@ uint256 constant FULL_PERCENT = 100_00;
 int256 constant FULL_PERCENT_INT = 100_00;
 
 /// @dev Represents 100% for yield.
-int256 constant YIELD_FULL_PERCENT_INT = 10e12;
+int256 constant YIELD_FULL_PERCENT_INT = 10 ** 12;
 
 /// @dev Represents 100% for yield.
 uint256 constant YIELD_FULL_PERCENT = uint256(YIELD_FULL_PERCENT_INT);
@@ -67,4 +67,5 @@ uint256 constant STRATEGY_COUNT_CAP = 16;
 /// @dev Maximal DHW base yield. Expressed in terms of FULL_PERCENT.
 uint256 constant MAX_DHW_BASE_YIELD_LIMIT = 10_00;
 
+/// @dev Smart vault and strategy share multiplier at first deposit.
 uint256 constant INITIAL_SHARE_MULTIPLIER = 1000;

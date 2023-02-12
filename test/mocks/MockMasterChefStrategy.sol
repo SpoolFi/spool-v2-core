@@ -50,11 +50,12 @@ contract MockMasterChefStrategy is Strategy {
 
         // NOTE: as reward token is same as the deposit token, deposit the claimed amount
         if (assetBalanceDiff > 0) {
+            (uint256 balanceBefore,) = masterChef.userInfo(pid, address(this));
+
             address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
             IERC20(assetGroup[0]).safeApprove(address(masterChef), assetBalanceDiff);
             masterChef.deposit(pid, assetBalanceDiff);
 
-            (uint256 balanceBefore,) = masterChef.userInfo(pid, address(this));
             if (balanceBefore > 0) {
                 compoundYield = int256(assetBalanceDiff * YIELD_FULL_PERCENT / balanceBefore);
             }

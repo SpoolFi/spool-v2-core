@@ -14,6 +14,7 @@ import "../../../src/SmartVault.sol";
 import "../../../src/SmartVaultFactory.sol";
 import "../../../src/Swapper.sol";
 import "../../libraries/Arrays.sol";
+import "../../libraries/Constants.sol";
 import "../../mocks/MockMasterChef.sol";
 import "../../mocks/MockMasterChefStrategy.sol";
 import "../../mocks/MockToken.sol";
@@ -235,6 +236,385 @@ contract DhwMasterChefTest is TestFixture {
             // NOTE: check relative error size
             assertApproxEqRel(token.balanceOf(alice), aliceAftersecondYieldBalance, 10 ** 9);
             assertApproxEqRel(token.balanceOf(bob), bobAftersecondYieldBalance, 10 ** 9);
+        }
+    }
+
+    function test_platformFees_1() public {
+        console.log("token", address(token));
+        console.log("strategy", address(strategyA));
+        console.log("smart vault", address(smartVault));
+
+        // setup initial state
+        {
+            // set token price to $1 / token for easier calculation
+            priceFeedManager.setExchangeRate(address(token), 1 * USD_DECIMALS_MULTIPLIER);
+
+            // set protocol fees, 20% total
+            strategyRegistry.setEcosystemFee(15_00);
+            strategyRegistry.setTreasuryFee(5_00);
+
+            // deal tokens to users
+            deal(address(token), alice, 100 ether, true);
+            deal(address(token), bob, 10 ether, true);
+
+            // Alice deposits
+            vm.startPrank(alice);
+            token.approve(address(smartVaultManager), 100 ether);
+
+            uint256 depositNft = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVault),
+                    assets: Arrays.toArray(100 ether),
+                    receiver: alice,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+
+            // flush, DHW, sync
+            smartVaultManager.flushSmartVault(address(smartVault));
+
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+            vm.stopPrank();
+
+            smartVaultManager.syncSmartVault(address(smartVault), true);
+
+            // Alice claims deposit
+            vm.startPrank(alice);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVault), Arrays.toArray(depositNft), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+        }
+
+        // check initial state
+        {
+            // - assets were routed to strategies
+            assertEq(token.balanceOf(address(strategyA.masterChef())), 100 ether, "starting token balance masterChef");
+            assertEq(token.balanceOf(address(masterWallet)), 0, "starting token balance masterWallet");
+            assertEq(token.balanceOf(alice), 0, "starting token balance Alice");
+            assertEq(token.balanceOf(bob), 10 ether, "starting token balance Bob");
+            // - strategy tokens were minted
+            assertEq(strategyA.totalSupply(), 100_000000000000000000000, "starting SSTA supply");
+            // - strategy tokens were distributed
+            assertEq(
+                strategyA.balanceOf(address(smartVault)), 100_000000000000000000000, "starting SSTS balance smartVault"
+            );
+            assertEq(strategyA.balanceOf(ecosystemFeeRecipient), 0, "starting SSTS balance ecosystemFeeRecipient");
+            assertEq(strategyA.balanceOf(treasuryFeeRecipient), 0, "starting SSTS balance treasuryFeeRecipient");
+            // - smart vault tokens were minted
+            assertEq(smartVault.totalSupply(), 100_000000000000000000000, "starting SVT supply");
+            // - smart vault tokens were distributed
+            assertEq(smartVault.balanceOf(alice), 100_000000000000000000000, "starting SVT balance Alice");
+            assertEq(smartVault.balanceOf(bob), 0, "starting SVT balance Alice");
+        }
+
+        // Bob deposits and rewards get generated
+        {
+            // skip 125 seconds to generate 125 ether of rewards
+            skip(125);
+
+            // Bob deposits
+            vm.startPrank(bob);
+            token.approve(address(smartVaultManager), 10 ether);
+
+            uint256 depositNft = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVault),
+                    assets: Arrays.toArray(10 ether),
+                    receiver: bob,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+
+            // flush, DHW, sync
+            smartVaultManager.flushSmartVault(address(smartVault));
+
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+            vm.stopPrank();
+
+            smartVaultManager.syncSmartVault(address(smartVault), true);
+
+            // Bob claims deposit
+            vm.startPrank(bob);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVault), Arrays.toArray(depositNft), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+        }
+
+        // check final state
+        {
+            // 125 ether in rewards were generated
+            // 100 ether goes to Alice, 25 ether goes as fees (20%)
+            // 100_000000000000000000000 shares now worth 200 ether
+            // 100_000000000000000000000 * 25 / 200 = 12_500000000000000000000 shares to be minted as fees
+            //   9_375000000000000000000 shares to go for ecosystem fees
+            //   3_125000000000000000000 shares to go for treasury fees
+            // 112_500000000000000000000 * 10 / 225 = 5_000000000000000000000 shares to be minted for Bob's deposit
+
+            // - rewards were compounded and assets routed to strategies
+            assertEq(token.balanceOf(address(strategyA.masterChef())), 235 ether, "final token balance masterChef");
+            assertEq(token.balanceOf(address(masterWallet)), 0, "final token balance masterWallet");
+            assertEq(token.balanceOf(alice), 0, "final token balance Alice");
+            assertEq(token.balanceOf(bob), 0, "final token balance Bob");
+            // - strategy tokens were minted
+            assertEq(strategyA.totalSupply(), 117_500000000000000000000, "final SSTA supply");
+            // - strategy tokens were distributed
+            assertEq(
+                strategyA.balanceOf(address(smartVault)), 105_000000000000000000000, "final SSTS balance smartVault"
+            );
+            assertEq(
+                strategyA.balanceOf(ecosystemFeeRecipient),
+                9_375000000000000000000,
+                "final SSTS balance ecosystemFeeRecipient"
+            );
+            assertEq(
+                strategyA.balanceOf(treasuryFeeRecipient),
+                3_125000000000000000000,
+                "final SSTS balance treasuryFeeRecipient"
+            );
+        }
+    }
+
+    function test_platformFees_2() public {
+        console.log("token", address(token));
+        console.log("strategy", address(strategyA));
+        console.log("smart vault", address(smartVault));
+
+        // setup initial state
+        {
+            // set token price to $1 / token for easier calculation
+            priceFeedManager.setExchangeRate(address(token), 1 * USD_DECIMALS_MULTIPLIER);
+
+            // set protocol fees, 10% total
+            strategyRegistry.setEcosystemFee(5_25);
+            strategyRegistry.setTreasuryFee(1_00);
+
+            // deal tokens to users
+            deal(address(token), alice, 100 ether, true);
+            deal(address(token), bob, 20 ether, true);
+
+            // Alice deposits
+            vm.startPrank(alice);
+            token.approve(address(smartVaultManager), 100 ether);
+
+            uint256 depositNft = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVault),
+                    assets: Arrays.toArray(100 ether),
+                    receiver: alice,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+
+            // flush, DHW, sync
+            smartVaultManager.flushSmartVault(address(smartVault));
+
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+            vm.stopPrank();
+
+            smartVaultManager.syncSmartVault(address(smartVault), true);
+
+            // Alice claims deposit
+            vm.startPrank(alice);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVault), Arrays.toArray(depositNft), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+        }
+
+        // check initial state
+        {
+            // - assets were routed to strategies
+            assertEq(token.balanceOf(address(strategyA.masterChef())), 100 ether, "starting token balance masterChef");
+            assertEq(token.balanceOf(address(masterWallet)), 0, "starting token balance masterWallet");
+            assertEq(token.balanceOf(alice), 0, "starting token balance Alice");
+            assertEq(token.balanceOf(bob), 20 ether, "starting token balance Bob");
+            assertEq(token.balanceOf(ecosystemFeeRecipient), 0, "starting token balance ecosystemFeeRecipient");
+            assertEq(token.balanceOf(treasuryFeeRecipient), 0, "starting token balance treasuryFeeRecipient");
+            // - strategy tokens were minted
+            assertEq(strategyA.totalSupply(), 100_000000000000000000000, "starting SSTA supply");
+            // - strategy tokens were distributed
+            assertEq(
+                strategyA.balanceOf(address(smartVault)), 100_000000000000000000000, "starting SSTS balance smartVault"
+            );
+            assertEq(strategyA.balanceOf(ecosystemFeeRecipient), 0, "starting SSTS balance ecosystemFeeRecipient");
+            assertEq(strategyA.balanceOf(treasuryFeeRecipient), 0, "starting SSTS balance treasuryFeeRecipient");
+            // - smart vault tokens were minted
+            assertEq(smartVault.totalSupply(), 100_000000000000000000000, "starting SVT supply");
+            // - smart vault tokens were distributed
+            assertEq(smartVault.balanceOf(alice), 100_000000000000000000000, "starting SVT balance Alice");
+            assertEq(smartVault.balanceOf(bob), 0, "starting SVT balance Alice");
+        }
+
+        // Bob deposits and rewards get generated
+        {
+            // skip 20 seconds to generate 20 ether of rewards
+            skip(64);
+
+            // Bob deposits
+            vm.startPrank(bob);
+            token.approve(address(smartVaultManager), 20 ether);
+
+            uint256 depositNft = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVault),
+                    assets: Arrays.toArray(20 ether),
+                    receiver: bob,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+
+            // flush, DHW, sync
+            smartVaultManager.flushSmartVault(address(smartVault));
+
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+            vm.stopPrank();
+
+            smartVaultManager.syncSmartVault(address(smartVault), true);
+
+            // Bob claims deposit
+            vm.startPrank(bob);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVault), Arrays.toArray(depositNft), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+        }
+
+        // check intermediate state
+        {
+            // 64 ether in rewards were generated
+            // 60 ether goes to Alice, 4 ether goes as fees (6.25%)
+            // 100_000000000000000000000 shares now worth 160 ether
+            // 100_000000000000000000000 * 4 / 160 = 2_500000000000000000000 shares to be minted as fees
+            //   2_100000000000000000000 shares to go for ecosystem fees
+            //   0_400000000000000000000 shares to go for treasury fees
+            // 102_500000000000000000000 * 20 / 164 = 12_500000000000000000000 shares to be minted for Bob's deposit
+
+            // - rewards were compounded and assets routed to strategies
+            assertEq(
+                token.balanceOf(address(strategyA.masterChef())), 184 ether, "intermediate token balance masterChef"
+            );
+            assertEq(token.balanceOf(address(masterWallet)), 0, "intermediate token balance masterWallet");
+            assertEq(token.balanceOf(alice), 0, "intermediate token balance Alice");
+            assertEq(token.balanceOf(bob), 0, "intermediate token balance Bob");
+            assertEq(token.balanceOf(ecosystemFeeRecipient), 0, "intermediate token balance ecosystemFeeRecipient");
+            assertEq(token.balanceOf(treasuryFeeRecipient), 0, "intermediate token balance treasuryFeeRecipient");
+            // - strategy tokens were minted
+            assertEq(strategyA.totalSupply(), 115_000000000000000000000, "intermediate SSTA supply");
+            // - strategy tokens were distributed
+            assertEq(
+                strategyA.balanceOf(address(smartVault)),
+                112_500000000000000000000,
+                "intermediate SSTS balance smartVault"
+            );
+            assertEq(
+                strategyA.balanceOf(ecosystemFeeRecipient),
+                2_100000000000000000000,
+                "intermediate SSTS balance ecosystemFeeRecipient"
+            );
+            assertEq(
+                strategyA.balanceOf(treasuryFeeRecipient),
+                400000000000000000000,
+                "intermediate SSTS balance treasuryFeeRecipient"
+            );
+        }
+
+        // everyone withdraws their funds
+        {
+            // Alice and Bob withdraw
+            vm.startPrank(alice);
+            uint256 withdrawalNftAlice = smartVaultManager.redeem(
+                RedeemBag({
+                    smartVault: address(smartVault),
+                    shares: smartVault.balanceOf(alice),
+                    nftIds: new uint256[](0),
+                    nftAmounts: new uint256[](0)
+                }),
+                alice,
+                false
+            );
+            vm.stopPrank();
+
+            vm.startPrank(bob);
+            uint256 withdrawalNftBob = smartVaultManager.redeem(
+                RedeemBag({
+                    smartVault: address(smartVault),
+                    shares: smartVault.balanceOf(bob),
+                    nftIds: new uint256[](0),
+                    nftAmounts: new uint256[](0)
+                }),
+                bob,
+                false
+            );
+            vm.stopPrank();
+
+            // flush, DHW, sync
+            smartVaultManager.flushSmartVault(address(smartVault));
+
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+            vm.stopPrank();
+
+            smartVaultManager.syncSmartVault(address(smartVault), true);
+
+            // Alice and Bob claim withdrawal
+            vm.startPrank(alice);
+            smartVaultManager.claimWithdrawal(
+                address(smartVault), Arrays.toArray(withdrawalNftAlice), Arrays.toArray(NFT_MINTED_SHARES), alice
+            );
+            vm.stopPrank();
+
+            vm.startPrank(bob);
+            smartVaultManager.claimWithdrawal(
+                address(smartVault), Arrays.toArray(withdrawalNftBob), Arrays.toArray(NFT_MINTED_SHARES), bob
+            );
+            vm.stopPrank();
+
+            // ecosystem and treasury fee recipients withdraw their shares
+            uint256[][] memory withdrawalSlippages = new uint256[][](1);
+            withdrawalSlippages[0] = new uint256[](0);
+
+            vm.startPrank(ecosystemFeeRecipient);
+            strategyRegistry.redeemStrategyShares(
+                Arrays.toArray(address(strategyA)),
+                Arrays.toArray(strategyA.balanceOf(ecosystemFeeRecipient)),
+                withdrawalSlippages
+            );
+            vm.stopPrank();
+
+            vm.startPrank(treasuryFeeRecipient);
+            strategyRegistry.redeemStrategyShares(
+                Arrays.toArray(address(strategyA)),
+                Arrays.toArray(strategyA.balanceOf(treasuryFeeRecipient)),
+                withdrawalSlippages
+            );
+            vm.stopPrank();
+        }
+
+        // check final state
+        {
+            // - strategy tokens were burned
+            assertEq(strategyA.totalSupply(), 0, "final SSTA supply");
+            // - assets were withdrawn and distributed
+            assertEq(token.balanceOf(address(strategyA.masterChef())), 0 ether, "final token balance masterChef");
+            assertEq(token.balanceOf(address(masterWallet)), 0, "final token balance masterWallet");
+            assertEq(token.balanceOf(alice), 160 ether, "final token balance Alice");
+            assertEq(token.balanceOf(bob), 20 ether, "final token balance Bob");
+            assertEq(token.balanceOf(ecosystemFeeRecipient), 3.36 ether, "final token balance ecosystemFeeRecipient");
+            assertEq(token.balanceOf(treasuryFeeRecipient), 0.64 ether, "final token balance treasuryFeeRecipient");
         }
     }
 }

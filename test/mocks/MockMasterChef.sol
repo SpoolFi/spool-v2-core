@@ -159,7 +159,7 @@ contract MockMasterChef is Ownable {
         uint256 pending = user.amount * pool.accRewardPerShare / 1e12 - user.rewardDebt;
         safeRewardTransfer(msg.sender, pending);
         user.amount -= _amount;
-        user.rewardDebt *= pool.accRewardPerShare / 1e12;
+        user.rewardDebt = user.amount * pool.accRewardPerShare / 1e12;
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
     }

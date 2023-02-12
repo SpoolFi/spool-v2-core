@@ -289,6 +289,19 @@ interface IStrategyRegistry {
         external
         view
         returns (uint256[] memory assetsWithdrawn);
+
+    /**
+     * @notice Redeems strategy shares.
+     * Used by recipients of platform fees.
+     * @param strategies Strategies from which to redeem.
+     * @param shares Amount of shares to redeem from each strategy.
+     * @param withdrawalSlippages Slippages to guard redeemal process.
+     */
+    function redeemStrategyShares(
+        address[] calldata strategies,
+        uint256[] calldata shares,
+        uint256[][] calldata withdrawalSlippages
+    ) external;
 }
 
 interface IEmergencyWithdrawal {

@@ -29,7 +29,7 @@ contract TestFixture is Test {
 
     address internal ecosystemFeeRecipient = address(0xfec);
     address internal treasuryFeeRecipient = address(0xfab);
-    address internal emergencyFeeRecipient = address(0xfee);
+    address internal emergencyWithdrawalRecipient = address(0xfee);
 
     MockGuard internal guard;
     MockToken internal token;
@@ -67,7 +67,7 @@ contract TestFixture is Test {
         masterWallet = new MasterWallet(accessControl);
         priceFeedManager = new MockPriceFeedManager();
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager, address(ghostStrategy));
-        strategyRegistry.initialize(0, 0, ecosystemFeeRecipient, treasuryFeeRecipient, emergencyFeeRecipient);
+        strategyRegistry.initialize(0, 0, ecosystemFeeRecipient, treasuryFeeRecipient, emergencyWithdrawalRecipient);
 
         riskManager = new RiskManager(accessControl, address(ghostStrategy));
         allocationProvider = new UniformAllocationProvider();
