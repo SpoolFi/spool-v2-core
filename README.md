@@ -9,12 +9,18 @@ The Spool Protocol regularly rebalances portfolios while adhering to individual 
 
 Documentation available [here](https://archit3ct.gitbook.io/spool-v2-technical-documentation/).
 
-# Coverage
-Generate a coverage report with
+# Testing and coverage
+### Generate a coverage report with
 ```
-#> forge coverage --report lcov
-#> genhtml lcov.info --branch-coverage --output-dir coverage`
+forge coverage --report lcov
+genhtml lcov.info --branch-coverage --output-dir coverage
 ```
+Browse the coverage report by opening `./coverage/src/index.html`.
+
+### Fork testing in folder `test/integration/forked`
+`forge t --fork-url $RPC_URL --match-path "./test/integration/forked/*.t.sol"`
+
+**Note:** load RPC_URL variable from `.env` into environment. 
 
 ## Smart Contract Overview
 ### SmartVaultManager.sol
