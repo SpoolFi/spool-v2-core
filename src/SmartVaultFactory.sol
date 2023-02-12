@@ -247,11 +247,9 @@ contract SmartVaultFactory is UpgradeableBeacon {
         }
 
         unchecked {
+            bool fixedAllocations = uint16a16.unwrap(specification.strategyAllocation) > 0;
             for (uint256 i; i < specification.strategies.length; ++i) {
-                if (
-                    uint16a16.unwrap(specification.strategyAllocation) > 0
-                        && specification.strategyAllocation.get(i) == 0
-                ) {
+                if (fixedAllocations && specification.strategyAllocation.get(i) == 0) {
                     revert InvalidStrategyAllocationsLength();
                 }
 
