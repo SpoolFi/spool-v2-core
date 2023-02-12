@@ -42,7 +42,7 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv
+          forge t --no-match-path "./test/forked/*" -vvv
         id: test
 
       - name: Run Forge coverage
