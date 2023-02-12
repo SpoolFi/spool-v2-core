@@ -9,6 +9,12 @@ import "../interfaces/ISwapper.sol";
 import "../external/interfaces/strategies/compound/v2/IComptroller.sol";
 import "../external/interfaces/strategies/compound/v2/ICErc20.sol";
 
+/// @notice Used when Compound V2 mint returns an error code.
+error BadCompoundV2Deposit();
+
+/// @notice Used Compound V2 redeem returns an error code.
+error BadCompoundV2Withdrawal();
+
 contract CompoundV2Strategy is Strategy {
     using SafeERC20 for IERC20;
 
@@ -29,10 +35,6 @@ contract CompoundV2Strategy is Strategy {
 
     /// @notice exchangeRateCurrent at the last DHW.
     uint256 private _lastExchangeRate;
-
-    // NOTE: where to put
-    error BadCompoundV2Deposit();
-    error BadCompoundV2Withdrawal();
 
     constructor(
         string memory name_,
