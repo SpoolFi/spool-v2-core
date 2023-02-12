@@ -52,8 +52,13 @@ contract ForkTestFixture is TestFixture {
         deal(address(tokenDAI), account, 1e30, true);
     }
 
-    function _createVault(uint16 managementFeePct, uint16 depositFeePct, uint256 assetGroupId, address[] memory strategies, uint256[] memory allocations) internal returns (ISmartVault) {
-
+    function _createVault(
+        uint16 managementFeePct,
+        uint16 depositFeePct,
+        uint256 assetGroupId,
+        address[] memory strategies,
+        uint256[] memory allocations
+    ) internal returns (ISmartVault) {
         vm.mockCall(
             address(riskManager),
             abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
