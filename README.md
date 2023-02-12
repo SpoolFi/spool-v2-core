@@ -71,3 +71,12 @@ E.G. the user holds DAI but would like to join an ETH/USDC Smart Vault.
 ### ActionManager.sol
 - Configures Actions for Smart Vaults.
 - Runs Actions for Smart Vaults
+  Licensing
+  The primary license for Spool is the Business Source License 1.1 (BUSL-1.1), see LICENSE.
+
+## Licensing
+The primary license for Spool is the Business Source License 1.1 (`BUSL-1.1`), see [`LICENSE`](./LICENSE).
+
+### Exceptions
+- All files in src/ are licensed under the license they were originally published with (as indicated in their SPDX headers)
+- All files in test/ are licensed under MIT.
