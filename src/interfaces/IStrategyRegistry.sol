@@ -69,6 +69,7 @@ struct StrategyAtIndex {
  * @custom:member swapInfo Information for swapping assets before depositing into protocol. SwapInfo[] per each strategy.
  * @custom:member compoundSwapInfo Information for swapping rewards before depositing them back into the protocol. SwapInfo[] per each strategy.
  * @custom:member strategySlippages Slippages used to constrain depositing into and withdrawing from the protocol. uint256[] per strategy.
+ * @custom:member baseYields Base yield percentage the strategy created in the DHW period (applicable only for some strategies).
  * @custom:member tokens List of all asset tokens involved in the do hard work.
  * @custom:member exchangeRateSlippages Slippages used to constrain exchange rates for asset tokens. uint256[2] for each token.
  */
@@ -77,9 +78,9 @@ struct DoHardWorkParameterBag {
     SwapInfo[][][] swapInfo;
     SwapInfo[][][] compoundSwapInfo;
     uint256[][][] strategySlippages;
+    int256[] baseYields;
     address[] tokens;
     uint256[2][] exchangeRateSlippages;
-    int256[] baseYields;
 }
 
 /**

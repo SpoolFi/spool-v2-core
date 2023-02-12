@@ -230,6 +230,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                     || dhwParams.strategies.length != dhwParams.swapInfo.length
                     || dhwParams.strategies.length != dhwParams.compoundSwapInfo.length
                     || dhwParams.strategies.length != dhwParams.strategySlippages.length
+                    || dhwParams.strategies.length != dhwParams.baseYields.length
             ) {
                 revert InvalidArrayLength();
             }
@@ -445,26 +446,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         return totalWithdrawnAssets;
     }
 
-    function setEcosystemFee(uint96 ecosystemFeePct_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
-        _setEcosystemFee(ecosystemFeePct_);
-    }
-
-    function setEcosystemFeeReceiver(address ecosystemFeePct_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
-        _setEcosystemFeeReceiver(ecosystemFeePct_);
-    }
-
-    function setTreasuryFee(uint96 treasuryFeePct_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
-        _setTreasuryFee(treasuryFeePct_);
-    }
-
-    function setTreasuryFeeReceiver(address treasuryFeeReceiver_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
-        _setTreasuryFeeReceiver(treasuryFeeReceiver_);
-    }
-
-    function setEmergencyWithdrawalWallet(address emergencyWithdrawalWallet_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
-        _setEmergencyWithdrawalWallet(emergencyWithdrawalWallet_);
-    }
-
     function emergencyWithdraw(
         address[] calldata strategies,
         uint256[][] calldata withdrawalSlippages,
@@ -497,6 +478,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                 continue;
             }
 
+            // TODO: refactor IStrategy(strategies[i]).assets()
             uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(IStrategy(strategies[i]).assets(), _priceFeedManager);
 
             IStrategy(strategies[i]).redeemShares(
@@ -508,6 +490,26 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                 withdrawalSlippages[i]
             );
         }
+    }
+
+    function setEcosystemFee(uint96 ecosystemFeePct_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        _setEcosystemFee(ecosystemFeePct_);
+    }
+
+    function setEcosystemFeeReceiver(address ecosystemFeePct_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        _setEcosystemFeeReceiver(ecosystemFeePct_);
+    }
+
+    function setTreasuryFee(uint96 treasuryFeePct_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        _setTreasuryFee(treasuryFeePct_);
+    }
+
+    function setTreasuryFeeReceiver(address treasuryFeeReceiver_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        _setTreasuryFeeReceiver(treasuryFeeReceiver_);
+    }
+
+    function setEmergencyWithdrawalWallet(address emergencyWithdrawalWallet_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        _setEmergencyWithdrawalWallet(emergencyWithdrawalWallet_);
     }
 
     function _setEcosystemFee(uint96 ecosystemFeePct_) private {

@@ -48,8 +48,8 @@ contract MockStrategy is Strategy {
         totalUsdValue = totalUsdValue_;
     }
 
-    function _getYieldPercentage(int256) internal pure override returns (int256) {
-        return 0;
+    function _getYieldPercentage(int256 manualYield) internal pure override returns (int256) {
+        return manualYield;
     }
 
     function _compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
