@@ -233,6 +233,5 @@ interface IStrategy is IERC20Upgradeable {
      * @param slippages Slippages to guard redeeming.
      * @param recipient Recipient address
      */
-    function emergencyWithdraw(uint256[] calldata slippages, address recipient)
-        external;
+    function emergencyWithdraw(uint256[] calldata slippages, address recipient) external;
 }

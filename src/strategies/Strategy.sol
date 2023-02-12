@@ -243,15 +243,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             revert NotFastRedeemer(msg.sender);
         }
 
-        return _redeemShares(
-            shares,
-            address(this),
-            masterWallet,
-            assetGroup,
-            exchangeRates,
-            priceFeedManager,
-            slippages
-        );
+        return
+            _redeemShares(shares, address(this), masterWallet, assetGroup, exchangeRates, priceFeedManager, slippages);
     }
 
     function redeemShares(
@@ -264,15 +257,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
     ) external returns (uint256[] memory) {
         _checkRole(ROLE_STRATEGY_REGISTRY, msg.sender);
 
-        return _redeemShares(
-            shares,
-            redeemer,
-            redeemer,
-            assetGroup,
-            exchangeRates,
-            priceFeedManager,
-            slippages
-        );
+        return _redeemShares(shares, redeemer, redeemer, assetGroup, exchangeRates, priceFeedManager, slippages);
     }
 
     // NOTE: is only called when reallocating
@@ -366,7 +351,11 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
      * @param platformFees Platform fees info, containing information of the sice and recipient of the fees (SSTs).
      * @return sharesMinted Returns newly minted shares representing the platform performance fees.
      */
-    function _collectPlatformFees(int256 yieldPct, PlatformFees calldata platformFees) internal virtual returns (uint256 sharesMinted) {
+    function _collectPlatformFees(int256 yieldPct, PlatformFees calldata platformFees)
+        internal
+        virtual
+        returns (uint256 sharesMinted)
+    {
         if (yieldPct > 0) {
             uint256 uint256YieldPct = uint256(yieldPct);
 
@@ -441,9 +430,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         internal
         virtual;
 
-    function _emergencyWithdrawImpl(uint256[] calldata slippages, address recipient)
-        internal
-        virtual;
+    function _emergencyWithdrawImpl(uint256[] calldata slippages, address recipient) internal virtual;
 
     function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
         internal

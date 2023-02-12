@@ -130,10 +130,7 @@ contract MockStrategy is Strategy {
 
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
 
-    function _emergencyWithdrawImpl(uint256[] calldata, address recipient)
-        internal
-        override
-    {
+    function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
         address[] memory assetGroup = assets();
         for (uint256 i; i < assetGroup.length; i++) {
             protocol.withdrawTo(assetGroup[i], IERC20(assetGroup[i]).balanceOf(address(protocol)), recipient);

@@ -479,7 +479,8 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
             }
 
             // TODO: refactor IStrategy(strategies[i]).assets()
-            uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(IStrategy(strategies[i]).assets(), _priceFeedManager);
+            uint256[] memory exchangeRates =
+                SpoolUtils.getExchangeRates(IStrategy(strategies[i]).assets(), _priceFeedManager);
 
             IStrategy(strategies[i]).redeemShares(
                 shares[i],
@@ -508,7 +509,10 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         _setTreasuryFeeReceiver(treasuryFeeReceiver_);
     }
 
-    function setEmergencyWithdrawalWallet(address emergencyWithdrawalWallet_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+    function setEmergencyWithdrawalWallet(address emergencyWithdrawalWallet_)
+        external
+        onlyRole(ROLE_SPOOL_ADMIN, msg.sender)
+    {
         _setEmergencyWithdrawalWallet(emergencyWithdrawalWallet_);
     }
 
