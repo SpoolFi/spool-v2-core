@@ -25,18 +25,16 @@ contract MockExchange {
         IERC20 source;
         IERC20 target;
 
-        uint256 usdDecimals = priceFeedManager.usdDecimals();
-        uint256 exchangeRate = priceFeedManager.assetToUsd(address(tokenA), 1 ether) * 10 ** usdDecimals
-            / priceFeedManager.assetToUsd(address(tokenB), 1 ether);
-
         if (address(token) == address(tokenA)) {
             source = tokenA;
             target = tokenB;
-            out = amount * exchangeRate / 10 ** usdDecimals;
+            out = amount * priceFeedManager.assetToUsd(address(tokenA), 1 ether)
+                / priceFeedManager.assetToUsd(address(tokenB), 1 ether);
         } else if (address(token) == address(tokenB)) {
             source = tokenB;
             target = tokenA;
-            out = amount * 10 ** usdDecimals / exchangeRate;
+            out = amount * priceFeedManager.assetToUsd(address(tokenB), 1 ether)
+                / priceFeedManager.assetToUsd(address(tokenA), 1 ether);
         } else {
             revert("Invalid token");
         }

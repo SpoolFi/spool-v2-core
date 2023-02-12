@@ -1,9 +1,13 @@
-Get-Content .env | foreach {
-    $name, $value = $_.split('=');
-
-    if ([string]::IsNullOrWhiteSpace($name) -Or $name.Contains("#")) {
+foreach ($line in Get-Content .env) {
+    if ($line.StartsWith("#") -Or [String]::IsNullOrWhiteSpace($line)) {
         continue;
     }
 
-    Set-Content env:\$name $value;
+    $name, $value = $line.split('=');
+
+    if ([String]::IsNullOrWhiteSpace($value)) {
+        continue;
+    }
+
+    Set-Item -Path env:$name -Value $value;
 }
