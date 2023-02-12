@@ -122,6 +122,14 @@ contract MockStrategy is Strategy {
         withdrawalFee = newWithdrawalFee;
     }
 
+    function setAssetRatio(uint256[] calldata newRatios) external {
+        if (ratios.length != newRatios.length) {
+            revert("wrong ratio length");
+        }
+
+        ratios = newRatios;
+    }
+
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public view override {}
 
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
