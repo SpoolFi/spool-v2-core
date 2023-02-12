@@ -87,9 +87,6 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         return super.balanceOf(account, id) >= 1 ? 1 : 0;
     }
 
-    /**
-     * @notice Fractional balance of a NFT (0 - NFT_MINTED_SHARES)
-     */
     function balanceOfFractional(address account, uint256 id) public view returns (uint256) {
         return super.balanceOf(account, id);
     }
@@ -114,9 +111,6 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         return batchBalances;
     }
 
-    /**
-     * @notice Fractional balance of a NFT array (0 - NFT_MINTED_SHARES)
-     */
     function balanceOfFractionalBatch(address account, uint256[] calldata ids) public view returns (uint256[] memory) {
         uint256[] memory batchBalances = new uint256[](ids.length);
 
@@ -127,9 +121,6 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         return batchBalances;
     }
 
-    /**
-     * @return depositNTFIds A list of Deposit NFT IDs
-     */
     function activeUserNFTIds(address userAddress) external view returns (uint256[] memory) {
         return _activeUserNFTIds[userAddress].toArray(_activeUserNFTCount[userAddress]);
     }
@@ -138,9 +129,6 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         return _vaultName;
     }
 
-    /**
-     * @notice Get encoded metadata for given NFT ids (both withdrawal and deposit)
-     */
     function getMetadata(uint256[] calldata nftIds) public view returns (bytes[] memory) {
         bytes[] memory metadata = new bytes[](nftIds.length);
 

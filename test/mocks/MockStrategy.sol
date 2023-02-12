@@ -52,13 +52,13 @@ contract MockStrategy is Strategy {
         return 0;
     }
 
-    function compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
+    function _compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
         internal
         override
         returns (int256 compoundYield)
     {}
 
-    function swapAssets(address[] memory tokens, uint256[] memory toSwap, SwapInfo[] calldata swapInfo)
+    function _swapAssets(address[] memory tokens, uint256[] memory toSwap, SwapInfo[] calldata swapInfo)
         internal
         override
     {
@@ -69,7 +69,7 @@ contract MockStrategy is Strategy {
         _swapper.swap(tokens, swapInfo, address(this));
     }
 
-    function depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
+    function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
         internal
         override
     {
@@ -81,7 +81,7 @@ contract MockStrategy is Strategy {
         }
     }
 
-    function getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
+    function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
         internal
         view
         override
@@ -99,7 +99,7 @@ contract MockStrategy is Strategy {
         return usdWorth;
     }
 
-    function redeemFromProtocol(address[] calldata tokens, uint256 ssts, uint256[] calldata) internal override {
+    function _redeemFromProtocol(address[] calldata tokens, uint256 ssts, uint256[] calldata) internal override {
         if (ssts == 0) {
             return;
         }
@@ -130,7 +130,7 @@ contract MockStrategy is Strategy {
 
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
 
-    function emergencyWithdrawImpl(address[] calldata assetGroup, uint256[] calldata, address recipient)
+    function _emergencyWithdrawImpl(address[] calldata assetGroup, uint256[] calldata, address recipient)
         internal
         override
     {

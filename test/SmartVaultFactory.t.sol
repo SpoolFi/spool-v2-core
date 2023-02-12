@@ -65,7 +65,7 @@ contract SmartVaultFactoryTest is Test {
         smartVaultManager = ISmartVaultManager(address(0x4));
         vm.mockCall(
             address(smartVaultManager),
-            abi.encodeWithSelector(ISmartVaultManager.registerSmartVault.selector),
+            abi.encodeWithSelector(ISmartVaultRegistry.registerSmartVault.selector),
             abi.encode(0)
         );
 
@@ -186,7 +186,7 @@ contract SmartVaultFactoryTest is Test {
         vm.expectCall(address(guardManager), abi.encodeWithSelector(IGuardManager.setGuards.selector));
         // - register smart vault
         vm.expectCall(
-            address(smartVaultManager), abi.encodeWithSelector(ISmartVaultManager.registerSmartVault.selector)
+            address(smartVaultManager), abi.encodeWithSelector(ISmartVaultRegistry.registerSmartVault.selector)
         );
 
         factory.deploySmartVault(_getSpecification());
@@ -286,7 +286,7 @@ contract SmartVaultFactoryTest is Test {
         vm.expectCall(address(guardManager), abi.encodeWithSelector(IGuardManager.setGuards.selector));
         // - register smart vault
         vm.expectCall(
-            address(smartVaultManager), abi.encodeWithSelector(ISmartVaultManager.registerSmartVault.selector)
+            address(smartVaultManager), abi.encodeWithSelector(ISmartVaultRegistry.registerSmartVault.selector)
         );
 
         factory.deploySmartVaultDeterministically(_getSpecification(), bytes32(uint256(123)));

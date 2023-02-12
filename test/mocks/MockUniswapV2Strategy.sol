@@ -64,13 +64,13 @@ contract MockUniswapV2Strategy is Strategy {
         return _assetRatio;
     }
 
-    function swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
+    function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
     function _getYieldPercentage(int256) internal pure override returns (int256) {
         return 0;
     }
 
-    function compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
+    function _compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
         internal
         override
         returns (int256 compoundYield)
@@ -78,7 +78,7 @@ contract MockUniswapV2Strategy is Strategy {
 
     // NOTE: IMPORTAINT - asset ratio needs to be perfect for this, otherwise assets are lost
     // can use the formula for uniswap v2 swap + add liquidity (https://blog.alphaventuredao.io/onesideduniswap/)
-    function depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
+    function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
         internal
         override
     {
@@ -93,7 +93,7 @@ contract MockUniswapV2Strategy is Strategy {
     }
 
     // NOTE: add slippage
-    function getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
+    function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
         internal
         view
         override
@@ -120,7 +120,7 @@ contract MockUniswapV2Strategy is Strategy {
         return usdWorth * lpBalance / uniswapPair.totalSupply();
     }
 
-    function redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata) internal override {
+    function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata) internal override {
         if (ssts == 0) {
             return;
         }
@@ -139,7 +139,7 @@ contract MockUniswapV2Strategy is Strategy {
 
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
 
-    function emergencyWithdrawImpl(address[] calldata assetGroup, uint256[] calldata slippages, address recipient)
+    function _emergencyWithdrawImpl(address[] calldata assetGroup, uint256[] calldata slippages, address recipient)
         internal
         pure
         override

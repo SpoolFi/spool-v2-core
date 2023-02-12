@@ -19,7 +19,6 @@ import "../libraries/SpoolUtils.sol";
  * - ADMIN_ROLE_STRATEGY
  * - ROLE_STRATEGY_REGISTRY
  */
-
 contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializable, SpoolAccessControllable {
     using ArrayMappingUint256 for mapping(uint256 => uint256);
     using uint16a16Lib for uint16a16;
@@ -137,17 +136,11 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         return _platformFees;
     }
 
-    /**
-     * @notice Deposits for given strategy and DHW index
-     */
     function depositedAssets(address strategy, uint256 index) external view returns (uint256[] memory) {
         uint256 assetGroupLength = IStrategy(strategy).assets().length;
         return _assetsDeposited[strategy][index].toArray(assetGroupLength);
     }
 
-    /**
-     * @notice Current DHW indexes for given strategies
-     */
     function currentIndex(address[] calldata strategies) external view returns (uint256[] memory) {
         uint256[] memory indexes = new uint256[](strategies.length);
         for (uint256 i = 0; i < strategies.length; i++) {
@@ -174,9 +167,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         return result;
     }
 
-    /**
-     * @notice Get state of a strategy for a given DHW index
-     */
     function strategyAtIndexBatch(address[] calldata strategies, uint16a16 dhwIndexes)
         external
         view
@@ -191,9 +181,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         return result;
     }
 
-    /**
-     * @notice Get state of a strategy for a given DHW index
-     */
     function strategyAtIndex(address strategy, uint256 dhwIndex) public view returns (StrategyAtIndex memory) {
         uint256 assetGroupLength = IStrategy(strategy).assets().length;
 

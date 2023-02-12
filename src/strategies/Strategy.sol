@@ -102,8 +102,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
         // Compound and get USD value.
         dhwInfo.yieldPercentage = _getYieldPercentage(0);
-        dhwInfo.yieldPercentage += compound(dhwParams.compoundSwapInfo, dhwParams.slippages);
-        usdWorth[0] = getUsdWorth(dhwParams.exchangeRates, dhwParams.priceFeedManager);
+        dhwInfo.yieldPercentage += _compound(dhwParams.compoundSwapInfo, dhwParams.slippages);
+        usdWorth[0] = _getUsdWorth(dhwParams.exchangeRates, dhwParams.priceFeedManager);
 
         uint256 matchedShares;
         uint256 depositShareEquivalent;
@@ -149,14 +149,14 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             }
 
             // - swap assets
-            swapAssets(dhwParams.assetGroup, assetsToDeposit, dhwParams.swapInfo);
+            _swapAssets(dhwParams.assetGroup, assetsToDeposit, dhwParams.swapInfo);
             for (uint256 i; i < dhwParams.assetGroup.length; ++i) {
                 assetsToDeposit[i] = IERC20(dhwParams.assetGroup[i]).balanceOf(address(this)) - withdrawnAssets[i];
             }
 
             // - deposit assets into the protocol
-            depositToProtocol(dhwParams.assetGroup, assetsToDeposit, dhwParams.slippages);
-            usdWorth[1] = getUsdWorth(dhwParams.exchangeRates, dhwParams.priceFeedManager);
+            _depositToProtocol(dhwParams.assetGroup, assetsToDeposit, dhwParams.slippages);
+            usdWorth[1] = _getUsdWorth(dhwParams.exchangeRates, dhwParams.priceFeedManager);
 
             // - mint SSTs
             uint256 usdWorthDeposited = usdWorth[1] - usdWorth[0];
@@ -182,12 +182,12 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             }
 
             // - redeem shares from protocol
-            redeemFromProtocol(dhwParams.assetGroup, withdrawnShares, dhwParams.slippages);
+            _redeemFromProtocol(dhwParams.assetGroup, withdrawnShares, dhwParams.slippages);
             _burn(address(this), withdrawnShares);
             withdrawn = true;
 
             // - figure out how much was withdrawn
-            usdWorth[1] = getUsdWorth(dhwParams.exchangeRates, dhwParams.priceFeedManager);
+            usdWorth[1] = _getUsdWorth(dhwParams.exchangeRates, dhwParams.priceFeedManager);
             unchecked {
                 for (uint256 i; i < dhwParams.assetGroup.length; ++i) {
                     withdrawnAssets[i] = IERC20(dhwParams.assetGroup[i]).balanceOf(address(this));
@@ -227,7 +227,6 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         dhwInfo.totalSstsAtDhw = totalSupply();
     }
 
-    // TODO: add access control
     function redeemFast(
         uint256 shares,
         address masterWallet,
@@ -236,11 +235,18 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         IUsdPriceFeedManager priceFeedManager,
         uint256[] calldata slippages
     ) external returns (uint256[] memory) {
+        if (
+            !_accessControl.hasRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+                && !_accessControl.hasRole(ROLE_STRATEGY_REGISTRY, msg.sender)
+        ) {
+            revert NotFastRedeemer(msg.sender);
+        }
+
         // redeem shares from protocol
-        redeemFromProtocol(assetGroup, shares, slippages);
+        _redeemFromProtocol(assetGroup, shares, slippages);
         _burn(address(this), shares);
 
-        totalUsdValue = getUsdWorth(exchangeRates, priceFeedManager);
+        totalUsdValue = _getUsdWorth(exchangeRates, priceFeedManager);
 
         // transfer assets to master wallet
         uint256[] memory assetsWithdrawn = new uint256[](assetGroup.length);
@@ -252,14 +258,13 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         return assetsWithdrawn;
     }
 
-    // TODO: add access control
     function depositFast(
         address[] calldata assetGroup,
         uint256[] calldata exchangeRates,
         IUsdPriceFeedManager priceFeedManager,
         uint256[] calldata slippages,
         SwapInfo[] calldata swapInfo
-    ) external returns (uint256) {
+    ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (uint256) {
         // get amount of assets available to deposit
         uint256[] memory assetsToDeposit = new uint256[](assetGroup.length);
         for (uint256 i = 0; i < assetGroup.length; ++i) {
@@ -267,15 +272,15 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         }
 
         // swap assets
-        swapAssets(assetGroup, assetsToDeposit, swapInfo);
+        _swapAssets(assetGroup, assetsToDeposit, swapInfo);
         for (uint256 i = 0; i < assetGroup.length; ++i) {
             assetsToDeposit[i] = IERC20(assetGroup[i]).balanceOf(address(this));
         }
 
         // deposit assets
-        uint256 usdWorth0 = getUsdWorth(exchangeRates, priceFeedManager);
-        depositToProtocol(assetGroup, assetsToDeposit, slippages);
-        uint256 usdWorth1 = getUsdWorth(exchangeRates, priceFeedManager);
+        uint256 usdWorth0 = _getUsdWorth(exchangeRates, priceFeedManager);
+        _depositToProtocol(assetGroup, assetsToDeposit, slippages);
+        uint256 usdWorth1 = _getUsdWorth(exchangeRates, priceFeedManager);
 
         // mint SSTs
         uint256 usdWorthDeposited = usdWorth1 - usdWorth0;
@@ -292,8 +297,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         return sstsToMint;
     }
 
-    function claimShares(address claimer, uint256 amount) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
-        _transfer(address(this), claimer, amount);
+    function claimShares(address smartVault, uint256 amount) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
+        _transfer(address(this), smartVault, amount);
     }
 
     function releaseShares(address smartVault, uint256 amount)
@@ -307,7 +312,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         external
         onlyRole(ROLE_STRATEGY_REGISTRY, msg.sender)
     {
-        emergencyWithdrawImpl(assetGroup, slippages, recipient);
+        _emergencyWithdrawImpl(assetGroup, slippages, recipient);
     }
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
@@ -335,7 +340,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         }
     }
 
-    function compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
+    function _compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
         internal
         virtual
         returns (int256 compoundYield);
@@ -348,7 +353,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
      * @param toSwap Available amounts to swap.
      * @param swapInfo Information on how to swap.
      */
-    function swapAssets(address[] memory tokens, uint256[] memory toSwap, SwapInfo[] calldata swapInfo)
+    function _swapAssets(address[] memory tokens, uint256[] memory toSwap, SwapInfo[] calldata swapInfo)
         internal
         virtual;
 
@@ -358,7 +363,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
      * @param amounts Amounts to deposit.
      * @param slippages Slippages to guard depositing.
      */
-    function depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata slippages)
+    function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata slippages)
         internal
         virtual;
 
@@ -368,15 +373,15 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
      * @param ssts Amount of strategy tokens to redeem.
      * @param slippages Slippages to guard redeemal.
      */
-    function redeemFromProtocol(address[] calldata tokens, uint256 ssts, uint256[] calldata slippages)
+    function _redeemFromProtocol(address[] calldata tokens, uint256 ssts, uint256[] calldata slippages)
         internal
         virtual;
 
-    function emergencyWithdrawImpl(address[] calldata assetGroup, uint256[] calldata slippages, address recipient)
+    function _emergencyWithdrawImpl(address[] calldata assetGroup, uint256[] calldata slippages, address recipient)
         internal
         virtual;
 
-    function getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
+    function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
         internal
         virtual
         returns (uint256);

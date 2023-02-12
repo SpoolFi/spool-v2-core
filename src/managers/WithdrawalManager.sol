@@ -2,19 +2,18 @@
 pragma solidity 0.8.16;
 
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import "../interfaces/ISmartVault.sol";
-import "../interfaces/IStrategy.sol";
-import "../interfaces/ISmartVaultManager.sol";
-import "../interfaces/IWithdrawalManager.sol";
-import "../libraries/ArrayMapping.sol";
-import "../interfaces/IStrategyRegistry.sol";
-import "../interfaces/IUsdPriceFeedManager.sol";
+import "../interfaces/IAction.sol";
+import "../interfaces/IGuardManager.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/ISmartVault.sol";
-import "../interfaces/IGuardManager.sol";
-import "../interfaces/IAction.sol";
+import "../interfaces/ISmartVaultManager.sol";
+import "../interfaces/IStrategy.sol";
+import "../interfaces/IStrategyRegistry.sol";
+import "../interfaces/IUsdPriceFeedManager.sol";
+import "../interfaces/IWithdrawalManager.sol";
 import "../interfaces/RequestType.sol";
 import "../access/SpoolAccessControllable.sol";
+import "../libraries/ArrayMapping.sol";
 
 contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
     using SafeERC20 for IERC20;
@@ -47,10 +46,10 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
     /// @notice Master wallet
     IMasterWallet private immutable _masterWallet;
 
-    // @notice Guard manager
+    /// @notice Guard manager
     IGuardManager internal immutable _guardManager;
 
-    // @notice Action manager
+    /// @notice Action manager
     IActionManager internal immutable _actionManager;
 
     constructor(
@@ -93,22 +92,6 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         }
 
         return flushDhwIndexes;
-    }
-
-    function _calculateWithdrawal(address smartVault, WithdrawalMetadata memory data, uint256 assetGroupLength)
-        internal
-        view
-        returns (uint256[] memory)
-    {
-        uint256[] memory withdrawnAssets = new uint256[](assetGroupLength);
-
-        // loop over all assets
-        for (uint256 i = 0; i < withdrawnAssets.length; i++) {
-            withdrawnAssets[i] = _withdrawnAssets[smartVault][data.flushIndex][i] * data.vaultShares
-                / _withdrawnVaultShares[smartVault][data.flushIndex];
-        }
-
-        return withdrawnAssets;
     }
 
     function claimWithdrawal(WithdrawalClaimBag calldata bag)
@@ -254,5 +237,21 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
                 tokens: tokens
             })
         );
+    }
+
+    function _calculateWithdrawal(address smartVault, WithdrawalMetadata memory data, uint256 assetGroupLength)
+        internal
+        view
+        returns (uint256[] memory)
+    {
+        uint256[] memory withdrawnAssets = new uint256[](assetGroupLength);
+
+        // loop over all assets
+        for (uint256 i = 0; i < withdrawnAssets.length; i++) {
+            withdrawnAssets[i] = _withdrawnAssets[smartVault][data.flushIndex][i] * data.vaultShares
+                / _withdrawnVaultShares[smartVault][data.flushIndex];
+        }
+
+        return withdrawnAssets;
     }
 }

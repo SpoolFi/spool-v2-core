@@ -39,9 +39,9 @@ contract MockMasterChefStrategy is Strategy {
         return _assetRatio;
     }
 
-    function swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
+    function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
-    function compound(SwapInfo[] calldata, uint256[] calldata) internal override returns (int256 compoundYield) {
+    function _compound(SwapInfo[] calldata, uint256[] calldata) internal override returns (int256 compoundYield) {
         uint256 assetBalanceBefore = _getAssetBalanceBefore();
         // claims rewards
         masterChef.deposit(pid, 0);
@@ -60,7 +60,7 @@ contract MockMasterChefStrategy is Strategy {
         return 0;
     }
 
-    function depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
+    function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
         internal
         override
     {
@@ -70,7 +70,7 @@ contract MockMasterChefStrategy is Strategy {
         }
     }
 
-    function getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
+    function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
         internal
         view
         override
@@ -84,7 +84,7 @@ contract MockMasterChefStrategy is Strategy {
         return usdWorth;
     }
 
-    function redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata) internal override {
+    function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata) internal override {
         if (ssts == 0) {
             return;
         }
@@ -120,7 +120,7 @@ contract MockMasterChefStrategy is Strategy {
 
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
 
-    function emergencyWithdrawImpl(address[] calldata assetGroup, uint256[] calldata slippages, address recipient)
+    function _emergencyWithdrawImpl(address[] calldata assetGroup, uint256[] calldata slippages, address recipient)
         internal
         pure
         override

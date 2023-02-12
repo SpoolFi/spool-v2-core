@@ -96,12 +96,12 @@ struct SmartVaultRegistrationForm {
 
 /**
  * @notice Parameters for reallocation.
- * @param smartVaults Smart vaults to reallocate.
- * @param strategies Set of strategies involved in the reallocation.
- * @param swapInfo Information for swapping assets before depositing into the protocol.
- * @param depositSlippages Slippages used to constrain depositing into the protocol.
- * @param withdrawalSlippages Slippages used to contrain withdrawal from the protocol.
- * @param exchangeRateSlippages Slippages used to constratrain exchange rates for asset tokens.
+ * @custom:member smartVaults Smart vaults to reallocate.
+ * @custom:member strategies Set of strategies involved in the reallocation.
+ * @custom:member swapInfo Information for swapping assets before depositing into the protocol.
+ * @custom:member depositSlippages Slippages used to constrain depositing into the protocol.
+ * @custom:member withdrawalSlippages Slippages used to contrain withdrawal from the protocol.
+ * @custom:member exchangeRateSlippages Slippages used to constratrain exchange rates for asset tokens.
  */
 struct ReallocateParamBag {
     address[] smartVaults;
@@ -116,12 +116,12 @@ struct ReallocateParamBag {
 
 interface ISmartVaultBalance {
     /**
-     * @notice Retrieves an amount of SVT tokens.
-     * @param smartVault Smart Vault address.
-     * @param user User address.
-     * @return balance SVT balance
+     * @notice Retrieves user balance of smart vault tokens.
+     * @param smartVault Smart vault.
+     * @param user User to check.
+     * @return balance SVT balance of user for smart vault.
      */
-    function getUserSVTBalance(address smartVault, address user) external view returns (uint256);
+    function getUserSVTBalance(address smartVault, address user) external view returns (uint256 balance);
 
     /**
      * @notice Retrieves total supply of SVTs.
@@ -129,30 +129,65 @@ interface ISmartVaultBalance {
      * @param smartVault Smart Vault address.
      * @return totalSupply Simulated total supply
      */
-    function getSVTTotalSupply(address smartVault) external view returns (uint256);
+    function getSVTTotalSupply(address smartVault) external view returns (uint256 totalSupply);
 }
 
 interface ISmartVaultRegistry {
+    /**
+     * @notice Registers smart vault into the Spool protocol.
+     * @dev Requirements:
+     * - caller must have role ROLE_SMART_VAULT_INTEGRATOR
+     * @param smartVault Smart vault to register.
+     * @param registrationForm Form with information for registration.
+     */
     function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm) external;
 }
 
 interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
-    function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint16a16);
+    /**
+     * @notice Gets do-hard-work indexes.
+     * @param smartVault Smart vault.
+     * @param flushIndex Flush index.
+     * @return dhwIndexes Do-hard-work indexes for flush index of the smart vault.
+     */
+    function dhwIndexes(address smartVault, uint256 flushIndex) external view returns (uint16a16 dhwIndexes);
 
-    function getLatestFlushIndex(address smartVault) external view returns (uint256);
+    /**
+     * @notice Gets latest flush index for a smart vault.
+     * @param smartVault Smart vault.
+     * @return flushIndex Latest flush index for the smart vault.
+     */
+    function getLatestFlushIndex(address smartVault) external view returns (uint256 flushIndex);
 
-    function allocations(address smartVault) external view returns (uint16a16);
+    /**
+     * @notice Gets strategy allocation for a smart vault.
+     * @param smartVault Smart vault.
+     * @return allocation Strategy allocation for the smart vault.
+     */
+    function allocations(address smartVault) external view returns (uint16a16 allocation);
 
-    function strategies(address smartVault) external view returns (address[] memory);
+    /**
+     * @notice Gets strategies used by a smart vault.
+     * @param smartVault Smart vault.
+     * @return strategies Strategies for the smart vault.
+     */
+    function strategies(address smartVault) external view returns (address[] memory strategies);
 
-    function assetGroupId(address smartVault) external view returns (uint256 assetGroupId_);
+    /**
+     * @notice Gets asest group used by a smart vault.
+     * @param smartVault Smart vault.
+     * @return assetGroupId ID of the asset group used by the smart vault.
+     */
+    function assetGroupId(address smartVault) external view returns (uint256 assetGroupId);
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
-    function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm) external;
-
+    /**
+     * @notice Flushes deposits and withdrawal for the next do-hard-work.
+     * @param smartVault Smart vault to flush.
+     */
     function flushSmartVault(address smartVault) external;
 
     /**
@@ -168,6 +203,8 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
 
     /**
      * @notice Removes strategy from vaults, and optionally removes it from the system as well.
+     * @dev Requirements:
+     * - caller must have role ROLE_SPOOL_ADMIN
      * @param strategy Strategy address to remove.
      * @param fromVaultsOnly Whether to remove the strategy from vaults or from the system as well.
      */
@@ -176,8 +213,9 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
     /**
      * @notice Syncs smart vault with strategies.
      * @param smartVault Smart vault to sync.
+     * @param revertIfError If true, sync will revert if every flush index cannot be synced; if false it will sync all flush indexes it can.
      */
-    function syncSmartVault(address smartVault, bool revertOnMissingDHW) external;
+    function syncSmartVault(address smartVault, bool revertIfError) external;
 
     /**
      * @notice Instantly redeems smart vault shares for assets.
@@ -227,20 +265,22 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
     /**
      * @notice Initiates a withdrawal process and mints a withdrawal NFT. Once all DHWs are executed, user can
      * use the withdrawal NFT to claim the assets.
-     * Optionally, caller can pas a list of deposit NFTs to unwrap.
+     * Optionally, caller can pass a list of deposit NFTs to unwrap.
      * @param bag smart vault address, amount of shares to redeem, nft ids and amounts to burn
      * @param receiver address that will receive the withdrawal NFT
      * @param doFlush optionally flush the smart vault
+     * @return receipt ID of the receipt withdrawal NFT.
      */
     function redeem(RedeemBag calldata bag, address receiver, bool doFlush) external returns (uint256 receipt);
 
     /**
      * @notice Initiates a withdrawal process and mints a withdrawal NFT. Once all DHWs are executed, user can
      * use the withdrawal NFT to claim the assets.
-     * Optionally, caller can pas a list of deposit NFTs to unwrap.
+     * Optionally, caller can pass a list of deposit NFTs to unwrap.
      * @param bag smart vault address, amount of shares to redeem, nft ids and amounts to burn
      * @param owner address that owns the shares to be redeemed and will receive the withdrawal NFT
      * @param doFlush optionally flush the smart vault
+     * @return receipt ID of the receipt withdrawal NFT.
      */
     function redeemFor(RedeemBag calldata bag, address owner, bool doFlush) external returns (uint256 receipt);
 
@@ -248,6 +288,7 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
      * @notice Initiated a deposit and mints a deposit NFT. Once all DHWs are executed, user can
      * unwrap the deposit NDF and claim his SVTs.
      * @param bag smartVault address, assets, NFT receiver address, referral address, doFlush
+     * @return receipt ID of the receipt deposit NFT.
      */
     function deposit(DepositBag calldata bag) external returns (uint256 receipt);
 

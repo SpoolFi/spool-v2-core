@@ -4,19 +4,31 @@ pragma solidity 0.8.16;
 /// @dev Number of decimals used for USD values.
 uint256 constant USD_DECIMALS = 18;
 
+/**
+ * @notice Emitted when asset is invalid.
+ * @param asset Invalid asset.
+ */
+error InvalidAsset(address asset);
+
+/**
+ * @notice Emitted when price returned by price aggregator is negative or zero.
+ * @param price Actual price returned by price aggregator.
+ */
+error NonPositivePrice(int256 price);
+
 interface IUsdPriceFeedManager {
     /**
      * @notice Gets number of decimals for an asset.
      * @param asset Address of the asset.
-     * @return assetDecimals_ Number of decimals for the asset.
+     * @return assetDecimals Number of decimals for the asset.
      */
-    function assetDecimals(address asset) external view returns (uint256 assetDecimals_);
+    function assetDecimals(address asset) external view returns (uint256 assetDecimals);
 
     /**
      * @notice Gets number of decimals for USD.
-     * @return usdDecimals_ Number of decimals for USD.
+     * @return usdDecimals Number of decimals for USD.
      */
-    function usdDecimals() external view returns (uint256 usdDecimals_);
+    function usdDecimals() external view returns (uint256 usdDecimals);
 
     /**
      * @notice Calculates asset value in USD using current price.

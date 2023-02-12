@@ -4,7 +4,7 @@ pragma solidity 0.8.16;
 import {Test} from "forge-std/Test.sol";
 import {SwapInfo} from "../src/interfaces/ISwapper.sol";
 import {SpoolAccessControl} from "../src/access/SpoolAccessControl.sol";
-import {Swapper, ExchangeNotAllowed, InvalidArrayLength, MissingRole, ROLE_SWAPPER_ADMIN} from "../src/Swapper.sol";
+import {Swapper, ExchangeNotAllowed, InvalidArrayLength, MissingRole, ROLE_SPOOL_ADMIN} from "../src/Swapper.sol";
 import {Arrays} from "./libraries/Arrays.sol";
 import {USD_DECIMALS_MULTIPLIER} from "./libraries/Constants.sol";
 import {MockExchange} from "./mocks/MockExchange.sol";
@@ -36,7 +36,7 @@ contract SwapperTest is Test {
         accessControl = new SpoolAccessControl();
         accessControl.initialize();
 
-        accessControl.grantRole(ROLE_SWAPPER_ADMIN, swapperAdmin);
+        accessControl.grantRole(ROLE_SPOOL_ADMIN, swapperAdmin);
 
         swapper = new Swapper(accessControl);
 
@@ -110,7 +110,7 @@ contract SwapperTest is Test {
         address[] memory exchanges = Arrays.toArray(address(0x1), address(0x2));
         bool[] memory allowed = Arrays.toArray(true, true);
 
-        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SWAPPER_ADMIN, alice));
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SPOOL_ADMIN, alice));
         vm.prank(alice);
         swapper.updateExchangeAllowlist(exchanges, allowed);
     }

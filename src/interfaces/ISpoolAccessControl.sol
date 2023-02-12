@@ -23,7 +23,12 @@ error SmartVaultOwnerAlreadySet(address smartVault);
 interface ISpoolAccessControl is IAccessControlUpgradeable {
     /* ========== VIEW FUNCTIONS ========== */
 
-    function smartVaultOwner(address smartVault) external view returns (address);
+    /**
+     * @notice Gets owner of a smart vault.
+     * @param smartVault Smart vault.
+     * @return owner Owner of the smart vault.
+     */
+    function smartVaultOwner(address smartVault) external view returns (address owner);
 
     /**
      * @notice Looks if an account has a role for a smart vault.
@@ -46,24 +51,31 @@ interface ISpoolAccessControl is IAccessControlUpgradeable {
     function checkIsAdminOrVaultAdmin(address smartVault, address account) external view;
 
     /**
-     * @dev Returns true if the contract is paused, and false otherwise.
+     * @notice Checks if system is paused or not.
+     * @return isPaused True if system is paused, false otherwise.
      */
-    function paused() external view returns (bool);
+    function paused() external view returns (bool isPaused);
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @dev Pause the system,
+     * @notice Pauses the whole system.
+     * @dev Requirements:
+     * - caller must have role ROLE_PAUSER
      */
     function pause() external;
 
     /**
-     * @dev Unpause the system,
+     * @notice Unpauses the whole system.
+     * @dev Requirements:
+     * - caller must have role ROLE_UNPAUSER
      */
     function unpause() external;
 
     /**
      * @notice Grants role to an account for a smart vault.
+     * @dev Requirements:
+     * - caller must have either role ROLE_SPOOL_ADMIN or role ROLE_SMART_VAULT_ADMIN for the smart vault
      * @param smartVault Address of the smart vault.
      * @param role Role to grant.
      * @param account Account to grant the role to.
@@ -72,6 +84,8 @@ interface ISpoolAccessControl is IAccessControlUpgradeable {
 
     /**
      * @notice Revokes role from an account for a smart vault.
+     * @dev Requirements:
+     * - caller must have either role ROLE_SPOOL_ADMIN or role ROLE_SMART_VAULT_ADMIN for the smart vault
      * @param smartVault Address of the smart vault.
      * @param role Role to revoke.
      * @param account Account to revoke the role from.
@@ -86,7 +100,8 @@ interface ISpoolAccessControl is IAccessControlUpgradeable {
     function renounceSmartVaultRole(address smartVault, bytes32 role) external;
 
     /**
-     * @notice Grant ownership to smart vault
+     * @notice Grant ownership to smart vault.
+     * @dev Ownership can only be granted once and it should be done at vault creation time.
      * @param smartVault Address of the smart vault.
      * @param owner address to which grant ownership to
      */

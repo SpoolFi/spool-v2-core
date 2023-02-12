@@ -89,7 +89,8 @@ contract DeploySpool is Script {
         );
         riskManager = RiskManager(address(proxy));
 
-        proxy = new TransparentUpgradeableProxy(address(new UsdPriceFeedManager()), address(proxyAdmin), "");
+        proxy =
+        new TransparentUpgradeableProxy(address(new UsdPriceFeedManager(spoolAccessControl)), address(proxyAdmin), "");
         usdPriceFeedManager = UsdPriceFeedManager(address(proxy));
 
         StrategyRegistry strategyRegistryImpl = new StrategyRegistry(

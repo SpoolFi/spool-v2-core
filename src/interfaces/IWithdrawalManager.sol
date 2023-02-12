@@ -123,6 +123,8 @@ interface IWithdrawalManager {
 
     /**
      * @notice Flushes smart vaults deposits and withdrawals to the strategies.
+     * @dev Requirements:
+     *   - can only be called by user granted ROLE_SMART_VAULT_MANAGER
      * @param smartVault Smart vault to flush.
      * @param flushIndex Current flush index of the smart vault.
      * @param strategies Strategies of the smart vault.
@@ -134,6 +136,8 @@ interface IWithdrawalManager {
 
     /**
      * @notice Claims withdrawal.
+     * @dev Requirements:
+     *   - can only be called by user granted ROLE_SMART_VAULT_MANAGER
      * @param bag Parameters for claiming withdrawal.
      * @return withdrawnAssets Amount of assets withdrawn.
      * @return assetGroupId ID of the asset group.
@@ -144,6 +148,8 @@ interface IWithdrawalManager {
 
     /**
      * @notice Syncs withdrawals between strategies and smart vault after do-hard-works.
+     * @dev Requirements:
+     *   - can only be called by user granted ROLE_SMART_VAULT_MANAGER
      * @param smartVault Smart vault to sync.
      * @param flushIndex Smart vault's flush index to sync.
      * @param strategies Strategies of the smart vault.
@@ -158,6 +164,8 @@ interface IWithdrawalManager {
 
     /**
      * @notice Redeems smart vault shares.
+     * @dev Requirements:
+     *   - can only be called by user granted ROLE_SMART_VAULT_MANAGER
      * @param bag Base information for redeemal.
      * @param bag2 Extra information for redeemal.
      * @return nftId ID of the withdrawal NFT.
@@ -166,6 +174,8 @@ interface IWithdrawalManager {
 
     /**
      * @notice Instantly redeems smart vault shares.
+     * @dev Requirements:
+     *   - can only be called by user granted ROLE_SMART_VAULT_MANAGER
      * @param bag Base information for redeemal.
      * @param bag Extra information for fast redeemal.
      * @return assets Amount of assets withdrawn.
