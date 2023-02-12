@@ -38,6 +38,23 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     /// @notice Address to transfer withdrawn assets to in case of an emergency withdrawal.
     address public override emergencyWithdrawalWallet;
 
+    /**
+     * @custom:member sharesMinted Amount of SSTs minted for deposits.
+     * @custom:member totalStrategyValue Strategy value at the DHW index.
+     * @custom:member totalSSTs Total strategy shares at the DHW index.
+     * @custom:member yield Amount of yield generated for a strategy since the previous DHW.
+     * @custom:member timestamp Timestamp at which DHW was executed at.
+     */
+    struct StateAtDhwIndex {
+        uint128 sharesMinted;
+        uint128 totalStrategyValue;
+        uint128 totalSSTs;
+        int96 yield;
+        uint32 timestamp;
+    }
+
+    mapping(address => mapping(uint256 => StateAtDhwIndex)) internal _stateAtDhw;
+
     /// @notice Current DHW index for strategies
     mapping(address => uint256) internal _currentIndexes;
 
@@ -45,7 +62,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
      * @notice Strategy asset ratios at last DHW.
      * @dev strategy => assetIndex => exchange rate
      */
-    mapping(address => mapping(uint256 => uint256)) internal _dhwAssetRatios;
+    mapping(address => uint256[]) internal _dhwAssetRatios;
 
     /**
      * @notice Asset to USD exchange rates.
@@ -60,18 +77,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _assetsDeposited;
 
     /**
-     * @notice Amount of SSTs minted for deposits.
-     * @dev strategy => index => SSTs minted
-     */
-    mapping(address => mapping(uint256 => uint256)) internal _sharesMinted;
-
-    /**
-     * @notice Timestamp at which DHW was executed at.
-     * @dev strategy => index => DHW timestamp
-     */
-    mapping(address => mapping(uint256 => uint256)) internal _dhwTimestamp;
-
-    /**
      * @notice Amount of SSTs redeemed from strategy.
      * @dev strategy => index => SSTs redeemed
      */
@@ -82,24 +87,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
      * @dev strategy => index => asset index => amount withdrawn
      */
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _assetsWithdrawn;
-
-    /**
-     * @notice Strategy value at the DHW index.
-     * @dev strategy => index => DHW value
-     */
-    mapping(address => mapping(uint256 => uint256)) internal _dhwValue;
-
-    /**
-     * @notice Total strategy shares at the DHW index.
-     * @dev strategy => index => total shares
-     */
-    mapping(address => mapping(uint256 => uint256)) internal _dhwSsts;
-
-    /**
-     * @notice Amount of yield generated for a strategy since the previous DHW.
-     * @dev strategy => index => yield percentage
-     */
-    mapping(address => mapping(uint256 => int256)) internal _dhwYields;
 
     /**
      * @notice Running average APY.
@@ -162,7 +149,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     }
 
     function assetRatioAtLastDhw(address strategy) external view returns (uint256[] memory) {
-        return _dhwAssetRatios[strategy].toArray(IStrategy(strategy).assets().length);
+        return _dhwAssetRatios[strategy];
     }
 
     function dhwTimestamps(address[] calldata strategies, uint16a16 dhwIndexes)
@@ -172,13 +159,13 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     {
         uint256[] memory result = new uint256[](strategies.length);
         for (uint256 i; i < strategies.length; i++) {
-            result[i] = _dhwTimestamp[strategies[i]][dhwIndexes.get(i)];
+            result[i] = _stateAtDhw[strategies[i]][dhwIndexes.get(i)].timestamp;
         }
 
         return result;
     }
 
-    function strategyAtIndexBatch(address[] calldata strategies, uint16a16 dhwIndexes)
+    function strategyAtIndexBatch(address[] calldata strategies, uint16a16 dhwIndexes, uint256 assetGroupLength)
         external
         view
         returns (StrategyAtIndex[] memory)
@@ -186,23 +173,19 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         StrategyAtIndex[] memory result = new StrategyAtIndex[](strategies.length);
 
         for (uint256 i = 0; i < strategies.length; i++) {
-            result[i] = strategyAtIndex(strategies[i], dhwIndexes.get(i));
+            StateAtDhwIndex memory state = _stateAtDhw[strategies[i]][dhwIndexes.get(i)];
+
+            result[i] = StrategyAtIndex({
+                exchangeRates: _exchangeRates[strategies[i]][dhwIndexes.get(i)].toArray(assetGroupLength),
+                assetsDeposited: _assetsDeposited[strategies[i]][dhwIndexes.get(i)].toArray(assetGroupLength),
+                sharesMinted: state.sharesMinted,
+                totalStrategyValue: state.totalStrategyValue,
+                totalSSTs: state.totalSSTs,
+                dhwYields: state.yield
+            });
         }
 
         return result;
-    }
-
-    function strategyAtIndex(address strategy, uint256 dhwIndex) public view returns (StrategyAtIndex memory) {
-        uint256 assetGroupLength = IStrategy(strategy).assets().length;
-
-        return StrategyAtIndex({
-            exchangeRates: _exchangeRates[strategy][dhwIndex].toArray(assetGroupLength),
-            assetsDeposited: _assetsDeposited[strategy][dhwIndex].toArray(assetGroupLength),
-            sharesMinted: _sharesMinted[strategy][dhwIndex],
-            totalStrategyValue: _dhwValue[strategy][dhwIndex],
-            totalSSTs: _dhwSsts[strategy][dhwIndex],
-            dhwYields: _dhwYields[strategy][dhwIndex]
-        });
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
@@ -216,8 +199,8 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
         _accessControl.grantRole(ROLE_STRATEGY, strategy);
         _currentIndexes[strategy] = 1;
-        _dhwAssetRatios[strategy].setValues(IStrategy(strategy).assetRatio());
-        _dhwTimestamp[address(strategy)][0] = block.timestamp;
+        _dhwAssetRatios[strategy] = IStrategy(strategy).assetRatio();
+        _stateAtDhw[address(strategy)][0].timestamp = uint32(block.timestamp);
 
         // should we manually set APY?
     }
@@ -331,15 +314,19 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                     );
 
                     // Bookkeeping.
-                    _dhwAssetRatios[strategy].setValues(IStrategy(strategy).assetRatio());
-                    ++_currentIndexes[strategy];
+                    _dhwAssetRatios[strategy] = IStrategy(strategy).assetRatio();
                     _exchangeRates[strategy][dhwIndex].setValues(exchangeRates);
-                    _sharesMinted[strategy][dhwIndex] = dhwInfo.sharesMinted;
                     _assetsWithdrawn[strategy][dhwIndex].setValues(dhwInfo.assetsWithdrawn);
-                    _dhwTimestamp[strategy][dhwIndex] = block.timestamp;
-                    _dhwYields[address(strategy)][dhwIndex] = dhwInfo.yieldPercentage;
-                    _dhwValue[address(strategy)][dhwIndex] = dhwInfo.valueAtDhw;
-                    _dhwSsts[address(strategy)][dhwIndex] = dhwInfo.totalSstsAtDhw;
+
+                    ++_currentIndexes[strategy];
+
+                    _stateAtDhw[strategy][dhwIndex] = StateAtDhwIndex({
+                        sharesMinted: uint128(dhwInfo.sharesMinted),
+                        totalStrategyValue: uint128(dhwInfo.valueAtDhw),
+                        totalSSTs: uint128(dhwInfo.totalSstsAtDhw),
+                        yield: int96(dhwInfo.yieldPercentage),
+                        timestamp: uint32(block.timestamp)
+                    });
                 }
             }
         }
@@ -570,7 +557,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     function _updateDhwYieldAndApy(address strategy, uint256 dhwIndex, int256 yieldPercentage) internal {
         if (dhwIndex > 1) {
             unchecked {
-                int256 timeDelta = int256(block.timestamp - _dhwTimestamp[address(strategy)][dhwIndex - 1]);
+                int256 timeDelta = int256(block.timestamp - _stateAtDhw[address(strategy)][dhwIndex - 1].timestamp);
                 if (timeDelta > 0) {
                     int256 normalizedApy = yieldPercentage * SECONDS_IN_YEAR_INT / timeDelta;
                     int256 weight = _getRunningAverageApyWeight(timeDelta);

@@ -20,7 +20,7 @@ library SpoolUtils {
      * @param strategyRegistry_ Strategy registry.
      * @return strategyRatios Required asset ratio for strategies.
      */
-    function getStrategyRatiosAtLastDhw(address[] memory strategies_, IStrategyRegistry strategyRegistry_)
+    function getStrategyRatiosAtLastDhw(address[] calldata strategies_, IStrategyRegistry strategyRegistry_)
         public
         view
         returns (uint256[][] memory)

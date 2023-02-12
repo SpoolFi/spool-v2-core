@@ -418,7 +418,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address[] memory tokens,
         bool revertIfError
     ) private {
-        // TODO: sync yields
         VaultSyncBag memory bag;
         bag.flushIndex = _flushIndexesToSync[smartVault];
 

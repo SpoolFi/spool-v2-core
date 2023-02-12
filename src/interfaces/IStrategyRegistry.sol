@@ -157,20 +157,12 @@ interface IStrategyRegistry {
         returns (uint256[] memory timestamps);
 
     /**
-     * @notice Gets state of strategy at a do-hard-work index.
-     * @param strategy Strategy.
-     * @param dhwIndex Do-hard-work index.
-     * @return state State of the strategy at the do-hard-work index.
-     */
-    function strategyAtIndex(address strategy, uint256 dhwIndex) external view returns (StrategyAtIndex memory state);
-
-    /**
      * @notice Returns state of strategies at do-hard-work indexes.
      * @param strategies Strategies.
      * @param dhwIndexes Do-hard-work indexes.
      * @return states State of each strategy at corresponding do-hard-work index.
      */
-    function strategyAtIndexBatch(address[] calldata strategies, uint16a16 dhwIndexes)
+    function strategyAtIndexBatch(address[] calldata strategies, uint16a16 dhwIndexes, uint256 assetGroupLength)
         external
         view
         returns (StrategyAtIndex[] memory states);

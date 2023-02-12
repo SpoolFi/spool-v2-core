@@ -22,7 +22,6 @@ bytes32 constant ROLE_SMART_VAULT_INTEGRATOR = keccak256("ROLE_SMART_VAULT_INTEG
 
 /**
  * @dev Grants permission to manage rewards on smart vaults.
- * TODO
  */
 bytes32 constant ROLE_SMART_VAULT_ADMIN = keccak256("SMART_VAULT_ADMIN");
 

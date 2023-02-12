@@ -9,8 +9,6 @@ contract MockAction is IAction {
 
     function test_mock() external pure {}
 
-    function actionType() external view {}
-
     function executeAction(ActionContext calldata) external view {
         console.log("MockAction.executeAction");
     }
@@ -20,8 +18,6 @@ contract MockActionSetAmountTo100 is IAction {
     mapping(address => bool) whitelist;
 
     function test_mock() external pure {}
-
-    function actionType() external view {}
 
     function executeAction(ActionContext calldata) external view {
         console.log("MockActionSetAmountTo100.executeAction");

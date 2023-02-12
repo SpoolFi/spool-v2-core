@@ -40,9 +40,6 @@ struct ActionContext {
 }
 
 interface IAction {
-    // TODO: this doesn't return anything.
-    function actionType() external view;
-
     /**
      * @notice Executes the action.
      * @param actionCtx Context for action execution.

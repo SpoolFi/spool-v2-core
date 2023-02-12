@@ -271,7 +271,8 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         }
 
         uint256 totalDepositedUsd;
-        StrategyAtIndex[] memory strategyDhwState = _strategyRegistry.strategyAtIndexBatch(strategies, dhwIndexes);
+        StrategyAtIndex[] memory strategyDhwState =
+            _strategyRegistry.strategyAtIndexBatch(strategies, dhwIndexes, assetGroup.length);
 
         // claim SSTs from each strategy
         for (uint256 i; i < strategies.length; ++i) {

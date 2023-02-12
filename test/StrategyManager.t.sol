@@ -213,11 +213,10 @@ contract StrategyRegistryTest is Test {
 
     function test_updateDhwYieldAndApy() public {
         skip(50 weeks);
-        strategyRegistry.setDhwTimestamp(address(0xa), 1, block.timestamp - 3 days);
+        strategyRegistry.setDhwTimestamp(address(0xa), 1, uint32(block.timestamp - 3 days));
         strategyRegistry.setAPY(address(0xa), 3_14);
         strategyRegistry.updateDhwYieldAndApy(address(0xa), 2, 5_00);
 
-        // TODO: @ryptoc manually check APY update
         console.logInt(strategyRegistry.strategyAPYs(Arrays.toArray(address(0xa)))[0]);
     }
 }
@@ -246,8 +245,8 @@ contract StrategyRegistryStub is StrategyRegistry {
         return _getRunningAverageApyWeight(timeDelta);
     }
 
-    function setDhwTimestamp(address strategy, uint256 dhwIndex, uint256 timestamp) external {
-        _dhwTimestamp[strategy][dhwIndex] = timestamp;
+    function setDhwTimestamp(address strategy, uint256 dhwIndex, uint32 timestamp) external {
+        _stateAtDhw[strategy][dhwIndex].timestamp = timestamp;
     }
 
     function setAPY(address strategy, int256 value) external {
