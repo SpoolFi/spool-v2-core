@@ -42,7 +42,6 @@ contract MockMasterChefStrategy is Strategy {
     function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
     function _compound(SwapInfo[] calldata, uint256[] calldata) internal override returns (int256 compoundYield) {
-
         uint256 assetBalanceBefore = _getAssetBalanceBefore();
         // claims rewards
         masterChef.deposit(pid, 0);
