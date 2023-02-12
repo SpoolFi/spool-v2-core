@@ -27,6 +27,10 @@ contract TestFixture is Test {
     address internal riskProvider = address(0x111);
     address internal doHardWorker = address(0x222);
 
+    address internal ecosystemFeeRecipient = address(0xfec);
+    address internal treasuryFeeRecipient = address(0xfab);
+    address internal emergencyFeeRecipient = address(0xfee);
+
     MockGuard internal guard;
     MockToken internal token;
     Swapper internal swapper;
@@ -63,6 +67,14 @@ contract TestFixture is Test {
         masterWallet = new MasterWallet(accessControl);
         priceFeedManager = new MockPriceFeedManager();
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager, address(ghostStrategy));
+        strategyRegistry.initialize(
+            0,
+            0,
+            ecosystemFeeRecipient,
+            treasuryFeeRecipient,
+            emergencyFeeRecipient
+        );
+        
         riskManager = new RiskManager(accessControl, address(ghostStrategy));
         allocationProvider = new UniformAllocationProvider();
         depositManager =
