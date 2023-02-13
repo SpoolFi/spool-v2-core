@@ -78,7 +78,7 @@ struct DoHardWorkParameterBag {
     SwapInfo[][][] swapInfo;
     SwapInfo[][][] compoundSwapInfo;
     uint256[][][] strategySlippages;
-    int256[] baseYields;
+    int256[][] baseYields;
     address[] tokens;
     uint256[2][] exchangeRateSlippages;
 }

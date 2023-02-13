@@ -92,6 +92,11 @@ contract DepositSwap is IDepositSwap {
             }
         }
 
+        // return eth if swapper sends swaps to eth
+        if (address(this).balance > 0) {
+            payable(msg.sender).transfer(address(this).balance);
+        }
+
         return nftId;
     }
 }

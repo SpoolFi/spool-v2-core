@@ -201,8 +201,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         _currentIndexes[strategy] = 1;
         _dhwAssetRatios[strategy] = IStrategy(strategy).assetRatio();
         _stateAtDhw[address(strategy)][0].timestamp = uint32(block.timestamp);
-
-        // should we manually set APY?
     }
 
     /**
@@ -222,6 +220,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                     || dhwParams.strategies.length != dhwParams.swapInfo.length
                     || dhwParams.strategies.length != dhwParams.compoundSwapInfo.length
                     || dhwParams.strategies.length != dhwParams.strategySlippages.length
+                    || dhwParams.strategies.length != dhwParams.baseYields.length
             ) {
                 // NOTE: needs test updating to add
                 // || dhwParams.strategies.length != dhwParams.baseYields.length
@@ -239,6 +238,8 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                     revert ExchangeRateOutOfSlippages();
                 }
             }
+
+            PlatformFees memory platformFeesMemory = _platformFees;
 
             // Process each group of strategies in turn.
             for (uint256 i; i < dhwParams.strategies.length; ++i) {
@@ -280,6 +281,8 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                     if (strategy == _ghostStrategy) {
                         revert GhostStrategyUsed();
                     }
+                    
+                    _checkRole(ROLE_STRATEGY, strategy);
 
                     if (IStrategy(strategy).assetGroupId() != assetGroupId) {
                         revert NotSameAssetGroup();
@@ -307,9 +310,8 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                             withdrawnShares: _sharesRedeemed[strategy][dhwIndex],
                             masterWallet: address(_masterWallet),
                             priceFeedManager: _priceFeedManager,
-                            baseYield: dhwParams.baseYields[i],
-                            // NOTE: try to read only once and save into memory
-                            platformFees: _platformFees
+                            baseYield: dhwParams.baseYields[i][j],
+                            platformFees: platformFeesMemory
                         })
                     );
 
