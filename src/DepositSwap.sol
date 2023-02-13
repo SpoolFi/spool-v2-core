@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import "./external/interfaces/weth/WETH9.sol";
+import "./external/interfaces/weth/IWETH9.sol";
 import "./interfaces/CommonErrors.sol";
 import "./interfaces/IAssetGroupRegistry.sol";
 import "./interfaces/IDepositSwap.sol";
