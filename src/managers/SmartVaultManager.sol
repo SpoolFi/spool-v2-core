@@ -47,8 +47,6 @@ struct VaultSyncUserBag {
  * - ROLE_SMART_VAULT_MANAGER
  */
 contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
-    /* ========== CONSTANTS ========== */
-
     using uint16a16Lib for uint16a16;
     using SafeERC20 for IERC20;
     using ArrayMappingUint256 for mapping(uint256 => uint256);

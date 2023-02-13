@@ -14,21 +14,21 @@ Documentation available [here](https://archit3ct.gitbook.io/spool-v2-technical-d
 ### Generate a coverage report with
 
 ```
-forge coverage --report lcov
+forge coverage --fork-url $RPC_URL --report lcov
 genhtml lcov.info --branch-coverage --output-dir coverage
 ```
 
 Browse the coverage report by opening `./coverage/src/index.html`.
 
-### Fork testing in folder `test/integration/forked`
+### Fork testing in folder `test/forked`
 
-`forge t --fork-url $RPC_URL --match-path "./test/integration/forked/*.t.sol"`
+`forge t --fork-url $RPC_URL --match-path "./test/forked/**/*.t.sol"`
 
 Or on windows you can use:
 
 ```
 .\source.ps1
-forge test --fork-url $Env:RPC_URL --match-path ".\test\integration\forked\**\*.t.sol"
+forge test --fork-url $Env:RPC_URL --match-path "./test/forked/**/*.t.sol"
 ```
 
 **Note:** load RPC_URL variable from `.env` into environment.

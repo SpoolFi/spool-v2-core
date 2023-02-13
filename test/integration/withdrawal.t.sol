@@ -192,7 +192,8 @@ contract WithdrawalIntegrationTest is Test {
             exchangeRateSlippages[i][1] = priceFeedManager.exchangeRates(assetGroup_[i]);
         }
 
-        int256[] memory baseYields = new int256[](strategies.length);
+        int256[][] memory baseYields = new int256[][](1);
+        baseYields[0] = new int256[](strategies.length);
 
         return DoHardWorkParameterBag({
             strategies: strategyGroups,
