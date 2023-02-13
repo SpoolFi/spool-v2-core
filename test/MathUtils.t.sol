@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
-import "../src/utils/MathUtils.sol";
+import "../src/libraries/MathUtils.sol";
 
 contract MathUtilsTest is Test {
     function test_getMinValue() public {

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
-import "../interfaces/IUsdPriceFeedManager.sol";
+import "@openzeppelin/token/ERC20/ERC20.sol";
+import "@openzeppelin/utils/math/Math.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
-import "@openzeppelin/token/ERC20/ERC20.sol";
-import "@openzeppelin/utils/math/Math.sol";
+import "../interfaces/IUsdPriceFeedManager.sol";
 
 /**
  * @title Spool utility functions.

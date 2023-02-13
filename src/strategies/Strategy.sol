@@ -3,16 +3,16 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/utils/math/Math.sol";
+import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
-import "../interfaces/Constants.sol";
-import "../interfaces/CommonErrors.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
-import "../access/SpoolAccessControllable.sol";
+import "../interfaces/CommonErrors.sol";
+import "../interfaces/Constants.sol";
 import "../access/SpoolAccessControl.sol";
+import "../access/SpoolAccessControllable.sol";
 
 abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrategy {
     using SafeERC20 for IERC20;

@@ -11,27 +11,38 @@ Documentation available [here](https://archit3ct.gitbook.io/spool-v2-technical-d
 
 ## Testing and coverage
 
-### Generate a coverage report with
+To run tests execute
 
 ```
-forge coverage --fork-url $RPC_URL --report lcov
+forge test
+```
+
+To run tests that require forking execute first set `RPC_URL` in the `.env` file and source it by executing
+
+```
+source .env     (Linux and Mac)
+
+.\source.ps1    (Windows)
+```
+
+then run the tests by executing
+
+```
+forge test --no-match-path "." --match-path "./test/forked/**" --fork-url $RPC_URL        (Linux and Mac)
+
+forge test --no-match-path "." --match-path "./test/forked/**" --fork-url $Env:RPC_URL    (Windows)
+```
+
+To generate the full test coverage report, both local and fork tests need to be analyzed. Setup the `RPC_URL` environment variable as described above, and then run
+
+```
+forge coverage --report lcov --fork-url $RPC_URL
 genhtml lcov.info --branch-coverage --output-dir coverage
 ```
 
-Browse the coverage report by opening `./coverage/src/index.html`.
+The html report is then available at `./coverage/src/index.html`.
 
-### Fork testing in folder `test/forked`
-
-`forge t --fork-url $RPC_URL --match-path "./test/forked/**/*.t.sol"`
-
-Or on windows you can use:
-
-```
-.\source.ps1
-forge test --fork-url $Env:RPC_URL --match-path "./test/forked/**/*.t.sol"
-```
-
-**Note:** load RPC_URL variable from `.env` into environment.
+The `genhtml` tool is not available for Windows, but WSL can be used to bypass this limitation.
 
 ## Smart Contract Overview
 

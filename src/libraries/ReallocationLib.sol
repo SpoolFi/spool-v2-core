@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
-import "forge-std/console.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/CommonErrors.sol";
 import "./ArrayMapping.sol";
-import "./uint16a16Lib.sol";
 import "./SpoolUtils.sol";
+import "./uint16a16Lib.sol";
 
 /**
  * @notice Parameters for reallocation.

@@ -3,8 +3,8 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "./RequestType.sol";
 import "./Constants.sol";
+import "./RequestType.sol";
 
 /* ========== ERRORS ========== */
 

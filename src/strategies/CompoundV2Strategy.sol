@@ -4,10 +4,10 @@ pragma solidity 0.8.17;
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/utils/math/Math.sol";
-import "../strategies/Strategy.sol";
-import "../interfaces/ISwapper.sol";
 import "../external/interfaces/strategies/compound/v2/IComptroller.sol";
 import "../external/interfaces/strategies/compound/v2/ICErc20.sol";
+import "../interfaces/ISwapper.sol";
+import "../strategies/Strategy.sol";
 
 /// @notice Used when Compound V2 mint returns an error code.
 error BadCompoundV2Deposit();
