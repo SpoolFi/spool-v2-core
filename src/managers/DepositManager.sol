@@ -243,6 +243,9 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
 
     function syncDepositsSimulate(
         address smartVault,
+        //bag[0]: uint256 flushIndex,
+        //bag[1]: uint256 lastDhwSyncedTimestamp,
+        //bag[2]: uint256 oldTotalSVTs,
         uint256[3] memory bag,
         address[] calldata strategies,
         address[] calldata assetGroup,

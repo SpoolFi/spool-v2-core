@@ -222,9 +222,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                     || dhwParams.strategies.length != dhwParams.strategySlippages.length
                     || dhwParams.strategies.length != dhwParams.baseYields.length
             ) {
-                // NOTE: needs test updating to add
-                // || dhwParams.strategies.length != dhwParams.baseYields.length
-
                 revert InvalidArrayLength();
             }
 
@@ -281,7 +278,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                     if (strategy == _ghostStrategy) {
                         revert GhostStrategyUsed();
                     }
-                    
+
                     _checkRole(ROLE_STRATEGY, strategy);
 
                     if (IStrategy(strategy).assetGroupId() != assetGroupId) {

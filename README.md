@@ -13,7 +13,7 @@ Documentation available [here](https://archit3ct.gitbook.io/spool-v2-technical-d
 
 ### Generate a coverage report with
 
-```bash
+```
 forge coverage --fork-url $RPC_URL --report lcov
 genhtml lcov.info --branch-coverage --output-dir coverage
 ```

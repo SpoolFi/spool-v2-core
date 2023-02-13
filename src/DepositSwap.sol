@@ -92,7 +92,7 @@ contract DepositSwap is IDepositSwap {
             }
         }
 
-        // return eth if swapper sends swaps to eth
+        // send back eth if swapper returns eth
         if (address(this).balance > 0) {
             payable(msg.sender).transfer(address(this).balance);
         }
