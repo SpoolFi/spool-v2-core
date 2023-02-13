@@ -264,13 +264,13 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
     ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) returns (uint256) {
         // get amount of assets available to deposit
         uint256[] memory assetsToDeposit = new uint256[](assetGroup.length);
-        for (uint256 i = 0; i < assetGroup.length; ++i) {
+        for (uint256 i; i < assetGroup.length; ++i) {
             assetsToDeposit[i] = IERC20(assetGroup[i]).balanceOf(address(this));
         }
 
         // swap assets
         _swapAssets(assetGroup, assetsToDeposit, swapInfo);
-        for (uint256 i = 0; i < assetGroup.length; ++i) {
+        for (uint256 i; i < assetGroup.length; ++i) {
             assetsToDeposit[i] = IERC20(assetGroup[i]).balanceOf(address(this));
         }
 
@@ -330,7 +330,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         totalUsdValue = _getUsdWorth(exchangeRates, priceFeedManager);
 
         // transfer assets to master wallet
-        for (uint256 i; i < assetGroup.length; i++) {
+        for (uint256 i; i < assetGroup.length; ++i) {
             IERC20(assetGroup[i]).safeTransfer(recipient, assetsWithdrawn[i]);
         }
 

@@ -71,7 +71,7 @@ contract AllowlistGuard is SpoolAccessControllable {
         external
         onlySmartVaultRole(smartVault, ROLE_GUARD_ALLOWLIST_MANAGER, msg.sender)
     {
-        for (uint256 i = 0; i < addresses.length; i++) {
+        for (uint256 i; i < addresses.length; ++i) {
             allowlists[smartVault][allowlistId][addresses[i]] = true;
         }
 
@@ -90,7 +90,7 @@ contract AllowlistGuard is SpoolAccessControllable {
         external
         onlySmartVaultRole(smartVault, ROLE_GUARD_ALLOWLIST_MANAGER, msg.sender)
     {
-        for (uint256 i = 0; i < addresses.length; i++) {
+        for (uint256 i; i < addresses.length; ++i) {
             allowlists[smartVault][allowlistId][addresses[i]] = false;
         }
 

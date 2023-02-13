@@ -82,7 +82,7 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager, SpoolAccessControllable {
         returns (uint256)
     {
         uint256 usdTotal = 0;
-        for (uint256 i = 0; i < tokens.length; i++) {
+        for (uint256 i; i < tokens.length; ++i) {
             usdTotal += assetToUsdCustomPrice(tokens[i], assets[i], prices[i]);
         }
 

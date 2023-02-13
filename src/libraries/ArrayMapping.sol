@@ -11,7 +11,7 @@ library ArrayMappingUint256 {
         returns (uint256[] memory)
     {
         uint256[] memory arrayOut = new uint256[](length);
-        for (uint256 i = 0; i < length; ++i) {
+        for (uint256 i; i < length; ++i) {
             arrayOut[i] = _self[i];
         }
         return arrayOut;
@@ -21,7 +21,7 @@ library ArrayMappingUint256 {
      * @notice Set array values to mapping slots.
      */
     function setValues(mapping(uint256 => uint256) storage _self, uint256[] calldata values) external {
-        for (uint256 i = 0; i < values.length; ++i) {
+        for (uint256 i; i < values.length; ++i) {
             _self[i] = values[i];
         }
     }
@@ -37,7 +37,7 @@ library ArrayMappingAddress {
         returns (address[] memory)
     {
         address[] memory arrayOut = new address[](length);
-        for (uint256 i = 0; i < length; ++i) {
+        for (uint256 i; i < length; ++i) {
             arrayOut[i] = _self[i];
         }
         return arrayOut;
@@ -47,7 +47,7 @@ library ArrayMappingAddress {
      * @notice Set array values to mapping slots.
      */
     function setValues(mapping(uint256 => address) storage _self, address[] calldata values) external {
-        for (uint256 i = 0; i < values.length; ++i) {
+        for (uint256 i; i < values.length; ++i) {
             _self[i] = values[i];
         }
     }

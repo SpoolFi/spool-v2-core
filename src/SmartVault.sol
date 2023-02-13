@@ -104,7 +104,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         require(accounts.length == ids.length, "ERC1155: accounts and ids length mismatch");
         uint256[] memory batchBalances = new uint256[](accounts.length);
 
-        for (uint256 i = 0; i < accounts.length; ++i) {
+        for (uint256 i; i < accounts.length; ++i) {
             batchBalances[i] = balanceOf(accounts[i], ids[i]);
         }
 
@@ -114,7 +114,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
     function balanceOfFractionalBatch(address account, uint256[] calldata ids) public view returns (uint256[] memory) {
         uint256[] memory batchBalances = new uint256[](ids.length);
 
-        for (uint256 i = 0; i < ids.length; ++i) {
+        for (uint256 i; i < ids.length; ++i) {
             batchBalances[i] = balanceOfFractional(account, ids[i]);
         }
 
@@ -132,7 +132,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
     function getMetadata(uint256[] calldata nftIds) public view returns (bytes[] memory) {
         bytes[] memory metadata = new bytes[](nftIds.length);
 
-        for (uint256 i = 0; i < nftIds.length; i++) {
+        for (uint256 i; i < nftIds.length; ++i) {
             metadata[i] = nftIds[i] >= MAXIMAL_DEPOSIT_ID
                 ? abi.encode(_withdrawalMetadata[nftIds[i]])
                 : abi.encode(_depositMetadata[nftIds[i]]);
@@ -154,7 +154,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         // burn withdrawn vault shares
         _burn(owner, vaultShares);
 
-        for (uint256 i = 0; i < strategies.length; i++) {
+        for (uint256 i; i < strategies.length; ++i) {
             if (shares[i] > 0) {
                 IERC20(strategies[i]).safeTransfer(strategies[i], shares[i]);
             }
@@ -166,7 +166,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (bytes[] memory)
     {
-        for (uint256 i = 0; i < nftIds.length; i++) {
+        for (uint256 i; i < nftIds.length; ++i) {
             if (balanceOfFractional(owner, nftIds[i]) < nftAmounts[i]) {
                 revert InvalidNftBalance(balanceOfFractional(owner, nftIds[i]));
             }
@@ -263,7 +263,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         }
 
         // check that only full NFT can be transferred
-        for (uint256 i = 0; i < ids.length; i++) {
+        for (uint256 i; i < ids.length; ++i) {
             if (amounts[i] != NFT_MINTED_SHARES) {
                 revert InvalidNftTransferAmount(amounts[i]);
             }
@@ -294,7 +294,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         // burn
         if (to == address(0)) {
             uint256 count = _activeUserNFTCount[from];
-            for (uint256 i = 0; i < ids.length; i++) {
+            for (uint256 i; i < ids.length; ++i) {
                 for (uint256 j = 0; j < count; j++) {
                     if (_activeUserNFTIds[from][j] == ids[i]) {
                         _activeUserNFTIds[from][j] = _activeUserNFTIds[from][count - 1];
@@ -309,7 +309,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         }
 
         // mint or transfer
-        for (uint256 i = 0; i < ids.length; i++) {
+        for (uint256 i; i < ids.length; ++i) {
             _activeUserNFTIds[to][_activeUserNFTCount[to]] = ids[i];
             _activeUserNFTCount[to]++;
         }

@@ -23,7 +23,7 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
 
         GuardDefinition[] memory guards = _readGuards(smartVaultId, context.requestType);
 
-        for (uint256 i = 0; i < guards.length; i++) {
+        for (uint256 i; i < guards.length; ++i) {
             GuardDefinition memory guard = guards[i];
 
             bytes memory encoded = _encodeFunctionCall(smartVaultId, guard, context);
@@ -46,7 +46,7 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
     {
         _guardsNotInitialized(smartVaultId);
 
-        for (uint256 i = 0; i < requestTypes.length; i++) {
+        for (uint256 i; i < requestTypes.length; ++i) {
             _writeGuards(smartVaultId, requestTypes[i], guards[i]);
         }
 
@@ -124,7 +124,7 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
         // Loop through parameters and
         // - store values for simple types
         // - store param value location for dynamic types
-        for (uint256 i = 0; i < paramsLength; i++) {
+        for (uint256 i; i < paramsLength; ++i) {
             GuardParamType paramType = guard.methodParamTypes[i];
 
             if (paramType == GuardParamType.DynamicCustomValue) {
@@ -155,7 +155,7 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
 
         // Loop through params again and store values for dynamic types.
         customValueIdx = 0;
-        for (uint256 i = 0; i < paramsLength; i++) {
+        for (uint256 i; i < paramsLength; ++i) {
             GuardParamType paramType = guard.methodParamTypes[i];
 
             if (paramType == GuardParamType.DynamicCustomValue) {

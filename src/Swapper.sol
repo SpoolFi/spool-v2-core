@@ -69,7 +69,7 @@ contract Swapper is ISwapper, SpoolAccessControllable {
             revert InvalidArrayLength();
         }
 
-        for (uint256 i = 0; i < exchanges.length; ++i) {
+        for (uint256 i; i < exchanges.length; ++i) {
             exchangeAllowlist[exchanges[i]] = allowed[i];
 
             emit ExchangeAllowlistUpdated(exchanges[i], allowed[i]);

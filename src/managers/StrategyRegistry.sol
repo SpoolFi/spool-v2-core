@@ -132,7 +132,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
     function currentIndex(address[] calldata strategies) external view returns (uint256[] memory) {
         uint256[] memory indexes = new uint256[](strategies.length);
-        for (uint256 i = 0; i < strategies.length; i++) {
+        for (uint256 i; i < strategies.length; ++i) {
             indexes[i] = _currentIndexes[strategies[i]];
         }
 
@@ -158,7 +158,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         returns (uint256[] memory)
     {
         uint256[] memory result = new uint256[](strategies.length);
-        for (uint256 i; i < strategies.length; i++) {
+        for (uint256 i; i < strategies.length; ++i) {
             result[i] = _stateAtDhw[strategies[i]][dhwIndexes.get(i)].timestamp;
         }
 
@@ -172,7 +172,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     {
         StrategyAtIndex[] memory result = new StrategyAtIndex[](strategies.length);
 
-        for (uint256 i = 0; i < strategies.length; i++) {
+        for (uint256 i; i < strategies.length; ++i) {
             StateAtDhwIndex memory state = _stateAtDhw[strategies[i]][dhwIndexes.get(i)];
 
             result[i] = StrategyAtIndex({
@@ -337,7 +337,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         returns (uint16a16)
     {
         uint16a16 indexes;
-        for (uint256 i = 0; i < strategies_.length; i++) {
+        for (uint256 i; i < strategies_.length; ++i) {
             address strategy = strategies_[i];
 
             uint256 latestIndex = _currentIndexes[strategy];
@@ -358,7 +358,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     {
         uint16a16 indexes;
 
-        for (uint256 i = 0; i < strategies_.length; i++) {
+        for (uint256 i; i < strategies_.length; ++i) {
             address strategy = strategies_[i];
             uint256 latestIndex = _currentIndexes[strategy];
 
@@ -388,7 +388,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
             }
         }
 
-        for (uint256 i = 0; i < redeemFastParams.strategies.length; i++) {
+        for (uint256 i; i < redeemFastParams.strategies.length; ++i) {
             uint256[] memory strategyWithdrawnAssets = IStrategy(redeemFastParams.strategies[i]).redeemFast(
                 redeemFastParams.strategyShares[i],
                 address(_masterWallet),
@@ -415,7 +415,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         address[] memory assetGroup;
         uint256[] memory totalWithdrawnAssets;
 
-        for (uint256 i = 0; i < strategies_.length; i++) {
+        for (uint256 i; i < strategies_.length; ++i) {
             address strategy = strategies_[i];
 
             if (strategies_[i] == _ghostStrategy) {
@@ -448,7 +448,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         uint256[][] calldata withdrawalSlippages,
         bool removeStrategies
     ) external onlyRole(ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, msg.sender) {
-        for (uint256 i = 0; i < strategies.length; i++) {
+        for (uint256 i; i < strategies.length; ++i) {
             _checkRole(ROLE_STRATEGY, strategies[i]);
             if (strategies[i] == _ghostStrategy) {
                 continue;

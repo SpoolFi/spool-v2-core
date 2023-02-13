@@ -9,7 +9,7 @@ contract UniformAllocationProvider is IAllocationProvider {
     function calculateAllocation(AllocationCalculationInput calldata data) external pure returns (uint256[] memory) {
         uint256[] memory allocations = new uint256[](data.strategies.length);
         uint256 allocation = FULL_PERCENT / data.strategies.length;
-        for (uint8 i = 0; i < data.strategies.length; i++) {
+        for (uint8 i; i < data.strategies.length; ++i) {
             allocations[i] = allocation;
         }
 

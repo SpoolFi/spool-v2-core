@@ -27,7 +27,7 @@ library SpoolUtils {
     {
         uint256[][] memory strategyRatios = new uint256[][](strategies_.length);
 
-        for (uint256 i = 0; i < strategies_.length; i++) {
+        for (uint256 i; i < strategies_.length; ++i) {
             strategyRatios[i] = strategyRegistry_.assetRatioAtLastDhw(strategies_[i]);
         }
 
@@ -47,7 +47,7 @@ library SpoolUtils {
         returns (uint256[] memory)
     {
         uint256[] memory exchangeRates = new uint256[](tokens_.length);
-        for (uint256 i = 0; i < tokens_.length; i++) {
+        for (uint256 i; i < tokens_.length; ++i) {
             exchangeRates[i] =
                 priceFeedManager_.assetToUsd(tokens_[i], 10 ** priceFeedManager_.assetDecimals(tokens_[i]));
         }
@@ -90,7 +90,7 @@ library SpoolUtils {
     {
         uint256 totalUsdValue = 0;
 
-        for (uint256 i = 0; i < strategyAddresses_.length; i++) {
+        for (uint256 i; i < strategyAddresses_.length; ++i) {
             IStrategy strategy = IStrategy(strategyAddresses_[i]);
             uint256 totalSupply = strategy.totalSupply();
             if (totalSupply == 0) {

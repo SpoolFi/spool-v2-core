@@ -161,7 +161,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         bag.metadata = vault.burnNFTs(executor, nftIds, nftAmounts);
 
         uint256 claimedVaultTokens = 0;
-        for (uint256 i = 0; i < nftIds.length; i++) {
+        for (uint256 i; i < nftIds.length; ++i) {
             if (nftIds[i] > MAXIMAL_DEPOSIT_ID) {
                 revert InvalidDepositNftId(nftIds[i]);
             }
@@ -209,7 +209,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             })
         );
 
-        for (uint256 i = 0; i < strategies.length; i++) {
+        for (uint256 i; i < strategies.length; ++i) {
             _flushSsts[smartVault][flushIndex][i / 2] =
                 _flushSsts[smartVault][flushIndex][i / 2].set(i % 2, IStrategy(strategies[i]).balanceOf(smartVault));
 
@@ -242,7 +242,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
 
         if (syncResult.mintedSVTs > 0) {
             _flushShares[smartVault][flushIndex].mintedVaultShares = uint128(syncResult.mintedSVTs);
-            for (uint256 i = 0; i < strategies.length; i++) {
+            for (uint256 i; i < strategies.length; ++i) {
                 if (syncResult.sstShares[i] > 0) {
                     IStrategy(strategies[i]).claimShares(smartVault, syncResult.sstShares[i]);
                 }
@@ -395,7 +395,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         );
 
         // transfer tokens from user to master wallet
-        for (uint256 i = 0; i < bag2.tokens.length; i++) {
+        for (uint256 i; i < bag2.tokens.length; ++i) {
             _vaultDeposits[bag.smartVault][bag2.flushIndex][i] = bag.assets[i];
         }
 
@@ -444,7 +444,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         uint256[] memory idealDeposit = calculateDepositRatio(exchangeRates, allocation, strategyRatios);
 
         // loop over assets
-        for (uint256 i = 1; i < deposit.length; i++) {
+        for (uint256 i = 1; i < deposit.length; ++i) {
             uint256 valueA = deposit[i] * idealDeposit[i - 1];
             uint256 valueB = deposit[i - 1] * idealDeposit[i];
 
@@ -494,7 +494,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         uint256[][] memory flushFactors = new uint256[][](strategyRatios.length);
 
         // loop over strategies
-        for (uint256 i = 0; i < strategyRatios.length; i++) {
+        for (uint256 i; i < strategyRatios.length; ++i) {
             flushFactors[i] = new uint256[](exchangeRates.length);
 
             uint256 normalization = 0;
@@ -533,7 +533,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             mintedSVTs = _flushShares[smartVaultAddress][data.flushIndex].mintedVaultShares;
         }
 
-        for (uint256 i = 0; i < data.assets.length; i++) {
+        for (uint256 i; i < data.assets.length; ++i) {
             depositedUsd += _priceFeedManager.assetToUsdCustomPrice(tokens[i], data.assets[i], exchangeRates[i]);
             totalDepositedUsd +=
                 _priceFeedManager.assetToUsdCustomPrice(tokens[i], totalDepositedAssets[i], exchangeRates[i]);
@@ -556,7 +556,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         uint256[] memory depositRatio = new uint256[](flushFactors[0].length);
 
         // loop over strategies
-        for (uint256 i = 0; i < flushFactors.length; i++) {
+        for (uint256 i; i < flushFactors.length; ++i) {
             // loop over assets
             for (uint256 j = 0; j < flushFactors[i].length; j++) {
                 depositRatio[j] += flushFactors[i][j];
@@ -576,12 +576,12 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         uint256[][] memory distribution = new uint256[][](bag.strategyRatios.length);
 
         uint256 totalAllocation;
-        for (uint256 i = 0; i < bag.strategyRatios.length; ++i) {
+        for (uint256 i; i < bag.strategyRatios.length; ++i) {
             totalAllocation += bag.allocation.get(i);
         }
 
         // loop over strategies
-        for (uint256 i = 0; i < bag.strategyRatios.length; ++i) {
+        for (uint256 i; i < bag.strategyRatios.length; ++i) {
             distribution[i] = new uint256[](1);
 
             distribution[i][0] = bag.deposit[0] * bag.allocation.get(i) / totalAllocation;
@@ -607,7 +607,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         uint256[][] memory distribution = new uint256[][](bag.strategyRatios.length);
 
         // loop over strategies
-        for (uint256 i = 0; i < bag.strategyRatios.length; i++) {
+        for (uint256 i; i < bag.strategyRatios.length; ++i) {
             distribution[i] = new uint256[](bag.exchangeRates.length);
 
             // loop over assets

@@ -56,7 +56,7 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
             })
         );
 
-        for (uint256 i = 0; i < strategies.length; i++) {
+        for (uint256 i; i < strategies.length; ++i) {
             if (strategies[i] != _ghostStrategy) {
                 allocations = allocations.set(i, allocations_[i]);
             }
@@ -67,7 +67,7 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
 
     function getRiskScores(address riskProvider, address[] calldata strategies) public view returns (uint8[] memory) {
         uint8[] memory riskScores = new uint8[](strategies.length);
-        for (uint256 i = 0; i < strategies.length; i++) {
+        for (uint256 i; i < strategies.length; ++i) {
             riskScores[i] =
                 riskProvider == STATIC_RISK_PROVIDER ? STATIC_RISK_SCORE : _riskScores[riskProvider][strategies[i]];
         }
@@ -127,7 +127,7 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
             revert InvalidRiskInputLength();
         }
 
-        for (uint256 i = 0; i < riskScores.length; i++) {
+        for (uint256 i; i < riskScores.length; ++i) {
             if (riskScores[i] > MAX_RISK_SCORE || riskScores[i] < MIN_RISK_SCORE) {
                 revert RiskScoreValueOutOfBounds(riskScores[i]);
             }

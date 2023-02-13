@@ -33,7 +33,7 @@ contract AssetGroupRegistry is IAssetGroupRegistry, SpoolAccessControllable, Ini
     constructor(ISpoolAccessControl accessControl_) SpoolAccessControllable(accessControl_) {}
 
     function initialize(address[] calldata allowedTokens_) external initializer {
-        for (uint256 i = 0; i < allowedTokens_.length; i++) {
+        for (uint256 i; i < allowedTokens_.length; ++i) {
             _allowToken(allowedTokens_[i]);
         }
 
@@ -79,7 +79,7 @@ contract AssetGroupRegistry is IAssetGroupRegistry, SpoolAccessControllable, Ini
     }
 
     function allowTokenBatch(address[] calldata tokens) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
-        for (uint256 i = 0; i < tokens.length; i++) {
+        for (uint256 i; i < tokens.length; ++i) {
             _allowToken(tokens[i]);
         }
     }

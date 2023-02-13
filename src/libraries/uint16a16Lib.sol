@@ -54,7 +54,7 @@ library uint16a16Lib {
      * @return va Packed array with stored elements.
      */
     function set(uint16a16 va, uint256[] memory ev) internal pure returns (uint16a16) {
-        for (uint256 i = 0; i < ev.length; i++) {
+        for (uint256 i; i < ev.length; ++i) {
             va = set(va, i, ev[i]);
         }
 

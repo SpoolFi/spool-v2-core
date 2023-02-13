@@ -35,7 +35,7 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
         onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)
     {
         _checkInitialized(smartVault);
-        for (uint256 i; i < actions_.length; i++) {
+        for (uint256 i; i < actions_.length; ++i) {
             IAction action = actions_[i];
             _onlyWhitelistedAction(address(action));
             actions[smartVault][requestTypes[i]].push(address(action));
@@ -56,7 +56,7 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
 
         address[] memory actions_ = actions[actionCtx.smartVault][actionCtx.requestType];
 
-        for (uint256 i; i < actions_.length; i++) {
+        for (uint256 i; i < actions_.length; ++i) {
             _executeAction(actions_[i], actionCtx);
         }
     }

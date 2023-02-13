@@ -83,7 +83,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         uint256[] memory strategyWithdrawals = new uint256[](strategies.length);
         uint256 totalVaultShares = ISmartVault(smartVault).totalSupply();
 
-        for (uint256 i = 0; i < strategies.length; i++) {
+        for (uint256 i; i < strategies.length; ++i) {
             uint256 strategyShares = IStrategy(strategies[i]).balanceOf(smartVault);
             strategyWithdrawals[i] = strategyShares * withdrawals / totalVaultShares;
         }
@@ -106,7 +106,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         uint256[] memory withdrawnAssets = new uint256[](bag.assetGroup.length);
         bytes[] memory metadata = ISmartVault(bag.smartVault).burnNFTs(bag.executor, bag.nftIds, bag.nftAmounts);
 
-        for (uint256 i = 0; i < bag.nftIds.length; i++) {
+        for (uint256 i; i < bag.nftIds.length; ++i) {
             if (bag.nftIds[i] <= MAXIMAL_DEPOSIT_ID) {
                 revert InvalidWithdrawalNftId(bag.nftIds[i]);
             }
@@ -131,7 +131,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
             })
         );
 
-        for (uint256 i = 0; i < bag.assetGroup.length; i++) {
+        for (uint256 i; i < bag.assetGroup.length; ++i) {
             _masterWallet.transfer(IERC20(bag.assetGroup[i]), bag.receiver, withdrawnAssets[i]);
         }
 
@@ -193,7 +193,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         uint256[] memory strategySharesToRedeem = new uint256[](bag2.strategies.length);
         {
             uint256 totalVaultShares = smartVault.totalSupply();
-            for (uint256 i = 0; i < bag2.strategies.length; i++) {
+            for (uint256 i; i < bag2.strategies.length; ++i) {
                 uint256 strategyShares = IStrategy(bag2.strategies[i]).balanceOf(bag.smartVault);
 
                 strategySharesToRedeem[i] = strategyShares * bag.shares / totalVaultShares;
@@ -214,7 +214,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         );
 
         // transfer assets to the redeemer
-        for (uint256 i = 0; i < bag2.assetGroup.length; i++) {
+        for (uint256 i; i < bag2.assetGroup.length; ++i) {
             _masterWallet.transfer(IERC20(bag2.assetGroup[i]), bag2.redeemer, assetsWithdrawn[i]);
         }
 
@@ -253,7 +253,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         uint256[] memory withdrawnAssets = new uint256[](assetGroupLength);
 
         // loop over all assets
-        for (uint256 i = 0; i < withdrawnAssets.length; i++) {
+        for (uint256 i; i < withdrawnAssets.length; ++i) {
             withdrawnAssets[i] = _withdrawnAssets[smartVault][data.flushIndex][i] * data.vaultShares
                 / _withdrawnVaultShares[smartVault][data.flushIndex];
         }

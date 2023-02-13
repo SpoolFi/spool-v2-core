@@ -53,7 +53,7 @@ contract DepositSwap is IDepositSwap {
         }
 
         // Transfer the tokens from the caller to the swapper.
-        for (uint256 i = 0; i < inTokens.length; i++) {
+        for (uint256 i; i < inTokens.length; ++i) {
             IERC20(inTokens[i]).safeTransferFrom(msg.sender, address(_swapper), inAmounts[i]);
 
             if (inTokens[i] == address(_weth) && msgValue > 0) {
@@ -68,7 +68,7 @@ contract DepositSwap is IDepositSwap {
             _swapper.swap(inTokens, swapInfo, outTokens, address(this));
             uint256[] memory outAmounts = new uint256[](outTokens.length);
             // Figure out how much we got out of the swap.
-            for (uint256 i = 0; i < outTokens.length; i++) {
+            for (uint256 i; i < outTokens.length; ++i) {
                 outAmounts[i] = IERC20(outTokens[i]).balanceOf(address(this));
                 IERC20(outTokens[i]).safeApprove(address(_smartVaultManager), outAmounts[i]);
             }
@@ -79,7 +79,7 @@ contract DepositSwap is IDepositSwap {
 
         // Return unswapped tokens.
         uint256 returnBalance;
-        for (uint256 i = 0; i < inTokens.length; i++) {
+        for (uint256 i; i < inTokens.length; ++i) {
             returnBalance = IERC20(inTokens[i]).balanceOf(address(this));
             if (returnBalance > 0) {
                 IERC20(inTokens[i]).safeTransfer(msg.sender, returnBalance);

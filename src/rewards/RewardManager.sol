@@ -184,7 +184,7 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuard {
 
     function _removeReward(address smartVault, IERC20 token) private {
         uint256 _rewardTokensCount = rewardTokensCount[smartVault];
-        for (uint256 i; i < _rewardTokensCount; i++) {
+        for (uint256 i; i < _rewardTokensCount; ++i) {
             if (rewardTokens[smartVault][i] == token) {
                 rewardTokens[smartVault][i] = rewardTokens[smartVault][_rewardTokensCount - 1];
 
@@ -199,7 +199,7 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuard {
 
     function _exceptUnderlying(address smartVault, IERC20 token) private view {
         address[] memory vaultTokens = _assetGroupRegistry.listAssetGroup(ISmartVault(smartVault).assetGroupId());
-        for (uint256 i = 0; i < vaultTokens.length; i++) {
+        for (uint256 i; i < vaultTokens.length; ++i) {
             if (vaultTokens[i] == address(token)) {
                 revert AssetGroupToken(address(token));
             }

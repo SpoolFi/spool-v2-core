@@ -37,14 +37,14 @@ contract AllocationProviderLinear is IAllocationProvider {
         ];
 
         uint8[] memory arrayRiskScores = data.riskScores;
-        for (uint8 i = 0; i < data.apys.length; i++) {
+        for (uint8 i; i < data.apys.length; ++i) {
             apySum += (data.apys[i] > 0 ? uint256(data.apys[i]) : 0);
             riskSum += arrayRiskScores[i];
         }
 
         uint8 riskt = uint8(data.riskTolerance + 10); // from 0 to 20
 
-        for (uint8 i = 0; i < data.apys.length; i++) {
+        for (uint8 i; i < data.apys.length; ++i) {
             uint256 apy = data.apys[i] > 0 ? uint256(data.apys[i]) : 0;
             apy = (apy * FULL_PERCENT) / apySum;
             uint256 risk =
@@ -56,7 +56,7 @@ contract AllocationProviderLinear is IAllocationProvider {
         }
 
         uint256 resSum2;
-        for (uint8 i = 0; i < results.length; i++) {
+        for (uint8 i; i < results.length; ++i) {
             results[i] = FULL_PERCENT * results[i] / resSum;
             resSum2 += results[i];
         }
