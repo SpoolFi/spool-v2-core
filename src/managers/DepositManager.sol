@@ -319,7 +319,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             totalUsd[1] += stratFlushUsd;
 
             if (parameters.fees.performanceFeePct > 0 && prevYields.length > 0) {
-                totalFlushYieldUsd = int256(stratFlushUsd)
+                totalFlushYieldUsd += int256(stratFlushUsd)
                     - (int256(stratFlushUsd) * YIELD_FULL_PERCENT_INT / (YIELD_FULL_PERCENT_INT + atDhw.dhwYields - prevYields[i]));
             }
         }
@@ -333,7 +333,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             if (parameters.fees.performanceFeePct > 0 && totalFlushYieldUsd > 0) {
                 uint256 totalFlushYieldFeeUsd =
                     uint256(totalFlushYieldUsd) * parameters.fees.performanceFeePct / FULL_PERCENT;
-                performanceFeeMintedSvts = flushSvtSupply * (totalUsd[1] - totalFlushYieldFeeUsd) / totalUsd[1];
+                performanceFeeMintedSvts = flushSvtSupply * totalFlushYieldFeeUsd / (totalUsd[1] - totalFlushYieldFeeUsd);
                 result.feeSVTs += performanceFeeMintedSvts;
             }
 
