@@ -22,13 +22,13 @@ Browse the coverage report by opening `./coverage/src/index.html`.
 
 ### Fork testing in folder `test/forked`
 
-`forge t --fork-url $RPC_URL --match-path "./test/forked/*.t.sol"`
+`forge t --fork-url $RPC_URL --match-path "./test/forked/**/*.t.sol"`
 
 Or on windows you can use:
 
 ```
 .\source.ps1
-forge test --fork-url $Env:RPC_URL --match-path "./test/forked/*.t.sol"
+forge test --fork-url $Env:RPC_URL --match-path "./test/forked/**/*.t.sol"
 ```
 
 **Note:** load RPC_URL variable from `.env` into environment.
