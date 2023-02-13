@@ -37,7 +37,11 @@ contract MockMasterChefStrategy is Strategy {
 
     function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
-    function _compound(SwapInfo[] calldata, uint256[] calldata) internal override returns (int256 compoundYield) {
+    function _compound(address[] calldata tokens, SwapInfo[] calldata, uint256[] calldata)
+        internal
+        override
+        returns (int256 compoundYield)
+    {
         uint256 assetBalanceBefore = _getAssetBalanceBefore();
         // claims rewards
         masterChef.deposit(pid, 0);
@@ -48,8 +52,7 @@ contract MockMasterChefStrategy is Strategy {
         if (assetBalanceDiff > 0) {
             (uint256 balanceBefore,) = masterChef.userInfo(pid, address(this));
 
-            address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
-            IERC20(assetGroup[0]).safeApprove(address(masterChef), assetBalanceDiff);
+            IERC20(tokens[0]).safeApprove(address(masterChef), assetBalanceDiff);
             masterChef.deposit(pid, assetBalanceDiff);
 
             if (balanceBefore > 0) {

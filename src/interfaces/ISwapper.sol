@@ -46,13 +46,18 @@ interface ISwapper {
      * - deposit tokens into the swapper contract
      * - swapper will swap tokens based on swap info provided
      * - swapper will return unswapped tokens to the receiver
-     * @param tokens Addresses of tokens available for the swap.
+     * @param tokensIn Addresses of tokens available for the swap.
      * @param swapInfo Information needed to perform the swap.
+     * @param tokensOut Addresses of tokens to swap to.
      * @param receiver Receiver of unswapped tokens.
+     * @return amountsOut Amounts of `tokensOut` sent from the swapper to the receiver.
      */
-    function swap(address[] calldata tokens, SwapInfo[] calldata swapInfo, address receiver)
-        external
-        returns (uint256[] memory tokenAmounts);
+    function swap(
+        address[] calldata tokensIn,
+        SwapInfo[] calldata swapInfo,
+        address[] calldata tokensOut,
+        address receiver
+    ) external returns (uint256[] memory amountsOut);
 
     /**
      * @notice Updates list of exchanges that can be used in a swap.

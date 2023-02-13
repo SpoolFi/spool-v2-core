@@ -26,10 +26,12 @@ contract Swapper is ISwapper, SpoolAccessControllable {
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
-    function swap(address[] calldata tokens, SwapInfo[] calldata swapInfo, address receiver)
-        external
-        returns (uint256[] memory tokenAmounts)
-    {
+    function swap(
+        address[] calldata tokensIn,
+        SwapInfo[] calldata swapInfo,
+        address[] calldata tokensOut,
+        address receiver
+    ) external returns (uint256[] memory tokenAmounts) {
         // Perform the swaps.
         for (uint256 i; i < swapInfo.length; ++i) {
             if (!exchangeAllowlist[swapInfo[i].swapTarget]) {
@@ -43,11 +45,18 @@ contract Swapper is ISwapper, SpoolAccessControllable {
         }
 
         // Return unswapped tokens.
-        tokenAmounts = new uint256[](tokens.length);
-        for (uint256 i; i < tokens.length; ++i) {
-            tokenAmounts[i] = IERC20(tokens[i]).balanceOf(address(this));
+        for (uint256 i; i < tokensIn.length; ++i) {
+            uint256 tokenInBalance = IERC20(tokensIn[i]).balanceOf(address(this));
+            if (tokenInBalance > 0) {
+                IERC20(tokensIn[i]).safeTransfer(receiver, tokenInBalance);
+            }
+        }
+
+        tokenAmounts = new uint256[](tokensOut.length);
+        for (uint256 i; i < tokensOut.length; ++i) {
+            tokenAmounts[i] = IERC20(tokensOut[i]).balanceOf(address(this));
             if (tokenAmounts[i] > 0) {
-                IERC20(tokens[i]).safeTransfer(receiver, tokenAmounts[i]);
+                IERC20(tokensOut[i]).safeTransfer(receiver, tokenAmounts[i]);
             }
         }
     }

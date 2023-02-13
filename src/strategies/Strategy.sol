@@ -94,7 +94,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
         // Compound and get USD value.
         dhwInfo.yieldPercentage = _getYieldPercentage(dhwParams.baseYield);
-        dhwInfo.yieldPercentage += _compound(dhwParams.compoundSwapInfo, dhwParams.slippages);
+        dhwInfo.yieldPercentage += _compound(dhwParams.assetGroup, dhwParams.compoundSwapInfo, dhwParams.slippages);
 
         // collect fees, mint SVTs relative to the yield generated
         _collectPlatformFees(dhwInfo.yieldPercentage, dhwParams.platformFees);
@@ -412,7 +412,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         }
     }
 
-    function _compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
+    function _compound(address[] calldata tokens, SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
         internal
         virtual
         returns (int256 compoundYield);
