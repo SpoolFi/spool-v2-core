@@ -106,6 +106,11 @@ struct ReallocateParamBag {
     uint256[2][] exchangeRateSlippages;
 }
 
+struct FlushIndex {
+    uint128 current;
+    uint128 toSync;
+}
+
 /* ========== INTERFACES ========== */
 
 interface ISmartVaultBalance {

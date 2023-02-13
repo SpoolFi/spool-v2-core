@@ -29,7 +29,6 @@ struct VaultSyncBag {
     uint256 oldTotalSVTs;
     uint256 feeSVTs;
     uint256 newSVTs;
-    uint256 flushIndex;
     uint256 lastDhwSynced;
     uint256[] currentStrategyIndexes;
 }
@@ -90,11 +89,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /// @notice Smart Vault strategy allocations
     mapping(address => uint16a16) internal _smartVaultAllocations;
 
-    /// @notice Current flush index for given Smart Vault
-    mapping(address => uint256) internal _flushIndexes;
-
-    /// @notice First flush index that still needs to be synced for given Smart Vault.
-    mapping(address => uint256) internal _flushIndexesToSync;
+    /// @notice Current flush index and index to sync for given Smart Vault
+    mapping(address => FlushIndex) internal _flushIndexes;
 
     /// @notice List of vaults per strategy
     mapping(address => address[]) internal _smartVaultsWithStrategy;
@@ -183,7 +179,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * @notice SmartVault latest flush index
      */
     function getLatestFlushIndex(address smartVault) external view returns (uint256) {
-        return _flushIndexes[smartVault];
+        return _flushIndexes[smartVault].current;
     }
 
     /**
@@ -417,9 +413,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         bool revertIfError
     ) private {
         VaultSyncBag memory bag;
-        bag.flushIndex = _flushIndexesToSync[smartVault];
+        FlushIndex memory flushIndex = _flushIndexes[smartVault];
 
-        if (bag.flushIndex == _flushIndexes[smartVault]) {
+        if (flushIndex.current == flushIndex.toSync) {
             if (revertIfError) {
                 revert NothingToSync();
             }
@@ -433,13 +429,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         bag.lastDhwSynced = _lastDhwTimestampSynced[smartVault];
         SmartVaultFees memory fees = _smartVaultFees[smartVault];
 
-        while (bag.flushIndex < _flushIndexes[smartVault]) {
-            uint16a16 indexes = _dhwIndexes[smartVault][bag.flushIndex];
+        while (flushIndex.toSync < flushIndex.current) {
+            uint16a16 indexes = _dhwIndexes[smartVault][flushIndex.toSync];
             if (!_areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes, strategies_, revertIfError)) break;
 
-            _withdrawalManager.syncWithdrawals(smartVault, bag.flushIndex, strategies_, indexes);
+            _withdrawalManager.syncWithdrawals(smartVault, flushIndex.toSync, strategies_, indexes);
             DepositSyncResult memory syncResult = _depositManager.syncDeposits(
-                smartVault, bag.flushIndex, bag.lastDhwSynced, bag.oldTotalSVTs, strategies_, indexes, tokens, fees
+                smartVault, flushIndex.toSync, bag.lastDhwSynced, bag.oldTotalSVTs, strategies_, indexes, tokens, fees
             );
 
             bag.newSVTs += syncResult.mintedSVTs;
@@ -447,8 +443,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             bag.oldTotalSVTs += bag.newSVTs;
             bag.lastDhwSynced = syncResult.dhwTimestamp;
 
-            emit SmartVaultSynced(smartVault, bag.flushIndex);
-            bag.flushIndex++;
+            emit SmartVaultSynced(smartVault, flushIndex.toSync);
+            flushIndex.toSync++;
         }
 
         if (bag.newSVTs > 0) {
@@ -460,7 +456,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         _lastDhwTimestampSynced[smartVault] = bag.lastDhwSynced;
-        _flushIndexesToSync[smartVault] = bag.flushIndex;
+        _flushIndexes[smartVault] = flushIndex;
     }
 
     /**
@@ -505,21 +501,21 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
         bag.currentStrategyIndexes = _strategyRegistry.currentIndex(strategies_);
         bag.lastDhwSynced = _lastDhwTimestampSynced[smartVault];
-        bag.flushIndex = _flushIndexesToSync[smartVault];
         bag.vaultOwner = _accessControl.smartVaultOwner(smartVault);
         vaultOwnerSVTs = ISmartVault(smartVault).balanceOf(bag.vaultOwner);
         bag.oldTotalSVTs = ISmartVault(smartVault).totalSupply() - vaultOwnerSVTs;
         SmartVaultFees memory fees = _smartVaultFees[smartVault];
+        FlushIndex memory flushIndex = _flushIndexes[smartVault];
 
-        while (bag.flushIndex < _flushIndexes[smartVault]) {
-            uint16a16 indexes = _dhwIndexes[smartVault][bag.flushIndex];
+        while (flushIndex.toSync < flushIndex.current) {
+            uint16a16 indexes = _dhwIndexes[smartVault][flushIndex.toSync];
 
             if (!_areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes, strategies_, false)) break;
 
             DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(
                 Simulate(
                     smartVault,
-                    [bag.flushIndex, bag.lastDhwSynced, bag.oldTotalSVTs + bag.newSVTs],
+                    [flushIndex.toSync, bag.lastDhwSynced, bag.oldTotalSVTs + bag.newSVTs],
                     strategies_,
                     tokens,
                     indexes,
@@ -531,7 +527,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             bag.feeSVTs += syncResult.feeSVTs;
 
             bag.lastDhwSynced = syncResult.dhwTimestamp;
-            bag.flushIndex++;
+            flushIndex.toSync++;
         }
 
         return (bag.oldTotalSVTs, vaultOwnerSVTs, bag.newSVTs, bag.feeSVTs);
@@ -554,13 +550,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         ISmartVault vault = ISmartVault(smartVault);
         bag2.metadata = vault.getMetadata(nftIds);
         bag2.nftBalances = vault.balanceOfFractionalBatch(userAddress, nftIds);
-        bag.flushIndex = _flushIndexesToSync[smartVault];
         bag2.tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
+        FlushIndex memory flushIndex = _flushIndexes[smartVault];
 
         // check if any have already been synced
         for (uint256 i; i < nftIds.length; i++) {
             DepositMetadata memory data = abi.decode(bag2.metadata[i], (DepositMetadata));
-            if (data.flushIndex >= bag.flushIndex) {
+            if (data.flushIndex >= flushIndex.toSync) {
                 continue;
             }
 
@@ -568,7 +564,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
                 _depositManager.getClaimedVaultTokensPreview(smartVault, data, bag2.nftBalances[i], 0, bag2.tokens);
         }
 
-        if (bag.flushIndex == _flushIndexes[smartVault]) {
+        if (flushIndex.toSync == flushIndex.current) {
             // Everything has been synced already.
             return newBalance;
         }
@@ -580,14 +576,14 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         bag.oldTotalSVTs = ISmartVault(smartVault).totalSupply()
             - ISmartVault(smartVault).balanceOf(_accessControl.smartVaultOwner(smartVault));
 
-        while (bag.flushIndex < _flushIndexes[smartVault]) {
-            uint16a16 indexes = _dhwIndexes[smartVault][bag.flushIndex];
+        while (flushIndex.toSync < flushIndex.current) {
+            uint16a16 indexes = _dhwIndexes[smartVault][flushIndex.toSync];
             if (!_areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes, bag2.strategies, false)) break;
 
             DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(
                 Simulate(
                     smartVault,
-                    [bag.flushIndex, bag.lastDhwSynced, bag.oldTotalSVTs + bag.newSVTs],
+                    [flushIndex.toSync, bag.lastDhwSynced, bag.oldTotalSVTs + bag.newSVTs],
                     bag2.strategies,
                     bag2.tokens,
                     indexes,
@@ -601,7 +597,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             // if any NFTs are part of this flush cycle, simulate burn
             for (uint256 i; i < nftIds.length; i++) {
                 DepositMetadata memory data = abi.decode(bag2.metadata[i], (DepositMetadata));
-                if (data.flushIndex != bag.flushIndex) {
+                if (data.flushIndex != flushIndex.toSync) {
                     continue;
                 }
 
@@ -610,7 +606,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
                 );
             }
 
-            bag.flushIndex++;
+            flushIndex.toSync++;
         }
 
         return newBalance;
@@ -626,7 +622,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _syncSmartVault(bag.smartVault, _smartVaultStrategies[bag.smartVault], tokens, false);
 
         _depositManager.claimSmartVaultTokens(bag.smartVault, bag.nftIds, bag.nftAmounts, tokens, redeemer);
-        uint256 nftId = _withdrawalManager.redeem(bag, RedeemExtras(receiver, redeemer, _flushIndexes[bag.smartVault]));
+        uint256 nftId =
+            _withdrawalManager.redeem(bag, RedeemExtras(receiver, redeemer, _flushIndexes[bag.smartVault].current));
 
         if (doFlush) {
             flushSmartVault(bag.smartVault);
@@ -655,7 +652,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
                 tokens: tokens,
                 allocations: allocations_,
                 strategies: strategies_,
-                flushIndex: _flushIndexes[bag.smartVault]
+                flushIndex: _flushIndexes[bag.smartVault].current
             })
         );
 
@@ -679,11 +676,11 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address[] memory strategies_,
         address[] memory tokens
     ) private {
-        uint256 flushIndex = _flushIndexes[smartVault];
+        FlushIndex memory flushIndex = _flushIndexes[smartVault];
         uint16a16 flushDhwIndexes =
-            _depositManager.flushSmartVault(smartVault, flushIndex, strategies_, allocations_, tokens);
+            _depositManager.flushSmartVault(smartVault, flushIndex.current, strategies_, allocations_, tokens);
 
-        uint16a16 flushDhwIndexes2 = _withdrawalManager.flushSmartVault(smartVault, flushIndex, strategies_);
+        uint16a16 flushDhwIndexes2 = _withdrawalManager.flushSmartVault(smartVault, flushIndex.current, strategies_);
 
         if (uint16a16.unwrap(flushDhwIndexes2) > 0) {
             flushDhwIndexes = flushDhwIndexes2;
@@ -691,7 +688,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         if (uint16a16.unwrap(flushDhwIndexes) == 0) revert NothingToFlush();
 
-        uint16a16 currentFlushDhwIndexes = _dhwIndexes[smartVault][flushIndex];
+        uint16a16 currentFlushDhwIndexes = _dhwIndexes[smartVault][flushIndex.current];
 
         for (uint256 i; i < strategies_.length; i++) {
             if (strategies_[i] == _ghostStrategy) continue;
@@ -703,10 +700,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             }
         }
 
-        _dhwIndexes[smartVault][flushIndex] = flushDhwIndexes;
-        _flushIndexes[smartVault] = flushIndex + 1;
+        _dhwIndexes[smartVault][flushIndex.current] = flushDhwIndexes;
 
-        emit SmartVaultFlushed(smartVault, flushIndex);
+        emit SmartVaultFlushed(smartVault, flushIndex.current);
+
+        flushIndex.current++;
+        _flushIndexes[smartVault] = flushIndex;
     }
 
     function _onlyRegisteredSmartVault(address smartVault) internal view {

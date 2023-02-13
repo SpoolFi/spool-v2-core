@@ -14,9 +14,11 @@ import "../interfaces/IWithdrawalManager.sol";
 import "../interfaces/RequestType.sol";
 import "../access/SpoolAccessControllable.sol";
 import "../libraries/ArrayMapping.sol";
+import "../libraries/uint128a2Lib.sol";
 
 contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
     using SafeERC20 for IERC20;
+    using uint128a2Lib for uint128a2;
     using ArrayMappingUint256 for mapping(uint256 => uint256);
 
     /**
@@ -27,9 +29,9 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
 
     /**
      * @notice Withdrawn strategy shares for vault, at given flush index
-     * @dev smart vault => flush index => strategy shares withdrawn
+     * @dev smart vault => flush index => idx / 2 => strategy shares withdrawn
      */
-    mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _withdrawnStrategyShares;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint128a2))) internal _withdrawnStrategyShares;
 
     /**
      * @notice Withdrawn assets for vault, at given flush index
@@ -72,26 +74,28 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint16a16)
     {
-        uint16a16 flushDhwIndexes;
         uint256 withdrawals = _withdrawnVaultShares[smartVault][flushIndex];
 
-        if (withdrawals > 0) {
-            // handle withdrawals
-            uint256[] memory strategyWithdrawals = new uint256[](strategies.length);
-            uint256 totalVaultShares = ISmartVault(smartVault).totalSupply();
-
-            for (uint256 i = 0; i < strategies.length; i++) {
-                uint256 strategyShares = IStrategy(strategies[i]).balanceOf(smartVault);
-                strategyWithdrawals[i] = strategyShares * withdrawals / totalVaultShares;
-            }
-
-            ISmartVault(smartVault).burn(smartVault, withdrawals, strategies, strategyWithdrawals);
-            flushDhwIndexes = _strategyRegistry.addWithdrawals(strategies, strategyWithdrawals);
-
-            _withdrawnStrategyShares[smartVault][flushIndex].setValues(strategyWithdrawals);
+        if (withdrawals == 0) {
+            return uint16a16.wrap(0);
         }
 
-        return flushDhwIndexes;
+        uint256[] memory strategyWithdrawals = new uint256[](strategies.length);
+        uint256 totalVaultShares = ISmartVault(smartVault).totalSupply();
+
+        for (uint256 i = 0; i < strategies.length; i++) {
+            uint256 strategyShares = IStrategy(strategies[i]).balanceOf(smartVault);
+            strategyWithdrawals[i] = strategyShares * withdrawals / totalVaultShares;
+        }
+
+        ISmartVault(smartVault).burn(smartVault, withdrawals, strategies, strategyWithdrawals);
+
+        for (uint256 i; i < strategyWithdrawals.length; ++i) {
+            _withdrawnStrategyShares[smartVault][flushIndex][i / 2] =
+                _withdrawnStrategyShares[smartVault][flushIndex][i / 2].set(i % 2, strategyWithdrawals[i]);
+        }
+
+        return _strategyRegistry.addWithdrawals(strategies, strategyWithdrawals);
     }
 
     function claimWithdrawal(WithdrawalClaimBag calldata bag)
@@ -148,9 +152,12 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
             return;
         }
 
-        uint256[] memory withdrawnAssets_ = _strategyRegistry.claimWithdrawals(
-            strategies, dhwIndexes_, _withdrawnStrategyShares[smartVault][flushIndex].toArray(strategies.length)
-        );
+        uint256[] memory withdrawnShares = new uint256[](strategies.length);
+        for (uint256 i; i < strategies.length; ++i) {
+            withdrawnShares[i] = _withdrawnStrategyShares[smartVault][flushIndex][i / 2].get(i % 2);
+        }
+
+        uint256[] memory withdrawnAssets_ = _strategyRegistry.claimWithdrawals(strategies, dhwIndexes_, withdrawnShares);
 
         _withdrawnAssets[smartVault][flushIndex].setValues(withdrawnAssets_);
     }

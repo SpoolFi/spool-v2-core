@@ -20,6 +20,7 @@ import "../interfaces/RequestType.sol";
 import "../access/SpoolAccessControllable.sol";
 import "../libraries/ArrayMapping.sol";
 import "../libraries/SpoolUtils.sol";
+import "../libraries/uint128a2Lib.sol";
 
 /**
  * @notice Used when deposit is not made in correct asset ratio.
@@ -54,6 +55,7 @@ struct ClaimTokensLocalBag {
 contract DepositManager is SpoolAccessControllable, IDepositManager {
     using SafeERC20 for IERC20;
     using uint16a16Lib for uint16a16;
+    using uint128a2Lib for uint128a2;
     using ArrayMappingUint256 for mapping(uint256 => uint256);
 
     /**
@@ -87,15 +89,9 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
 
     /**
      * @notice Amount of SSTs for vault at given flush index
-     * @dev smart vault => flush index => strategy => SSTs
+     * @dev smart vault => flush index => i/2 => SSTs
      */
-    mapping(address => mapping(uint256 => mapping(address => uint256))) _flushSsts;
-
-    /**
-     * @notice Total supply of SVTs for vault at given flush index
-     * @dev smart vault => flush index => SVTs
-     */
-    mapping(address => mapping(uint256 => uint256)) _flushSvtSupply;
+    mapping(address => mapping(uint256 => mapping(uint256 => uint128a2))) _flushSsts;
 
     /**
      * @notice Flushed deposits for vault, at given flush index
@@ -105,10 +101,9 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         _vaultFlushedDeposits;
 
     /**
-     * @notice Minted vault shares at given flush index
-     * @dev smart vault => flush index => vault shares minted
+     * @dev smart vault => flush index => FlushShares{mintedVaultShares flushSvtSupply}
      */
-    mapping(address => mapping(uint256 => uint256)) internal _mintedVaultShares;
+    mapping(address => mapping(uint256 => FlushShares)) internal _flushShares;
 
     /**
      * @notice Vault deposits at given flush index
@@ -172,9 +167,9 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             }
 
             // we can pass empty strategy array and empty DHW index array,
-            // because vault should already be synced and _mintedVaultShares values available
+            // because vault should already be synced and mintedVaultShares values available
             bag.data = abi.decode(bag.metadata[i], (DepositMetadata));
-            bag.mintedSVTs = _mintedVaultShares[smartVault][bag.data.flushIndex];
+            bag.mintedSVTs = _flushShares[smartVault][bag.data.flushIndex].mintedVaultShares;
 
             claimedVaultTokens +=
                 getClaimedVaultTokensPreview(smartVault, bag.data, nftAmounts[i], bag.mintedSVTs, tokens);
@@ -196,35 +191,35 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         address[] calldata tokens
     ) external returns (uint16a16) {
         _checkRole(ROLE_SMART_VAULT_MANAGER, msg.sender);
-        uint16a16 flushDhwIndexes;
 
-        if (_vaultDeposits[smartVault][flushIndex][0] > 0) {
-            // handle deposits
-            uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(tokens, _priceFeedManager);
-            _flushExchangeRates[smartVault][flushIndex].setValues(exchangeRates);
-
-            uint256[][] memory distribution = distributeDeposit(
-                DepositQueryBag1({
-                    deposit: _vaultDeposits[smartVault][flushIndex].toArray(tokens.length),
-                    exchangeRates: exchangeRates,
-                    allocation: allocation,
-                    strategyRatios: SpoolUtils.getStrategyRatiosAtLastDhw(strategies, _strategyRegistry)
-                })
-            );
-
-            flushDhwIndexes = _strategyRegistry.addDeposits(strategies, distribution);
-
-            for (uint256 i = 0; i < strategies.length; i++) {
-                _flushSsts[smartVault][flushIndex][strategies[i]] = IStrategy(strategies[i]).balanceOf(smartVault);
-
-                if (distribution[i].length > 0) {
-                    _vaultFlushedDeposits[smartVault][flushIndex][strategies[i]].setValues(distribution[i]);
-                }
-            }
-            _flushSvtSupply[smartVault][flushIndex] = ISmartVault(smartVault).totalSupply();
+        if (_vaultDeposits[smartVault][flushIndex][0] == 0) {
+            return uint16a16.wrap(0);
         }
 
-        return flushDhwIndexes;
+        // handle deposits
+        uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(tokens, _priceFeedManager);
+        _flushExchangeRates[smartVault][flushIndex].setValues(exchangeRates);
+
+        uint256[][] memory distribution = distributeDeposit(
+            DepositQueryBag1({
+                deposit: _vaultDeposits[smartVault][flushIndex].toArray(tokens.length),
+                exchangeRates: exchangeRates,
+                allocation: allocation,
+                strategyRatios: SpoolUtils.getStrategyRatiosAtLastDhw(strategies, _strategyRegistry)
+            })
+        );
+
+        for (uint256 i = 0; i < strategies.length; i++) {
+            _flushSsts[smartVault][flushIndex][i / 2] =
+                _flushSsts[smartVault][flushIndex][i / 2].set(i % 2, IStrategy(strategies[i]).balanceOf(smartVault));
+
+            if (distribution[i].length > 0) {
+                _vaultFlushedDeposits[smartVault][flushIndex][strategies[i]].setValues(distribution[i]);
+            }
+        }
+        _flushShares[smartVault][flushIndex].flushSvtSupply = uint128(ISmartVault(smartVault).totalSupply());
+
+        return _strategyRegistry.addDeposits(strategies, distribution);
     }
 
     function syncDeposits(
@@ -246,7 +241,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         );
 
         if (syncResult.mintedSVTs > 0) {
-            _mintedVaultShares[smartVault][flushIndex] = syncResult.mintedSVTs;
+            _flushShares[smartVault][flushIndex].mintedVaultShares = uint128(syncResult.mintedSVTs);
             for (uint256 i = 0; i < strategies.length; i++) {
                 if (syncResult.sstShares[i] > 0) {
                     IStrategy(strategies[i]).claimShares(smartVault, syncResult.sstShares[i]);
@@ -309,7 +304,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             result.sstShares[i] = atDhw.sharesMinted * depositedUsd[0] / depositedUsd[1];
             totalUsd[0] += result.sstShares[i] * atDhw.totalStrategyValue / atDhw.totalSSTs;
 
-            uint256 flushSsts = _flushSsts[parameters.smartVault][parameters.bag[0]][parameters.strategies[i]];
+            uint256 flushSsts = _flushSsts[parameters.smartVault][parameters.bag[0]][i / 2].get(i % 2);
             totalUsd[1] += atDhw.totalStrategyValue * flushSsts / atDhw.totalSSTs;
         }
 
@@ -317,7 +312,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             result.mintedSVTs = totalUsd[0] * INITIAL_SHARE_MULTIPLIER;
         } else {
             // result.mintedSVTs = totalDepositedUsd * ISmartVault(smartVault).totalSupply() / totalVaultValueBefore;
-            uint256 flushSvtSupply = _flushSvtSupply[parameters.smartVault][parameters.bag[0]];
+            uint256 flushSvtSupply = _flushShares[parameters.smartVault][parameters.bag[0]].flushSvtSupply;
             result.mintedSVTs = flushSvtSupply * totalUsd[0] / totalUsd[1];
         }
 
@@ -535,7 +530,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         exchangeRates = _flushExchangeRates[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
 
         if (mintedSVTs == 0) {
-            mintedSVTs = _mintedVaultShares[smartVaultAddress][data.flushIndex];
+            mintedSVTs = _flushShares[smartVaultAddress][data.flushIndex].mintedVaultShares;
         }
 
         for (uint256 i = 0; i < data.assets.length; i++) {
