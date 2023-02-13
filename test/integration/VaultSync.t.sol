@@ -47,7 +47,7 @@ contract VaultSyncTest is IntegrationTestFixture {
         deal(address(tokenA), bob, 10000 ether, true);
         deal(address(tokenB), bob, 10000 ether, true);
         deal(address(tokenC), bob, 10000 ether, true);
-        
+
         vm.startPrank(bob);
         tokenA.approve(address(smartVaultManager), type(uint256).max);
         tokenB.approve(address(smartVaultManager), type(uint256).max);
@@ -291,7 +291,11 @@ contract VaultSyncTest is IntegrationTestFixture {
 
         // set last yields as all zeros
         vm.mockCall(
-            address(strategyRegistry), abi.encodeCall(StrategyRegistry.strategyAtIndexBatch, (smartVaultStrategies, dhwIndexesBefore, assetGroup.length)), abi.encode(yieldsBefore)
+            address(strategyRegistry),
+            abi.encodeCall(
+                StrategyRegistry.strategyAtIndexBatch, (smartVaultStrategies, dhwIndexesBefore, assetGroup.length)
+            ),
+            abi.encode(yieldsBefore)
         );
 
         depositManager.syncDepositsSimulate(
@@ -313,11 +317,19 @@ contract VaultSyncTest is IntegrationTestFixture {
 
         // Should have deposit fees, after syncing first DHW
         uint256 totalSupply = smartVault.totalSupply();
-        
+
         // fee is 1% of first deposit (110 eth), 10% of yield that was 10%
         assertApproxEqRel((depositAmounts[0] * 2) * smartVault.balanceOf(vaultOwner) / totalSupply, 1 ether, 1e12);
-        assertApproxEqRel((depositAmounts[0] * 2) * smartVaultManager.getUserSVTBalance(address(smartVault), alice) / totalSupply, depositAmounts[0] - 1 ether, 1e12);
-        assertApproxEqRel((depositAmounts[0] * 2) * smartVaultManager.getUserSVTBalance(address(smartVault), bob) / totalSupply, depositAmounts[0], 1e12);
+        assertApproxEqRel(
+            (depositAmounts[0] * 2) * smartVaultManager.getUserSVTBalance(address(smartVault), alice) / totalSupply,
+            depositAmounts[0] - 1 ether,
+            1e12
+        );
+        assertApproxEqRel(
+            (depositAmounts[0] * 2) * smartVaultManager.getUserSVTBalance(address(smartVault), bob) / totalSupply,
+            depositAmounts[0],
+            1e12
+        );
     }
 
     function test_depositAndRedeemNFTs() public {
