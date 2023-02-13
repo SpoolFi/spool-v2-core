@@ -51,6 +51,7 @@ error TreasuryFeeTooLarge(uint256 treasuryFeePct);
  * @custom:member exchangeRates Exchange rates between assets and USD.
  * @custom:member assetsDeposited Amount of assets deposited into the strategy.
  * @custom:member sharesMinted Amount of strategy shares minted.
+ * @custom:member totalSSTs Amount of strategy shares at the end of the DHW.
  * @custom:member totalStrategyValue Total strategy value at the end of the DHW.
  * @custom:member dhwYields DHW yield percentage from the previous DHW.
  */
@@ -155,6 +156,11 @@ interface IStrategyRegistry {
         external
         view
         returns (uint256[] memory timestamps);
+
+    function getDhwYield(address[] calldata strategies, uint16a16 dhwIndexes)
+        external
+        view
+        returns (int256[] memory yields);
 
     /**
      * @notice Returns state of strategies at do-hard-work indexes.

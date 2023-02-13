@@ -80,10 +80,10 @@ contract IntegrationTestFixture is TestFixture {
     }
 
     function createVault() internal {
-        createVault(0, 0);
+        createVault(0, 0, 0);
     }
 
-    function createVault(uint16 managementFeePct, uint16 depositFeePct) internal {
+    function createVault(uint16 managementFeePct, uint16 depositFeePct, uint16 performanceFeePct) internal {
         smartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
 
         vm.mockCall(
@@ -107,7 +107,7 @@ contract IntegrationTestFixture is TestFixture {
                 managementFeePct: managementFeePct,
                 depositFeePct: depositFeePct,
                 allocationProvider: address(allocationProvider),
-                performanceFeePct: 0,
+                performanceFeePct: performanceFeePct,
                 allowRedeemFor: true
             })
         );
