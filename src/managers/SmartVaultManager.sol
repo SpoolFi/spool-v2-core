@@ -516,13 +516,15 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
             if (!_areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes, strategies_, false)) break;
 
-            DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(Simulate(
-                smartVault,
-                [bag.flushIndex, bag.lastDhwSynced, bag.oldTotalSVTs + bag.newSVTs],
-                strategies_,
-                tokens,
-                indexes,
-                fees)
+            DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(
+                Simulate(
+                    smartVault,
+                    [bag.flushIndex, bag.lastDhwSynced, bag.oldTotalSVTs + bag.newSVTs],
+                    strategies_,
+                    tokens,
+                    indexes,
+                    fees
+                )
             );
 
             bag.newSVTs += syncResult.mintedSVTs;
@@ -582,13 +584,15 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             uint16a16 indexes = _dhwIndexes[smartVault][bag.flushIndex];
             if (!_areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes, bag2.strategies, false)) break;
 
-            DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(Simulate(
-                smartVault,
-                [bag.flushIndex, bag.lastDhwSynced, bag.oldTotalSVTs + bag.newSVTs],
-                bag2.strategies,
-                bag2.tokens,
-                indexes,
-                fees)
+            DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(
+                Simulate(
+                    smartVault,
+                    [bag.flushIndex, bag.lastDhwSynced, bag.oldTotalSVTs + bag.newSVTs],
+                    bag2.strategies,
+                    bag2.tokens,
+                    indexes,
+                    fees
+                )
             );
 
             bag.newSVTs += syncResult.mintedSVTs;

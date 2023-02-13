@@ -55,13 +55,13 @@ struct DepositSyncResult {
     uint256[] sstShares;
 }
 
-    //  * @param smartVault Smart Vault address
-    //  * @param bag flush index, lastDhwSyncedTimestamp, oldTotalSVTs
-    //  * @param strategies strategy addresses
-    //  * @param assetGroup vault asset group token addresses
-    //  * @param dhwIndexes DHW Indexes for given flush index
-    //  * @param fees smart vault fee configuration
-    //  * @return syncResult Result of the smart vault sync.
+//  * @param smartVault Smart Vault address
+//  * @param bag flush index, lastDhwSyncedTimestamp, oldTotalSVTs
+//  * @param strategies strategy addresses
+//  * @param assetGroup vault asset group token addresses
+//  * @param dhwIndexes DHW Indexes for given flush index
+//  * @param fees smart vault fee configuration
+//  * @return syncResult Result of the smart vault sync.
 struct Simulate {
     address smartVault;
     //bag[0]: uint256 flushIndex,
@@ -114,9 +114,10 @@ interface IDepositManager {
     /**
      * @notice Simulate vault synchronization (i.e. DHW was completed, but vault wasn't synced yet)
      */
-    function syncDepositsSimulate(
-        Simulate calldata parameters
-    ) external view returns (DepositSyncResult memory syncResult);
+    function syncDepositsSimulate(Simulate calldata parameters)
+        external
+        view
+        returns (DepositSyncResult memory syncResult);
 
     /**
      * @notice Synchronize vault deposits for completed DHW runs

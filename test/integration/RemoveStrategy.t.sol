@@ -88,13 +88,15 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         );
         vm.stopPrank();
 
-        DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(Simulate(
-            address(smartVault),
-            [uint256(0), 0, 0], // flush index, first dhw timestamp, total SVTs minted til now
-            smartVaultStrategies,
-            assetGroup,
-            Arrays.toUint16a16(1, 1, 1),
-            bag.fees)
+        DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
+            Simulate(
+                address(smartVault),
+                [uint256(0), 0, 0], // flush index, first dhw timestamp, total SVTs minted til now
+                smartVaultStrategies,
+                assetGroup,
+                Arrays.toUint16a16(1, 1, 1),
+                bag.fees
+            )
         );
         smartVaultManager.syncSmartVault(address(smartVault), true);
 
@@ -128,13 +130,15 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         smartVaultManager.removeStrategy(smartVaultStrategies[0], true);
         smartVaultStrategies = smartVaultManager.strategies(address(smartVault));
 
-        DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(Simulate(
-            address(smartVault),
-            [uint256(0), 0, 0], // flush index, first dhw timestamp, total SVTs minted til now
-            smartVaultStrategies,
-            assetGroup,
-            Arrays.toUint16a16(1, 1, 1),
-            bag.fees)
+        DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
+            Simulate(
+                address(smartVault),
+                [uint256(0), 0, 0], // flush index, first dhw timestamp, total SVTs minted til now
+                smartVaultStrategies,
+                assetGroup,
+                Arrays.toUint16a16(1, 1, 1),
+                bag.fees
+            )
         );
         smartVaultManager.syncSmartVault(address(smartVault), true);
 
