@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Script.sol";
-import {IWETH9} from "../src/external/interfaces/weth/WETH9.sol";
+import {IWETH9} from "../src/external/interfaces/weth/IWETH9.sol";
 import "../src/access/Roles.sol";
 import {SpoolAccessControl} from "../src/access/SpoolAccessControl.sol";
 import {AllowlistGuard} from "../src/guards/AllowlistGuard.sol";
