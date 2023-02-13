@@ -75,10 +75,10 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
     /// @notice Price feed manager
     IUsdPriceFeedManager private immutable _priceFeedManager;
 
-    // @notice Guard manager
+    /// @notice Guard manager
     IGuardManager internal immutable _guardManager;
 
-    // @notice Action manager
+    /// @notice Action manager
     IActionManager internal immutable _actionManager;
 
     /**

@@ -8,16 +8,16 @@ import "../access/SpoolAccessControllable.sol";
 contract ActionManager is IActionManager, SpoolAccessControllable {
     /* ========== STATE VARIABLES ========== */
 
-    // @notice True if actions for given smart vault were already initialized
+    /// @notice True if actions for given smart vault were already initialized
     mapping(address => bool) public actionsInitialized;
 
-    // @notice Action address whitelist
+    /// @notice Action address whitelist
     mapping(address => bool) public actionWhitelisted;
 
-    // @notice Does vault have any actions
+    /// @notice Does vault have any actions
     mapping(address => mapping(RequestType => bool)) private actionsExist;
 
-    // @notice Action registry
+    /// @notice Action registry
     mapping(address => mapping(RequestType => address[])) public actions;
 
     constructor(ISpoolAccessControl accessControl) SpoolAccessControllable(accessControl) {}
