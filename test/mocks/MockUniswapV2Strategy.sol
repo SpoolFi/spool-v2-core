@@ -66,7 +66,7 @@ contract MockUniswapV2Strategy is Strategy {
         return manualYield;
     }
 
-    function _compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
+    function _compound(address[] calldata, SwapInfo[] calldata, uint256[] calldata)
         internal
         override
         returns (int256 compoundYield)

@@ -48,7 +48,7 @@ contract MockStrategy is Strategy {
         return manualYield;
     }
 
-    function _compound(SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
+    function _compound(address[] calldata tokens, SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
         internal
         override
         returns (int256 compoundYield)
@@ -62,7 +62,7 @@ contract MockStrategy is Strategy {
             IERC20(tokens[i]).safeTransfer(address(_swapper), toSwap[i]);
         }
 
-        _swapper.swap(tokens, swapInfo, address(this));
+        _swapper.swap(tokens, swapInfo, tokens, address(this));
     }
 
     function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)

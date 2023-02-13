@@ -140,7 +140,7 @@ contract SwapperTest is Test {
 
         vm.startPrank(alice);
         tokenA.transfer(address(swapper), 10 ether);
-        swapper.swap(tokens, swapInfo, bob);
+        swapper.swap(tokens, swapInfo, tokens, bob);
         vm.stopPrank();
 
         assertEq(tokenA.balanceOf(alice), 0);
@@ -174,7 +174,7 @@ contract SwapperTest is Test {
         tokenA.transfer(address(swapper), 10 ether);
 
         vm.expectRevert();
-        swapper.swap(tokens, swapInfo, bob);
+        swapper.swap(tokens, swapInfo, tokens, bob);
         vm.stopPrank();
     }
 
@@ -203,7 +203,7 @@ contract SwapperTest is Test {
 
         vm.startPrank(alice);
         tokenA.transfer(address(swapper), 10 ether);
-        swapper.swap(tokens, swapInfo, bob);
+        swapper.swap(tokens, swapInfo, tokens, bob);
         vm.stopPrank();
 
         assertEq(tokenA.balanceOf(alice), 0);
@@ -226,7 +226,7 @@ contract SwapperTest is Test {
         vm.startPrank(alice);
         tokenA.transfer(address(swapper), 10 ether);
         vm.expectRevert(abi.encodeWithSelector(ExchangeNotAllowed.selector, address(exchangeAB)));
-        swapper.swap(tokens, swapInfo, bob);
+        swapper.swap(tokens, swapInfo, tokens, bob);
         vm.stopPrank();
     }
 }

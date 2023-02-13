@@ -96,7 +96,7 @@ contract CompoundV2Strategy is Strategy {
      */
     function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
-    function _compound(SwapInfo[] calldata swapInfo, uint256[] calldata)
+    function _compound(address[] calldata tokens, SwapInfo[] calldata swapInfo, uint256[] calldata)
         internal
         override
         returns (int256 compoundedYieldPercentage)
@@ -110,10 +110,9 @@ contract CompoundV2Strategy is Strategy {
 
             if (compBalance > 0) {
                 comp.safeTransfer(address(swapper), compBalance);
-
-                // NOTE: probably pass in
-                address[] memory tokens = assets();
-                uint256 swappedAmount = swapper.swap(tokens, swapInfo, address(this))[0];
+                address[] memory tokensIn = new address[](1);
+                tokensIn[0] = address(comp);
+                uint256 swappedAmount = swapper.swap(tokensIn, swapInfo, tokens, address(this))[0];
 
                 if (swappedAmount > 0) {
                     uint256 cTokenBalanceBefore = cToken.balanceOf(address(this));

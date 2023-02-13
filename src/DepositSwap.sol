@@ -61,12 +61,11 @@ contract DepositSwap is IDepositSwap {
             }
         }
 
-        // Make the swap.
-        _swapper.swap(inTokens, swapInfo, address(this));
-
         uint256 nftId;
         {
             address[] memory outTokens = _assetGroupRegistry.listAssetGroup(_smartVaultManager.assetGroupId(smartVault));
+            // Make the swap.
+            _swapper.swap(inTokens, swapInfo, outTokens, address(this));
             uint256[] memory outAmounts = new uint256[](outTokens.length);
             // Figure out how much we got out of the swap.
             for (uint256 i = 0; i < outTokens.length; i++) {
