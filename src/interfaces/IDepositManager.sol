@@ -60,17 +60,19 @@ struct DepositSyncResult {
 //  * @param strategies strategy addresses
 //  * @param assetGroup vault asset group token addresses
 //  * @param dhwIndexes DHW Indexes for given flush index
+//  * @param dhwIndexesOld DHW Indexes for previous flush index
 //  * @param fees smart vault fee configuration
 //  * @return syncResult Result of the smart vault sync.
-struct Simulate {
+struct SimulateDepositParams {
     address smartVault;
-    //bag[0]: uint256 flushIndex,
-    //bag[1]: uint256 lastDhwSyncedTimestamp,
-    //bag[2]: uint256 oldTotalSVTs,
+    // bag[0]: flushIndex,
+    // bag[1]: lastDhwSyncedTimestamp,
+    // bag[2]: oldTotalSVTs,
     uint256[3] bag;
     address[] strategies;
     address[] assetGroup;
     uint16a16 dhwIndexes;
+    uint16a16 dhwIndexesOld;
     SmartVaultFees fees;
 }
 
@@ -123,7 +125,7 @@ interface IDepositManager {
     /**
      * @notice Simulate vault synchronization (i.e. DHW was completed, but vault wasn't synced yet)
      */
-    function syncDepositsSimulate(Simulate calldata parameters)
+    function syncDepositsSimulate(SimulateDepositParams calldata parameters)
         external
         view
         returns (DepositSyncResult memory syncResult);
@@ -133,22 +135,21 @@ interface IDepositManager {
      * @dev Requirements:
      * - caller must have role ROLE_SMART_VAULT_MANAGER
      * @param smartVault Smart Vault address
-     * @param flushIndex index for which to synchronize deposits for
-     * @param lastDhwSyncedTimestamp timestamp of the last synced DHW up until now
-     * @param oldTotalSVTs amount of SVTs up until this sync
+     * @param bag flushIndex, lastDhwSyncedTimestamp, oldTotalSVTs
      * @param strategies vault strategy addresses
-     * @param dhwIndexes dhw indexes for given flushIndex
+     * @param dhwIndexes dhw indexes for given and previous flushIndex
      * @param assetGroup vault asset group token addresses
      * @param fees smart vault fee configuration
      * @return syncResult Result of the smart vault sync.
      */
     function syncDeposits(
         address smartVault,
-        uint256 flushIndex,
-        uint256 lastDhwSyncedTimestamp,
-        uint256 oldTotalSVTs,
+        uint256[3] calldata bag,
+        // uint256 flushIndex,
+        // uint256 lastDhwSyncedTimestamp,
+        // uint256 oldTotalSVTs,
         address[] calldata strategies,
-        uint16a16 dhwIndexes,
+        uint16a16[2] calldata dhwIndexes,
         address[] calldata assetGroup,
         SmartVaultFees calldata fees
     ) external returns (DepositSyncResult memory syncResult);

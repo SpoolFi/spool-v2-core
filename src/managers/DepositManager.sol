@@ -224,24 +224,23 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
 
     function syncDeposits(
         address smartVault,
-        uint256 flushIndex,
-        uint256 lastDhwSyncedTimestamp,
-        uint256 oldTotalSVTs,
+        uint256[3] calldata bag,
+        // uint256 flushIndex,
+        // uint256 lastDhwSyncedTimestamp,
+        // uint256 oldTotalSVTs,
         address[] calldata strategies,
-        uint16a16 dhwIndexes,
+        uint16a16[2] calldata dhwIndexes,
         address[] calldata assetGroup,
         SmartVaultFees calldata fees
     ) external returns (DepositSyncResult memory) {
         _checkRole(ROLE_SMART_VAULT_MANAGER, msg.sender);
         // mint SVTs based on USD value of claimed SSTs
         DepositSyncResult memory syncResult = syncDepositsSimulate(
-            Simulate(
-                smartVault, [flushIndex, lastDhwSyncedTimestamp, oldTotalSVTs], strategies, assetGroup, dhwIndexes, fees
-            )
+            SimulateDepositParams(smartVault, bag, strategies, assetGroup, dhwIndexes[0], dhwIndexes[1], fees)
         );
 
         if (syncResult.mintedSVTs > 0) {
-            _flushShares[smartVault][flushIndex].mintedVaultShares = uint128(syncResult.mintedSVTs);
+            _flushShares[smartVault][bag[0]].mintedVaultShares = uint128(syncResult.mintedSVTs);
             for (uint256 i; i < strategies.length; ++i) {
                 if (syncResult.sstShares[i] > 0) {
                     IStrategy(strategies[i]).claimShares(smartVault, syncResult.sstShares[i]);
@@ -252,7 +251,11 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         return syncResult;
     }
 
-    function syncDepositsSimulate(Simulate memory parameters) public view returns (DepositSyncResult memory) {
+    function syncDepositsSimulate(SimulateDepositParams memory parameters)
+        public
+        view
+        returns (DepositSyncResult memory)
+    {
         DepositSyncResult memory result;
         {
             uint256[] memory dhwTimestamps =
@@ -273,12 +276,19 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         }
 
         uint256[2] memory totalUsd;
+        int256 totalFlushYieldUsd;
         // totalUsd[0]: totalDepositedUsd
         // totalUsd[1]: totalFlushUsd
 
         StrategyAtIndex[] memory strategyDhwState = _strategyRegistry.strategyAtIndexBatch(
             parameters.strategies, parameters.dhwIndexes, parameters.assetGroup.length
         );
+
+        int256[] memory prevYields;
+
+        if (parameters.fees.performanceFeePct > 0 && uint16a16.unwrap(parameters.dhwIndexesOld) > 0) {
+            prevYields = _strategyRegistry.getDhwYield(parameters.strategies, parameters.dhwIndexesOld);
+        }
 
         // claim SSTs from each strategy
         for (uint256 i; i < parameters.strategies.length; ++i) {
@@ -305,15 +315,33 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             totalUsd[0] += result.sstShares[i] * atDhw.totalStrategyValue / atDhw.totalSSTs;
 
             uint256 flushSsts = _flushSsts[parameters.smartVault][parameters.bag[0]][i / 2].get(i % 2);
-            totalUsd[1] += atDhw.totalStrategyValue * flushSsts / atDhw.totalSSTs;
+            uint256 stratFlushUsd = atDhw.totalStrategyValue * flushSsts / atDhw.totalSSTs;
+            totalUsd[1] += stratFlushUsd;
+
+            if (parameters.fees.performanceFeePct > 0 && prevYields.length > 0) {
+                totalFlushYieldUsd += int256(stratFlushUsd)
+                    - (
+                        int256(stratFlushUsd) * YIELD_FULL_PERCENT_INT
+                            / (YIELD_FULL_PERCENT_INT + atDhw.dhwYields - prevYields[i])
+                    );
+            }
         }
 
         if (totalUsd[1] == 0) {
             result.mintedSVTs = totalUsd[0] * INITIAL_SHARE_MULTIPLIER;
         } else {
-            // result.mintedSVTs = totalDepositedUsd * ISmartVault(smartVault).totalSupply() / totalVaultValueBefore;
             uint256 flushSvtSupply = _flushShares[parameters.smartVault][parameters.bag[0]].flushSvtSupply;
-            result.mintedSVTs = flushSvtSupply * totalUsd[0] / totalUsd[1];
+            uint256 performanceFeeMintedSvts;
+
+            if (parameters.fees.performanceFeePct > 0 && totalFlushYieldUsd > 0) {
+                uint256 totalFlushYieldFeeUsd =
+                    uint256(totalFlushYieldUsd) * parameters.fees.performanceFeePct / FULL_PERCENT;
+                performanceFeeMintedSvts =
+                    flushSvtSupply * totalFlushYieldFeeUsd / (totalUsd[1] - totalFlushYieldFeeUsd);
+                result.feeSVTs += performanceFeeMintedSvts;
+            }
+
+            result.mintedSVTs = (flushSvtSupply + performanceFeeMintedSvts) * totalUsd[0] / totalUsd[1];
         }
 
         if (parameters.fees.depositFeePct > 0 && result.mintedSVTs > 0) {

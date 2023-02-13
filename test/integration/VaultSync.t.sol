@@ -30,21 +30,33 @@ struct TestBag {
 }
 
 contract VaultSyncTest is IntegrationTestFixture {
+    address private constant bob = address(0xb);
+
     function setUp() public {
         setUpBase();
-        deal(address(tokenA), alice, 1000 ether, true);
-        deal(address(tokenB), alice, 1000 ether, true);
-        deal(address(tokenC), alice, 1000 ether, true);
+        deal(address(tokenA), alice, 10000 ether, true);
+        deal(address(tokenB), alice, 10000 ether, true);
+        deal(address(tokenC), alice, 10000 ether, true);
 
         vm.startPrank(alice);
-        tokenA.approve(address(smartVaultManager), 1000 ether);
-        tokenB.approve(address(smartVaultManager), 1000 ether);
-        tokenC.approve(address(smartVaultManager), 1000 ether);
+        tokenA.approve(address(smartVaultManager), type(uint256).max);
+        tokenB.approve(address(smartVaultManager), type(uint256).max);
+        tokenC.approve(address(smartVaultManager), type(uint256).max);
+        vm.stopPrank();
+
+        deal(address(tokenA), bob, 10000 ether, true);
+        deal(address(tokenB), bob, 10000 ether, true);
+        deal(address(tokenC), bob, 10000 ether, true);
+
+        vm.startPrank(bob);
+        tokenA.approve(address(smartVaultManager), type(uint256).max);
+        tokenB.approve(address(smartVaultManager), type(uint256).max);
+        tokenC.approve(address(smartVaultManager), type(uint256).max);
         vm.stopPrank();
     }
 
     function test_syncVault_oneDeposit() public {
-        createVault(2_00, 0);
+        createVault(2_00, 0, 0);
         TestBag memory bag;
         bag.fees = SmartVaultFees(2_00, 0, 0);
         bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
@@ -65,12 +77,13 @@ contract VaultSyncTest is IntegrationTestFixture {
         uint256 dhwTimestamp = block.timestamp;
 
         DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
-            Simulate(
+            SimulateDepositParams(
                 address(smartVault),
                 [uint256(0), 0, 0], // flush index, first dhw timestamp, total SVTs minted til now
                 smartVaultStrategies,
                 assetGroup,
                 Arrays.toUint16a16(1, 1, 1),
+                Arrays.toUint16a16(0, 0, 0),
                 bag.fees
             )
         );
@@ -94,7 +107,7 @@ contract VaultSyncTest is IntegrationTestFixture {
     }
 
     function test_syncVault_managementFees() public {
-        createVault(2_00, 0);
+        createVault(2_00, 0, 0);
         TestBag memory bag;
         bag.fees = SmartVaultFees(2_00, 0, 0);
         bag.vaultOwner = accessControl.smartVaultOwner(address(smartVault));
@@ -129,12 +142,13 @@ contract VaultSyncTest is IntegrationTestFixture {
 
         uint16a16 dhwIndexes = smartVaultManager.dhwIndexes(address(smartVault), 1);
         DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
-            Simulate(
+            SimulateDepositParams(
                 address(smartVault),
                 [1, dhwTimestamp, vaultSupplyBefore],
                 smartVaultStrategies,
                 assetGroup,
                 dhwIndexes,
+                uint16a16.wrap(0),
                 bag.fees
             )
         );
@@ -154,7 +168,7 @@ contract VaultSyncTest is IntegrationTestFixture {
     }
 
     function test_syncVault_depositFees() public {
-        createVault(0, 3_00);
+        createVault(0, 3_00, 0);
 
         {
             vm.startPrank(alice);
@@ -172,13 +186,15 @@ contract VaultSyncTest is IntegrationTestFixture {
 
         // Run simulations
         uint16a16 dhwIndexes = smartVaultManager.dhwIndexes(address(smartVault), 0);
+
         DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
-            Simulate(
+            SimulateDepositParams(
                 address(smartVault),
                 [uint256(0), 0, 0],
                 smartVaultStrategies,
                 assetGroup,
                 dhwIndexes,
+                uint16a16.wrap(0),
                 SmartVaultFees(0, 3_00, 0)
             )
         );
@@ -199,6 +215,121 @@ contract VaultSyncTest is IntegrationTestFixture {
         assertEq(totalSupply, mintedSVTs);
         assertEq(smartVault.totalSupply(), simulatedTotalSupply);
         assertEq(syncResult.mintedSVTs, mintedSVTs - depositFee);
+    }
+
+    function test_syncVault_performanceFees() public {
+        uint256[] memory depositAmounts = Arrays.toArray(110 ether);
+
+        uint16 vaultPerformanceFee = 10_00;
+        priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
+
+        address[] memory assetGroupA = Arrays.toArray(address(tokenA));
+        uint256 assetGroupDId = assetGroupRegistry.registerAssetGroup(assetGroupA);
+
+        MockStrategy strategyD = new MockStrategy("StratD", assetGroupRegistry, accessControl, swapper);
+        strategyD.initialize(assetGroupDId, Arrays.toArray(10000));
+
+        strategyRegistry.registerStrategy(address(strategyD));
+
+        address[] memory smartVaultStrategiesSingle = Arrays.toArray(address(strategyD));
+        vm.mockCall(
+            address(riskManager),
+            abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+            abi.encode(Arrays.toUint16a16(10000))
+        );
+
+        smartVault = smartVaultFactory.deploySmartVault(
+            SmartVaultSpecification({
+                smartVaultName: "MySmartVault",
+                assetGroupId: assetGroupDId,
+                actions: new IAction[](0),
+                actionRequestTypes: new RequestType[](0),
+                guards: new GuardDefinition[][](0),
+                guardRequestTypes: new RequestType[](0),
+                strategies: smartVaultStrategiesSingle,
+                strategyAllocation: uint16a16.wrap(0),
+                riskTolerance: 4,
+                riskProvider: riskProvider,
+                managementFeePct: 0,
+                depositFeePct: 0,
+                allocationProvider: address(allocationProvider),
+                performanceFeePct: vaultPerformanceFee,
+                allowRedeemFor: true
+            })
+        );
+
+        {
+            vm.startPrank(alice);
+            // Deposit #1 and DHW
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), true));
+            vm.stopPrank();
+
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategiesSingle, assetGroupA));
+            vm.stopPrank();
+
+            smartVaultManager.syncSmartVault(address(smartVault), true);
+
+            vm.startPrank(bob);
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, bob, address(0), true));
+            vm.stopPrank();
+
+            DoHardWorkParameterBag memory dhwBag = generateDhwParameterBag(smartVaultStrategiesSingle, assetGroupA);
+            dhwBag.baseYields[0][0] = YIELD_FULL_PERCENT_INT / 10;
+
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(dhwBag);
+            vm.stopPrank();
+        }
+
+        // Run simulations
+        uint16a16 dhwIndexes = smartVaultManager.dhwIndexes(address(smartVault), 0);
+
+        uint16a16 dhwIndexesBefore = uint16a16.wrap(0xff);
+
+        int256[] memory yieldsBefore = new int256[](smartVaultStrategies.length);
+
+        // set last yields as all zeros
+        vm.mockCall(
+            address(strategyRegistry),
+            abi.encodeCall(
+                StrategyRegistry.strategyAtIndexBatch, (smartVaultStrategies, dhwIndexesBefore, assetGroup.length)
+            ),
+            abi.encode(yieldsBefore)
+        );
+
+        depositManager.syncDepositsSimulate(
+            SimulateDepositParams(
+                address(smartVault),
+                [uint256(0), 0, 0],
+                smartVaultStrategies,
+                assetGroup,
+                dhwIndexes,
+                dhwIndexesBefore,
+                SmartVaultFees(0, 0, vaultPerformanceFee)
+            )
+        );
+
+        // Sync previous DHW
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        address vaultOwner = accessControl.smartVaultOwner(address(smartVault));
+
+        // Should have deposit fees, after syncing first DHW
+        uint256 totalSupply = smartVault.totalSupply();
+
+        // fee is 1% of first deposit (110 eth), 10% of yield that was 10%
+        assertApproxEqRel((depositAmounts[0] * 2) * smartVault.balanceOf(vaultOwner) / totalSupply, 1 ether, 1e12);
+        assertApproxEqRel(
+            (depositAmounts[0] * 2) * smartVaultManager.getUserSVTBalance(address(smartVault), alice) / totalSupply,
+            depositAmounts[0] - 1 ether,
+            1e12
+        );
+        assertApproxEqRel(
+            (depositAmounts[0] * 2) * smartVaultManager.getUserSVTBalance(address(smartVault), bob) / totalSupply,
+            depositAmounts[0],
+            1e12
+        );
     }
 
     function test_depositAndRedeemNFTs() public {

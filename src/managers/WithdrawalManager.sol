@@ -35,7 +35,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
 
     /**
      * @notice Withdrawn assets for vault, at given flush index
-     * @dev smart vault => flush index => assets withdrawn
+     * @dev smart vault => flush index => asset index => assets withdrawn
      */
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _withdrawnAssets;
 

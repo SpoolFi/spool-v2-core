@@ -165,6 +165,15 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         return result;
     }
 
+    function getDhwYield(address[] calldata strategies, uint16a16 dhwIndexes) external view returns (int256[] memory) {
+        int256[] memory yields = new int256[](strategies.length);
+        for (uint256 i; i < strategies.length; i++) {
+            yields[i] = _stateAtDhw[strategies[i]][dhwIndexes.get(i)].yield;
+        }
+
+        return yields;
+    }
+
     function strategyAtIndexBatch(address[] calldata strategies, uint16a16 dhwIndexes, uint256 assetGroupLength)
         external
         view
@@ -323,7 +332,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                         sharesMinted: uint128(dhwInfo.sharesMinted),
                         totalStrategyValue: uint128(dhwInfo.valueAtDhw),
                         totalSSTs: uint128(dhwInfo.totalSstsAtDhw),
-                        yield: int96(dhwInfo.yieldPercentage),
+                        yield: int96(dhwInfo.yieldPercentage) + _stateAtDhw[strategy][dhwIndex - 1].yield, // accumulate the yield from before
                         timestamp: uint32(block.timestamp)
                     });
                 }
@@ -434,6 +443,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
             }
 
             for (uint256 j = 0; j < totalWithdrawnAssets.length; j++) {
+                // NOTE: can _sharesRedeemed[strategy][dhwIndex] be 0?
                 totalWithdrawnAssets[j] +=
                     _assetsWithdrawn[strategy][dhwIndex][j] * strategyShares[i] / _sharesRedeemed[strategy][dhwIndex];
                 // there will be dust left after all vaults sync
