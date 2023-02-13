@@ -19,10 +19,10 @@ import "../interfaces/IWithdrawalManager.sol";
 import "../interfaces/CommonErrors.sol";
 import "../interfaces/Constants.sol";
 import "../interfaces/RequestType.sol";
+import "../access/SpoolAccessControllable.sol";
 import "../libraries/ArrayMapping.sol";
 import "../libraries/uint16a16Lib.sol";
 import "../libraries/ReallocationLib.sol";
-import "../access/SpoolAccessControllable.sol";
 
 struct VaultSyncBag {
     address vaultOwner;

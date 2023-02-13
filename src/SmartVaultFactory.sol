@@ -1,22 +1,21 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
-import {BeaconProxy} from "@openzeppelin/proxy/beacon/BeaconProxy.sol";
-import {UpgradeableBeacon} from "@openzeppelin/proxy/beacon/UpgradeableBeacon.sol";
-import {IActionManager, IAction} from "./interfaces/IAction.sol";
-import {IAssetGroupRegistry} from "./interfaces/IAssetGroupRegistry.sol";
-import {IGuardManager, GuardDefinition} from "./interfaces/IGuardManager.sol";
-import {ISmartVault} from "./interfaces/ISmartVault.sol";
-import {ISmartVaultManager, SmartVaultRegistrationForm} from "./interfaces/ISmartVaultManager.sol";
-import {RequestType} from "./interfaces/RequestType.sol";
-import {SmartVault} from "./SmartVault.sol";
-import {ISmartVaultRegistry} from "./interfaces/ISmartVaultManager.sol";
-import "./interfaces/ISpoolAccessControl.sol";
-import "./access/Roles.sol";
-import "./interfaces/Constants.sol";
-import "./interfaces/CommonErrors.sol";
-import "./interfaces/IStrategy.sol";
+import "@openzeppelin/proxy/beacon/BeaconProxy.sol";
+import "@openzeppelin/proxy/beacon/UpgradeableBeacon.sol";
+import "./interfaces/IAction.sol";
+import "./interfaces/IAssetGroupRegistry.sol";
+import "./interfaces/IGuardManager.sol";
 import "./interfaces/IRiskManager.sol";
+import "./interfaces/ISmartVault.sol";
+import "./interfaces/ISmartVaultManager.sol";
+import "./interfaces/ISpoolAccessControl.sol";
+import "./interfaces/IStrategy.sol";
+import "./interfaces/CommonErrors.sol";
+import "./interfaces/Constants.sol";
+import "./interfaces/RequestType.sol";
+import "./access/Roles.sol";
+import "./SmartVault.sol";
 
 /* ========== ERRORS ========== */
 

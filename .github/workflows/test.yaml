@@ -8,7 +8,7 @@ on:
     branches: [ "dev", "main" ]
 
   workflow_dispatch:
-  
+
 env:
   FOUNDRY_PROFILE: ci
 
@@ -42,7 +42,7 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge t --no-match-path "./test/forked/*" -vvv
+          forge t -vvv
         id: test
 
       - name: Run Forge coverage

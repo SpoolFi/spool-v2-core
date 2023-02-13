@@ -3,8 +3,8 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import "../access/SpoolAccessControllable.sol";
 import "../interfaces/IRewardPool.sol";
+import "../access/SpoolAccessControllable.sol";
 
 contract RewardPool is IRewardPool, SpoolAccessControllable {
     using SafeERC20 for IERC20;

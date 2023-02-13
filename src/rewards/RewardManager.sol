@@ -3,12 +3,12 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/security/ReentrancyGuard.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import "../access/SpoolAccessControllable.sol";
+import "../interfaces/IAssetGroupRegistry.sol";
 import "../interfaces/IRewardManager.sol";
 import "../interfaces/ISmartVault.sol";
-import "../utils/MathUtils.sol";
-import "../interfaces/IAssetGroupRegistry.sol";
 import "../interfaces/ISmartVaultManager.sol";
+import "../access/SpoolAccessControllable.sol";
+import "../libraries/MathUtils.sol";
 import "./RewardPool.sol";
 
 contract RewardManager is IRewardManager, RewardPool, ReentrancyGuard {

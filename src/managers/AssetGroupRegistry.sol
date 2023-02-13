@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
+import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
 import "../access/Roles.sol";
 import "../access/SpoolAccessControllable.sol";
-import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
 
 /* ========== CONTRACTS ========== */
 

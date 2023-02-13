@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
+import "../interfaces/IAllocationProvider.sol";
 import "../interfaces/IRiskManager.sol";
-import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IStrategy.sol";
+import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/Constants.sol";
 import "../access/SpoolAccessControllable.sol";
-import "../interfaces/IAllocationProvider.sol";
 import "../libraries/uint16a16Lib.sol";
 
 contract RiskManager is IRiskManager, SpoolAccessControllable {

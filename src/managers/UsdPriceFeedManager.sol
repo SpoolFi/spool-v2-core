@@ -3,8 +3,8 @@ pragma solidity 0.8.17;
 
 import "../external/interfaces/chainlink/AggregatorV3Interface.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
-import "../access/SpoolAccessControllable.sol";
 import "../access/Roles.sol";
+import "../access/SpoolAccessControllable.sol";
 
 contract UsdPriceFeedManager is IUsdPriceFeedManager, SpoolAccessControllable {
     /* ========== STATE VARIABLES ========== */
