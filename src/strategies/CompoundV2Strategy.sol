@@ -84,7 +84,6 @@ contract CompoundV2Strategy is Strategy {
         _lastExchangeRate = cToken_.exchangeRateCurrent();
     }
 
-    // NOTE: looks weird
     function assetRatio() external pure override returns (uint256[] memory) {
         uint256[] memory _assetRatio = new uint256[](1);
         _assetRatio[0] = 1;
@@ -180,9 +179,7 @@ contract CompoundV2Strategy is Strategy {
         if (cTokenBalance > 0) {
             uint256 tokenValue = _getcTokenValue(cTokenBalance);
 
-            // NOTE: should we pass this in?
             address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
-
             usdValue = priceFeedManager.assetToUsdCustomPrice(assetGroup[0], tokenValue, exchangeRates[0]);
         }
     }

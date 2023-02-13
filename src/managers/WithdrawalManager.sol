@@ -128,7 +128,6 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         );
 
         for (uint256 i = 0; i < bag.assetGroup.length; i++) {
-            // TODO-Q: should this be done by an action, since there might be a swap?
             _masterWallet.transfer(IERC20(bag.assetGroup[i]), bag.receiver, withdrawnAssets[i]);
         }
 

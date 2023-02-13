@@ -84,7 +84,6 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             }
         }
 
-        // NOTE: is this on the right place?
         beforeDepositCheck(assetsToDeposit, dhwParams.slippages);
         beforeRedeemalCheck(dhwParams.withdrawnShares, dhwParams.slippages);
 
@@ -185,7 +184,6 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             // - figure out how much was withdrawn
             usdWorth[1] = _getUsdWorth(dhwParams.exchangeRates, dhwParams.priceFeedManager);
             unchecked {
-                // NOTE: this works with checking what's left on the contract
                 for (uint256 i; i < dhwParams.assetGroup.length; ++i) {
                     withdrawnAssets[i] = IERC20(dhwParams.assetGroup[i]).balanceOf(address(this));
                 }
@@ -256,7 +254,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         return _redeemShares(shares, redeemer, redeemer, assetGroup, exchangeRates, priceFeedManager, slippages);
     }
 
-    // NOTE: is only called when reallocating
+    /// @dev is only called when reallocating
     function depositFast(
         address[] calldata assetGroup,
         uint256[] calldata exchangeRates,
@@ -327,10 +325,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
     ) internal virtual returns (uint256[] memory) {
         // redeem shares from protocol
         uint256[] memory assetsWithdrawn = _redeemFromProtocolAndReturnAssets(assetGroup, shares, slippages);
-        // NOTE: try to move before redeem
         _burn(shareOwner, shares);
 
-        // NOTE: i don't like users manipulating this
         totalUsdValue = _getUsdWorth(exchangeRates, priceFeedManager);
 
         // transfer assets to master wallet

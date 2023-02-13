@@ -173,7 +173,6 @@ library ReallocationLib {
 
         // Get smart vaults total USD value.
         uint256 totalUsdValue = SpoolUtils.getVaultTotalUsdValue(smartVault, smartVaultStrategies);
-        // TODO: will call strategy.totalUsdValue which is value from last DHW, is this OK?
 
         // Get sum total of target allocation.
         uint256 totalTargetAllocation;
@@ -390,7 +389,7 @@ library ReallocationLib {
             // Withdraw assets from underlying protocol.
             uint256[] memory withdrawnAssets = IStrategy(strategies[i]).redeemFast(
                 sharesToRedeem,
-                address(reallocationParams.masterWallet), // TODO: maybe have a clean bucket for reallocation
+                address(reallocationParams.masterWallet),
                 assetGroup,
                 exchangeRates,
                 reallocationParams.priceFeedManager,

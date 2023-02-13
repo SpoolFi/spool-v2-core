@@ -28,7 +28,6 @@ contract MockMasterChefStrategy is Strategy {
         __Strategy_init(assetGroupId_);
     }
 
-    // NOTE: looks weird
     function assetRatio() external pure override returns (uint256[] memory) {
         uint256[] memory _assetRatio = new uint256[](1);
         _assetRatio[0] = 1;

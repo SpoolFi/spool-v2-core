@@ -40,7 +40,6 @@ struct StrategyDhwParameterBag {
     address masterWallet;
     IUsdPriceFeedManager priceFeedManager;
     int256 baseYield;
-    // NOTE: where to put the struct?
     PlatformFees platformFees;
 }
 

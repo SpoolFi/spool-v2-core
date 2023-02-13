@@ -235,7 +235,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         address[] calldata strategies,
         uint16a16 dhwIndexes,
         address[] calldata assetGroup,
-        SmartVaultFees memory fees
+        SmartVaultFees calldata fees
     ) external returns (DepositSyncResult memory) {
         _checkRole(ROLE_SMART_VAULT_MANAGER, msg.sender);
         // mint SVTs based on USD value of claimed SSTs
@@ -545,7 +545,6 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         }
         uint256 claimedVaultTokens = mintedSVTs * depositedUsd / totalDepositedUsd;
 
-        // TODO: dust
         return claimedVaultTokens * nftShares / NFT_MINTED_SHARES;
     }
 

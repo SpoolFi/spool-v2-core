@@ -475,17 +475,11 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                 continue;
             }
 
-            // TODO: refactor IStrategy(strategies[i]).assets()
-            uint256[] memory exchangeRates =
-                SpoolUtils.getExchangeRates(IStrategy(strategies[i]).assets(), _priceFeedManager);
+            address[] memory assetGroup = IStrategy(strategies[i]).assets();
+            uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(assetGroup, _priceFeedManager);
 
             IStrategy(strategies[i]).redeemShares(
-                shares[i],
-                msg.sender,
-                IStrategy(strategies[i]).assets(),
-                exchangeRates,
-                _priceFeedManager,
-                withdrawalSlippages[i]
+                shares[i], msg.sender, assetGroup, exchangeRates, _priceFeedManager, withdrawalSlippages[i]
             );
         }
     }
@@ -560,7 +554,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                 if (timeDelta > 0) {
                     int256 normalizedApy = yieldPercentage * SECONDS_IN_YEAR_INT / timeDelta;
                     int256 weight = _getRunningAverageApyWeight(timeDelta);
-                    // TODO: decide on the formula
                     _apys[strategy] =
                         (_apys[strategy] * (FULL_PERCENT_INT - weight) + normalizedApy * weight) / FULL_PERCENT_INT;
                 }
@@ -569,8 +562,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     }
 
     function _getRunningAverageApyWeight(int256 timeDelta) internal pure returns (int256) {
-        // NOTE: decide on the function. ?? sigmoid function "y=2*((1/(1+e^-(0.5*x)))-0.5)"
-
         if (timeDelta < 1 days) {
             if (timeDelta < 4 hours) {
                 return 4_15;
