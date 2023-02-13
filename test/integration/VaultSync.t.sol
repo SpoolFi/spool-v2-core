@@ -64,13 +64,13 @@ contract VaultSyncTest is IntegrationTestFixture {
         vm.stopPrank();
         uint256 dhwTimestamp = block.timestamp;
 
-        DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
+        DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(Simulate(
             address(smartVault),
             [uint256(0), 0, 0], // flush index, first dhw timestamp, total SVTs minted til now
             smartVaultStrategies,
             assetGroup,
             Arrays.toUint16a16(1, 1, 1),
-            bag.fees
+            bag.fees)
         );
         smartVaultManager.syncSmartVault(address(smartVault), true);
 
@@ -126,13 +126,13 @@ contract VaultSyncTest is IntegrationTestFixture {
         uint256 vaultSupplyBefore = smartVault.totalSupply();
 
         uint16a16 dhwIndexes = smartVaultManager.dhwIndexes(address(smartVault), 1);
-        DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
+        DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(Simulate(
             address(smartVault),
             [1, dhwTimestamp, vaultSupplyBefore],
             smartVaultStrategies,
             assetGroup,
             dhwIndexes,
-            bag.fees
+            bag.fees)
         );
 
         // Sync second DHW
@@ -168,13 +168,13 @@ contract VaultSyncTest is IntegrationTestFixture {
 
         // Run simulations
         uint16a16 dhwIndexes = smartVaultManager.dhwIndexes(address(smartVault), 0);
-        DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
+        DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(Simulate(
             address(smartVault),
             [uint256(0), 0, 0],
             smartVaultStrategies,
             assetGroup,
             dhwIndexes,
-            SmartVaultFees(0, 3_00, 0)
+            SmartVaultFees(0, 3_00, 0))
         );
 
         uint256 simulatedTotalSupply = smartVaultManager.getSVTTotalSupply(address(smartVault));

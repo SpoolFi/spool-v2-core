@@ -86,6 +86,18 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _flushExchangeRates;
 
     /**
+     * @notice Amount of SSTs for vault at given flush index
+     * @dev smart vault => flush index => strategy => SSTs
+     */
+    mapping(address => mapping(uint256 => mapping(address => uint256))) _flushSsts;
+
+    /**
+     * @notice Total supply of SVTs for vault at given flush index
+     * @dev smart vault => flush index => SVTs
+     */
+    mapping(address => mapping(uint256 => uint256)) _flushSvtSupply;
+
+    /**
      * @notice Flushed deposits for vault, at given flush index
      * @dev smart vault => flush index => strategy => assets deposited
      */
@@ -203,10 +215,13 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             flushDhwIndexes = _strategyRegistry.addDeposits(strategies, distribution);
 
             for (uint256 i = 0; i < strategies.length; i++) {
+                _flushSsts[smartVault][flushIndex][strategies[i]] = IStrategy(strategies[i]).balanceOf(smartVault);
+
                 if (distribution[i].length > 0) {
                     _vaultFlushedDeposits[smartVault][flushIndex][strategies[i]].setValues(distribution[i]);
                 }
             }
+            _flushSvtSupply[smartVault][flushIndex] = ISmartVault(smartVault).totalSupply();
         }
 
         return flushDhwIndexes;
@@ -225,7 +240,9 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         _checkRole(ROLE_SMART_VAULT_MANAGER, msg.sender);
         // mint SVTs based on USD value of claimed SSTs
         DepositSyncResult memory syncResult = syncDepositsSimulate(
-            smartVault, [flushIndex, lastDhwSyncedTimestamp, oldTotalSVTs], strategies, assetGroup, dhwIndexes, fees
+            Simulate(
+                smartVault, [flushIndex, lastDhwSyncedTimestamp, oldTotalSVTs], strategies, assetGroup, dhwIndexes, fees
+            )
         );
 
         if (syncResult.mintedSVTs > 0) {
@@ -241,75 +258,74 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
     }
 
     function syncDepositsSimulate(
-        address smartVault,
-        //bag[0]: uint256 flushIndex,
-        //bag[1]: uint256 lastDhwSyncedTimestamp,
-        //bag[2]: uint256 oldTotalSVTs,
-        uint256[3] memory bag,
-        address[] calldata strategies,
-        address[] calldata assetGroup,
-        uint16a16 dhwIndexes,
-        SmartVaultFees memory fees
+        Simulate memory parameters
     ) public view returns (DepositSyncResult memory) {
         DepositSyncResult memory result;
         {
-            uint256[] memory dhwTimestamps = _strategyRegistry.dhwTimestamps(strategies, dhwIndexes);
-            result = DepositSyncResult(0, bag[1], 0, new uint256[](strategies.length));
+            uint256[] memory dhwTimestamps = _strategyRegistry.dhwTimestamps(parameters.strategies, parameters.dhwIndexes);
+            result = DepositSyncResult(0, parameters.bag[1], 0, new uint256[](parameters.strategies.length));
 
             // find last DHW timestamp of this flush index cycle
-            for (uint256 i; i < strategies.length; ++i) {
+            for (uint256 i; i < parameters.strategies.length; ++i) {
                 if (dhwTimestamps[i] > result.dhwTimestamp) {
                     result.dhwTimestamp = dhwTimestamps[i];
                 }
             }
 
             // skip if there were no deposits made
-            if (_vaultDeposits[smartVault][bag[0]][0] == 0) {
+            if (_vaultDeposits[parameters.smartVault][parameters.bag[0]][0] == 0) {
                 return result;
             }
         }
 
-        uint256 totalDepositedUsd;
+        uint256[2] memory totalUsd;
+        // totalUsd[0]: totalDepositedUsd
+        // totalUsd[1]: totalFlushUsd
+
         StrategyAtIndex[] memory strategyDhwState =
-            _strategyRegistry.strategyAtIndexBatch(strategies, dhwIndexes, assetGroup.length);
+            _strategyRegistry.strategyAtIndexBatch(parameters.strategies, parameters.dhwIndexes, parameters.assetGroup.length);
 
         // claim SSTs from each strategy
-        for (uint256 i; i < strategies.length; ++i) {
+        for (uint256 i; i < parameters.strategies.length; ++i) {
             StrategyAtIndex memory atDhw = strategyDhwState[i];
             if (atDhw.sharesMinted == 0) {
                 continue;
             }
 
-            uint256 vaultDepositedUsd =
-                _getVaultDepositsValue(smartVault, bag[0], strategies[i], atDhw.exchangeRates, assetGroup);
-            uint256 strategyDepositedUsd =
-                _priceFeedManager.assetToUsdCustomPriceBulk(assetGroup, atDhw.assetsDeposited, atDhw.exchangeRates);
+            uint256[2] memory depositedUsd;
+            // depositedUsd[0]: vaultDepositedUsd
+            // depositedUsd[1]: strategyDepositedUsd;
+            depositedUsd[0] =
+                _getVaultDepositsValue(parameters.smartVault, parameters.bag[0], parameters.strategies[i], atDhw.exchangeRates, parameters.assetGroup);
+            depositedUsd[1] =
+                _priceFeedManager.assetToUsdCustomPriceBulk(parameters.assetGroup, atDhw.assetsDeposited, atDhw.exchangeRates);
 
-            result.sstShares[i] = atDhw.sharesMinted * vaultDepositedUsd / strategyDepositedUsd;
-            totalDepositedUsd += result.sstShares[i] * atDhw.totalStrategyValue / atDhw.totalSSTs;
-            // TODO: there might be dust left after all vaults are synced
+            result.sstShares[i] = atDhw.sharesMinted * depositedUsd[0] / depositedUsd[1];
+            totalUsd[0] += result.sstShares[i] * atDhw.totalStrategyValue / atDhw.totalSSTs;
+
+            uint256 flushSsts = _flushSsts[parameters.smartVault][parameters.bag[0]][parameters.strategies[i]];
+            totalUsd[1] += atDhw.totalStrategyValue * flushSsts / atDhw.totalSSTs;
         }
 
-        // get vault's USD value before claiming SSTs
-        uint256 totalVaultValueBefore = SpoolUtils.getVaultTotalUsdValue(smartVault, strategies);
-
-        if (totalVaultValueBefore == 0) {
-            result.mintedSVTs = totalDepositedUsd * INITIAL_SHARE_MULTIPLIER;
+        if (totalUsd[1] == 0) {
+            result.mintedSVTs = totalUsd[0] * INITIAL_SHARE_MULTIPLIER;
         } else {
-            result.mintedSVTs = totalDepositedUsd * ISmartVault(smartVault).totalSupply() / totalVaultValueBefore;
+            // result.mintedSVTs = totalDepositedUsd * ISmartVault(smartVault).totalSupply() / totalVaultValueBefore;
+            uint256 flushSvtSupply = _flushSvtSupply[parameters.smartVault][parameters.bag[0]];
+            result.mintedSVTs = flushSvtSupply * totalUsd[0] / totalUsd[1];
         }
 
-        if (fees.depositFeePct > 0 && result.mintedSVTs > 0) {
-            uint256 depositFees = result.mintedSVTs * fees.depositFeePct / FULL_PERCENT;
+        if (parameters.fees.depositFeePct > 0 && result.mintedSVTs > 0) {
+            uint256 depositFees = result.mintedSVTs * parameters.fees.depositFeePct / FULL_PERCENT;
             unchecked {
                 result.feeSVTs += depositFees;
                 result.mintedSVTs -= depositFees;
             }
         }
 
-        if (fees.managementFeePct > 0) {
+        if (parameters.fees.managementFeePct > 0) {
             // % of all SVTs minted until now, excluding the ones held by the vault owner
-            result.feeSVTs += _calculateManagementFees(bag[1], result.dhwTimestamp, bag[2], fees.managementFeePct);
+            result.feeSVTs += _calculateManagementFees(parameters.bag[1], result.dhwTimestamp, parameters.bag[2], parameters.fees.managementFeePct);
         }
 
         return result;
