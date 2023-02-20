@@ -11,9 +11,9 @@ import "../../../src/strategies/AaveV2Strategy.sol";
 import "../../libraries/Arrays.sol";
 import "../../libraries/Constants.sol";
 import "../../fixtures/TestFixture.sol";
+import "../EthereumForkConstants.sol";
 import "../ForkTestFixture.sol";
 import "../StrategyHarness.sol";
-import "../EthereumForkConstants.sol";
 
 contract AaveV2StrategyTest is TestFixture, ForkTestFixture {
     IERC20Metadata private tokenUsdc;
@@ -95,7 +95,7 @@ contract AaveV2StrategyTest is TestFixture, ForkTestFixture {
         assertApproxEqAbs(aTokenBalanceOfStrategy, toDeposit * 40 / 100, 10);
     }
 
-    function test_emergencyWithdrawaImpl() public {
+    function test_emergencyWithdrawImpl() public {
         // arrange
         uint256 toDeposit = 1000 * 10 ** tokenUsdc.decimals();
         deal(address(tokenUsdc), address(aaveStrategy), toDeposit, true);
@@ -142,6 +142,7 @@ contract AaveV2StrategyTest is TestFixture, ForkTestFixture {
         uint256 calculatedYield = aTokenBalanceOfStrategyBefore * uint256(yieldPercentage) / YIELD_FULL_PERCENT;
         uint256 expectedYield = aTokenBalanceOfStrategyAfter - aTokenBalanceOfStrategyBefore;
 
+        assertTrue(calculatedYield > 0);
         assertEq(calculatedYield, expectedYield);
     }
 

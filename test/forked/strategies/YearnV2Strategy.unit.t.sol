@@ -11,8 +11,9 @@ import "../../../src/strategies/YearnV2Strategy.sol";
 import "../../libraries/Arrays.sol";
 import "../../libraries/Constants.sol";
 import "../../fixtures/TestFixture.sol";
-import "../ForkTestFixture.sol";
 import "../EthereumForkConstants.sol";
+import "../ForkTestFixture.sol";
+import "../StrategyHarness.sol";
 
 contract YearnV2StrategyTest is TestFixture, ForkTestFixture {
     IERC20Metadata private tokenUsdc;
@@ -107,7 +108,7 @@ contract YearnV2StrategyTest is TestFixture, ForkTestFixture {
         assertApproxEqRel(yTokenVaultBalanceOfStrategy, yTokenVaultBalanceOfStrategyExpected, 1e15); // to 1 permil
     }
 
-    function test_emergencyWithdrawaImpl() public {
+    function test_emergencyWithdrawImpl() public {
         // arrange
         uint256 toDeposit = 1000 * 10 ** tokenUsdc.decimals();
         deal(address(tokenUsdc), address(yearnStrategy), toDeposit, true);
@@ -171,7 +172,8 @@ contract YearnV2StrategyTest is TestFixture, ForkTestFixture {
         uint256 calculatedYield = toDeposit * uint256(yieldPercentage) / YIELD_FULL_PERCENT;
         uint256 actualYield = tokenUsdc.balanceOf(address(yearnStrategy)) - toDeposit;
 
-        assertApproxEqRel(calculatedYield, actualYield, 1e15); // to 1 permil
+        assertTrue(actualYield > 0);
+        assertApproxEqRel(actualYield, calculatedYield, 1e15); // to 1 permil
     }
 
     function test_getUsdWorth() public {
@@ -194,59 +196,11 @@ contract YearnV2StrategyTest is TestFixture, ForkTestFixture {
 }
 
 // Exposes protocol-specific functions for unit-testing.
-contract YearnV2StrategyHarness is YearnV2Strategy {
+contract YearnV2StrategyHarness is YearnV2Strategy, StrategyHarness {
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         uint256 assetGroupId_,
         IYearnTokenVault yTokenVault_
     ) YearnV2Strategy(assetGroupRegistry_, accessControl_, assetGroupId_, yTokenVault_) {}
-
-    function exposed_depositToProtocol(
-        address[] calldata tokens,
-        uint256[] memory amounts,
-        uint256[] calldata slippages
-    ) external {
-        return _depositToProtocol(tokens, amounts, slippages);
-    }
-
-    function exposed_redeemFromProtocol(address[] calldata tokens, uint256 ssts, uint256[] calldata slippages)
-        external
-    {
-        return _redeemFromProtocol(tokens, ssts, slippages);
-    }
-
-    function exposed_emergencyWithdrawImpl(uint256[] calldata slippages, address recipient) external {
-        return _emergencyWithdrawImpl(slippages, recipient);
-    }
-
-    function exoposed_compound(
-        address[] calldata tokens,
-        SwapInfo[] calldata compoundSwapInfo,
-        uint256[] calldata slippages
-    ) external returns (int256 compoundYield) {
-        return _compound(tokens, compoundSwapInfo, slippages);
-    }
-
-    function exposed_getYieldPercentage(int256 manualYield) external returns (int256) {
-        return _getYieldPercentage(manualYield);
-    }
-
-    function exposed_swapAssets(address[] memory tokens, uint256[] memory toSwap, SwapInfo[] calldata swapInfo)
-        external
-    {
-        return _swapAssets(tokens, toSwap, swapInfo);
-    }
-
-    function exposed_getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
-        external
-        view
-        returns (uint256)
-    {
-        return _getUsdWorth(exchangeRates, priceFeedManager);
-    }
-
-    function exposed_mint(uint256 shares) external {
-        return _mint(address(this), shares);
-    }
 }

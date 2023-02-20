@@ -17,5 +17,8 @@ address constant AAVE_V2_LENDING_POOL_ADDRESSES_PROVIDER = address(0xB53C1a33016
 address constant comptroller = address(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 address constant cUSDC = address(0x39AA39c021dfbaE8faC545936693aC917d5E7563);
 
+// Idle
+address constant IDLE_BEST_YIELD_SENIOR_USDC = address(0x5274891bEC421B39D23760c04A6755eCB444797C);
+
 // Yearn v2
 address constant YEARN_V2_USDC_TOKEN_VAULT = address(0xa354F35829Ae975e850e23e9615b11Da1B3dC4DE);
