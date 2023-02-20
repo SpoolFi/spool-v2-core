@@ -8,14 +8,11 @@ import "./Strategy.sol";
 contract __BaseStrategy__ is Strategy {
     using SafeERC20 for IERC20;
 
-    constructor(
-        string memory name_,
-        IAssetGroupRegistry assetGroupRegistry_,
-        ISpoolAccessControl accessControl_
-    ) Strategy(name_, assetGroupRegistry_, accessControl_) {}
+    constructor(string memory name_, IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_)
+        Strategy(name_, assetGroupRegistry_, accessControl_)
+    {}
 
-    function initialize(uint256 assetGroupId_) external initializer
-    {
+    function initialize(uint256 assetGroupId_) external initializer {
         __Strategy_init(assetGroupId_);
         // TODO
     }
