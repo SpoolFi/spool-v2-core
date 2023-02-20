@@ -389,13 +389,15 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         }
     }
 
-    function _calculateYieldPercentage(uint256 previousValue, uint256 increaseValue)
+    function _calculateYieldPercentage(uint256 previousValue, uint256 currentValue)
         internal
         pure
         returns (int256 yieldPercentage)
     {
-        if (previousValue > 0 && increaseValue > 0) {
-            yieldPercentage = int256(increaseValue * YIELD_FULL_PERCENT / previousValue);
+        if (currentValue > previousValue) {
+            yieldPercentage = int256((currentValue - previousValue) * YIELD_FULL_PERCENT / previousValue);
+        } else if (previousValue > currentValue) {
+            yieldPercentage = -int256((previousValue - currentValue) * YIELD_FULL_PERCENT / previousValue);
         }
     }
 

@@ -112,9 +112,9 @@ contract CompoundV2Strategy is Strategy {
                 if (swappedAmount > 0) {
                     uint256 cTokenBalanceBefore = cToken.balanceOf(address(this));
                     _depositToCompoundProtocol(IERC20(tokens[0]), swappedAmount);
-                    uint256 cTokenAmountCompounded = cToken.balanceOf(address(this)) - cTokenBalanceBefore;
 
-                    compoundedYieldPercentage = _calculateYieldPercentage(cTokenBalanceBefore, cTokenAmountCompounded);
+                    compoundedYieldPercentage =
+                        _calculateYieldPercentage(cTokenBalanceBefore, cToken.balanceOf(address(this)));
                 }
             }
         }
@@ -123,12 +123,8 @@ contract CompoundV2Strategy is Strategy {
     function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {
         uint256 exchangeRateCurrent = cToken.exchangeRateCurrent();
 
-        unchecked {
-            uint256 exchangeRateIncrease = exchangeRateCurrent - _lastExchangeRate;
-
-            baseYieldPercentage = _calculateYieldPercentage(_lastExchangeRate, exchangeRateIncrease);
-            _lastExchangeRate = exchangeRateCurrent;
-        }
+        baseYieldPercentage = _calculateYieldPercentage(_lastExchangeRate, exchangeRateCurrent);
+        _lastExchangeRate = exchangeRateCurrent;
     }
 
     function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)

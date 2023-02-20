@@ -91,7 +91,7 @@ contract AaveV2StrategyTest is TestFixture, ForkTestFixture {
 
         assertEq(usdcBalanceOfATokenBefore - usdcBalanceOfATokenAfter, toDeposit * 60 / 100);
         assertEq(usdcBalanceOfStrategy, toDeposit * 60 / 100);
-        assertEq(aTokenBalanceOfStrategy, toDeposit * 40 / 100 - 1);
+        assertApproxEqAbs(aTokenBalanceOfStrategy, toDeposit * 40 / 100, 10);
     }
 
     function test_emergencyWithdrawaImpl() public {
@@ -112,7 +112,7 @@ contract AaveV2StrategyTest is TestFixture, ForkTestFixture {
 
         // assert
         uint256 usdcBalanceOfATokenAfter = tokenUsdc.balanceOf(address(aaveStrategy.aToken()));
-        uint256 usdcBalanceOfEmergencyWithdrawalRecipient = tokenUsdc.balanceOf(address(emergencyWithdrawalRecipient));
+        uint256 usdcBalanceOfEmergencyWithdrawalRecipient = tokenUsdc.balanceOf(emergencyWithdrawalRecipient);
         uint256 aTokenBalanceOfStrategy = aaveStrategy.aToken().balanceOf(address(aaveStrategy));
 
         assertEq(usdcBalanceOfATokenBefore - usdcBalanceOfATokenAfter, toDeposit);

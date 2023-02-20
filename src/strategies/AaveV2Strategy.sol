@@ -94,12 +94,8 @@ contract AaveV2Strategy is Strategy {
 
         uint256 currentNormalizedIncome = provider.getLendingPool().getReserveNormalizedIncome(tokens[0]);
 
-        unchecked {
-            uint256 normalizedIncomeIncrease = currentNormalizedIncome - _lastNormalizedIncome;
-
-            baseYieldPercentage = _calculateYieldPercentage(_lastNormalizedIncome, normalizedIncomeIncrease);
-            _lastNormalizedIncome = currentNormalizedIncome;
-        }
+        baseYieldPercentage = _calculateYieldPercentage(_lastNormalizedIncome, currentNormalizedIncome);
+        _lastNormalizedIncome = currentNormalizedIncome;
     }
 
     function _swapAssets(address[] memory tokens, uint256[] memory toSwap, SwapInfo[] calldata swapInfo)
