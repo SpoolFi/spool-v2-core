@@ -39,7 +39,10 @@ contract SpoolAccessControl is AccessControlUpgradeable, PausableUpgradeable, IS
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
-    function grantSmartVaultOwnership(address smartVault, address owner) external {
+    function grantSmartVaultOwnership(address smartVault, address owner)
+        external
+        onlyRole(ROLE_SMART_VAULT_INTEGRATOR)
+    {
         if (smartVaultOwner[smartVault] != address(0)) {
             revert SmartVaultOwnerAlreadySet(smartVault);
         }

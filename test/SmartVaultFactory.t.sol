@@ -15,6 +15,7 @@ import "../src/SmartVault.sol";
 import "../src/SmartVaultFactory.sol";
 import "./libraries/Arrays.sol";
 import "../src/managers/RiskManager.sol";
+import "../src/access/SpoolAccessControl.sol";
 
 contract SmartVaultVariant is SmartVault {
     uint256 private immutable _testValue;
@@ -37,11 +38,13 @@ contract SmartVaultFactoryTest is Test {
 
     event SmartVaultDeployed(address indexed smartVault, address indexed deployer);
 
-    address strategy;
+    address strategy = address(0x1);
+    address riskProvider = address(0x7);
+    address allocProviderAddress = address(0x8);
 
     SmartVaultFactory private factory;
 
-    ISpoolAccessControl accessControl;
+    SpoolAccessControl accessControl;
     IActionManager actionManager;
     IGuardManager guardManager;
     ISmartVaultManager smartVaultManager;
@@ -51,16 +54,10 @@ contract SmartVaultFactoryTest is Test {
     IAllocationProvider allocProvider;
 
     function setUp() public {
-        strategy = address(0x01);
         vm.mockCall(strategy, abi.encodeWithSelector(IStrategy.assetGroupId.selector), abi.encode(1));
 
-        accessControl = ISpoolAccessControl(address(0x1));
-        vm.mockCall(
-            address(accessControl), abi.encodeWithSelector(IAccessControlUpgradeable.grantRole.selector), abi.encode(0)
-        );
-        vm.mockCall(
-            address(accessControl), abi.encodeWithSelector(IAccessControlUpgradeable.hasRole.selector), abi.encode(true)
-        );
+        accessControl = new SpoolAccessControl();
+        accessControl.initialize();
 
         actionManager = IActionManager(address(0x2));
         vm.mockCall(address(actionManager), abi.encodeWithSelector(IActionManager.setActions.selector), abi.encode(0));
@@ -89,7 +86,7 @@ contract SmartVaultFactoryTest is Test {
             abi.encode(new int256[](0))
         );
 
-        allocProvider = IAllocationProvider(address(0x8));
+        allocProvider = IAllocationProvider(allocProviderAddress);
         vm.mockCall(
             address(allocProvider),
             abi.encodeWithSelector(IAllocationProvider.calculateAllocation.selector),
@@ -108,9 +105,23 @@ contract SmartVaultFactoryTest is Test {
             assetGroupRegistry,
             riskManager
         );
+
+        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(factory));
+        accessControl.grantRole(ADMIN_ROLE_STRATEGY, address(this));
+        accessControl.grantRole(ROLE_STRATEGY, strategy);
+        accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
+        accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, allocProviderAddress);
     }
 
     /* ========== deploySmartVault ========== */
+
+    function test_grantSmartVaultOwnership_revertMissingRole() public {
+        address bob = address(0xa);
+        vm.startPrank(bob);
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SMART_VAULT_INTEGRATOR, bob));
+        accessControl.grantSmartVaultOwnership(address(0xa), bob);
+        vm.stopPrank();
+    }
 
     function test_deploySmartVault_shouldDeploySmartVault() public {
         ISmartVault mySmartVault = factory.deploySmartVault(_getSpecification());
@@ -439,8 +450,8 @@ contract SmartVaultFactoryTest is Test {
             strategies: Arrays.toArray(strategy),
             strategyAllocation: uint16a16.wrap(0),
             riskTolerance: 4,
-            riskProvider: address(0x7),
-            allocationProvider: address(allocProvider),
+            riskProvider: riskProvider,
+            allocationProvider: allocProviderAddress,
             actions: new IAction[](0),
             actionRequestTypes: new RequestType[](0),
             guards: new GuardDefinition[][](0),
