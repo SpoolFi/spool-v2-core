@@ -118,6 +118,11 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         IActionManager actionManager_,
         ISpoolAccessControl accessControl_
     ) SpoolAccessControllable(accessControl_) {
+        if (address(guardManager_) == address(0)) revert ConfigurationAddressZero();
+        if (address(actionManager_) == address(0)) revert ConfigurationAddressZero();
+        if (address(strategyRegistry_) == address(0)) revert ConfigurationAddressZero();
+        if (address(priceFeedManager_) == address(0)) revert ConfigurationAddressZero();
+
         _guardManager = guardManager_;
         _actionManager = actionManager_;
         _strategyRegistry = strategyRegistry_;

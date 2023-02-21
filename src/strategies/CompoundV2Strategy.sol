@@ -43,12 +43,8 @@ contract CompoundV2Strategy is Strategy {
         ISwapper swapper_,
         IComptroller comptroller_
     ) Strategy(name_, assetGroupRegistry_, accessControl_) {
-        if (
-            address(swapper_) == address(0) || address(accessControl_) == address(0)
-                || address(comptroller_) == address(0)
-        ) {
-            revert ConfigurationAddressZero();
-        }
+        if (address(swapper_) == address(0)) revert ConfigurationAddressZero();
+        if (address(comptroller_) == address(0)) revert ConfigurationAddressZero();
 
         if (!comptroller_.isComptroller()) {
             revert InvalidConfiguration();

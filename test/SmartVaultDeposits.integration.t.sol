@@ -29,11 +29,11 @@ contract depositManagerIntegrationTest is Test {
         accessControl.initialize();
 
         depositManager = new DepositManager(
-            IStrategyRegistry(address(0)),
-            IUsdPriceFeedManager(address(0)),
-            IGuardManager(address(0)),
-            IActionManager(address(0)),
-            accessControl
+            IStrategyRegistry(address(0x01)),
+            IUsdPriceFeedManager(address(0x02)),
+            IGuardManager(address(0x03)),
+            IActionManager(address(0x04)),
+            ISpoolAccessControl(address(0x5))
         );
 
         usdPriceFeedManager = new UsdPriceFeedManager(accessControl);

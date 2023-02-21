@@ -100,6 +100,10 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         IUsdPriceFeedManager priceFeedManager_,
         address ghostStrategy_
     ) SpoolAccessControllable(accessControl_) {
+        if (address(masterWallet_) == address(0)) revert ConfigurationAddressZero();
+        if (address(priceFeedManager_) == address(0)) revert ConfigurationAddressZero();
+        if (ghostStrategy_ == address(0)) revert ConfigurationAddressZero();
+
         _masterWallet = masterWallet_;
         _priceFeedManager = priceFeedManager_;
         _ghostStrategy = ghostStrategy_;

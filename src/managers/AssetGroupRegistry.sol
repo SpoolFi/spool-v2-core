@@ -125,6 +125,8 @@ contract AssetGroupRegistry is IAssetGroupRegistry, SpoolAccessControllable, Ini
      * Emits TokenAllowed event.
      */
     function _allowToken(address token) private {
+        if (token == address(0)) revert ConfigurationAddressZero();
+
         _assetAllowlist[token] = true;
 
         emit TokenAllowed(token);

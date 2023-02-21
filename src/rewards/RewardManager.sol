@@ -39,6 +39,8 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuard {
         IAssetGroupRegistry assetGroupRegistry_,
         bool allowPoolRootUpdates
     ) RewardPool(spoolAccessControl, allowPoolRootUpdates) {
+        if (address(assetGroupRegistry_) == address(0)) revert ConfigurationAddressZero();
+
         _assetGroupRegistry = assetGroupRegistry_;
     }
 

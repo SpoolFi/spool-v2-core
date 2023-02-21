@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "../interfaces/ISpoolAccessControl.sol";
+import "../interfaces/CommonErrors.sol";
 import "./Roles.sol";
 
 /**
@@ -21,6 +22,8 @@ abstract contract SpoolAccessControllable {
      * @param accessControl_ Spool access control manager.
      */
     constructor(ISpoolAccessControl accessControl_) {
+        if (address(accessControl_) == address(0)) revert ConfigurationAddressZero();
+
         _accessControl = accessControl_;
     }
 

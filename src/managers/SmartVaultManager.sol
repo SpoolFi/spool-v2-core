@@ -119,6 +119,15 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         IUsdPriceFeedManager priceFeedManager_,
         address ghostStrategy
     ) SpoolAccessControllable(accessControl_) {
+        if (address(assetGroupRegistry_) == address(0)) revert ConfigurationAddressZero();
+        if (address(riskManager_) == address(0)) revert ConfigurationAddressZero();
+        if (address(depositManager_) == address(0)) revert ConfigurationAddressZero();
+        if (address(withdrawalManager_) == address(0)) revert ConfigurationAddressZero();
+        if (address(strategyRegistry_) == address(0)) revert ConfigurationAddressZero();
+        if (address(masterWallet_) == address(0)) revert ConfigurationAddressZero();
+        if (address(priceFeedManager_) == address(0)) revert ConfigurationAddressZero();
+        if (ghostStrategy == address(0)) revert ConfigurationAddressZero();
+
         _assetGroupRegistry = assetGroupRegistry_;
         _riskManager = riskManager_;
         _depositManager = depositManager_;

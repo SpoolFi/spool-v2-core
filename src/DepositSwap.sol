@@ -29,6 +29,11 @@ contract DepositSwap is IDepositSwap {
         ISmartVaultManager smartVaultManager_,
         ISwapper swapper_
     ) {
+        if (address(weth_) == address(0)) revert ConfigurationAddressZero();
+        if (address(assetGroupRegistry_) == address(0)) revert ConfigurationAddressZero();
+        if (address(smartVaultManager_) == address(0)) revert ConfigurationAddressZero();
+        if (address(swapper_) == address(0)) revert ConfigurationAddressZero();
+
         _weth = weth_;
         _assetGroupRegistry = assetGroupRegistry_;
         _smartVaultManager = smartVaultManager_;

@@ -52,12 +52,16 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
     constructor(ISpoolAccessControl accessControl_, IGuardManager guardManager_)
         SpoolAccessControllable(accessControl_)
     {
+        if (address(guardManager_) == address(0)) revert ConfigurationAddressZero();
+
         _guardManager = guardManager_;
 
         _disableInitializers();
     }
 
     function initialize(string memory vaultName_, uint256 assetGroupId_) external initializer {
+        if (bytes(vaultName_).length == 0) revert InvalidConfiguration();
+
         __ERC1155_init("");
         __ERC20_init("", "");
 

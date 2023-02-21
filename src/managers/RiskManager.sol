@@ -34,6 +34,9 @@ contract RiskManager is IRiskManager, SpoolAccessControllable {
     constructor(ISpoolAccessControl accessControl, IStrategyRegistry strategyRegistry_, address ghostStrategy)
         SpoolAccessControllable(accessControl)
     {
+        if (address(strategyRegistry_) == address(0)) revert ConfigurationAddressZero();
+        if (address(ghostStrategy) == address(0)) revert ConfigurationAddressZero();
+
         _ghostStrategy = ghostStrategy;
         _strategyRegistry = strategyRegistry_;
     }
