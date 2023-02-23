@@ -45,6 +45,8 @@ contract RewardManagerTests is Test {
         smartVault_.initialize("SmartVault", assetGroupId);
 
         rewardManager = new RewardManager(sac, assetGroupRegistry, false);
+        rewardManager.initialize();
+
         // NOTE: can use days keyword
         rewardDuration = SECONDS_IN_DAY * 10;
         smartVault = address(smartVault_);

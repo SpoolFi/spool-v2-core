@@ -97,16 +97,16 @@ contract WithdrawalIntegrationTest is Test {
 
         accessControl.grantRole(ADMIN_ROLE_STRATEGY, address(strategyRegistry));
 
-        strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
+        strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
         uint256[] memory strategyRatios = new uint256[](2);
         strategyRatios[0] = 1_000;
         strategyRatios[1] = 68;
-        strategyA.initialize(assetGroupId, strategyRatios);
+        strategyA.initialize("StratA", strategyRatios);
         strategyRegistry.registerStrategy(address(strategyA));
 
         strategyRatios[1] = 67;
-        strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-        strategyB.initialize(assetGroupId, strategyRatios);
+        strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+        strategyB.initialize("StratB", strategyRatios);
         strategyRegistry.registerStrategy(address(strategyB));
 
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);

@@ -226,8 +226,8 @@ contract VaultSyncTest is IntegrationTestFixture {
         address[] memory assetGroupA = Arrays.toArray(address(tokenA));
         uint256 assetGroupDId = assetGroupRegistry.registerAssetGroup(assetGroupA);
 
-        MockStrategy strategyD = new MockStrategy("StratD", assetGroupRegistry, accessControl, swapper);
-        strategyD.initialize(assetGroupDId, Arrays.toArray(10000));
+        MockStrategy strategyD = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupDId);
+        strategyD.initialize("StratD", Arrays.toArray(10000));
 
         strategyRegistry.registerStrategy(address(strategyD));
 

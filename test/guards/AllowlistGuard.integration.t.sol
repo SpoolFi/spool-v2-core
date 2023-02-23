@@ -43,11 +43,11 @@ contract AllowlistGuardIntegrationTest is TestFixture {
 
         (GuardDefinition[][] memory guards, RequestType[] memory guardRequestTypes) = setUpAllowlistGuard();
 
-        MockStrategy strategy = new MockStrategy("Strategy", assetGroupRegistry, accessControl, swapper);
+        MockStrategy strategy = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
         {
             uint256[] memory strategyRatios = new uint256[](1);
             strategyRatios[0] = 1_000;
-            strategy.initialize(assetGroupId, strategyRatios);
+            strategy.initialize("Strategy", strategyRatios);
             strategyRegistry.registerStrategy(address(strategy));
         }
 

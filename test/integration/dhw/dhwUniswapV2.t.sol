@@ -55,8 +55,8 @@ contract DhwUniswapV2Test is TestFixture {
         assetGroupRegistry.allowToken(address(tokenB));
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
-        strategyA = new MockUniswapV2Strategy("StratA", assetGroupRegistry, accessControl, uniswapV2Setup.router());
-        strategyA.initialize(assetGroupId);
+        strategyA = new MockUniswapV2Strategy(assetGroupRegistry, accessControl, uniswapV2Setup.router(), assetGroupId);
+        strategyA.initialize("StratA");
         strategyRegistry.registerStrategy(address(strategyA));
 
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));

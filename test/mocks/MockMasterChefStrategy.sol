@@ -14,18 +14,18 @@ contract MockMasterChefStrategy is Strategy {
     uint256 public pid;
 
     constructor(
-        string memory name_,
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         MockMasterChef masterChef_,
-        uint256 pid_
-    ) Strategy(name_, assetGroupRegistry_, accessControl_) {
+        uint256 pid_,
+        uint256 assetGroupId_
+    ) Strategy(assetGroupRegistry_, accessControl_, assetGroupId_) {
         masterChef = masterChef_;
         pid = pid_;
     }
 
-    function initialize(uint256 assetGroupId_) external initializer {
-        __Strategy_init(assetGroupId_);
+    function initialize(string memory strategyName_) external initializer {
+        __Strategy_init(strategyName_);
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {

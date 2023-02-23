@@ -20,19 +20,18 @@ contract MockStrategy is Strategy {
     MockProtocol public protocolFees;
 
     constructor(
-        string memory name_,
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
-        ISwapper swapper_
-    ) Strategy(name_, assetGroupRegistry_, accessControl_) {
+        ISwapper swapper_,
+        uint256 assetGroupId_
+    ) Strategy(assetGroupRegistry_, accessControl_, assetGroupId_) {
         _swapper = swapper_;
         protocol = new MockProtocol();
         protocolFees = new MockProtocol();
     }
 
-    function initialize(uint256 assetGroupId_, uint256[] memory ratios_) external initializer {
-        __Strategy_init(assetGroupId_);
-
+    function initialize(string memory strategyName_, uint256[] memory ratios_) external initializer {
+        __Strategy_init(strategyName_);
         ratios = ratios_;
     }
 

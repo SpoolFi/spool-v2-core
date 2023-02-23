@@ -44,24 +44,24 @@ contract DhwSingleAssetTest is TestFixture {
         assetGroupRegistry.allowToken(address(tokenA));
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
-        strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
+        strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
         uint256[] memory strategyRatios = new uint256[](3);
         strategyRatios[0] = 1000;
         strategyRatios[1] = 71;
         strategyRatios[2] = 4300;
-        strategyA.initialize(assetGroupId, strategyRatios);
+        strategyA.initialize("StratA", strategyRatios);
         strategyRegistry.registerStrategy(address(strategyA));
 
         strategyRatios[1] = 74;
         strategyRatios[2] = 4500;
-        strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-        strategyB.initialize(assetGroupId, strategyRatios);
+        strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+        strategyB.initialize("StratB", strategyRatios);
         strategyRegistry.registerStrategy(address(strategyB));
 
         strategyRatios[1] = 76;
         strategyRatios[2] = 4600;
-        strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-        strategyC.initialize(assetGroupId, strategyRatios);
+        strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+        strategyC.initialize("StratC", strategyRatios);
         strategyRegistry.registerStrategy(address(strategyC));
 
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);

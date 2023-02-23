@@ -247,12 +247,12 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyA;
         MockStrategy strategyB;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
         }
 
@@ -398,16 +398,16 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-            strategyC.initialize(assetGroupId, Arrays.toArray(1));
+            strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyC.initialize("StratC", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
 
@@ -572,16 +572,16 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-            strategyC.initialize(assetGroupId, Arrays.toArray(1));
+            strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyC.initialize("StratC", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
 
@@ -734,16 +734,16 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-            strategyC.initialize(assetGroupId, Arrays.toArray(1));
+            strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyC.initialize("StratC", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
 
@@ -899,16 +899,16 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-            strategyC.initialize(assetGroupId, Arrays.toArray(1));
+            strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyC.initialize("StratC", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
 
@@ -1093,16 +1093,16 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-            strategyC.initialize(assetGroupId, Arrays.toArray(1));
+            strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyC.initialize("StratC", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
 
@@ -1287,16 +1287,16 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-            strategyC.initialize(assetGroupId, Arrays.toArray(1));
+            strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyC.initialize("StratC", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
 
@@ -1483,16 +1483,16 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-            strategyC.initialize(assetGroupId, Arrays.toArray(1));
+            strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyC.initialize("StratC", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
 
@@ -1683,16 +1683,16 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-            strategyC.initialize(assetGroupId, Arrays.toArray(1));
+            strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyC.initialize("StratC", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
 
@@ -1883,16 +1883,16 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-            strategyC.initialize(assetGroupId, Arrays.toArray(1));
+            strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyC.initialize("StratC", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
 
@@ -2083,16 +2083,16 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-            strategyC.initialize(assetGroupId, Arrays.toArray(1));
+            strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyC.initialize("StratC", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
 
@@ -2283,16 +2283,16 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-            strategyC.initialize(assetGroupId, Arrays.toArray(1));
+            strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyC.initialize("StratC", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
 
@@ -2484,17 +2484,17 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
             strategyA.setWithdrawalFee(20_00);
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-            strategyC.initialize(assetGroupId, Arrays.toArray(1));
+            strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyC.initialize("StratC", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
 
@@ -2687,17 +2687,17 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
             strategyA.setWithdrawalFee(20_00);
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-            strategyC.initialize(assetGroupId, Arrays.toArray(1));
+            strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyC.initialize("StratC", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
 
@@ -2890,16 +2890,16 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-            strategyC.initialize(assetGroupId, Arrays.toArray(1));
+            strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyC.initialize("StratC", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
 
@@ -3098,12 +3098,12 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyA;
         MockStrategy strategyB;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(10, 20));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(10, 20));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(9, 22));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(9, 22));
             strategyRegistry.registerStrategy(address(strategyB));
         }
 
@@ -3340,12 +3340,12 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyA;
         MockStrategy strategyB;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
         }
 
@@ -3392,12 +3392,12 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyA;
         MockStrategy strategyB;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
         }
 
@@ -3444,12 +3444,12 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyA;
         MockStrategy strategyB;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
         }
 
@@ -3497,16 +3497,16 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         MockStrategy strategyC;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
 
-            strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-            strategyC.initialize(assetGroupId, Arrays.toArray(1));
+            strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyC.initialize("StratC", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyC));
         }
 
@@ -3563,12 +3563,12 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyA;
         MockStrategy strategyB;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId1, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId1);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId2, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId2);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
         }
 
@@ -3623,12 +3623,12 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyA;
         MockStrategy strategyB;
         {
-            strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategyA.initialize(assetGroupId, Arrays.toArray(1));
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA));
 
-            strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-            strategyB.initialize(assetGroupId, Arrays.toArray(1));
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB));
         }
 

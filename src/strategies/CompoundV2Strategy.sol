@@ -37,12 +37,12 @@ contract CompoundV2Strategy is Strategy {
     uint256 private _lastExchangeRate;
 
     constructor(
-        string memory name_,
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         ISwapper swapper_,
-        IComptroller comptroller_
-    ) Strategy(name_, assetGroupRegistry_, accessControl_) {
+        IComptroller comptroller_,
+        uint256 assetGroupId_
+    ) Strategy(assetGroupRegistry_, accessControl_, assetGroupId_) {
         if (address(swapper_) == address(0)) revert ConfigurationAddressZero();
         if (address(comptroller_) == address(0)) revert ConfigurationAddressZero();
 
@@ -55,8 +55,8 @@ contract CompoundV2Strategy is Strategy {
         comp = IERC20(comptroller_.getCompAddress());
     }
 
-    function initialize(uint256 assetGroupId_, ICErc20 cToken_) external initializer {
-        __Strategy_init(assetGroupId_);
+    function initialize(string memory strategyName_, ICErc20 cToken_) external initializer {
+        __Strategy_init(strategyName_);
 
         if (address(cToken_) == address(0)) {
             revert ConfigurationAddressZero();
@@ -65,7 +65,7 @@ contract CompoundV2Strategy is Strategy {
         address[] memory tokens = assets();
 
         if (tokens.length != 1 || tokens[0] != cToken_.underlying()) {
-            revert InvalidAssetGroup(assetGroupId_);
+            revert InvalidAssetGroup(_assetGroupId);
         }
 
         address[] memory markets = new address[](1);

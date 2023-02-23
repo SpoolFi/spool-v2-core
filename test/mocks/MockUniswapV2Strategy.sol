@@ -15,22 +15,16 @@ contract MockUniswapV2Strategy is Strategy {
 
     IUniswapV2Router02 public immutable uniswapRouter;
     IUniswapV2Factory public immutable uniswapFactory;
-    IUniswapV2Pair public uniswapPair;
+    IUniswapV2Pair public immutable uniswapPair;
 
     constructor(
-        string memory name_,
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
-        IUniswapV2Router02 uniswapRouter_
-    ) Strategy(name_, assetGroupRegistry_, accessControl_) {
+        IUniswapV2Router02 uniswapRouter_,
+        uint256 assetGroupId_
+    ) Strategy(assetGroupRegistry_, accessControl_, assetGroupId_) {
         uniswapRouter = uniswapRouter_;
         uniswapFactory = IUniswapV2Factory(uniswapRouter_.factory());
-    }
-
-    function test_mock() external pure {}
-
-    function initialize(uint256 assetGroupId_) external initializer {
-        __Strategy_init(assetGroupId_);
 
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId_);
 
@@ -40,6 +34,12 @@ contract MockUniswapV2Strategy is Strategy {
         require(pairAddress != address(0), "MockUniswapV2Strategy::initialize: Uniswap pair does not exist");
 
         uniswapPair = IUniswapV2Pair(pairAddress);
+    }
+
+    function test_mock() external pure {}
+
+    function initialize(string memory strategyName_) external initializer {
+        __Strategy_init(strategyName_);
     }
 
     function assetRatio() external view override returns (uint256[] memory) {

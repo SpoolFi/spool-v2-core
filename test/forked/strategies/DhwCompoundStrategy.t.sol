@@ -35,17 +35,17 @@ contract DhwCompoundStrategyTest is ForkTestFixture {
 
         rewardsPerSecond = 1 ether;
         compoundV2Strategy = new CompoundV2Strategy(
-            "CompoundV2Strategy",
             assetGroupRegistry,
             accessControl,
             swapper,
-            IComptroller(comptroller)
+            IComptroller(comptroller),
+            assetGroupIdUSDC
         );
 
         alice = address(0xa);
         bob = address(0xb);
 
-        compoundV2Strategy.initialize(assetGroupIdUSDC, ICErc20(cUSDC));
+        compoundV2Strategy.initialize("CompoundV2Strategy", ICErc20(cUSDC));
         strategyRegistry.registerStrategy(address(compoundV2Strategy));
 
         smartVaultStrategies = Arrays.toArray(address(compoundV2Strategy));

@@ -25,27 +25,26 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
     string private _strategyName;
 
     /// @notice ID of the asset group used by the strategy.
-    uint256 internal _assetGroupId;
+    uint256 internal immutable _assetGroupId;
 
     /// @notice Total value (in USD) of assets managed by the strategy.
     /// @dev Should be updated in DHW with deposits, withdrawals and yields.
     uint256 public totalUsdValue = 0;
 
-    constructor(
-        string memory strategyName_,
-        IAssetGroupRegistry assetGroupRegistry_,
-        ISpoolAccessControl accessControl_
-    ) SpoolAccessControllable(accessControl_) {
-        if (bytes(strategyName_).length == 0) revert InvalidConfiguration();
+    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, uint256 assetGroupId_)
+        SpoolAccessControllable(accessControl_)
+    {
         if (address(assetGroupRegistry_) == address(0)) revert ConfigurationAddressZero();
 
-        _strategyName = strategyName_;
         _assetGroupRegistry = assetGroupRegistry_;
+        _assetGroupId = assetGroupId_;
+        _assetGroupRegistry.validateAssetGroup(assetGroupId_);
     }
 
-    function __Strategy_init(uint256 assetGroupId_) internal onlyInitializing {
-        _assetGroupRegistry.validateAssetGroup(assetGroupId_);
-        _assetGroupId = assetGroupId_;
+    function __Strategy_init(string memory strategyName_) internal onlyInitializing {
+        if (bytes(strategyName_).length == 0) revert InvalidConfiguration();
+
+        _strategyName = strategyName_;
 
         __ERC20_init("Strategy Share Token", "SST");
     }

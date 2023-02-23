@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
-import "@openzeppelin/security/ReentrancyGuard.sol";
+import "@openzeppelin-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
 import "../interfaces/IRewardManager.sol";
@@ -11,7 +11,7 @@ import "../access/SpoolAccessControllable.sol";
 import "../libraries/MathUtils.sol";
 import "./RewardPool.sol";
 
-contract RewardManager is IRewardManager, RewardPool, ReentrancyGuard {
+contract RewardManager is IRewardManager, RewardPool, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
     /* ========== CONSTANTS ========== */
 
@@ -21,7 +21,7 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuard {
     /* ========== STATE VARIABLES ========== */
 
     /// @notice Asset group registry
-    IAssetGroupRegistry private _assetGroupRegistry;
+    IAssetGroupRegistry private immutable _assetGroupRegistry;
 
     /// @notice Number of vault incentive tokens
     mapping(address => uint8) public rewardTokensCount;
@@ -59,6 +59,10 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuard {
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
+
+    function initialize() external initializer {
+        __ReentrancyGuard_init();
+    }
 
     /**
      * @notice Allows a new token to be added to the reward system

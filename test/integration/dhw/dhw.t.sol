@@ -56,24 +56,24 @@ contract DhwTest is TestFixture {
         assetGroupRegistry.allowToken(address(tokenC));
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
-        strategyA = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
+        strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
         uint256[] memory strategyRatios = new uint256[](3);
         strategyRatios[0] = 1000;
         strategyRatios[1] = 71;
         strategyRatios[2] = 4300;
-        strategyA.initialize(assetGroupId, strategyRatios);
+        strategyA.initialize("StratA", strategyRatios);
         strategyRegistry.registerStrategy(address(strategyA));
 
         strategyRatios[1] = 74;
         strategyRatios[2] = 4500;
-        strategyB = new MockStrategy("StratB", assetGroupRegistry, accessControl, swapper);
-        strategyB.initialize(assetGroupId, strategyRatios);
+        strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+        strategyB.initialize("StratB", strategyRatios);
         strategyRegistry.registerStrategy(address(strategyB));
 
         strategyRatios[1] = 76;
         strategyRatios[2] = 4600;
-        strategyC = new MockStrategy("StratC", assetGroupRegistry, accessControl, swapper);
-        strategyC.initialize(assetGroupId, strategyRatios);
+        strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+        strategyC.initialize("StratC", strategyRatios);
         strategyRegistry.registerStrategy(address(strategyC));
 
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
@@ -374,8 +374,8 @@ contract DhwMatchingTest is TestFixture {
         assetGroup = Arrays.toArray(address(token));
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
-        strategy = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-        strategy.initialize(assetGroupId, Arrays.toArray(1));
+        strategy = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+        strategy.initialize("StratA", Arrays.toArray(1));
         strategyRegistry.registerStrategy(address(strategy));
 
         SmartVaultSpecification memory specification = SmartVaultSpecification({
@@ -729,8 +729,8 @@ contract DhwMatchingTest is TestFixture {
             assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
             // create new strategy using above asset group
-            strategy = new MockStrategy("StratA", assetGroupRegistry, accessControl, swapper);
-            strategy.initialize(assetGroupId, Arrays.toArray(1, 2));
+            strategy = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategy.initialize("StratA", Arrays.toArray(1, 2));
             strategyRegistry.registerStrategy(address(strategy));
 
             // create new smart vault using above strategy

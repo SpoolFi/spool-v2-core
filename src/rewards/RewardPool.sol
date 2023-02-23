@@ -17,7 +17,7 @@ contract RewardPool is IRewardPool, SpoolAccessControllable {
 
     uint256 public cycleCount;
 
-    bool public allowUpdates;
+    bool public immutable allowUpdates;
 
     constructor(ISpoolAccessControl accessControl, bool allowUpdates_) SpoolAccessControllable(accessControl) {
         allowUpdates = allowUpdates_;
@@ -80,4 +80,11 @@ contract RewardPool is IRewardPool, SpoolAccessControllable {
             bytes.concat(keccak256(abi.encode(user, data.cycle, data.smartVault, data.token, data.rewardsTotal)))
         );
     }
+
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[49] private __gap;
 }
