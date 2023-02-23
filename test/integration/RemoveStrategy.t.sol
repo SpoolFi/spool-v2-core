@@ -35,7 +35,7 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         assertEq(smartVaultManager.strategies(address(smartVault)).length, 3);
         assertTrue(accessControl.hasRole(ROLE_STRATEGY, smartVaultStrategies[1]));
 
-        smartVaultManager.removeStrategy(smartVaultStrategies[1], true);
+        smartVaultManager.removeStrategy(smartVaultStrategies[1], false);
 
         address[] memory strategies2 = smartVaultManager.strategies(address(smartVault));
         uint16a16 allocations = smartVaultManager.allocations(address(smartVault));
@@ -57,7 +57,7 @@ contract RemoveStrategyTest is IntegrationTestFixture {
 
         assertTrue(accessControl.hasRole(ROLE_STRATEGY, address(0xabcd)));
         smartVaultManager.removeStrategy(address(0xabcd), true);
-        assertFalse(accessControl.hasRole(ROLE_STRATEGY, address(0xabcd)));
+        assertTrue(accessControl.hasRole(ROLE_STRATEGY, address(0xabcd)));
     }
 
     function test_removeStrategy_revertInvalidStrategy() public {

@@ -320,7 +320,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             }
         }
 
-        if (fromVaultsOnly) {
+        if (!fromVaultsOnly) {
             _strategyRegistry.removeStrategy(strategy);
         }
     }
