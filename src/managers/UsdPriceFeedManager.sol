@@ -98,15 +98,17 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager, SpoolAccessControllable {
      */
     function _getAssetPriceInUsd(address asset) private view returns (uint256 assetPrice) {
         (
-            /* uint80 roundId */
-            ,
+            uint80 roundId,
             int256 answer,
             /* uint256 startedAt */
             ,
-            /* uint256 updatedAt */
-            ,
-            /* uint80 answeredInRound */
+            uint256 updatedAt,
+            uint80 answeredInRound
         ) = assetPriceAggregator[asset].latestRoundData();
+
+        if (updatedAt == 0 || answeredInRound != roundId) {
+            revert StalePriceData();
+        }
 
         if (answer < 1) {
             revert NonPositivePrice({price: answer});

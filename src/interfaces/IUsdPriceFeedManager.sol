@@ -16,6 +16,12 @@ error InvalidAsset(address asset);
  */
 error NonPositivePrice(int256 price);
 
+/**
+ * @notice Emitted when pricing data returned by price aggregator is not from the current
+ * round or the round hasn't finished.
+ */
+error StalePriceData();
+
 interface IUsdPriceFeedManager {
     /**
      * @notice Gets number of decimals for an asset.
