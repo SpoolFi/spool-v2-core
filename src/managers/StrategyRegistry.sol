@@ -339,6 +339,8 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                         yield: int96(dhwInfo.yieldPercentage) + _stateAtDhw[strategy][dhwIndex - 1].yield, // accumulate the yield from before
                         timestamp: uint32(block.timestamp)
                     });
+
+                    _updateDhwYieldAndApy(strategy, dhwIndex, dhwInfo.yieldPercentage);
                 }
             }
         }
