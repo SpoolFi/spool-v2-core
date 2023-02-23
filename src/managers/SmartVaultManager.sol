@@ -662,7 +662,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         _syncSmartVault(bag.smartVault, strategies_, tokens, false);
 
-        (uint256[] memory deposits, uint256 depositId) = _depositManager.depositAssets(
+        uint256 depositId = _depositManager.depositAssets(
             bag,
             DepositExtras({
                 depositor: msg.sender,
@@ -673,8 +673,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             })
         );
 
-        for (uint256 i; i < deposits.length; ++i) {
-            IERC20(tokens[i]).safeTransferFrom(msg.sender, address(_masterWallet), deposits[i]);
+        for (uint256 i; i < bag.assets.length; ++i) {
+            IERC20(tokens[i]).safeTransferFrom(msg.sender, address(_masterWallet), bag.assets[i]);
         }
 
         if (bag.doFlush) {

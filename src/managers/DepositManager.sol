@@ -384,7 +384,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
     function depositAssets(DepositBag calldata bag, DepositExtras calldata bag2)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
-        returns (uint256[] memory, uint256)
+        returns (uint256)
     {
         if (_accessControl.smartVaultOwner(bag.smartVault) == bag.receiver) {
             revert VaultOwnerNotAllowedToDeposit();
@@ -429,7 +429,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
 
         // transfer tokens from user to master wallet
         for (uint256 i; i < bag2.tokens.length; ++i) {
-            _vaultDeposits[bag.smartVault][bag2.flushIndex][i] = bag.assets[i];
+            _vaultDeposits[bag.smartVault][bag2.flushIndex][i] += bag.assets[i];
         }
 
         // mint deposit NFT
@@ -440,7 +440,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             bag.smartVault, bag.receiver, depositId, bag2.flushIndex, bag.assets, bag2.depositor, bag.referral
             );
 
-        return (_vaultDeposits[bag.smartVault][bag2.flushIndex].toArray(bag2.tokens.length), depositId);
+        return depositId;
     }
 
     /**

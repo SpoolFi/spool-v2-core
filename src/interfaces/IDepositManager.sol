@@ -160,12 +160,9 @@ interface IDepositManager {
      * - caller must have role ROLE_SMART_VAULT_MANAGER
      * @param bag Deposit parameters.
      * @param bag2 Extra parameters.
-     * @return deposits Amount of assets deposited.
      * @return nftId ID of the deposit NFT.
      */
-    function depositAssets(DepositBag calldata bag, DepositExtras calldata bag2)
-        external
-        returns (uint256[] memory deposits, uint256 nftId);
+    function depositAssets(DepositBag calldata bag, DepositExtras calldata bag2) external returns (uint256 nftId);
 
     /**
      * @notice Mark deposits ready to be processed in the next DHW cycle
