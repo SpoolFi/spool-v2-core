@@ -21,11 +21,11 @@ contract AaveV2Strategy is Strategy {
     uint256 private _lastNormalizedIncome;
 
     constructor(
-        string memory name_,
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
+        uint256 assetGroupId_,
         ILendingPoolAddressesProvider provider_
-    ) Strategy(name_, assetGroupRegistry_, accessControl_) {
+    ) Strategy(assetGroupRegistry_, accessControl_, assetGroupId_) {
         if (address(provider_) == address(0)) {
             revert ConfigurationAddressZero();
         }
@@ -33,13 +33,13 @@ contract AaveV2Strategy is Strategy {
         provider = provider_;
     }
 
-    function initialize(uint256 assetGroupId_) external initializer {
-        __Strategy_init(assetGroupId_);
+    function initialize(string memory strategyName_) external initializer {
+        __Strategy_init(strategyName_);
 
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
 
         if (tokens.length != 1) {
-            revert InvalidAssetGroup(assetGroupId_);
+            revert InvalidAssetGroup(_assetGroupId);
         }
 
         aToken = IERC20(provider.getLendingPool().getReserveData(tokens[0]).aTokenAddress);

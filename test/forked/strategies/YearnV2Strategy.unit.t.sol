@@ -42,12 +42,12 @@ contract YearnV2StrategyTest is TestFixture, ForkTestFixture {
         yTokenVault = IYearnTokenVault(YEARN_V2_USDC_TOKEN_VAULT);
 
         yearnStrategy = new YearnV2StrategyHarness(
-            "aave-v2-strategy",
             assetGroupRegistry,
             accessControl,
+            assetGroupId,
             yTokenVault
         );
-        yearnStrategy.initialize(assetGroupId);
+        yearnStrategy.initialize("yearn-v2-strategy");
     }
 
     function test_depositToProtocol() public {
@@ -196,11 +196,11 @@ contract YearnV2StrategyTest is TestFixture, ForkTestFixture {
 // Exposes protocol-specific functions for unit-testing.
 contract YearnV2StrategyHarness is YearnV2Strategy {
     constructor(
-        string memory name_,
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
+        uint256 assetGroupId_,
         IYearnTokenVault yTokenVault_
-    ) YearnV2Strategy(name_, assetGroupRegistry_, accessControl_, yTokenVault_) {}
+    ) YearnV2Strategy(assetGroupRegistry_, accessControl_, assetGroupId_, yTokenVault_) {}
 
     function exposed_depositToProtocol(
         address[] calldata tokens,

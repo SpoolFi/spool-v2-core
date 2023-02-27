@@ -43,11 +43,11 @@ contract YearnV2Strategy is Strategy {
     uint256 private _lastPricePerShare;
 
     constructor(
-        string memory name_,
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
+        uint256 assetGroupId_,
         IYearnTokenVault yTokenVault_
-    ) Strategy(name_, assetGroupRegistry_, accessControl_) {
+    ) Strategy(assetGroupRegistry_, accessControl_, assetGroupId_) {
         if (address(yTokenVault_) == address(0)) {
             revert ConfigurationAddressZero();
         }
@@ -56,13 +56,13 @@ contract YearnV2Strategy is Strategy {
         oneShare = 10 ** (yTokenVault_.decimals());
     }
 
-    function initialize(uint256 assetGroupId_) external initializer {
-        __Strategy_init(assetGroupId_);
+    function initialize(string memory name_) external initializer {
+        __Strategy_init(name_);
 
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
 
         if (tokens.length != 1 || tokens[0] != yTokenVault.token()) {
-            revert InvalidAssetGroup(assetGroupId_);
+            revert InvalidAssetGroup(_assetGroupId);
         }
 
         _lastPricePerShare = yTokenVault.pricePerShare();

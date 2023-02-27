@@ -7,11 +7,11 @@ import "./mocks/MockStrategy.sol";
 
 contract StrategyHarness is MockStrategy {
     constructor(
-        string memory name_,
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
-        ISwapper swapper_
-    ) MockStrategy(name_, assetGroupRegistry_, accessControl_, swapper_) {}
+        ISwapper swapper_,
+        uint256 assetGroupId_
+    ) MockStrategy(assetGroupRegistry_, accessControl_, swapper_, assetGroupId_) {}
 
     function exposed_calculateYieldPercentage(uint256 previousValue, uint256 currentValue)
         external
@@ -25,12 +25,12 @@ contract StrategyHarness is MockStrategy {
 contract StrategyTest is Test {
     function test_calculateYieldPercentage() public {
         StrategyHarness strategy = new StrategyHarness(
-            "Strat",
             IAssetGroupRegistry(address(0x001)),
             ISpoolAccessControl(address(0x002)),
-            ISwapper(address(0x003))
+            ISwapper(address(0x003)),
+            0
         );
-        strategy.initialize(0, new uint256[](0));
+        strategy.initialize("Strat", new uint256[](0));
 
         assertEq(strategy.exposed_calculateYieldPercentage(100, 120), YIELD_FULL_PERCENT_INT * 20 / 100);
         assertEq(strategy.exposed_calculateYieldPercentage(100, 80), YIELD_FULL_PERCENT_INT * (-20) / 100);
