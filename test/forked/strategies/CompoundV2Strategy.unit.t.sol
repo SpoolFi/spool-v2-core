@@ -2,20 +2,16 @@
 pragma solidity 0.8.17;
 
 
-import "forge-std/console.sol";
 import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
-import "../../../src/access/SpoolAccessControl.sol";
+import "../../../src/strategies/CompoundV2Strategy.sol";
 import "../../../src/interfaces/Constants.sol";
 import "../../../src/libraries/SpoolUtils.sol";
-import "../../../src/managers/AssetGroupRegistry.sol";
-import "../../../src/strategies/AaveV2Strategy.sol";
 import "../../libraries/Arrays.sol";
 import "../../libraries/Constants.sol";
 import "../../fixtures/TestFixture.sol";
 import "../ForkTestFixture.sol";
 import "../StrategyHarness.sol";
 import "../EthereumForkConstants.sol";
-import "../../../src/strategies/CompoundV2Strategy.sol";
 
 contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
     IERC20Metadata private tokenUsdc;
