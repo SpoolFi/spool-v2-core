@@ -161,6 +161,19 @@ contract CompoundV2Strategy is Strategy {
         }
     }
 
+    function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
+        uint256 cTokenBalance = cToken.balanceOf(address(this));
+
+        if (cTokenBalance > 0) {
+            if (cToken.redeem(cTokenBalance) > 0) {
+                revert BadCompoundV2Withdrawal();
+            }
+
+            address[] memory tokens = assets();
+            IERC20(tokens[0]).safeTransfer(recipient, IERC20(tokens[0]).balanceOf(address(this)));
+        }
+    }
+
     function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
         internal
         view
@@ -193,6 +206,4 @@ contract CompoundV2Strategy is Strategy {
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public view override {}
 
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
-
-    function _emergencyWithdrawImpl(uint256[] calldata slippages, address recipient) internal pure override {}
 }

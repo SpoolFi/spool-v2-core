@@ -16,4 +16,6 @@ interface ICErc20 {
     function exchangeRateCurrent() external returns (uint256);
 
     function underlying() external view returns (address);
+
+    function balanceOfUnderlying(address owner) external returns (uint256);
 }

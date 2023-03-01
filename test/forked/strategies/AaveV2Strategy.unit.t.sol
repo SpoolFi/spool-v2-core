@@ -12,6 +12,7 @@ import "../../libraries/Arrays.sol";
 import "../../libraries/Constants.sol";
 import "../../fixtures/TestFixture.sol";
 import "../ForkTestFixture.sol";
+import "../StrategyHarness.sol";
 import "../EthereumForkConstants.sol";
 
 contract AaveV2StrategyTest is TestFixture, ForkTestFixture {
@@ -161,59 +162,11 @@ contract AaveV2StrategyTest is TestFixture, ForkTestFixture {
 }
 
 // Exposes protocol-specific functions for unit-testing.
-contract AaveV2StrategyHarness is AaveV2Strategy {
+contract AaveV2StrategyHarness is AaveV2Strategy, StrategyHarness {
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         uint256 assetGroupId_,
         ILendingPoolAddressesProvider provider_
     ) AaveV2Strategy(assetGroupRegistry_, accessControl_, assetGroupId_, provider_) {}
-
-    function exposed_depositToProtocol(
-        address[] calldata tokens,
-        uint256[] memory amounts,
-        uint256[] calldata slippages
-    ) external {
-        return _depositToProtocol(tokens, amounts, slippages);
-    }
-
-    function exposed_redeemFromProtocol(address[] calldata tokens, uint256 ssts, uint256[] calldata slippages)
-        external
-    {
-        return _redeemFromProtocol(tokens, ssts, slippages);
-    }
-
-    function exposed_emergencyWithdrawImpl(uint256[] calldata slippages, address recipient) external {
-        return _emergencyWithdrawImpl(slippages, recipient);
-    }
-
-    function exoposed_compound(
-        address[] calldata tokens,
-        SwapInfo[] calldata compoundSwapInfo,
-        uint256[] calldata slippages
-    ) external returns (int256 compoundYield) {
-        return _compound(tokens, compoundSwapInfo, slippages);
-    }
-
-    function exposed_getYieldPercentage(int256 manualYield) external returns (int256) {
-        return _getYieldPercentage(manualYield);
-    }
-
-    function exposed_swapAssets(address[] memory tokens, uint256[] memory toSwap, SwapInfo[] calldata swapInfo)
-        external
-    {
-        return _swapAssets(tokens, toSwap, swapInfo);
-    }
-
-    function exposed_getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
-        external
-        view
-        returns (uint256)
-    {
-        return _getUsdWorth(exchangeRates, priceFeedManager);
-    }
-
-    function exposed_mint(uint256 shares) external {
-        return _mint(address(this), shares);
-    }
 }
