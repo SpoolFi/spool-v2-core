@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-
 import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "../../../src/strategies/CompoundV2Strategy.sol";
 import "../../../src/interfaces/Constants.sol";
@@ -81,16 +80,20 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
         //   which are needed when determining how much to redeem
         compoundV2Strategy.exposed_mint(mintedShares);
 
-        uint256 strategyDepositBalanceBefore = compoundV2Strategy.cToken().balanceOfUnderlying(address(compoundV2Strategy));
+        uint256 strategyDepositBalanceBefore =
+            compoundV2Strategy.cToken().balanceOfUnderlying(address(compoundV2Strategy));
 
         // act
         compoundV2Strategy.exposed_redeemFromProtocol(assetGroup, withdrawnShares, new uint256[](0));
 
         // assert
         uint256 usdcBalanceOfStrategy = tokenUsdc.balanceOf(address(compoundV2Strategy));
-        uint256 strategyDepositBalanceAfter = compoundV2Strategy.cToken().balanceOfUnderlying(address(compoundV2Strategy));
+        uint256 strategyDepositBalanceAfter =
+            compoundV2Strategy.cToken().balanceOfUnderlying(address(compoundV2Strategy));
 
-        assertApproxEqAbs(strategyDepositBalanceBefore - strategyDepositBalanceAfter, toDeposit * withdrawnShares / mintedShares, 1);
+        assertApproxEqAbs(
+            strategyDepositBalanceBefore - strategyDepositBalanceAfter, toDeposit * withdrawnShares / mintedShares, 1
+        );
         assertApproxEqAbs(usdcBalanceOfStrategy, toDeposit * withdrawnShares / mintedShares, 1);
         assertApproxEqAbs(strategyDepositBalanceAfter, toDeposit * (mintedShares - withdrawnShares) / mintedShares, 1);
     }
@@ -160,12 +163,10 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
         // SwapInfo[] memory swapInfo;
         // uint256[] memory slippages;
 
-
         // // act
         // int256 compoundYield = compoundV2Strategy.exposed_compound(assetGroup, swapInfo, slippages);
 
         // // assert
-        
     }
 
     function test_getUsdWorth() public {
@@ -180,7 +181,7 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
         uint256 usdWorth = compoundV2Strategy.exposed_getUsdWorth(assetGroupExchangeRates, priceFeedManager);
 
         // assert
-        assertApproxEqRel(usdWorth, priceFeedManager.assetToUsd(address(tokenUsdc), toDeposit), 10**15);
+        assertApproxEqRel(usdWorth, priceFeedManager.assetToUsd(address(tokenUsdc), toDeposit), 10 ** 15);
     }
 }
 
