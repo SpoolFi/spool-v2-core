@@ -11,7 +11,8 @@ error IdleBeforeRedeemalCheckFailed();
 error IdleDepositSlippagesFailed();
 error IdleRedeemSlippagesFailed();
 
-// only uses one asset
+// one asset
+// multiple rewards
 // slippages
 // - mode selection: slippages[0]
 // - DHW with deposit: slippages[0] == 0
@@ -23,14 +24,14 @@ error IdleRedeemSlippagesFailed();
 //   - beforeDepositCheck: slippages[1..2]
 //   - beforeRedeemalCheck: slippages[3..4]
 //   - compound: slippages[5]
-//   - _redeemFromProtocol: slippages[6]
+//   - _redeemFromProtocol: slippages[6..8]
 // - reallocate: slippages[0] == 2
 //   - beforeDepositCheck: depositSlippages[1..2]
 //   - _depositToProtocol: depositSlippages[3]
 //   - beforeRedeemalCheck: withdrawalSlippages[1..2]
-//   - _redeemFromProtocol: withdrawalSlippages[3]
+//   - _redeemFromProtocol: withdrawalSlippages[3..5]
 // - redeemFast or emergencyWithdraw: slippages[0] == 3
-//   - _redeemFromProtocol or _emergencyWithdrawImpl: slippages[1]
+//   - _redeemFromProtocol or _emergencyWithdrawImpl: slippages[1..3]
 contract IdleStrategy is Strategy {
     using SafeERC20 for IERC20;
 

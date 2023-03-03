@@ -20,13 +20,32 @@ address constant aUSDC = address(0xBcca60bB61934080951369a648Fb03DF4F96263C);
 address constant comptroller = address(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 address constant cUSDC = address(0x39AA39c021dfbaE8faC545936693aC917d5E7563);
 
-// Morpho - Compound V2
+// Morpho
+//   Compound V2
 address constant morphoCompoundV2 = address(0x8888882f8f843896699869179fB6E4f7e3B58888);
 address constant morphoCompoundV2Lens = address(0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67);
-
-// Morpho - AAVE V2
+//   AAVE V2
 address constant morphoAaveV2 = address(0x777777c9898D384F785Ee44Acfe945efDFf5f3E0);
 address constant morphoAaveV2Lens = address(0x507fA343d0A90786d86C7cd885f5C49263A91FF4);
+
+// Curve
+address constant CRV_TOKEN = address(0xD533a949740bb3306d119CC777fa900bA034cd52);
+
+//   3pool
+address constant CURVE_3POOL_POOL = address(0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7);
+address constant CURVE_3POOL_LP_TOKEN = address(0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490);
+address constant CURVE_3POOL_GAUGE = address(0xbFcF63294aD7105dEa65aA58F8AE5BE2D9d0952A);
+//   alusd
+address constant CURVE_ALUSD_POOL_TOKEN = address(0x43b4FdFD4Ff969587185cDB6f0BD875c5Fc83f8c);
+address constant CURVE_ALUSD_GAUGE = address(0x9582C4ADACB3BCE56Fea3e590F05c3ca2fb9C477);
+
+// Convex
+address constant CONVEX_BOOSTER = address(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
+
+//   DAI+USDC+USDT - 3pool
+uint96 constant CONVEX_3POOL_PID = 9;
+//   alUSD+3Crv - alusd
+uint96 constant CONVEX_ALUSD_PID = 36;
 
 // Idle
 address constant IDLE_BEST_YIELD_SENIOR_USDC = address(0x5274891bEC421B39D23760c04A6755eCB444797C);
