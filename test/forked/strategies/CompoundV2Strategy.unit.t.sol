@@ -169,17 +169,14 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
         );
         deal(address(tokenUsdc), address(exchange), 1_000_000 * 10 ** tokenUsdc.decimals(), true);
 
-        swapper.updateExchangeAllowlist(
-            Arrays.toArray(address(exchange)),
-            Arrays.toArray(true)
-        );
+        swapper.updateExchangeAllowlist(Arrays.toArray(address(exchange)), Arrays.toArray(true));
 
         uint256 toDeposit = 100000 * 10 ** tokenUsdc.decimals();
         deal(address(tokenUsdc), address(compoundV2Strategy), toDeposit, true);
 
         // - need to deposit into the protocol
         compoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
-        
+
         // - mint some reward tokens by skipping blocks (should be 41792137860151927 COMP, depends on the forked block number)
         vm.roll(block.number + 7200);
 
@@ -191,24 +188,20 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
             swapTarget: address(exchange),
             token: address(compToken),
             amountIn: 41792137860151927,
-            swapCallData: abi.encodeCall(
-                exchange.swap, (address(compToken), 41792137860151927, address(swapper))
-            )
+            swapCallData: abi.encodeCall(exchange.swap, (address(compToken), 41792137860151927, address(swapper)))
         });
 
         uint256[] memory slippages = new uint256[](1);
         slippages[0] = 1;
-        
+
         int256 compoundYieldPercentage = compoundV2Strategy.exposed_compound(assetGroup, compoundSwapInfo, slippages);
 
         // assert
         uint256 balanceOfStrategyAfter = compoundV2Strategy.cToken().balanceOfUnderlying(address(compoundV2Strategy));
 
         // uint256 idleTokenBalanceOfStrategyAfter = idleToken.balanceOf(address(idleStrategy));
-        int256 compoundYieldPercentageExpected = int256(
-            (balanceOfStrategyAfter - balanceOfStrategyBefore) * YIELD_FULL_PERCENT
-                / balanceOfStrategyBefore
-        );
+        int256 compoundYieldPercentageExpected =
+            int256((balanceOfStrategyAfter - balanceOfStrategyBefore) * YIELD_FULL_PERCENT / balanceOfStrategyBefore);
 
         assertGt(compoundYieldPercentage, 0);
         assertEq(compoundYieldPercentage, compoundYieldPercentageExpected);
