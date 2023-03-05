@@ -11,6 +11,7 @@ import "../../fixtures/TestFixture.sol";
 import "../ForkTestFixture.sol";
 import "../StrategyHarness.sol";
 import "../EthereumForkConstants.sol";
+import "../../mocks/MockExchange.sol";
 
 contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
     IERC20Metadata private tokenUsdc;
@@ -98,7 +99,7 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
         assertApproxEqAbs(strategyDepositBalanceAfter, toDeposit * (mintedShares - withdrawnShares) / mintedShares, 1);
     }
 
-    function test_emergencyWithdrawaImpl() public {
+    function test_emergencyWithdrawImpl() public {
         // arrange
         uint256 toDeposit = 1000 * 10 ** tokenUsdc.decimals();
         uint256 mintedShares = 100;
@@ -137,8 +138,8 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
 
         uint256 balanceOfStrategyBefore = compoundV2Strategy.cToken().balanceOfUnderlying(address(compoundV2Strategy));
 
-        // - yield is gathered over time
-        skip(SECONDS_IN_YEAR);
+        // - yield is gathered over blocks
+        vm.roll(block.number + 7200);
 
         // act
         int256 yieldPercentage = compoundV2Strategy.exposed_getYieldPercentage(0);
@@ -148,25 +149,69 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
         uint256 calculatedYield = balanceOfStrategyBefore * uint256(yieldPercentage) / YIELD_FULL_PERCENT;
         uint256 expectedYield = balanceOfStrategyAfter - balanceOfStrategyBefore;
 
-        assertEq(calculatedYield, expectedYield);
+        assertGt(yieldPercentage, 0);
+        assertApproxEqAbs(calculatedYield, expectedYield, 1);
     }
 
-    // TODO: add test
     function test_compound() public {
-        // // arrange
-        // uint256 toDeposit = 1000 * 10 ** tokenUsdc.decimals();
-        // deal(address(tokenUsdc), address(compoundV2Strategy), toDeposit, true);
+        // arrange
+        IERC20 compToken = compoundV2Strategy.comp();
 
-        // // - need to deposit into the protocol
-        // compoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        priceFeedManager.setExchangeRate(address(compToken), USD_DECIMALS_MULTIPLIER * 50); // COMP
 
-        // SwapInfo[] memory swapInfo;
-        // uint256[] memory slippages;
+        MockExchange exchange = new MockExchange(compToken, tokenUsdc, priceFeedManager);
 
-        // // act
-        // int256 compoundYield = compoundV2Strategy.exposed_compound(assetGroup, swapInfo, slippages);
+        deal(
+            address(compToken),
+            address(exchange),
+            1_000_000 * 10 ** IERC20Metadata(address(compToken)).decimals(),
+            false
+        );
+        deal(address(tokenUsdc), address(exchange), 1_000_000 * 10 ** tokenUsdc.decimals(), true);
 
-        // // assert
+        swapper.updateExchangeAllowlist(
+            Arrays.toArray(address(exchange)),
+            Arrays.toArray(true)
+        );
+
+        uint256 toDeposit = 100000 * 10 ** tokenUsdc.decimals();
+        deal(address(tokenUsdc), address(compoundV2Strategy), toDeposit, true);
+
+        // - need to deposit into the protocol
+        compoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        
+        // - mint some reward tokens by skipping blocks (should be 41792137860151927 COMP, depends on the forked block number)
+        vm.roll(block.number + 7200);
+
+        uint256 balanceOfStrategyBefore = compoundV2Strategy.cToken().balanceOfUnderlying(address(compoundV2Strategy));
+
+        // act
+        SwapInfo[] memory compoundSwapInfo = new SwapInfo[](1);
+        compoundSwapInfo[0] = SwapInfo({
+            swapTarget: address(exchange),
+            token: address(compToken),
+            amountIn: 41792137860151927,
+            swapCallData: abi.encodeCall(
+                exchange.swap, (address(compToken), 41792137860151927, address(swapper))
+            )
+        });
+
+        uint256[] memory slippages = new uint256[](1);
+        slippages[0] = 1;
+        
+        int256 compoundYieldPercentage = compoundV2Strategy.exposed_compound(assetGroup, compoundSwapInfo, slippages);
+
+        // assert
+        uint256 balanceOfStrategyAfter = compoundV2Strategy.cToken().balanceOfUnderlying(address(compoundV2Strategy));
+
+        // uint256 idleTokenBalanceOfStrategyAfter = idleToken.balanceOf(address(idleStrategy));
+        int256 compoundYieldPercentageExpected = int256(
+            (balanceOfStrategyAfter - balanceOfStrategyBefore) * YIELD_FULL_PERCENT
+                / balanceOfStrategyBefore
+        );
+
+        assertGt(compoundYieldPercentage, 0);
+        assertEq(compoundYieldPercentage, compoundYieldPercentageExpected);
     }
 
     function test_getUsdWorth() public {
