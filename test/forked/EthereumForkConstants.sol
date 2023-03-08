@@ -18,6 +18,14 @@ address constant AAVE_V2_LENDING_POOL_ADDRESSES_PROVIDER = address(0xB53C1a33016
 address constant comptroller = address(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 address constant cUSDC = address(0x39AA39c021dfbaE8faC545936693aC917d5E7563);
 
+// Morpho - Compound V2
+address constant morphoCompoundV2 = address(0x8888882f8f843896699869179fB6E4f7e3B58888);
+address constant morphoCompoundV2Lens = address(0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67);
+
+// Morpho - AAVE V2
+address constant morphoAaveV2 = address(0x777777c9898D384F785Ee44Acfe945efDFf5f3E0);
+address constant morphoAaveV2Lens = address(0x507fA343d0A90786d86C7cd885f5C49263A91FF4);
+
 // Idle
 address constant IDLE_BEST_YIELD_SENIOR_USDC = address(0x5274891bEC421B39D23760c04A6755eCB444797C);
 
