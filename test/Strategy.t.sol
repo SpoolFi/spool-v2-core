@@ -24,6 +24,11 @@ contract StrategyHarness is MockStrategy {
 
 contract StrategyTest is Test {
     function test_calculateYieldPercentage() public {
+        vm.mockCall(
+            address(0x001),
+            abi.encodeWithSelector(IAssetGroupRegistry.validateAssetGroup.selector),
+            abi.encode(true)
+        );
         StrategyHarness strategy = new StrategyHarness(
             IAssetGroupRegistry(address(0x001)),
             ISpoolAccessControl(address(0x002)),
