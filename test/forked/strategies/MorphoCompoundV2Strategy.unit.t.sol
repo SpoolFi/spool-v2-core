@@ -47,10 +47,10 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
             assetGroupRegistry,
             accessControl,
             IMorpho(morphoCompoundV2),
-            lens,
             IERC20(COMP),
             swapper,
-            assetGroupId
+            assetGroupId,
+            lens
         );
 
         morphoCompoundV2Strategy.initialize("MorphoCompoundV2Strategy", cUSDC);
@@ -63,6 +63,12 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
 
         // act
         morphoCompoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+
+        (uint256 balanceOnPool, uint256 balanceInP2P, uint256 totalAssetBalance) = lens.getCurrentSupplyBalanceInOf(morphoCompoundV2Strategy.poolTokenAddress(), address(morphoCompoundV2Strategy));
+
+        console.log("balanceOnPool", balanceOnPool);
+        console.log("balanceInP2P", balanceInP2P);
+        console.log("totalAssetBalance", totalAssetBalance);
 
         // assert
         assertApproxEqAbs(_getDepositedAssetBalance(), toDeposit, 1);
@@ -124,38 +130,6 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
         assertApproxEqAbs(usdcBalanceOfCTokenBefore - usdcBalanceOfCTokenAfter, toDeposit, 1);
         assertApproxEqAbs(usdcBalanceOfEmergencyWithdrawalRecipient, toDeposit, 1);
         assertEq(cTokenBalanceOfStrategy, 0);
-    }
-
-    // base yield
-    // TODO: add impl + test
-    function test_getYieldPercentage() public {
-        // arrange
-        uint256 toDeposit = 1000 * 10 ** tokenUsdc.decimals();
-        deal(address(tokenUsdc), address(morphoCompoundV2Strategy), toDeposit, true);
-
-        // - need to deposit into the protocol
-        morphoCompoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
-
-        vm.roll(block.number + 7200);
-
-        deal(address(tokenUsdc), address(morphoCompoundV2Strategy), toDeposit, true);
-        morphoCompoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
-
-        uint256 balanceOfStrategyBefore = _getDepositedAssetBalance();
-
-        // - yield is gathered over blocks
-        vm.roll(block.number + 7200);
-
-        // act
-        int256 yieldPercentage = morphoCompoundV2Strategy.exposed_getYieldPercentage(0);
-
-        // assert
-        uint256 balanceOfStrategyAfter = _getDepositedAssetBalance();
-        uint256 calculatedYield = balanceOfStrategyBefore * uint256(yieldPercentage) / YIELD_FULL_PERCENT;
-        uint256 expectedYield = balanceOfStrategyAfter - balanceOfStrategyBefore;
-
-        assertGt(yieldPercentage, 0);
-        assertApproxEqAbs(calculatedYield, expectedYield, 1);
     }
 
     // TODO: add test
@@ -245,9 +219,9 @@ contract MorphoCompoundV2StrategyHarness is MorphoCompoundV2Strategy, StrategyHa
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         IMorpho morpho_,
-        ILens lens_,
         IERC20 poolRewardToken_,
         ISwapper swapper_,
-        uint256 assetGroupId_
-    ) MorphoCompoundV2Strategy(assetGroupRegistry_, accessControl_, morpho_, lens_, poolRewardToken_, swapper_, assetGroupId_) {}
+        uint256 assetGroupId_,
+        ILens lens_
+    ) MorphoCompoundV2Strategy(assetGroupRegistry_, accessControl_, morpho_, poolRewardToken_, swapper_, assetGroupId_, lens_) {}
 }

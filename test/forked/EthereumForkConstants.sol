@@ -10,9 +10,11 @@ address constant DAI = address(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
 address constant COMP = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);
 address constant NOTE = address(0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5);
+address constant stkAAVE = address(0x4da27a545c0c5B758a6BA100e3a049001de870f5);
 
 // Aave V2
 address constant AAVE_V2_LENDING_POOL_ADDRESSES_PROVIDER = address(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5);
+address constant aUSDC = address(0xBcca60bB61934080951369a648Fb03DF4F96263C);
 
 // Compound V2
 address constant comptroller = address(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
