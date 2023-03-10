@@ -158,8 +158,6 @@ contract NotionalFinanceStrategyTest is TestFixture, ForkTestFixture {
         uint256 calculatedYield = balanceOfStrategyBefore * uint256(yieldPercentage) / YIELD_FULL_PERCENT;
         uint256 expectedYield = balanceOfStrategyAfter - balanceOfStrategyBefore;
 
-        console.log(calculatedYield);
-
         assertGt(yieldPercentage, 0);
         assertApproxEqAbs(calculatedYield, expectedYield, 1);
     }
@@ -172,18 +170,13 @@ contract NotionalFinanceStrategyTest is TestFixture, ForkTestFixture {
 
         MockExchange exchange = new MockExchange(noteToken, tokenUsdc, priceFeedManager);
 
-        // transfer tokens from NOTE token holder
+        // transfer tokens from NOTE token holder the exchange
         address noteTokenHolder = address(0x22341fB5D92D3d801144aA5A925F401A91418A05);
         vm.startPrank(noteTokenHolder);
         noteToken.transfer(address(exchange), 1_000_000 * 10 ** IERC20Metadata(address(noteToken)).decimals());
         vm.stopPrank();
 
-        // deal(
-        //     address(noteToken),
-        //     address(exchange),
-        //     1_000_000 * 10 ** IERC20Metadata(address(noteToken)).decimals(),
-        //     true
-        // );
+        // deal asset tokens the exchange
         deal(address(tokenUsdc), address(exchange), 1_000_000 * 10 ** tokenUsdc.decimals(), true);
 
         swapper.updateExchangeAllowlist(Arrays.toArray(address(exchange)), Arrays.toArray(true));
@@ -199,6 +192,7 @@ contract NotionalFinanceStrategyTest is TestFixture, ForkTestFixture {
         skip(60 * 60 * 24);
 
         uint256 balanceOfStrategyBefore = _getDepositedAssetBalance();
+
         // act
         SwapInfo[] memory compoundSwapInfo = new SwapInfo[](1);
         compoundSwapInfo[0] = SwapInfo({
@@ -213,8 +207,6 @@ contract NotionalFinanceStrategyTest is TestFixture, ForkTestFixture {
 
         int256 compoundYieldPercentage =
             notionalFinanceStrategy.exposed_compound(assetGroup, compoundSwapInfo, slippages);
-
-        console.log("NOTE balance:", noteToken.balanceOf(address(notionalFinanceStrategy)));
 
         // assert
         uint256 balanceOfStrategyAfter = _getDepositedAssetBalance();
