@@ -17,16 +17,16 @@ address constant AAVE_V2_LENDING_POOL_ADDRESSES_PROVIDER = address(0xB53C1a33016
 address constant aUSDC = address(0xBcca60bB61934080951369a648Fb03DF4F96263C);
 
 // Compound V2
-address constant comptroller = address(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+address constant COMPTROLLER = address(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 address constant cUSDC = address(0x39AA39c021dfbaE8faC545936693aC917d5E7563);
 
 // Morpho
 //   Compound V2
-address constant morphoCompoundV2 = address(0x8888882f8f843896699869179fB6E4f7e3B58888);
-address constant morphoCompoundV2Lens = address(0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67);
+address constant MORPHO_COMPOUND_V2 = address(0x8888882f8f843896699869179fB6E4f7e3B58888);
+address constant MORPHO_COMPOUND_V2_LENS = address(0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67);
 //   AAVE V2
-address constant morphoAaveV2 = address(0x777777c9898D384F785Ee44Acfe945efDFf5f3E0);
-address constant morphoAaveV2Lens = address(0x507fA343d0A90786d86C7cd885f5C49263A91FF4);
+address constant MORPHO_AAVE_V2 = address(0x777777c9898D384F785Ee44Acfe945efDFf5f3E0);
+address constant MORPHO_AAVE_V2_LENS = address(0x507fA343d0A90786d86C7cd885f5C49263A91FF4);
 
 // Curve
 address constant CRV_TOKEN = address(0xD533a949740bb3306d119CC777fa900bA034cd52);

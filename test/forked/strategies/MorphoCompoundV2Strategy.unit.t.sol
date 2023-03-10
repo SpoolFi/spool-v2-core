@@ -41,12 +41,12 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         assetGroupExchangeRates = SpoolUtils.getExchangeRates(assetGroup, priceFeedManager);
 
-        lens = ILens(morphoCompoundV2Lens);
+        lens = ILens(MORPHO_COMPOUND_V2_LENS);
 
         morphoCompoundV2Strategy = new MorphoCompoundV2StrategyHarness(
             assetGroupRegistry,
             accessControl,
-            IMorpho(morphoCompoundV2),
+            IMorpho(MORPHO_COMPOUND_V2),
             IERC20(COMP),
             swapper,
             assetGroupId,

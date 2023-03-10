@@ -41,12 +41,12 @@ contract MorphoAaveV2StrategyTest is TestFixture, ForkTestFixture {
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         assetGroupExchangeRates = SpoolUtils.getExchangeRates(assetGroup, priceFeedManager);
 
-        lens = ILens(morphoAaveV2Lens);
+        lens = ILens(MORPHO_AAVE_V2_LENS);
 
         morphoAaveV2Strategy = new MorphoAaveV2StrategyHarness(
             assetGroupRegistry,
             accessControl,
-            IMorpho(morphoAaveV2),
+            IMorpho(MORPHO_AAVE_V2),
             IERC20(stkAAVE),
             swapper,
             assetGroupId,

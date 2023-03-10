@@ -43,7 +43,7 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
             assetGroupRegistry,
             accessControl,
             swapper,
-            IComptroller(comptroller),
+            IComptroller(COMPTROLLER),
             assetGroupId
         );
 
