@@ -64,14 +64,6 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
         // act
         morphoCompoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
 
-        (uint256 balanceOnPool, uint256 balanceInP2P, uint256 totalAssetBalance) = lens.getCurrentSupplyBalanceInOf(
-            morphoCompoundV2Strategy.poolTokenAddress(), address(morphoCompoundV2Strategy)
-        );
-
-        console.log("balanceOnPool", balanceOnPool);
-        console.log("balanceInP2P", balanceInP2P);
-        console.log("totalAssetBalance", totalAssetBalance);
-
         // assert
         assertApproxEqAbs(_getDepositedAssetBalance(), toDeposit, 1);
     }
