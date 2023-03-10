@@ -39,7 +39,10 @@ abstract contract MorphoStrategyBase is Strategy {
         poolRewardToken = poolRewardToken_;
     }
 
-    function __MorphoStrategyBase_init(string memory strategyName_, address poolTokenAddress_) internal onlyInitializing {
+    function __MorphoStrategyBase_init(string memory strategyName_, address poolTokenAddress_)
+        internal
+        onlyInitializing
+    {
         __Strategy_init(strategyName_);
 
         if (poolTokenAddress_ == address(0)) revert ConfigurationAddressZero();
@@ -82,8 +85,7 @@ abstract contract MorphoStrategyBase is Strategy {
 
                     _depositToMorphoProtocol(IERC20(tokens[0]), swappedAmount);
 
-                    compoundedYieldPercentage =
-                        _calculateYieldPercentage(balanceBefore, balanceBefore + swappedAmount);
+                    compoundedYieldPercentage = _calculateYieldPercentage(balanceBefore, balanceBefore + swappedAmount);
                 }
             }
         }

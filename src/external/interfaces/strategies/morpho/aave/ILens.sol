@@ -20,20 +20,12 @@ interface ILens {
     function getTotalSupply()
         external
         view
-        returns (
-            uint256 p2pSupplyAmount,
-            uint256 poolSupplyAmount,
-            uint256 totalSupplyAmount
-        );
+        returns (uint256 p2pSupplyAmount, uint256 poolSupplyAmount, uint256 totalSupplyAmount);
 
     function getTotalBorrow()
         external
         view
-        returns (
-            uint256 p2pBorrowAmount,
-            uint256 poolBorrowAmount,
-            uint256 totalBorrowAmount
-        );
+        returns (uint256 p2pBorrowAmount, uint256 poolBorrowAmount, uint256 totalBorrowAmount);
 
     /// MARKETS ///
 
@@ -41,10 +33,7 @@ interface ILens {
 
     function isMarketCreatedAndNotPaused(address _poolToken) external view returns (bool);
 
-    function isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken)
-        external
-        view
-        returns (bool);
+    function isMarketCreatedAndNotPausedNorPartiallyPaused(address _poolToken) external view returns (bool);
 
     function getAllMarkets() external view returns (address[] memory marketsCreated_);
 
@@ -105,39 +94,23 @@ interface ILens {
     function getIndexes(address _poolToken)
         external
         view
-        returns (
-            uint256 p2pSupplyIndex,
-            uint256 p2pBorrowIndex,
-            uint256 poolSupplyIndex,
-            uint256 poolBorrowIndex
-        );
+        returns (uint256 p2pSupplyIndex, uint256 p2pBorrowIndex, uint256 poolSupplyIndex, uint256 poolBorrowIndex);
 
     /// USERS ///
 
-    function getEnteredMarkets(address _user)
-        external
-        view
-        returns (address[] memory enteredMarkets);
+    function getEnteredMarkets(address _user) external view returns (address[] memory enteredMarkets);
 
     function getUserHealthFactor(address _user) external view returns (uint256 healthFactor);
 
     function getCurrentSupplyBalanceInOf(address _poolToken, address _user)
         external
         view
-        returns (
-            uint256 balanceInP2P,
-            uint256 balanceOnPool,
-            uint256 totalBalance
-        );
+        returns (uint256 balanceInP2P, uint256 balanceOnPool, uint256 totalBalance);
 
     function getCurrentBorrowBalanceInOf(address _poolToken, address _user)
         external
         view
-        returns (
-            uint256 balanceInP2P,
-            uint256 balanceOnPool,
-            uint256 totalBalance
-        );
+        returns (uint256 balanceInP2P, uint256 balanceOnPool, uint256 totalBalance);
 
     function getUserMaxCapacitiesForAsset(address _user, address _poolToken)
         external
@@ -164,66 +137,29 @@ interface ILens {
     function getAverageSupplyRatePerYear(address _poolToken)
         external
         view
-        returns (
-            uint256 avgSupplyRatePerYear,
-            uint256 p2pSupplyAmount,
-            uint256 poolSupplyAmount
-        );
+        returns (uint256 avgSupplyRatePerYear, uint256 p2pSupplyAmount, uint256 poolSupplyAmount);
 
     function getAverageBorrowRatePerYear(address _poolToken)
         external
         view
-        returns (
-            uint256 avgBorrowRatePerYear,
-            uint256 p2pBorrowAmount,
-            uint256 poolBorrowAmount
-        );
+        returns (uint256 avgBorrowRatePerYear, uint256 p2pBorrowAmount, uint256 poolBorrowAmount);
 
-    function getNextUserSupplyRatePerYear(
-        address _poolToken,
-        address _user,
-        uint256 _amount
-    )
+    function getNextUserSupplyRatePerYear(address _poolToken, address _user, uint256 _amount)
         external
         view
-        returns (
-            uint256 nextSupplyRatePerYear,
-            uint256 balanceInP2P,
-            uint256 balanceOnPool,
-            uint256 totalBalance
-        );
+        returns (uint256 nextSupplyRatePerYear, uint256 balanceInP2P, uint256 balanceOnPool, uint256 totalBalance);
 
-    function getNextUserBorrowRatePerYear(
-        address _poolToken,
-        address _user,
-        uint256 _amount
-    )
+    function getNextUserBorrowRatePerYear(address _poolToken, address _user, uint256 _amount)
         external
         view
-        returns (
-            uint256 nextBorrowRatePerYear,
-            uint256 balanceInP2P,
-            uint256 balanceOnPool,
-            uint256 totalBalance
-        );
+        returns (uint256 nextBorrowRatePerYear, uint256 balanceInP2P, uint256 balanceOnPool, uint256 totalBalance);
 
-    function getCurrentUserSupplyRatePerYear(address _poolToken, address _user)
-        external
-        view
-        returns (uint256);
+    function getCurrentUserSupplyRatePerYear(address _poolToken, address _user) external view returns (uint256);
 
-    function getCurrentUserBorrowRatePerYear(address _poolToken, address _user)
-        external
-        view
-        returns (uint256);
+    function getCurrentUserBorrowRatePerYear(address _poolToken, address _user) external view returns (uint256);
 
     function getRatesPerYear(address _poolToken)
         external
         view
-        returns (
-            uint256 p2pSupplyRate,
-            uint256 p2pBorrowRate,
-            uint256 poolSupplyRate,
-            uint256 poolBorrowRate
-        );
+        returns (uint256 p2pSupplyRate, uint256 p2pBorrowRate, uint256 poolSupplyRate, uint256 poolBorrowRate);
 }

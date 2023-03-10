@@ -64,12 +64,6 @@ contract MorphoAaveV2StrategyTest is TestFixture, ForkTestFixture {
         // act
         morphoAaveV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
 
-        (uint256 balanceInP2P, uint256 balanceOnPool, uint256 totalAssetBalance) = lens.getCurrentSupplyBalanceInOf(morphoAaveV2Strategy.poolTokenAddress(), address(morphoAaveV2Strategy));
-
-        console.log("balanceOnPool", balanceOnPool);
-        console.log("balanceInP2P", balanceInP2P);
-        console.log("totalAssetBalance", totalAssetBalance);
-
         // assert
         assertApproxEqAbs(_getDepositedAssetBalance(), toDeposit, 1);
     }
@@ -148,11 +142,13 @@ contract MorphoAaveV2StrategyTest is TestFixture, ForkTestFixture {
     }
 
     function _getDepositedAssetBalance() private view returns (uint256 totalAssetBalance) {
-        (,, totalAssetBalance) = lens.getCurrentSupplyBalanceInOf(morphoAaveV2Strategy.poolTokenAddress(), address(morphoAaveV2Strategy));
+        (,, totalAssetBalance) =
+            lens.getCurrentSupplyBalanceInOf(morphoAaveV2Strategy.poolTokenAddress(), address(morphoAaveV2Strategy));
     }
 
     function _getAssetBalanceOfProtocol() private view returns (uint256) {
-        return tokenUsdc.balanceOf(address(morphoAaveV2Strategy)) + tokenUsdc.balanceOf(address(morphoAaveV2Strategy.poolTokenAddress()));
+        return tokenUsdc.balanceOf(address(morphoAaveV2Strategy))
+            + tokenUsdc.balanceOf(address(morphoAaveV2Strategy.poolTokenAddress()));
     }
 }
 
@@ -166,5 +162,7 @@ contract MorphoAaveV2StrategyHarness is MorphoAaveV2Strategy, StrategyHarness {
         ISwapper swapper_,
         uint256 assetGroupId_,
         ILens lens_
-    ) MorphoAaveV2Strategy(assetGroupRegistry_, accessControl_, morpho_, poolRewardToken_, swapper_, assetGroupId_, lens_) {}
+    )
+        MorphoAaveV2Strategy(assetGroupRegistry_, accessControl_, morpho_, poolRewardToken_, swapper_, assetGroupId_, lens_)
+    {}
 }

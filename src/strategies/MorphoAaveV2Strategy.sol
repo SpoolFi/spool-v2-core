@@ -26,9 +26,13 @@ contract MorphoAaveV2Strategy is MorphoStrategyBase {
         __MorphoStrategyBase_init(strategyName_, poolTokenAddress_);
     }
 
-    function _compound(address[] calldata, SwapInfo[] calldata, uint256[] calldata) internal override returns (int256) {}
+    function _compound(address[] calldata, SwapInfo[] calldata, uint256[] calldata)
+        internal
+        override
+        returns (int256)
+    {}
 
-    function _getTotalBalance() internal view override returns(uint256) {
+    function _getTotalBalance() internal view override returns (uint256) {
         (,, uint256 totalBalance) = lens.getCurrentSupplyBalanceInOf(poolTokenAddress, address(this));
         return totalBalance;
     }

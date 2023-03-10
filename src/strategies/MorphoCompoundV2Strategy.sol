@@ -26,7 +26,7 @@ contract MorphoCompoundV2Strategy is MorphoStrategyBase {
         __MorphoStrategyBase_init(strategyName_, poolTokenAddress_);
     }
 
-    function _getTotalBalance() internal view override returns(uint256) {
+    function _getTotalBalance() internal view override returns (uint256) {
         (,, uint256 totalBalance) = lens.getCurrentSupplyBalanceInOf(poolTokenAddress, address(this));
         return totalBalance;
     }

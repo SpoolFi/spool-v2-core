@@ -64,7 +64,9 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
         // act
         morphoCompoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
 
-        (uint256 balanceOnPool, uint256 balanceInP2P, uint256 totalAssetBalance) = lens.getCurrentSupplyBalanceInOf(morphoCompoundV2Strategy.poolTokenAddress(), address(morphoCompoundV2Strategy));
+        (uint256 balanceOnPool, uint256 balanceInP2P, uint256 totalAssetBalance) = lens.getCurrentSupplyBalanceInOf(
+            morphoCompoundV2Strategy.poolTokenAddress(), address(morphoCompoundV2Strategy)
+        );
 
         console.log("balanceOnPool", balanceOnPool);
         console.log("balanceInP2P", balanceInP2P);
@@ -159,6 +161,7 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
 
         // - mint some reward tokens by skipping blocks (should be 41792137860151927 COMP, depends on the forked block number)
         vm.roll(block.number + 7200);
+        skip(60 * 60 * 24);
 
         uint256 balanceOfStrategyBefore = _getDepositedAssetBalance();
 
@@ -167,21 +170,19 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
         compoundSwapInfo[0] = SwapInfo({
             swapTarget: address(exchange),
             token: address(rewardToken),
-            amountIn: 1,
-            swapCallData: abi.encodeCall(exchange.swap, (address(rewardToken), 1, address(swapper)))
+            amountIn: 41792137860151927,
+            swapCallData: abi.encodeCall(exchange.swap, (address(rewardToken), 41792137860151927, address(swapper)))
         });
 
-        console.log("RT:", rewardToken.balanceOf(address(morphoCompoundV2Strategy)));
+        uint256[] memory slippages = new uint256[](1);
+        slippages[0] = 1;
 
-        uint256[] memory slippages = new uint256[](0);
-        // slippages[0] = 1;
-
-        int256 compoundYieldPercentage = morphoCompoundV2Strategy.exposed_compound(assetGroup, compoundSwapInfo, slippages);
+        int256 compoundYieldPercentage =
+            morphoCompoundV2Strategy.exposed_compound(assetGroup, compoundSwapInfo, slippages);
 
         // assert
         uint256 balanceOfStrategyAfter = _getDepositedAssetBalance();
 
-        // uint256 idleTokenBalanceOfStrategyAfter = idleToken.balanceOf(address(idleStrategy));
         int256 compoundYieldPercentageExpected =
             int256((balanceOfStrategyAfter - balanceOfStrategyBefore) * YIELD_FULL_PERCENT / balanceOfStrategyBefore);
 
@@ -205,11 +206,14 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
     }
 
     function _getDepositedAssetBalance() private view returns (uint256 totalAssetBalance) {
-        (,, totalAssetBalance) = lens.getCurrentSupplyBalanceInOf(morphoCompoundV2Strategy.poolTokenAddress(), address(morphoCompoundV2Strategy));
+        (,, totalAssetBalance) = lens.getCurrentSupplyBalanceInOf(
+            morphoCompoundV2Strategy.poolTokenAddress(), address(morphoCompoundV2Strategy)
+        );
     }
 
     function _getAssetBalanceOfProtocol() private view returns (uint256) {
-        return tokenUsdc.balanceOf(address(morphoCompoundV2Strategy)) + tokenUsdc.balanceOf(address(morphoCompoundV2Strategy.poolTokenAddress()));
+        return tokenUsdc.balanceOf(address(morphoCompoundV2Strategy))
+            + tokenUsdc.balanceOf(address(morphoCompoundV2Strategy.poolTokenAddress()));
     }
 }
 
@@ -223,5 +227,15 @@ contract MorphoCompoundV2StrategyHarness is MorphoCompoundV2Strategy, StrategyHa
         ISwapper swapper_,
         uint256 assetGroupId_,
         ILens lens_
-    ) MorphoCompoundV2Strategy(assetGroupRegistry_, accessControl_, morpho_, poolRewardToken_, swapper_, assetGroupId_, lens_) {}
+    )
+        MorphoCompoundV2Strategy(
+            assetGroupRegistry_,
+            accessControl_,
+            morpho_,
+            poolRewardToken_,
+            swapper_,
+            assetGroupId_,
+            lens_
+        )
+    {}
 }
