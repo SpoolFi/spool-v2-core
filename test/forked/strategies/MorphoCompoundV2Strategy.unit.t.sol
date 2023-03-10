@@ -119,14 +119,13 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
         uint256 usdcBalanceOfCTokenAfter = _getAssetBalanceOfProtocol();
         uint256 usdcBalanceOfEmergencyWithdrawalRecipient = tokenUsdc.balanceOf(emergencyWithdrawalRecipient);
 
-        uint256 cTokenBalanceOfStrategy = _getDepositedAssetBalance();
+        uint256 balanceOfStrategyAfter = _getDepositedAssetBalance();
 
         assertApproxEqAbs(usdcBalanceOfCTokenBefore - usdcBalanceOfCTokenAfter, toDeposit, 1);
         assertApproxEqAbs(usdcBalanceOfEmergencyWithdrawalRecipient, toDeposit, 1);
-        assertEq(cTokenBalanceOfStrategy, 0);
+        assertEq(balanceOfStrategyAfter, 0);
     }
 
-    // TODO: add test
     function test_compound() public {
         // arrange
         IERC20 rewardToken = morphoCompoundV2Strategy.poolRewardToken();

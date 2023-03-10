@@ -119,11 +119,11 @@ contract MorphoAaveV2StrategyTest is TestFixture, ForkTestFixture {
         uint256 usdcBalanceOfCTokenAfter = _getAssetBalanceOfProtocol();
         uint256 usdcBalanceOfEmergencyWithdrawalRecipient = tokenUsdc.balanceOf(emergencyWithdrawalRecipient);
 
-        uint256 cTokenBalanceOfStrategy = _getDepositedAssetBalance();
+        uint256 balanceOfStrategyAfter = _getDepositedAssetBalance();
 
         assertApproxEqAbs(usdcBalanceOfCTokenBefore - usdcBalanceOfCTokenAfter, toDeposit, 1);
         assertApproxEqAbs(usdcBalanceOfEmergencyWithdrawalRecipient, toDeposit, 1);
-        assertEq(cTokenBalanceOfStrategy, 0);
+        assertEq(balanceOfStrategyAfter, 0);
     }
 
     function test_getUsdWorth() public {
