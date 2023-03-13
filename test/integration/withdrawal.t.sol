@@ -36,6 +36,7 @@ contract WithdrawalIntegrationTest is Test {
 
     MockStrategy strategyA;
     MockStrategy strategyB;
+    IStrategy ghostStrategy;
     address[] mySmartVaultStrategies;
 
     Swapper private swapper;
@@ -72,7 +73,7 @@ contract WithdrawalIntegrationTest is Test {
         assetGroupRegistry.initialize(assetGroup);
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
-        IStrategy ghostStrategy = new GhostStrategy();
+        ghostStrategy = new GhostStrategy();
         priceFeedManager = new MockPriceFeedManager();
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager, address(ghostStrategy));
         IActionManager actionManager = new ActionManager(accessControl);
@@ -482,5 +483,62 @@ contract WithdrawalIntegrationTest is Test {
 
         assertEq(tokenA.balanceOf(address(0xabc)), 40 ether + 10 ether);
         assertEq(tokenB.balanceOf(address(0xabc)), 2.72 ether + 0.67 ether);
+    }
+
+    function test_emergencyWithdraw_shouldSkipGhostStrategy() public {
+        // set initial state
+        deal(address(strategyA), address(mySmartVault), 40_000_000, true);
+        deal(address(tokenA), address(strategyA.protocol()), 40 ether, true);
+        deal(address(tokenB), address(strategyA.protocol()), 2.72 ether, true);
+
+        // withdraw fast
+        uint256[][] memory withdrawalSlippages = new uint256[][](2);
+        withdrawalSlippages[0] = new uint256[](0);
+        withdrawalSlippages[1] = new uint256[](0);
+
+        strategyRegistry.setEmergencyWithdrawalWallet(address(0xabc));
+
+        accessControl.grantRole(ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, alice);
+        vm.startPrank(alice);
+        strategyRegistry.emergencyWithdraw(
+            Arrays.toArray(address(ghostStrategy), address(strategyA)), withdrawalSlippages, true
+        );
+        vm.stopPrank();
+
+        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 0);
+        assertEq(tokenB.balanceOf(address(strategyA.protocol())), 0);
+        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 0);
+        assertEq(tokenB.balanceOf(address(strategyB.protocol())), 0);
+
+        assertEq(tokenA.balanceOf(address(0xabc)), 40 ether);
+        assertEq(tokenB.balanceOf(address(0xabc)), 2.72 ether);
+    }
+
+    function test_redeemStrategyShares_shouldSkipGhostStrategy() public {
+        // set initial state
+        deal(address(strategyA), alice, 40_000_000, true);
+        deal(address(tokenA), address(strategyA.protocol()), 40 ether, true);
+        deal(address(tokenB), address(strategyA.protocol()), 2.72 ether, true);
+
+        // redeem strategy shares
+        uint256[][] memory withdrawalSlippages = new uint256[][](2);
+        withdrawalSlippages[0] = new uint256[](0);
+        withdrawalSlippages[1] = new uint256[](0);
+
+        vm.startPrank(alice);
+        strategyRegistry.redeemStrategyShares(
+            Arrays.toArray(address(ghostStrategy), address(strategyA)),
+            Arrays.toArray(40_000_000, 40_000_000),
+            withdrawalSlippages
+        );
+        vm.stopPrank();
+
+        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 0);
+        assertEq(tokenB.balanceOf(address(strategyA.protocol())), 0);
+        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 0);
+        assertEq(tokenB.balanceOf(address(strategyB.protocol())), 0);
+
+        assertEq(tokenA.balanceOf(alice), 40 ether);
+        assertEq(tokenB.balanceOf(alice), 2.72 ether);
     }
 }

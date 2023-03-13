@@ -470,10 +470,10 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         bool removeStrategies
     ) external onlyRole(ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, msg.sender) {
         for (uint256 i; i < strategies.length; ++i) {
-            _checkRole(ROLE_STRATEGY, strategies[i]);
             if (strategies[i] == _ghostStrategy) {
                 continue;
             }
+            _checkRole(ROLE_STRATEGY, strategies[i]);
 
             IStrategy(strategies[i]).emergencyWithdraw(withdrawalSlippages[i], emergencyWithdrawalWallet);
 
@@ -491,10 +491,10 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         uint256[][] calldata withdrawalSlippages
     ) external {
         for (uint256 i; i < strategies.length; ++i) {
-            _checkRole(ROLE_STRATEGY, strategies[i]);
             if (strategies[i] == _ghostStrategy) {
                 continue;
             }
+            _checkRole(ROLE_STRATEGY, strategies[i]);
 
             address[] memory assetGroup = IStrategy(strategies[i]).assets();
             uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(assetGroup, _priceFeedManager);
