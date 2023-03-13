@@ -15,7 +15,7 @@ contract AllocationProviderLinear is IAllocationProvider {
         uint24[21] memory riskArray = [
             100000,
             95000,
-            900000,
+            90000,
             85000,
             80000,
             75000,
