@@ -211,6 +211,97 @@ contract DhwTest is TestFixture {
         assertEq(tokenC.balanceOf(alice), tokenCInitialBalance);
     }
 
+    function test_dhw_tokenOrder() public {
+        address bob = address(0xb);
+        address anotherVault = address(0xc);
+
+        uint256 tokenAInitialBalance = 100 ether;
+        uint256 tokenBInitialBalance = 10 ether;
+        uint256 tokenCInitialBalance = 500 ether;
+
+        // set initial state
+        deal(address(tokenA), alice, tokenAInitialBalance, true);
+        deal(address(tokenB), alice, tokenBInitialBalance, true);
+        deal(address(tokenC), alice, tokenCInitialBalance, true);
+        deal(address(tokenA), bob, tokenAInitialBalance, true);
+        deal(address(tokenB), bob, tokenBInitialBalance, true);
+        deal(address(tokenC), bob, tokenCInitialBalance, true);
+
+        deal(address(tokenA), address(strategyA.protocol()), 1000 ether, true);
+        deal(address(tokenB), address(strategyA.protocol()), 1000 ether, true);
+        deal(address(tokenC), address(strategyA.protocol()), 1000 ether, true);
+        deal(address(strategyA), anotherVault, 100 ether, true);
+
+        // Alice deposits
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
+
+        vm.stopPrank();
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // DHW - DEPOSIT
+        vm.startPrank(doHardWorker);
+        DoHardWorkParameterBag memory dhwParams = generateDhwParameterBag(smartVaultStrategies, assetGroup);
+        strategyRegistry.doHardWork(dhwParams);
+        vm.stopPrank();
+
+        // sync vault
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        // claim deposit
+        vm.startPrank(alice);
+        smartVaultManager.claimSmartVaultTokens(
+            address(smartVault), Arrays.toArray(aliceDepositNftId), Arrays.toArray(NFT_MINTED_SHARES)
+        );
+        vm.stopPrank();
+
+        // Bob deposits
+        vm.startPrank(bob);
+
+        depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        uint256 bobDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, bob, address(0), false));
+
+        vm.stopPrank();
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // DHW - DEPOSIT
+        vm.startPrank(doHardWorker);
+        // change order of tokens
+        (dhwParams.tokens[0], dhwParams.tokens[1], dhwParams.tokens[2]) =
+            (dhwParams.tokens[1], dhwParams.tokens[2], dhwParams.tokens[0]);
+        (dhwParams.exchangeRateSlippages[0], dhwParams.exchangeRateSlippages[1], dhwParams.exchangeRateSlippages[2]) =
+            (dhwParams.exchangeRateSlippages[1], dhwParams.exchangeRateSlippages[2], dhwParams.exchangeRateSlippages[0]);
+        strategyRegistry.doHardWork(dhwParams);
+        vm.stopPrank();
+
+        // claim deposit
+        vm.startPrank(bob);
+        smartVaultManager.claimSmartVaultTokens(
+            address(smartVault), Arrays.toArray(bobDepositNftId), Arrays.toArray(NFT_MINTED_SHARES)
+        );
+        vm.stopPrank();
+
+        assertEq(smartVault.balanceOf(alice), smartVault.balanceOf(bob));
+    }
+
     function test_dhw_revertInvalidParams() public {
         // Alice deposits
         uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);

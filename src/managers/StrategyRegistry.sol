@@ -321,7 +321,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                             compoundSwapInfo: dhwParams.compoundSwapInfo[i][j],
                             slippages: dhwParams.strategySlippages[i][j],
                             assetGroup: assetGroup,
-                            exchangeRates: exchangeRates,
+                            exchangeRates: assetGroupExchangeRates,
                             withdrawnShares: _sharesRedeemed[strategy][dhwIndex],
                             masterWallet: address(_masterWallet),
                             priceFeedManager: _priceFeedManager,
@@ -332,7 +332,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
                     // Bookkeeping.
                     _dhwAssetRatios[strategy] = IStrategy(strategy).assetRatio();
-                    _exchangeRates[strategy][dhwIndex].setValues(exchangeRates);
+                    _exchangeRates[strategy][dhwIndex].setValues(assetGroupExchangeRates);
                     _assetsWithdrawn[strategy][dhwIndex].setValues(dhwInfo.assetsWithdrawn);
 
                     ++_currentIndexes[strategy];
