@@ -338,12 +338,13 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             uint256 stratFlushUsd = atDhw.totalStrategyValue * flushSsts / atDhw.totalSSTs;
             totalUsd[1] += stratFlushUsd;
 
-            if (parameters.fees.performanceFeePct > 0 && prevYields.length > 0) {
+            if (parameters.fees.performanceFeePct > 0 && prevYields.length > 0 && atDhw.dhwYields > prevYields[i]) {
+                // dhwYield = prevYield + trueYield + prevYield * trueYield
+                // => trueYield = (dhwYield - prevYield) / (1 + prevYield)
+                int256 trueYieldPct = YIELD_FULL_PERCENT_INT * (atDhw.dhwYields - prevYields[i])
+                    / (YIELD_FULL_PERCENT_INT + prevYields[i]);
                 totalFlushYieldUsd += int256(stratFlushUsd)
-                    - (
-                        int256(stratFlushUsd) * YIELD_FULL_PERCENT_INT
-                            / (YIELD_FULL_PERCENT_INT + atDhw.dhwYields - prevYields[i])
-                    );
+                    - (int256(stratFlushUsd) * YIELD_FULL_PERCENT_INT / (YIELD_FULL_PERCENT_INT + trueYieldPct));
             }
         }
 

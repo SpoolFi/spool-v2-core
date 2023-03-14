@@ -346,11 +346,14 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
                     ++_currentIndexes[strategy];
 
+                    int256 yield = int256(_stateAtDhw[strategy][dhwIndex - 1].yield);
+                    yield += dhwInfo.yieldPercentage + yield * dhwInfo.yieldPercentage / YIELD_FULL_PERCENT_INT;
+
                     _stateAtDhw[strategy][dhwIndex] = StateAtDhwIndex({
                         sharesMinted: uint128(dhwInfo.sharesMinted),
                         totalStrategyValue: uint128(dhwInfo.valueAtDhw),
                         totalSSTs: uint128(dhwInfo.totalSstsAtDhw),
-                        yield: int96(dhwInfo.yieldPercentage) + _stateAtDhw[strategy][dhwIndex - 1].yield, // accumulate the yield from before
+                        yield: int96(yield), // accumulate the yield from before
                         timestamp: uint32(block.timestamp)
                     });
 

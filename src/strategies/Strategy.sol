@@ -94,8 +94,11 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         uint256[] memory usdWorth = new uint256[](2);
 
         // Compound and get USD value.
-        dhwInfo.yieldPercentage = _getYieldPercentage(dhwParams.baseYield);
-        dhwInfo.yieldPercentage += _compound(dhwParams.assetGroup, dhwParams.compoundSwapInfo, dhwParams.slippages);
+        {
+            dhwInfo.yieldPercentage = _getYieldPercentage(dhwParams.baseYield);
+            int256 compoundYield = _compound(dhwParams.assetGroup, dhwParams.compoundSwapInfo, dhwParams.slippages);
+            dhwInfo.yieldPercentage += compoundYield + compoundYield * dhwInfo.yieldPercentage / YIELD_FULL_PERCENT_INT;
+        }
 
         // collect fees, mint SVTs relative to the yield generated
         _collectPlatformFees(dhwInfo.yieldPercentage, dhwParams.platformFees);
