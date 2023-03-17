@@ -47,6 +47,12 @@ error EcosystemFeeTooLarge(uint256 ecosystemFeePct);
 error TreasuryFeeTooLarge(uint256 treasuryFeePct);
 
 /**
+ * @notice Used when user tries to re-add a strategy that was previously removed from the system.
+ * @param strategy Strategy address
+ */
+error StrategyPreviouslyRemoved(address strategy);
+
+/**
  * @notice Represents change of state for a strategy during a DHW.
  * @custom:member exchangeRates Exchange rates between assets and USD.
  * @custom:member assetsDeposited Amount of assets deposited into the strategy.

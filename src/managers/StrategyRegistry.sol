@@ -38,6 +38,9 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     /// @notice Address to transfer withdrawn assets to in case of an emergency withdrawal.
     address public override emergencyWithdrawalWallet;
 
+    /// @notice Removed strategies
+    mapping(address => bool) private _removedStrategies;
+
     /**
      * @custom:member sharesMinted Amount of SSTs minted for deposits.
      * @custom:member totalStrategyValue Strategy value at the DHW index.
@@ -208,6 +211,8 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
      */
     function registerStrategy(address strategy) external {
         _checkRole(ROLE_SPOOL_ADMIN, msg.sender);
+
+        if (_removedStrategies[strategy]) revert StrategyPreviouslyRemoved(strategy);
         if (_accessControl.hasRole(ROLE_STRATEGY, strategy)) revert StrategyAlreadyRegistered({address_: strategy});
 
         _accessControl.grantRole(ROLE_STRATEGY, strategy);
@@ -612,5 +617,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     function _removeStrategy(address strategy) private {
         if (!_accessControl.hasRole(ROLE_STRATEGY, strategy)) revert InvalidStrategy({address_: strategy});
         _accessControl.revokeRole(ROLE_STRATEGY, strategy);
+
+        _removedStrategies[strategy] = true;
     }
 }

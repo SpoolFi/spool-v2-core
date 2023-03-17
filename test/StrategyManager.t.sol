@@ -37,6 +37,17 @@ contract StrategyRegistryTest is Test {
         strategyRegistry.registerStrategy(strategy);
     }
 
+    function test_registerStrategy_revertPreviouslyRemoved() public {
+        address strategy = address(new MockStrategy());
+        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(this));
+
+        strategyRegistry.registerStrategy(strategy);
+        strategyRegistry.removeStrategy(strategy);
+
+        vm.expectRevert(abi.encodeWithSelector(StrategyPreviouslyRemoved.selector, strategy));
+        strategyRegistry.registerStrategy(strategy);
+    }
+
     function test_removeStrategy_revertNotVaultManager() public {
         address strategy = address(new MockStrategy());
 
