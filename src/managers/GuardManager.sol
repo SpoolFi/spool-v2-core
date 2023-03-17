@@ -85,7 +85,7 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
         guardPointer[smartVaultId][requestType] = key;
     }
 
-    function _checkResult(bool success, bytes memory returnValue, bytes2 operator, bytes32 value, uint256 guardNum)
+    function _checkResult(bool success, bytes memory returnValue, bytes2 operator, uint256 value, uint256 guardNum)
         internal
         pure
     {
@@ -94,15 +94,15 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
         bool result = true;
 
         if (operator == bytes2("==")) {
-            result = abi.decode(returnValue, (bytes32)) == value;
+            result = abi.decode(returnValue, (uint256)) == value;
         } else if (operator == bytes2("<=")) {
-            result = abi.decode(returnValue, (bytes32)) <= value;
+            result = abi.decode(returnValue, (uint256)) <= value;
         } else if (operator == bytes2(">=")) {
-            result = abi.decode(returnValue, (bytes32)) >= value;
+            result = abi.decode(returnValue, (uint256)) >= value;
         } else if (operator == bytes2("<")) {
-            result = abi.decode(returnValue, (bytes32)) < value;
+            result = abi.decode(returnValue, (uint256)) < value;
         } else if (operator == bytes2(">")) {
-            result = abi.decode(returnValue, (bytes32)) > value;
+            result = abi.decode(returnValue, (uint256)) > value;
         } else {
             result = abi.decode(returnValue, (bool));
         }

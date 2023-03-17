@@ -107,7 +107,7 @@ contract NftGateGuardDemoTest is TestFixture {
             methodParamTypes: guardParamTypes,
             methodParamValues: guardParamValues,
             operator: ">=", // balance must be equal to or greater than 1
-            expectedValue: bytes32(uint256(1))
+            expectedValue: uint256(1)
         });
 
         RequestType[] memory requestTypes = new RequestType[](1);

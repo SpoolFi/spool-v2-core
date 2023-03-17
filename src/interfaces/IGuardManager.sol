@@ -33,10 +33,21 @@ enum GuardParamType {
     DynamicCustomValue
 }
 
+/**
+ * @custom:member contractAddress Address of the contract to invoke
+ * @custom:member methodSignature Signature of the method to invoke
+ * @custom:member expectedValue Value to use when comparing with the guard function result.
+ * - System only supports guards with return values that can be cast to uint256.
+ * @custom:member methodParamTypes Types of parameters that the guard function is expecting.
+ * @custom:member methodParamValues Parameter values that will be passed into the guard function call.
+ * This array should only include fixed/static values. Parameters that are resolved at runtime should be omitted.
+ * @custom:member operator The operator to use when comparing expectedValue to guard's function result.
+ * - If empty, system will assume the expected value is bool(true).
+ */
 struct GuardDefinition {
     address contractAddress;
     string methodSignature;
-    bytes32 expectedValue;
+    uint256 expectedValue;
     GuardParamType[] methodParamTypes;
     bytes[] methodParamValues;
     bytes2 operator;

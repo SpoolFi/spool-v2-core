@@ -90,7 +90,7 @@ contract TimelockGuardDemoTest is Test, TestFixture {
             methodSignature: "checkTimelock(address,uint256[],uint256)",
             methodParamValues: paramValues,
             operator: "",
-            expectedValue: 0x0
+            expectedValue: 0
         });
 
         RequestType[] memory requestTypes = new RequestType[](1);
