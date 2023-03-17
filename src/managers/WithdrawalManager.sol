@@ -143,7 +143,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
 
         emit WithdrawalClaimed(
             bag.smartVault, bag.executor, bag.assetGroupId, bag.nftIds, bag.nftAmounts, withdrawnAssets
-            );
+        );
 
         return (withdrawnAssets, bag.assetGroupId);
     }

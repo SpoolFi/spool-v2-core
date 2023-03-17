@@ -27,7 +27,13 @@ error InvalidConfiguration();
 error ExchangeRateOutOfSlippages();
 
 /**
- * @notice Used when invalida strategy is provided.
+ * @notice Used when an invalid strategy is provided.
  * @param address_ Address of the invalid strategy.
  */
 error InvalidStrategy(address address_);
+
+/**
+ * @notice Used when doing low-level call on an address that is not a contract.
+ * @param address_ Address of the contract
+ */
+error AddressNotContract(address address_);

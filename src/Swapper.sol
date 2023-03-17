@@ -6,9 +6,11 @@ import "./interfaces/ISwapper.sol";
 import "./interfaces/CommonErrors.sol";
 import "./access/SpoolAccessControllable.sol";
 import "./libraries/SpoolUtils.sol";
+import "@openzeppelin/utils/Address.sol";
 
 contract Swapper is ISwapper, SpoolAccessControllable {
     using SafeERC20 for IERC20;
+    using Address for address;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -34,6 +36,10 @@ contract Swapper is ISwapper, SpoolAccessControllable {
     ) external returns (uint256[] memory tokenAmounts) {
         // Perform the swaps.
         for (uint256 i; i < swapInfo.length; ++i) {
+            if (!swapInfo[i].swapTarget.isContract()) {
+                revert AddressNotContract(swapInfo[i].swapTarget);
+            }
+
             if (!exchangeAllowlist[swapInfo[i].swapTarget]) {
                 revert ExchangeNotAllowed(swapInfo[i].swapTarget);
             }

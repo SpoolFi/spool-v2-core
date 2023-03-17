@@ -438,7 +438,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
 
         emit DepositInitiated(
             bag.smartVault, bag.receiver, depositId, bag2.flushIndex, bag.assets, bag2.depositor, bag.referral
-            );
+        );
 
         return depositId;
     }

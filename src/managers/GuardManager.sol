@@ -2,11 +2,14 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/utils/Strings.sol";
+import "@openzeppelin/utils/Address.sol";
 import "@solmate/utils/SSTORE2.sol";
 import "../interfaces/IGuardManager.sol";
 import "../access/SpoolAccessControllable.sol";
 
 contract GuardManager is IGuardManager, SpoolAccessControllable {
+    using Address for address;
+
     /* ========== STATE VARIABLES ========== */
 
     mapping(address => bool) public guardsInitialized;
@@ -25,6 +28,10 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
 
         for (uint256 i; i < guards.length; ++i) {
             GuardDefinition memory guard = guards[i];
+
+            if (!guard.contractAddress.isContract()) {
+                revert AddressNotContract(guard.contractAddress);
+            }
 
             bytes memory encoded = _encodeFunctionCall(smartVaultId, guard, context);
             (bool success, bytes memory data) = guard.contractAddress.staticcall(encoded);
