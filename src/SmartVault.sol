@@ -29,12 +29,6 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
 
     /* ========== STATE VARIABLES ========== */
 
-    /// @notice Mapping from user to all of his current D-NFT IDs
-    mapping(address => mapping(uint256 => uint256)) private _activeUserNFTIds;
-
-    /// @notice Number of active (not burned) NFTs per address
-    mapping(address => uint256) private _activeUserNFTCount;
-
     /// @notice Deposit metadata registry
     mapping(uint256 => DepositMetadata) private _depositMetadata;
 
@@ -123,10 +117,6 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         }
 
         return batchBalances;
-    }
-
-    function activeUserNFTIds(address userAddress) external view returns (uint256[] memory) {
-        return _activeUserNFTIds[userAddress].toArray(_activeUserNFTCount[userAddress]);
     }
 
     function vaultName() external view returns (string memory) {
@@ -232,9 +222,8 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         _requireNotPaused();
 
         // mint / burn / redeem
-        if (from == address(0) || to == address(0) || to == address(this)) {
-            return;
-        }
+        if (from == address(0) || to == address(0) || to == address(this)) return;
+        if (from == to) revert SenderEqualsRecipient();
 
         uint256[] memory assets = new uint256[](1);
         assets[0] = amount;
@@ -262,9 +251,8 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
 
         // skip transfer checks when minting and burning
         // they have their own checks made
-        if (from == address(0) || to == address(0)) {
-            return;
-        }
+        if (from == address(0) || to == address(0)) return;
+        if (from == to) revert SenderEqualsRecipient();
 
         // check that only full NFT can be transferred
         for (uint256 i; i < ids.length; ++i) {
@@ -285,37 +273,5 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
             tokens: new address[](0)
         });
         _guardManager.runGuards(address(this), context);
-    }
-
-    function _afterTokenTransfer(
-        address,
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory,
-        bytes memory
-    ) internal override {
-        // burn
-        if (to == address(0)) {
-            uint256 count = _activeUserNFTCount[from];
-            for (uint256 i; i < ids.length; ++i) {
-                for (uint256 j = 0; j < count; j++) {
-                    if (_activeUserNFTIds[from][j] == ids[i]) {
-                        _activeUserNFTIds[from][j] = _activeUserNFTIds[from][count - 1];
-                        count--;
-                        break;
-                    }
-                }
-            }
-
-            _activeUserNFTCount[from] = count;
-            return;
-        }
-
-        // mint or transfer
-        for (uint256 i; i < ids.length; ++i) {
-            _activeUserNFTIds[to][_activeUserNFTCount[to]] = ids[i];
-            _activeUserNFTCount[to]++;
-        }
     }
 }

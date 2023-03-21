@@ -50,7 +50,7 @@ contract SmartVaultManagerTest is TestFixture {
         address user = address(8888);
         deal(address(testSmartVault), user, amount, true); // Depositing into a vault.
 
-        uint256 balance = smartVaultManager.getUserSVTBalance(address(testSmartVault), user);
+        uint256 balance = smartVaultManager.getUserSVTBalance(address(testSmartVault), user, new uint256[](0));
 
         assertEq(balance, amount);
     }

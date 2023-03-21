@@ -116,12 +116,12 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         assertEq(smartVault.totalSupply(), 357162800000000000000000000);
         assertEq(smartVault.balanceOf(address(smartVault)), 357162800000000000000000000);
 
-        uint256 balance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
+        uint256[] memory ids = Arrays.toArray(aliceDepositNftId);
+        uint256 balance = smartVaultManager.getUserSVTBalance(address(smartVault), alice, ids);
         assertEq(balance, 357162800000000000000000000);
 
         // claim deposit
         uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
-        uint256[] memory ids = Arrays.toArray(aliceDepositNftId);
         vm.prank(alice);
         smartVaultManager.claimSmartVaultTokens(address(smartVault), ids, amounts);
 
@@ -243,7 +243,8 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         assertEq(smartVault.totalSupply(), svtBalance);
         assertEq(smartVault.balanceOf(address(smartVault)), svtBalance);
 
-        uint256 balance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
+        uint256 balance =
+            smartVaultManager.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(aliceDepositNftId));
         assertEq(balance, svtBalance);
 
         // burn half of NFT
@@ -290,9 +291,10 @@ contract DepositIntegrationTest is IntegrationTestFixture {
             smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), true));
         vm.stopPrank();
 
+        uint256[] memory nftIds = Arrays.toArray(aliceDepositNftId);
         // DHW
         // balance before DHW should be 0
-        aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
+        aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice, nftIds);
         assertEq(smartVault.totalSupply(), 0);
         assertEq(smartVault.balanceOf(address(smartVault)), 0);
         assertEq(smartVault.balanceOf(alice), 0);
@@ -305,7 +307,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         // balance after DHW, before vault sync
         // should simulate sync
         uint256 expectedBalance = 357162800000000000000000000;
-        aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
+        aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice, nftIds);
         assertEq(smartVault.totalSupply(), 0);
         assertEq(smartVault.balanceOf(address(smartVault)), 0);
         assertEq(smartVault.balanceOf(alice), 0);
@@ -314,7 +316,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         smartVaultManager.syncSmartVault(address(smartVault), true);
 
         // balances after vault sync
-        aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
+        aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice, nftIds);
         assertEq(aliceBalance, expectedBalance);
         assertEq(smartVault.totalSupply(), expectedBalance);
         assertEq(smartVault.balanceOf(address(smartVault)), expectedBalance);
@@ -331,8 +333,9 @@ contract DepositIntegrationTest is IntegrationTestFixture {
             smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), true));
         vm.stopPrank();
 
+        nftIds = Arrays.toArray(nftIds[0], aliceDepositNftId);
         // balances after deposit #2, before DHW, should be the same
-        aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
+        aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice, nftIds);
         assertEq(aliceBalance, expectedBalance);
         assertEq(smartVault.totalSupply(), expectedBalance);
         assertEq(smartVault.balanceOf(address(smartVault)), expectedBalance);
@@ -390,7 +393,8 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         vm.stopPrank();
 
         // Alice withdraws
-        uint256 aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
+        uint256 aliceBalance =
+            smartVaultManager.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(aliceDepositNftId));
         vm.startPrank(alice);
         uint256 aliceWithdrawalNftId = smartVaultManager.redeem(
             RedeemBag(

@@ -44,6 +44,11 @@ error InvalidNftBalance(uint256 balance);
  */
 error InvalidNftTransferAmount(uint256 transferAmount);
 
+/**
+ * @notice Used when user tries to send tokens to himself.
+ */
+error SenderEqualsRecipient();
+
 /* ========== STRUCTS ========== */
 
 struct DepositMetadata {
@@ -97,14 +102,6 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
         external
         view
         returns (uint256[] memory fractionalBalances);
-
-    /**
-     * @notice Retrieves a list of active NFTs for account.
-     * @param account Account to check.
-     * @return nftIds IDs of active NFTs.
-     */
-    function activeUserNFTIds(address account) external view returns (uint256[] memory nftIds);
-
     /**
      * @notice Gets the asset group used by the smart vault.
      * @return id ID of the asset group.

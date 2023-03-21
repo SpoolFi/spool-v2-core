@@ -169,6 +169,7 @@ contract VaultSyncTest is IntegrationTestFixture {
 
     function test_syncVault_depositFees() public {
         createVault(0, 3_00, 0);
+        uint256 depositId;
 
         {
             vm.startPrank(alice);
@@ -176,7 +177,8 @@ contract VaultSyncTest is IntegrationTestFixture {
             uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
             // Deposit #1 and DHW
-            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), true));
+            depositId =
+                smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), true));
             vm.stopPrank();
 
             vm.startPrank(doHardWorker);
@@ -201,7 +203,8 @@ contract VaultSyncTest is IntegrationTestFixture {
 
         uint256 simulatedTotalSupply = smartVaultManager.getSVTTotalSupply(address(smartVault));
         address vaultOwner = accessControl.smartVaultOwner(address(smartVault));
-        uint256 ownerBalance = smartVaultManager.getUserSVTBalance(address(smartVault), vaultOwner);
+        uint256 ownerBalance =
+            smartVaultManager.getUserSVTBalance(address(smartVault), vaultOwner, Arrays.toArray(depositId));
 
         // Sync previous DHW
         smartVaultManager.syncSmartVault(address(smartVault), true);
@@ -232,36 +235,42 @@ contract VaultSyncTest is IntegrationTestFixture {
         strategyRegistry.registerStrategy(address(strategyD));
 
         address[] memory smartVaultStrategiesSingle = Arrays.toArray(address(strategyD));
-        vm.mockCall(
-            address(riskManager),
-            abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-            abi.encode(Arrays.toUint16a16(10000))
-        );
+        {
+            vm.mockCall(
+                address(riskManager),
+                abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+                abi.encode(Arrays.toUint16a16(10000))
+            );
 
-        smartVault = smartVaultFactory.deploySmartVault(
-            SmartVaultSpecification({
-                smartVaultName: "MySmartVault",
-                assetGroupId: assetGroupDId,
-                actions: new IAction[](0),
-                actionRequestTypes: new RequestType[](0),
-                guards: new GuardDefinition[][](0),
-                guardRequestTypes: new RequestType[](0),
-                strategies: smartVaultStrategiesSingle,
-                strategyAllocation: uint16a16.wrap(0),
-                riskTolerance: 4,
-                riskProvider: riskProvider,
-                managementFeePct: 0,
-                depositFeePct: 0,
-                allocationProvider: address(allocationProvider),
-                performanceFeePct: vaultPerformanceFee,
-                allowRedeemFor: true
-            })
-        );
+            smartVault = smartVaultFactory.deploySmartVault(
+                SmartVaultSpecification({
+                    smartVaultName: "MySmartVault",
+                    assetGroupId: assetGroupDId,
+                    actions: new IAction[](0),
+                    actionRequestTypes: new RequestType[](0),
+                    guards: new GuardDefinition[][](0),
+                    guardRequestTypes: new RequestType[](0),
+                    strategies: smartVaultStrategiesSingle,
+                    strategyAllocation: uint16a16.wrap(0),
+                    riskTolerance: 4,
+                    riskProvider: riskProvider,
+                    managementFeePct: 0,
+                    depositFeePct: 0,
+                    allocationProvider: address(allocationProvider),
+                    performanceFeePct: vaultPerformanceFee,
+                    allowRedeemFor: true
+                })
+            );
+        }
+
+        uint256 bobDepositId;
+        uint256 aliceDepositId;
 
         {
             vm.startPrank(alice);
             // Deposit #1 and DHW
-            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), true));
+            aliceDepositId =
+                smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), true));
             vm.stopPrank();
 
             vm.startPrank(doHardWorker);
@@ -271,7 +280,8 @@ contract VaultSyncTest is IntegrationTestFixture {
             smartVaultManager.syncSmartVault(address(smartVault), true);
 
             vm.startPrank(bob);
-            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, bob, address(0), true));
+            bobDepositId =
+                smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, bob, address(0), true));
             vm.stopPrank();
 
             DoHardWorkParameterBag memory dhwBag = generateDhwParameterBag(smartVaultStrategiesSingle, assetGroupA);
@@ -287,31 +297,31 @@ contract VaultSyncTest is IntegrationTestFixture {
 
         uint16a16 dhwIndexesBefore = uint16a16.wrap(0xff);
 
-        int256[] memory yieldsBefore = new int256[](smartVaultStrategies.length);
+        {
+            // set last yields as all zeros
+            vm.mockCall(
+                address(strategyRegistry),
+                abi.encodeCall(
+                    StrategyRegistry.strategyAtIndexBatch, (smartVaultStrategies, dhwIndexesBefore, assetGroup.length)
+                ),
+                abi.encode(new int256[](smartVaultStrategies.length))
+            );
 
-        // set last yields as all zeros
-        vm.mockCall(
-            address(strategyRegistry),
-            abi.encodeCall(
-                StrategyRegistry.strategyAtIndexBatch, (smartVaultStrategies, dhwIndexesBefore, assetGroup.length)
-            ),
-            abi.encode(yieldsBefore)
-        );
+            depositManager.syncDepositsSimulate(
+                SimulateDepositParams(
+                    address(smartVault),
+                    [uint256(0), 0, 0],
+                    smartVaultStrategies,
+                    assetGroup,
+                    dhwIndexes,
+                    dhwIndexesBefore,
+                    SmartVaultFees(0, 0, vaultPerformanceFee)
+                )
+            );
 
-        depositManager.syncDepositsSimulate(
-            SimulateDepositParams(
-                address(smartVault),
-                [uint256(0), 0, 0],
-                smartVaultStrategies,
-                assetGroup,
-                dhwIndexes,
-                dhwIndexesBefore,
-                SmartVaultFees(0, 0, vaultPerformanceFee)
-            )
-        );
-
-        // Sync previous DHW
-        smartVaultManager.syncSmartVault(address(smartVault), true);
+            // Sync previous DHW
+            smartVaultManager.syncSmartVault(address(smartVault), true);
+        }
 
         address vaultOwner = accessControl.smartVaultOwner(address(smartVault));
 
@@ -321,12 +331,15 @@ contract VaultSyncTest is IntegrationTestFixture {
         // fee is 1% of first deposit (110 eth), 10% of yield that was 10%
         assertApproxEqRel((depositAmounts[0] * 2) * smartVault.balanceOf(vaultOwner) / totalSupply, 1 ether, 1e12);
         assertApproxEqRel(
-            (depositAmounts[0] * 2) * smartVaultManager.getUserSVTBalance(address(smartVault), alice) / totalSupply,
+            (depositAmounts[0] * 2)
+                * smartVaultManager.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(aliceDepositId))
+                / totalSupply,
             depositAmounts[0] - 1 ether,
             1e12
         );
         assertApproxEqRel(
-            (depositAmounts[0] * 2) * smartVaultManager.getUserSVTBalance(address(smartVault), bob) / totalSupply,
+            (depositAmounts[0] * 2)
+                * smartVaultManager.getUserSVTBalance(address(smartVault), bob, Arrays.toArray(bobDepositId)) / totalSupply,
             depositAmounts[0],
             1e12
         );
@@ -348,7 +361,7 @@ contract VaultSyncTest is IntegrationTestFixture {
         strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
         vm.stopPrank();
 
-        uint256 aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
+        uint256 aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(nftId));
         vm.startPrank(alice);
         uint256 redeemNftId = smartVaultManager.redeem(
             RedeemBag(address(smartVault), aliceBalance, Arrays.toArray(nftId), Arrays.toArray(NFT_MINTED_SHARES)),

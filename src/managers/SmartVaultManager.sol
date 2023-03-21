@@ -143,17 +143,20 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * @notice Retrieves a Smart Vault Token Balance for user. Including the predicted balance from all current D-NFTs
      * currently in holding.
      */
-    function getUserSVTBalance(address smartVaultAddress, address userAddress) external view returns (uint256) {
+    function getUserSVTBalance(address smartVaultAddress, address userAddress, uint256[] calldata nftIds)
+        external
+        view
+        returns (uint256)
+    {
+        // Vault owner is not allowed to deposit, there fore has no D-NFTs
         if (_accessControl.smartVaultOwner(smartVaultAddress) == userAddress) {
             (, uint256 ownerSVTs,, uint256 fees) = _simulateSync(smartVaultAddress);
             return ownerSVTs + fees;
         }
 
         uint256 currentBalance = ISmartVault(smartVaultAddress).balanceOf(userAddress);
-        uint256[] memory nftIds = ISmartVault(smartVaultAddress).activeUserNFTIds(userAddress);
-
         if (nftIds.length > 0) {
-            currentBalance += _simulateNFTBurn(smartVaultAddress, userAddress, nftIds);
+            currentBalance += _simulateSyncWithBurn(smartVaultAddress, userAddress, nftIds);
         }
 
         return currentBalance;
@@ -553,8 +556,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * @dev Calculate how many SVTs a user would receive, if he were to burn his NFTs.
      * For NFTs that are part of a vault flush that haven't been synced yet, simulate vault sync.
      * We have to simulate sync in correct order, to calculate management fees.
+     * W-NFTs and NFTs with fractional balance of 0 will be skipped.
      */
-    function _simulateNFTBurn(address smartVault, address userAddress, uint256[] memory nftIds)
+    function _simulateSyncWithBurn(address smartVault, address userAddress, uint256[] memory nftIds)
         private
         view
         returns (uint256)
@@ -569,16 +573,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         bag2.tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
         FlushIndex memory flushIndex = _flushIndexes[smartVault];
 
-        // check if any have already been synced
-        for (uint256 i; i < nftIds.length; ++i) {
-            DepositMetadata memory data = abi.decode(bag2.metadata[i], (DepositMetadata));
-            if (data.flushIndex >= flushIndex.toSync) {
-                continue;
-            }
-
-            newBalance +=
-                _depositManager.getClaimedVaultTokensPreview(smartVault, data, bag2.nftBalances[i], 0, bag2.tokens);
-        }
+        // burn any NFTs that have already been synced
+        newBalance += _simulateNFTBurn(smartVault, nftIds, bag2, 0, flushIndex, false);
 
         if (flushIndex.toSync == flushIndex.current) {
             // Everything has been synced already.
@@ -611,22 +607,54 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             bag.newSVTs += syncResult.mintedSVTs;
             bag.lastDhwSynced = syncResult.dhwTimestamp;
 
-            // if any NFTs are part of this flush cycle, simulate burn
-            for (uint256 i; i < nftIds.length; ++i) {
-                DepositMetadata memory data = abi.decode(bag2.metadata[i], (DepositMetadata));
-                if (data.flushIndex != flushIndex.toSync) {
-                    continue;
-                }
-
-                newBalance += _depositManager.getClaimedVaultTokensPreview(
-                    smartVault, data, bag2.nftBalances[i], syncResult.mintedSVTs, bag2.tokens
-                );
-            }
+            // burn any NFTs that would be synced as part of this flush cycle
+            newBalance += _simulateNFTBurn(smartVault, nftIds, bag2, syncResult.mintedSVTs, flushIndex, true);
 
             flushIndex.toSync++;
         }
 
         return newBalance;
+    }
+
+    /**
+     * @dev Check how many SVTs would be received by burning the given array of NFTs
+     * @param smartVault vault address
+     * @param nftIds array of D-NFT ids
+     * @param bag NFT balances, token addresses and NFT metadata
+     * @param mintedSVTs amount of SVTs minted when syncing flush index
+     * @param flushIndex global flush index
+     * @param onlyCurrentFlushIndex whether to burn NFTs for current synced flush index or previously synced ones
+     */
+    function _simulateNFTBurn(
+        address smartVault,
+        uint256[] memory nftIds,
+        VaultSyncUserBag memory bag,
+        uint256 mintedSVTs,
+        FlushIndex memory flushIndex,
+        bool onlyCurrentFlushIndex
+    ) private view returns (uint256) {
+        uint256 SVTs;
+        for (uint256 i; i < nftIds.length; ++i) {
+            // Skip W-NFTs
+            if (nftIds[i] > MAXIMAL_DEPOSIT_ID) continue;
+
+            // Skip D-NFTs with 0 balance
+            if (bag.nftBalances[i] == 0) continue;
+
+            DepositMetadata memory data = abi.decode(bag.metadata[i], (DepositMetadata));
+
+            // we're burning NFTs that have already been synced previously
+            if (!onlyCurrentFlushIndex && data.flushIndex >= flushIndex.toSync) continue;
+
+            // we're burning NFTs for current synced flushIndex
+            if (onlyCurrentFlushIndex && data.flushIndex != flushIndex.toSync) continue;
+
+            SVTs += _depositManager.getClaimedVaultTokensPreview(
+                smartVault, data, bag.nftBalances[i], mintedSVTs, bag.tokens
+            );
+        }
+
+        return SVTs;
     }
 
     function _redeem(RedeemBag calldata bag, address receiver, address redeemer, bool doFlush)

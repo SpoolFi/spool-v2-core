@@ -7,7 +7,7 @@ import "../../src/interfaces/ISmartVaultManager.sol";
 contract MockSmartVaultBalance is ISmartVaultBalance {
     function test_mock() external pure {}
 
-    function getUserSVTBalance(address smartVault, address user) external view returns (uint256) {
+    function getUserSVTBalance(address smartVault, address user, uint256[] calldata) external view returns (uint256) {
         return IERC20(smartVault).balanceOf(user);
     }
 

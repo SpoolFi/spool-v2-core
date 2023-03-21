@@ -118,9 +118,13 @@ interface ISmartVaultBalance {
      * @notice Retrieves user balance of smart vault tokens.
      * @param smartVault Smart vault.
      * @param user User to check.
+     * @param nftIds user's NFTs (only D-NFTs, system will ignore W-NFTs)
      * @return balance SVT balance of user for smart vault.
      */
-    function getUserSVTBalance(address smartVault, address user) external view returns (uint256 balance);
+    function getUserSVTBalance(address smartVault, address user, uint256[] calldata nftIds)
+        external
+        view
+        returns (uint256 balance);
 
     /**
      * @notice Retrieves total supply of SVTs.

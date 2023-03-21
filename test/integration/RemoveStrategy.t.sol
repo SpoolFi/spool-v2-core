@@ -176,7 +176,7 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         );
         vm.stopPrank();
 
-        uint256 aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice);
+        uint256 aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(nftId));
         vm.startPrank(alice);
         uint256 redeemNftId = smartVaultManager.redeem(
             RedeemBag(address(smartVault), aliceBalance, Arrays.toArray(nftId), Arrays.toArray(NFT_MINTED_SHARES)),
