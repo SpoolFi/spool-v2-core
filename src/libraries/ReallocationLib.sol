@@ -31,6 +31,15 @@ struct ReallocationParameterBag {
     uint256[2][] exchangeRateSlippages;
 }
 
+// *Ghost strategies:*
+// Ghost strategy should not be provided among the set of strategies, even if
+// some smart vault is using it.
+// Ghost strategies only need to be handled in one point of the library, i.e.,
+// in the `mapStrategies`. There it index uint256 max, event though that is not
+// used anywhere else in the code. Other parts of the code skip the ghost
+// strategy either because its allocation does not change (it is always 0), or
+// because it is not provided in the set of all strategies.
+
 library ReallocationLib {
     using uint16a16Lib for uint16a16;
     using ArrayMappingUint256 for mapping(uint256 => uint256);
@@ -39,7 +48,8 @@ library ReallocationLib {
     /**
      * @notice Reallocates smart vaults.
      * @param smartVaults Smart vaults to reallocate.
-     * @param strategies Set of strategies involved in the reallocation.
+     * @param strategies Set of strategies involved in the reallocation. Should not include ghost strategy.
+     * @param ghostStrategy Address of ghost strategy.
      * @param reallocationParams Bag with reallocation parameters.
      * @param _smartVaultStrategies Strategies per smart vault.
      * @param _smartVaultAllocations Allocations per smart vault.
@@ -47,12 +57,14 @@ library ReallocationLib {
     function reallocate(
         address[] calldata smartVaults,
         address[] calldata strategies,
+        address ghostStrategy,
         ReallocationParameterBag calldata reallocationParams,
         mapping(address => address[]) storage _smartVaultStrategies,
         mapping(address => uint16a16) storage _smartVaultAllocations
     ) public {
         // Validate provided strategies and create a per smart vault strategy mapping.
-        uint256[][] memory strategyMapping = mapStrategies(smartVaults, strategies, _smartVaultStrategies);
+        uint256[][] memory strategyMapping =
+            mapStrategies(smartVaults, strategies, ghostStrategy, _smartVaultStrategies);
 
         // Calculate reallocations needed for smart vaults.
         uint256[][][] memory reallocations = new uint256[][][](smartVaults.length);
@@ -77,15 +89,18 @@ library ReallocationLib {
      * Also validates that provided strategies form a set of smart vaults' strategies.
      * @param smartVaults Smart vaults to reallocate.
      * @param strategies Set of strategies involved in the reallocation.
+     * @param ghostStrategy Address of ghost strategy.
      * @param _smartVaultStrategies Strategies per smart vault.
      * @return Mapping between smart vault's strategies and provided strategies:
      * - first index runs over smart vaults
      * - second index runs over strategies of the smart vault.
      * - value represents a position of smart vault's strategy in the provided `strategies` array.
+     *   A uint256 max represents a ghost strategy, although it is not needed anywhere.
      */
     function mapStrategies(
         address[] calldata smartVaults,
         address[] calldata strategies,
+        address ghostStrategy,
         mapping(address => address[]) storage _smartVaultStrategies
     ) private view returns (uint256[][] memory) {
         // We want to validate that the provided strategies represent a set of all the
@@ -108,6 +123,12 @@ library ReallocationLib {
             // Loop over smart vault's strategies.
             for (uint256 j; j < smartVaultStrategiesLength; ++j) {
                 address strategy = smartVaultStrategies[j];
+                // handle ghost strategies
+                if (strategy == ghostStrategy) {
+                    strategyMapping[i][j] = type(uint256).max;
+                    continue;
+                }
+
                 bool found = false;
 
                 // Try to find the strategy in the provided list of strategies.

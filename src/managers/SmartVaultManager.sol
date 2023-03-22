@@ -408,6 +408,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         ReallocationLib.reallocate(
             reallocateParams.smartVaults,
             reallocateParams.strategies,
+            _ghostStrategy,
             reallocationParameterBag,
             _smartVaultStrategies,
             _smartVaultAllocations
