@@ -249,4 +249,37 @@ contract RewardManagerTests is Test {
         vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SPOOL_ADMIN, user));
         rewardManager.forceRemoveReward(smartVault, rewardToken);
     }
+
+    function test_removeAndExtendRewardEmission() public {
+        deal(address(rewardToken), vaultOwner, 2000 ether, true);
+        vm.startPrank(vaultOwner);
+        rewardToken.approve(address(rewardManager), 2000 ether);
+        rewardManager.addToken(smartVault, rewardToken, 20 days, 1000 ether);
+
+        skip(30 days);
+
+        rewardManager.removeReward(smartVault, rewardToken);
+        vm.expectRevert(abi.encodeWithSelector(InvalidRewardToken.selector, address(rewardToken)));
+        rewardManager.extendRewardEmission(smartVault, rewardToken, 1000 ether, 60 days);
+        vm.stopPrank();
+    }
+
+    function test_removeAndAddRewards() public {
+        deal(address(rewardToken), vaultOwner, 2000 ether, true);
+        vm.startPrank(vaultOwner);
+        rewardToken.approve(address(rewardManager), 2000 ether);
+        rewardManager.addToken(smartVault, rewardToken, 20 days, 1000 ether);
+
+        skip(30 days);
+
+        rewardManager.removeReward(smartVault, rewardToken);
+
+        skip(1 days);
+
+        rewardManager.addToken(smartVault, rewardToken, 15 days, 150 ether);
+        vm.stopPrank();
+
+        (uint32 rewardsDuration,,,) = rewardManager.rewardConfiguration(smartVault, rewardToken);
+        assertEq(rewardsDuration, 15 days);
+    }
 }

@@ -168,12 +168,10 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuardUpgradeable
      * @notice Remove reward from vault rewards configuration.
      * @dev
      * Used to sanitize vault and save on gas, after the reward has ended.
-     * Users will be able to claim rewards
      *
      * Requirements:
      *
      * - the caller must be the spool owner or Spool DAO
-     * - cannot claim vault underlying token
      * - cannot only execute if the reward finished
      *
      * @param token Token address to remove
@@ -195,6 +193,7 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuardUpgradeable
                 rewardTokens[smartVault][i] = rewardTokens[smartVault][_rewardTokensCount - 1];
 
                 delete rewardTokens[smartVault][_rewardTokensCount- 1];
+                delete rewardConfiguration[smartVault][token];
                 rewardTokensCount[smartVault]--;
                 emit RewardRemoved(smartVault, token);
 

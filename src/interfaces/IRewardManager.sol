@@ -24,8 +24,6 @@ interface IRewardManager {
         uint32 tokenAdded;
     }
 
-    // dodaj vse funkcije ki so public in external
-
     /* ========== FUNCTIONS ========== */
 
     function getRewardForDuration(address smartVault, IERC20 token) external view returns (uint256);
