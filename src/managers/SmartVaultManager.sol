@@ -24,16 +24,6 @@ import "../libraries/ArrayMapping.sol";
 import "../libraries/uint16a16Lib.sol";
 import "../libraries/ReallocationLib.sol";
 
-struct VaultSyncBag {
-    address vaultOwner;
-    uint256 oldTotalSVTs;
-    uint256 feeSVTs;
-    uint256 newSVTs;
-    uint256 lastDhwSynced;
-    uint256[] currentStrategyIndexes;
-    SmartVaultFees fees;
-}
-
 struct VaultSyncUserBag {
     address[] tokens;
     address[] strategies;
@@ -419,6 +409,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /**
      * @dev Claim strategy shares, account for withdrawn assets and sync SVTs for all new DHW runs
+     * Invariants:
+     * - There can't be more than once un-synced flush index per vault at any given time.
+     * - Flush index can't be synced, if all DHWs haven't been completed yet.
      */
     function _syncSmartVault(
         address smartVault,
@@ -426,7 +419,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address[] memory tokens,
         bool revertIfError
     ) private {
-        VaultSyncBag memory bag;
         FlushIndex memory flushIndex = _flushIndexes[smartVault];
 
         if (flushIndex.current == flushIndex.toSync) {
@@ -437,45 +429,41 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             return;
         }
 
-        bag.currentStrategyIndexes = _strategyRegistry.currentIndex(strategies_);
-        bag.vaultOwner = _accessControl.smartVaultOwner(smartVault);
-        bag.oldTotalSVTs = ISmartVault(smartVault).totalSupply() - ISmartVault(smartVault).balanceOf(bag.vaultOwner);
-        bag.lastDhwSynced = _lastDhwTimestampSynced[smartVault];
-        bag.fees = _smartVaultFees[smartVault];
+        // Pack values to avoid stack depth limit
+        uint16a16 indexes = _dhwIndexes[smartVault][flushIndex.toSync];
+        uint16a16[2] memory packedIndexes = [indexes, _getPreviousDhwIndexes(smartVault, flushIndex.toSync)];
+        DepositSyncResult memory syncResult;
 
-        while (flushIndex.toSync < flushIndex.current) {
-            uint16a16 indexes = _dhwIndexes[smartVault][flushIndex.toSync];
-            if (!_areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes, strategies_, revertIfError)) break;
-
-            _withdrawalManager.syncWithdrawals(smartVault, flushIndex.toSync, strategies_, indexes);
-            DepositSyncResult memory syncResult = _depositManager.syncDeposits(
-                smartVault,
-                [flushIndex.toSync, bag.lastDhwSynced, bag.oldTotalSVTs],
-                strategies_,
-                [indexes, _getPreviousDhwIndexes(smartVault, flushIndex.toSync)],
-                tokens,
-                bag.fees
-            );
-
-            bag.newSVTs += syncResult.mintedSVTs;
-            bag.feeSVTs += syncResult.feeSVTs;
-            bag.oldTotalSVTs += bag.newSVTs;
-            bag.lastDhwSynced = syncResult.dhwTimestamp;
-
-            emit SmartVaultSynced(smartVault, flushIndex.toSync);
-            flushIndex.toSync++;
+        // If DHWs haven't been run yet, we can't sync
+        if (!_areAllDhwRunsCompleted(_strategyRegistry.currentIndex(strategies_), indexes, strategies_, revertIfError))
+        {
+            return;
         }
 
-        if (bag.newSVTs > 0) {
-            ISmartVault(smartVault).mint(smartVault, bag.newSVTs);
-        }
+        SmartVaultFees memory fees = _smartVaultFees[smartVault];
+        address vaultOwner = _accessControl.smartVaultOwner(smartVault);
+        uint256 oldTotalSVTs = ISmartVault(smartVault).totalSupply() - ISmartVault(smartVault).balanceOf(vaultOwner);
+        // Pack values to avoid stack depth limit
+        uint256[3] memory packedParams = [flushIndex.toSync, _lastDhwTimestampSynced[smartVault], oldTotalSVTs];
 
-        if (bag.feeSVTs > 0) {
-            ISmartVault(smartVault).mint(bag.vaultOwner, bag.feeSVTs);
-        }
+        // SYNC WITHDRAWALS
+        _withdrawalManager.syncWithdrawals(smartVault, flushIndex.toSync, strategies_, indexes);
 
-        _lastDhwTimestampSynced[smartVault] = bag.lastDhwSynced;
+        // SYNC DEPOSITS
+        syncResult = _depositManager.syncDeposits(smartVault, packedParams, strategies_, packedIndexes, tokens, fees);
+
+        emit SmartVaultSynced(smartVault, flushIndex.toSync);
+        flushIndex.toSync++;
         _flushIndexes[smartVault] = flushIndex;
+        _lastDhwTimestampSynced[smartVault] = syncResult.dhwTimestamp;
+
+        if (syncResult.mintedSVTs > 0) {
+            ISmartVault(smartVault).mint(smartVault, syncResult.mintedSVTs);
+        }
+
+        if (syncResult.feeSVTs > 0) {
+            ISmartVault(smartVault).mint(vaultOwner, syncResult.feeSVTs);
+        }
     }
 
     /**
@@ -508,111 +496,120 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * @dev Calculate number of SVTs that haven't been synced yet after DHW runs
      * DHW has minted strategy shares, but vaults haven't claimed them yet.
      * Includes management fees (percentage of assets under management, distributed throughout a year) and deposit fees .
+     * Invariants:
+     * - There can't be more than once un-synced flush index per vault at any given time.
+     * - Flush index can't be synced, if all DHWs haven't been completed yet.
      */
     function _simulateSync(address smartVault)
         private
         view
-        returns (uint256 currentSupply, uint256 vaultOwnerSVTs, uint256 mintedSVTs, uint256 feeSVTs)
+        returns (uint256 oldTotalSVTs, uint256 vaultOwnerSVTs, uint256, uint256)
     {
-        VaultSyncBag memory bag;
+        address[] memory tokens;
+        address[] memory strategies_;
+        FlushIndex memory flushIndex;
+        SmartVaultFees memory fees;
+        uint16a16 indexes;
 
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-        address[] memory strategies_ = _smartVaultStrategies[smartVault];
-        bag.currentStrategyIndexes = _strategyRegistry.currentIndex(strategies_);
-        bag.lastDhwSynced = _lastDhwTimestampSynced[smartVault];
-        bag.vaultOwner = _accessControl.smartVaultOwner(smartVault);
-        vaultOwnerSVTs = ISmartVault(smartVault).balanceOf(bag.vaultOwner);
-        bag.oldTotalSVTs = ISmartVault(smartVault).totalSupply() - vaultOwnerSVTs;
-        FlushIndex memory flushIndex = _flushIndexes[smartVault];
-        bag.fees = _smartVaultFees[smartVault];
+        address vaultOwner = _accessControl.smartVaultOwner(smartVault);
 
-        while (flushIndex.toSync < flushIndex.current) {
-            uint16a16 indexes = _dhwIndexes[smartVault][flushIndex.toSync];
-
-            if (!_areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes, strategies_, false)) break;
-
-            DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(
-                SimulateDepositParams(
-                    smartVault,
-                    [flushIndex.toSync, bag.lastDhwSynced, bag.oldTotalSVTs + bag.newSVTs],
-                    strategies_,
-                    tokens,
-                    indexes,
-                    _getPreviousDhwIndexes(smartVault, flushIndex.toSync),
-                    bag.fees
-                )
-            );
-
-            bag.newSVTs += syncResult.mintedSVTs;
-            bag.feeSVTs += syncResult.feeSVTs;
-
-            bag.lastDhwSynced = syncResult.dhwTimestamp;
-            flushIndex.toSync++;
+        {
+            tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
+            vaultOwnerSVTs = ISmartVault(smartVault).balanceOf(vaultOwner);
+            strategies_ = _smartVaultStrategies[smartVault];
+            oldTotalSVTs = ISmartVault(smartVault).totalSupply() - vaultOwnerSVTs;
+            flushIndex = _flushIndexes[smartVault];
+            fees = _smartVaultFees[smartVault];
+            indexes = _dhwIndexes[smartVault][flushIndex.toSync];
         }
 
-        return (bag.oldTotalSVTs, vaultOwnerSVTs, bag.newSVTs, bag.feeSVTs);
+        // If DHWs haven't been run yet, we can't sync
+        if (!_areAllDhwRunsCompleted(_strategyRegistry.currentIndex(strategies_), indexes, strategies_, false)) {
+            return (oldTotalSVTs, vaultOwnerSVTs, 0, 0);
+        }
+
+        uint256[3] memory packedParams;
+        uint16a16 previousIndexes;
+
+        {
+            previousIndexes = _getPreviousDhwIndexes(smartVault, flushIndex.toSync);
+            uint256 lastDhwTimestamp = _lastDhwTimestampSynced[smartVault];
+            packedParams = [flushIndex.toSync, lastDhwTimestamp, oldTotalSVTs];
+        }
+
+        SimulateDepositParams memory params;
+        {
+            params =
+                SimulateDepositParams(smartVault, packedParams, strategies_, tokens, indexes, previousIndexes, fees);
+        }
+
+        DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(params);
+
+        flushIndex.toSync++;
+
+        return (oldTotalSVTs, vaultOwnerSVTs, syncResult.mintedSVTs, syncResult.feeSVTs);
     }
 
     /**
      * @dev Calculate how many SVTs a user would receive, if he were to burn his NFTs.
      * For NFTs that are part of a vault flush that haven't been synced yet, simulate vault sync.
      * We have to simulate sync in correct order, to calculate management fees.
-     * W-NFTs and NFTs with fractional balance of 0 will be skipped.
+     *
+     * Invariants:
+     * - There can't be more than once un-synced flush index per vault at any given time.
+     * - Flush index can't be synced, if all DHWs haven't been completed yet.
+     * - W-NFTs and NFTs with fractional balance of 0 will be skipped.
      */
     function _simulateSyncWithBurn(address smartVault, address userAddress, uint256[] memory nftIds)
         private
         view
-        returns (uint256)
+        returns (uint256 newBalance)
     {
-        VaultSyncBag memory bag;
         VaultSyncUserBag memory bag2;
-        uint256 newBalance;
+        FlushIndex memory flushIndex;
 
-        ISmartVault vault = ISmartVault(smartVault);
-        bag2.metadata = vault.getMetadata(nftIds);
-        bag2.nftBalances = vault.balanceOfFractionalBatch(userAddress, nftIds);
-        bag2.tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-        FlushIndex memory flushIndex = _flushIndexes[smartVault];
+        {
+            bag2.metadata = ISmartVault(smartVault).getMetadata(nftIds);
+            bag2.nftBalances = ISmartVault(smartVault).balanceOfFractionalBatch(userAddress, nftIds);
+            bag2.tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
+            bag2.strategies = _smartVaultStrategies[smartVault];
+            flushIndex = _flushIndexes[smartVault];
+        }
 
-        // burn any NFTs that have already been synced
+        // Burn any NFTs that have already been synced
         newBalance += _simulateNFTBurn(smartVault, nftIds, bag2, 0, flushIndex, false);
 
+        // Check if latest flush index has already been synced.
         if (flushIndex.toSync == flushIndex.current) {
-            // Everything has been synced already.
             return newBalance;
         }
 
-        bag.fees = _smartVaultFees[smartVault];
-        bag2.strategies = _smartVaultStrategies[smartVault];
-        bag.currentStrategyIndexes = _strategyRegistry.currentIndex(bag2.strategies);
-        bag.lastDhwSynced = _lastDhwTimestampSynced[smartVault];
-        bag.oldTotalSVTs = ISmartVault(smartVault).totalSupply()
-            - ISmartVault(smartVault).balanceOf(_accessControl.smartVaultOwner(smartVault));
+        SmartVaultFees memory fees = _smartVaultFees[smartVault];
+        uint256[] memory currentStrategyIndexes = _strategyRegistry.currentIndex(bag2.strategies);
+        uint16a16 indexes = _dhwIndexes[smartVault][flushIndex.toSync];
 
-        while (flushIndex.toSync < flushIndex.current) {
-            uint16a16 indexes = _dhwIndexes[smartVault][flushIndex.toSync];
-            if (!_areAllDhwRunsCompleted(bag.currentStrategyIndexes, indexes, bag2.strategies, false)) break;
-
-            DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(
-                SimulateDepositParams(
-                    smartVault,
-                    [flushIndex.toSync, bag.lastDhwSynced, bag.oldTotalSVTs + bag.newSVTs],
-                    bag2.strategies,
-                    bag2.tokens,
-                    indexes,
-                    _getPreviousDhwIndexes(smartVault, flushIndex.toSync),
-                    bag.fees
-                )
-            );
-
-            bag.newSVTs += syncResult.mintedSVTs;
-            bag.lastDhwSynced = syncResult.dhwTimestamp;
-
-            // burn any NFTs that would be synced as part of this flush cycle
-            newBalance += _simulateNFTBurn(smartVault, nftIds, bag2, syncResult.mintedSVTs, flushIndex, true);
-
-            flushIndex.toSync++;
+        // If DHWs haven't been run yet, we can't sync
+        if (!_areAllDhwRunsCompleted(currentStrategyIndexes, indexes, bag2.strategies, false)) {
+            return newBalance;
         }
+
+        uint256[3] memory packedParams;
+        {
+            uint256 oldTotalSVTs = ISmartVault(smartVault).totalSupply()
+                - ISmartVault(smartVault).balanceOf(_accessControl.smartVaultOwner(smartVault));
+            packedParams = [flushIndex.toSync, _lastDhwTimestampSynced[smartVault], oldTotalSVTs];
+        }
+
+        uint16a16 previousIndexes = _getPreviousDhwIndexes(smartVault, flushIndex.toSync);
+        SimulateDepositParams memory params = SimulateDepositParams(
+            smartVault, packedParams, bag2.strategies, bag2.tokens, indexes, previousIndexes, fees
+        );
+
+        // Simulate deposit sync (DHW)
+        DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(params);
+
+        // Burn any NFTs that would be synced as part of this flush cycle
+        newBalance += _simulateNFTBurn(smartVault, nftIds, bag2, syncResult.mintedSVTs, flushIndex, true);
 
         return newBalance;
     }
@@ -734,12 +731,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         if (uint16a16.unwrap(flushDhwIndexes) == 0) revert NothingToFlush();
 
-        uint16a16 currentFlushDhwIndexes = _dhwIndexes[smartVault][flushIndex.current];
+        // Skip flush if at least one strategy DHW index overlaps with the previous flush.
+        if (flushIndex.current > 0) {
+            uint16a16 currentFlushDhwIndexes = _dhwIndexes[smartVault][flushIndex.current - 1];
 
-        for (uint256 i; i < strategies_.length; ++i) {
-            if (strategies_[i] == _ghostStrategy) continue;
+            for (uint256 i; i < strategies_.length; ++i) {
+                if (strategies_[i] == _ghostStrategy) continue;
 
-            for (uint256 j; j < strategies_.length; ++j) {
                 if (flushDhwIndexes.get(i) == currentFlushDhwIndexes.get(i)) {
                     revert FlushOverlap(strategies_[i]);
                 }

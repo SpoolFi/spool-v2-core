@@ -416,4 +416,48 @@ contract DepositIntegrationTest is IntegrationTestFixture {
 
         vm.stopPrank();
     }
+
+    function test_doubleDeposit_revertOverlappingFlush() public {
+        address bob = address(0xb0b);
+
+        deal(address(tokenA), bob, 100 ether, true);
+        deal(address(tokenB), bob, 10 ether, true);
+        deal(address(tokenC), bob, 500 ether, true);
+
+        // Alice deposits
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
+
+        vm.stopPrank();
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // Deposit again should fail
+        // Bob deposits
+        vm.startPrank(bob);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        // Should revert for trying to flush after depositing
+        vm.expectRevert(abi.encodeWithSelector(FlushOverlap.selector, smartVaultStrategies[0]));
+        smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, bob, address(0), true));
+
+        smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, bob, address(0), false));
+
+        vm.stopPrank();
+
+        // Should revert for trying to flush
+        vm.expectRevert(abi.encodeWithSelector(FlushOverlap.selector, smartVaultStrategies[0]));
+        smartVaultManager.flushSmartVault(address(smartVault));
+    }
 }
