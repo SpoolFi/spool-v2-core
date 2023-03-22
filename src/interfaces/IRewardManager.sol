@@ -12,6 +12,7 @@ error RewardTokenCapReached();
 error RewardsNotFinished();
 error NewRewardRateLessThanBefore();
 error NewPeriodFinishLessThanBefore();
+error TokenNotBlacklisted();
 
 interface IRewardManager {
     /* ========== STRUCTS ========== */
@@ -35,6 +36,8 @@ interface IRewardManager {
     function extendRewardEmission(address smartVault, IERC20 token, uint256 reward, uint32 rewardsDuration) external;
 
     function addToken(address smartVault, IERC20 token, uint32 rewardsDuration, uint256 reward) external;
+
+    function removeFromBlacklist(address smartVault, IERC20 token) external;
 
     /* ========== EVENTS ========== */
 

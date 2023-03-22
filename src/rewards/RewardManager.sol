@@ -166,6 +166,22 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuardUpgradeable
     }
 
     /**
+     * @notice Removes a reward token from the blacklist
+     * Requirements:
+     * - the caller must be SPOOL ADMIN
+     * - Reward token has to be blacklisted
+     * @param smartVault Smart vault address
+     * @param token Token address to remove
+     */
+    function removeFromBlacklist(address smartVault, IERC20 token) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        if (!tokenBlacklist[smartVault][token]) {
+            revert TokenNotBlacklisted();
+        }
+
+        tokenBlacklist[smartVault][token] = false;
+    }
+
+    /**
      * @notice Remove reward from vault rewards configuration.
      * @dev
      * Used to sanitize vault and save on gas, after the reward has ended.

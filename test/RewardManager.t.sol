@@ -248,6 +248,51 @@ contract RewardManagerTests is Test {
         rewardManager.forceRemoveReward(smartVault, rewardToken);
     }
 
+    function test_removeFromBlacklist_revertMissingRole() public {
+        deal(address(rewardToken), vaultOwner, rewardAmount, true);
+
+        vm.startPrank(vaultOwner);
+        rewardToken.approve(address(rewardManager), rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        vm.stopPrank();
+
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SPOOL_ADMIN, user));
+        rewardManager.removeFromBlacklist(smartVault, rewardToken);
+    }
+
+    function test_removeFromBlacklist_revertIfNotBlacklisted() public {
+        sac.grantRole(ROLE_SPOOL_ADMIN, address(user));
+        deal(address(rewardToken), vaultOwner, rewardAmount, true);
+
+        vm.startPrank(vaultOwner);
+        rewardToken.approve(address(rewardManager), rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        vm.stopPrank();
+
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(TokenNotBlacklisted.selector));
+        rewardManager.removeFromBlacklist(smartVault, rewardToken);
+    }
+
+    function test_removeFromBlacklist_ok() public {
+        sac.grantRole(ROLE_SPOOL_ADMIN, address(user));
+        deal(address(rewardToken), vaultOwner, rewardAmount, true);
+
+        vm.startPrank(vaultOwner);
+        rewardToken.approve(address(rewardManager), rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        vm.stopPrank();
+
+        vm.startPrank(user);
+        rewardManager.forceRemoveReward(smartVault, rewardToken);
+        assertTrue(rewardManager.tokenBlacklisted(smartVault, rewardToken));
+
+        rewardManager.removeFromBlacklist(smartVault, rewardToken);
+        vm.stopPrank();
+        assertFalse(rewardManager.tokenBlacklisted(smartVault, rewardToken));
+    }
+
     function test_forceRemoveReward_revertMissingRole() public {
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
         vm.startPrank(vaultOwner);
