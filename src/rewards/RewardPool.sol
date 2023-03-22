@@ -44,7 +44,7 @@ contract RewardPool is IRewardPool, SpoolAccessControllable {
         emit PoolRootUpdated(cycle);
     }
 
-    function claim(ClaimRequest[] calldata data) public {
+    function claim(ClaimRequest[] calldata data) public whenNotPaused {
         for (uint256 i; i < data.length; ++i) {
             bytes32 leaf = _getLeaf(data[i], msg.sender);
             if (isLeafClaimed[leaf]) {

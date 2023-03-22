@@ -10,15 +10,17 @@ import "./mocks/MockToken.sol";
 contract RewardPoolTest is Test {
     IRewardPool paymentPool;
     MockToken token;
+    SpoolAccessControl accessControl;
 
     // Total rewards 5000000000000000000 per user
     bytes32 treeRoot = 0x77e3bb058cf4f611bb9c8a2f5e920ff8b745f893c484b030b2c83106d5290dbe;
     address alice = 0x1111111111111111111111111111111111111111;
 
     function setUp() public {
-        SpoolAccessControl accessControl = new SpoolAccessControl();
+        accessControl = new SpoolAccessControl();
         accessControl.initialize();
         accessControl.grantRole(ROLE_REWARD_POOL_ADMIN, address(this));
+        accessControl.grantRole(ROLE_PAUSER, address(this));
 
         paymentPool = new RewardPool(accessControl, true);
         token = new MockToken("A", "A");
@@ -266,5 +268,29 @@ contract RewardPoolTest is Test {
         vm.expectRevert(abi.encodeWithSelector(InvalidProof.selector, 0));
         paymentPool.claim(payload);
         vm.stopPrank();
+    }
+
+    function test_claim_revertSystemPaused() public {
+        bytes32[] memory proof = new bytes32[](2);
+        proof[0] = 0x860a1203a2121819132e9257ef9629d47704f0d1c0903f71aa4b5c24a666f203;
+        proof[1] = 0xd094e3ae2f9fc0a3ec98bfb30953f724c817df729ec1838a3d5b5d025b00fe4b;
+
+        ClaimRequest memory data = ClaimRequest({
+            smartVault: 0x0000000000000000000000000000000000000001,
+            token: address(token),
+            cycle: 1,
+            rewardsTotal: 5000000000000000000,
+            proof: proof
+        });
+        paymentPool.addTreeRoot(treeRoot);
+
+        ClaimRequest[] memory payload = new ClaimRequest[](1);
+        payload[0] = data;
+
+        accessControl.pause();
+
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(SystemPaused.selector));
+        paymentPool.claim(payload);
     }
 }
