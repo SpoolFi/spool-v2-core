@@ -74,15 +74,14 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
     function doHardWork(StrategyDhwParameterBag calldata dhwParams) external returns (DhwInfo memory dhwInfo) {
         _checkRole(ROLE_STRATEGY_REGISTRY, msg.sender);
 
-        // assetsToDeposit[0..token.length-1]: amount of asset i to deposit
-        // assetsToDeposit[token.length]: is there anything to deposit
-        uint256[] memory assetsToDeposit = new uint256[](dhwParams.assetGroup.length + 1);
+        bool depositNeeded;
+        uint256[] memory assetsToDeposit = new uint256[](dhwParams.assetGroup.length);
         unchecked {
             for (uint256 i; i < dhwParams.assetGroup.length; ++i) {
                 assetsToDeposit[i] = IERC20(dhwParams.assetGroup[i]).balanceOf(address(this));
 
                 if (assetsToDeposit[i] > 0) {
-                    ++assetsToDeposit[dhwParams.assetGroup.length];
+                    depositNeeded = true;
                 }
             }
         }
@@ -109,7 +108,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         uint256 withdrawnShares = dhwParams.withdrawnShares;
 
         // Calculate deposit share equivalent.
-        if (assetsToDeposit[dhwParams.assetGroup.length] > 0) {
+        if (depositNeeded) {
             uint256 valueToDeposit = dhwParams.priceFeedManager.assetToUsdCustomPriceBulk(
                 dhwParams.assetGroup, assetsToDeposit, dhwParams.exchangeRates
             );
