@@ -182,6 +182,16 @@ contract RewardManagerTests is Test {
         vm.stopPrank();
     }
 
+    function test_extendRewardEmissions_shouldNotRevertIfAddedWithZeroAmount() public {
+        deal(address(rewardToken), vaultOwner, 200 ether, true);
+        vm.startPrank(vaultOwner);
+        rewardToken.approve(address(rewardManager), 200 ether);
+        rewardManager.addToken(smartVault, rewardToken, rewardDuration, 0);
+
+        rewardManager.extendRewardEmission(smartVault, rewardToken, 1 ether, rewardDuration);
+        vm.stopPrank();
+    }
+
     function test_extendRewardEmission_ok() public {
         deal(address(rewardToken), vaultOwner, rewardAmount * 2, true);
         vm.startPrank(vaultOwner);

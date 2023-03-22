@@ -94,6 +94,7 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuardUpgradeable
         rewardTokensCount[smartVault]++;
 
         config.rewardsDuration = rewardsDuration;
+        config.tokenAdded = uint32(block.timestamp);
 
         if (reward > 0) {
             _extendRewardEmission(smartVault, token, reward);
