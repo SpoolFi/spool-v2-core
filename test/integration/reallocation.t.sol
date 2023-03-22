@@ -3504,6 +3504,167 @@ contract ReallocationIntegrationTest is Test {
         }
     }
 
+    function test_reallocate_shouldNotLeaveAnyDustSsts() public {
+        // setup:
+        // - tokens: A
+        // - smart vaults: A
+        //   - strategies: A, B
+        // reallocation
+        // - smart vault A
+        //   - strategy A: withdraw
+        //   - strategy B: deposit
+
+        // setup asset group with TokenA
+        uint256 assetGroupId;
+        {
+            assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(tokenA)));
+
+            priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
+        }
+
+        // setup strategies
+        MockStrategy strategyA;
+        MockStrategy strategyB;
+        {
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
+            strategyRegistry.registerStrategy(address(strategyA));
+
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
+            strategyRegistry.registerStrategy(address(strategyB));
+        }
+
+        // setup smart vault
+        ISmartVault smartVaultA;
+        {
+            SmartVaultSpecification memory specification = _getSmartVaultSpecification();
+            specification.smartVaultName = "SmartVaultA";
+            specification.assetGroupId = assetGroupId;
+            specification.strategies = Arrays.toArray(address(strategyA), address(strategyB));
+            vm.mockCall(
+                address(riskManager),
+                abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+                abi.encode(Arrays.toUint16a16(60_00, 40_00))
+            );
+            smartVaultA = smartVaultFactory.deploySmartVault(specification);
+        }
+
+        // setup initial state
+        {
+            deal(address(tokenA), address(strategyA.protocol()), 2_000_000, true);
+            deal(address(tokenA), address(strategyB.protocol()), 2_000_000, true);
+            deal(address(strategyA), address(bob), 1_000_000, true);
+            deal(address(strategyB), address(bob), 1_000_000, true);
+
+            // Alice deposits 615_487 TokenA wei into SmartVaultA
+            vm.startPrank(alice);
+            tokenA.approve(address(smartVaultManager), 615_487);
+            uint256 depositNft = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVaultA),
+                    assets: Arrays.toArray(615_487),
+                    receiver: alice,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+
+            // flush, DHW, sync
+            smartVaultManager.flushSmartVault(address(smartVaultA));
+
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(
+                generateDhwParameterBag(
+                    Arrays.toArray(address(strategyA), address(strategyB)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
+            );
+            vm.stopPrank();
+
+            smartVaultManager.syncSmartVault(address(smartVaultA), true);
+
+            // claim SVTs
+            vm.startPrank(alice);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVaultA), Arrays.toArray(depositNft), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+        }
+
+        console.log("token A", address(tokenA));
+        console.log("smart vault A", address(smartVaultA));
+        console.log("strategy A", address(strategyA));
+        console.log("strategy B", address(strategyB));
+
+        // check initial state
+        {
+            // - assets were routed to strategies
+            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 2_369_293);
+            assertEq(tokenA.balanceOf(address(strategyB.protocol())), 2_246_194);
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+            // - strategy tokens were minted
+            assertEq(strategyA.totalSupply(), 1_184_646);
+            assertEq(strategyB.totalSupply(), 1_123_097);
+            // - strategy tokens were distributed
+            assertEq(strategyA.balanceOf(address(smartVaultA)), 184_646);
+            assertEq(strategyB.balanceOf(address(smartVaultA)), 123_097);
+            // - smart vault tokens were minted
+            assertEq(smartVaultA.totalSupply(), 615_486_000);
+            // - smart vault tokens were distributed
+            assertEq(smartVaultA.balanceOf(alice), 615_486_000);
+        }
+
+        // mock changes in allocation
+        {
+            vm.mockCall(
+                address(riskManager),
+                abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+                abi.encode(Arrays.toUint16a16(50_00, 50_00))
+            );
+        }
+
+        // reallocate
+        {
+            vm.startPrank(reallocator);
+            smartVaultManager.reallocate(
+                generateReallocateParamBag(
+                    Arrays.toArray(address(smartVaultA)),
+                    Arrays.toArray(address(strategyA), address(strategyB)),
+                    assetGroupRegistry.listAssetGroup(assetGroupId)
+                )
+            );
+            vm.stopPrank();
+        }
+
+        // check final state
+        {
+            // - new allocation was set
+            assertEq(
+                uint16a16.unwrap(smartVaultManager.allocations(address(smartVaultA))),
+                uint16a16.unwrap(Arrays.toUint16a16(50_00, 50_00)),
+                "final allocation for smart vault A"
+            );
+            // - assets were redistributed between strategies
+            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 2_307_745, "final tokenA balance strategyA");
+            assertEq(tokenA.balanceOf(address(strategyB.protocol())), 2_307_742, "final tokenA balance strategyB");
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0, "final tokenA balance masterWallet");
+            // - strategy tokens were minted and burned
+            assertEq(strategyA.totalSupply(), 1_153_872, "final SSTA supply");
+            assertEq(strategyB.totalSupply(), 1_153_871, "final SSTB supply");
+            // - strategy tokens were distributed
+            assertEq(strategyA.balanceOf(address(smartVaultA)), 153_872, "final SSTA balance smartVaultA");
+            assertEq(strategyB.balanceOf(address(smartVaultA)), 153_871, "final SSTB balance smartVaultA");
+            assertEq(strategyA.balanceOf(address(strategyA)), 0, "final SSTA balance strategyA");
+            assertEq(strategyB.balanceOf(address(strategyB)), 0, "final SSTB balance strategyB");
+            // - smart vault tokens remain unchanged
+            assertEq(smartVaultA.totalSupply(), 615_486_000, "final SVTA supply");
+            // - smart vault tokens distribution remains unchanged
+            assertEq(smartVaultA.balanceOf(alice), 615_486_000, "final SVTA balance alice");
+        }
+    }
+
     function test_reallocate_shouldRevertWhenNotCalledByReallocator() public {
         // setup asset group with TokenA
         uint256 assetGroupId;

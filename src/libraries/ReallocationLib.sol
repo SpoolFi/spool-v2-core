@@ -67,15 +67,24 @@ library ReallocationLib {
             mapStrategies(smartVaults, strategies, ghostStrategy, _smartVaultStrategies);
 
         // Calculate reallocations needed for smart vaults.
+        // - will hold value to move between strategies of smart vaults
         uint256[][][] memory reallocations = new uint256[][][](smartVaults.length);
+        // - will hold total shares to redeem by each strategy
+        uint256[] memory totalSharesToRedeem = new uint256[](strategies.length);
         for (uint256 i; i < smartVaults.length; ++i) {
-            reallocations[i] =
-                calculateReallocation(smartVaults[i], _smartVaultStrategies[smartVaults[i]], _smartVaultAllocations);
+            address smartVault = smartVaults[i];
+            reallocations[i] = calculateReallocation(
+                smartVault,
+                strategyMapping[i],
+                totalSharesToRedeem,
+                _smartVaultStrategies[smartVault],
+                _smartVaultAllocations
+            );
         }
 
         // Build the strategy-to-strategy reallocation table.
         uint256[][][] memory reallocationTable =
-            buildReallocationTable(strategyMapping, strategies.length, reallocations);
+            buildReallocationTable(strategyMapping, strategies.length, reallocations, totalSharesToRedeem);
 
         // Do the actual reallocation with withdrawals from and deposits into the underlying protocols.
         doReallocation(strategies, reallocationParams, reallocationTable);
@@ -166,7 +175,10 @@ library ReallocationLib {
 
     /**
      * @dev Calculates reallocation needed per smart vault.
+     * Also updates the `totalSharesToRedeem`.
      * @param smartVault Smart vault.
+     * @param strategyMapping Mapping between smart vault's strategies and provided strategies.
+     * @param totalSharesToRedeem How must shares each strategy needs to redeem. Will be updated.
      * @param smartVaultStrategies Strategies of the smart vault.
      * @param _smartVaultAllocations Allocations per smart vault.
      * @return Reallocation of the smart vault:
@@ -181,6 +193,8 @@ library ReallocationLib {
      */
     function calculateReallocation(
         address smartVault,
+        uint256[] memory strategyMapping,
+        uint256[] memory totalSharesToRedeem,
         address[] storage smartVaultStrategies,
         mapping(address => uint16a16) storage _smartVaultAllocations
     ) private returns (uint256[][] memory) {
@@ -203,7 +217,8 @@ library ReallocationLib {
 
         // Compare target and current allocation.
         for (uint256 i; i < smartVaultStrategiesLength; ++i) {
-            uint256 targetValue = _smartVaultAllocations[smartVault].get(i) * totalUsdValue / totalTargetAllocation;
+            uint256 targetValue = _smartVaultAllocations[smartVault].get(i);
+            targetValue = targetValue * totalUsdValue / totalTargetAllocation;
             uint256 currentValue = SpoolUtils.getVaultStrategyUsdValue(smartVault, smartVaultStrategies[i]);
 
             if (targetValue > currentValue) {
@@ -214,13 +229,16 @@ library ReallocationLib {
                 // This strategy needs withdrawal.
 
                 // Relese strategy shares.
-                uint256 sharesToRedeem = IStrategy(smartVaultStrategies[i]).balanceOf(smartVault)
-                    * (currentValue - targetValue) / currentValue;
+                uint256 sharesToRedeem = IStrategy(smartVaultStrategies[i]).balanceOf(smartVault);
+                sharesToRedeem = sharesToRedeem * (currentValue - targetValue) / currentValue;
                 IStrategy(smartVaultStrategies[i]).releaseShares(smartVault, sharesToRedeem);
 
                 // Recalculate value to withdraw based on released shares.
                 reallocation[0][i] = IStrategy(smartVaultStrategies[i]).totalUsdValue() * sharesToRedeem
                     / IStrategy(smartVaultStrategies[i]).totalSupply();
+
+                // Update total shares to redeem for strategy.
+                totalSharesToRedeem[strategyMapping[i]] += sharesToRedeem;
             }
         }
 
@@ -232,11 +250,14 @@ library ReallocationLib {
      * @param strategyMapping Mapping between smart vault's strategies and provided strategies.
      * @param numStrategies Number of all strategies involved in the reallocation.
      * @param reallocations Reallocations needed by each smart vaults.
+     * @param totalSharesToRedeem How must shares each strategy needs to redeem.
      * @return Reallocation table:
      * - first index runs over all strategies i
      * - second index runs over all strategies j
      * - third index is 0, 1 or 2
-     *   - 0: value represent USD value that should be withdrawn by strategy i and deposited into strategy j
+     *   - 0:
+     *      - value of off-diagonal elements represent USD value that should be withdrawn by strategy i and deposited into strategy j
+     *      - value of diagonal elements represents total shares to redeem by strategy i
      *   - 1: value is not used yet
      *     - will be used to represent amount of matched shares from strategy j that are distributed to strategy i
      *   - 2: value is not used yet
@@ -245,7 +266,8 @@ library ReallocationLib {
     function buildReallocationTable(
         uint256[][] memory strategyMapping,
         uint256 numStrategies,
-        uint256[][][] memory reallocations
+        uint256[][][] memory reallocations,
+        uint256[] memory totalSharesToRedeem
     ) private pure returns (uint256[][][] memory) {
         // We want to build a reallocation table which specifies how to redistribute
         // funds from one strategy to another.
@@ -291,6 +313,12 @@ library ReallocationLib {
                     values[1] -= reallocations[i][1][k];
                 }
             }
+        }
+
+        // Loop over strategies.
+        for (uint256 i; i < numStrategies; ++i) {
+            // Set diagonal item to total shares the strategy should redeem.
+            reallocationTable[i][i][0] = totalSharesToRedeem[i];
         }
 
         return reallocationTable;
@@ -341,11 +369,23 @@ library ReallocationLib {
             uint256 totalUnmatchedWithdrawals;
 
             {
+                if (reallocationTable[i][i][0] == 0) {
+                    IStrategy(strategies[i]).beforeRedeemalCheck(0, reallocationParams.withdrawalSlippages[i]);
+
+                    // There is nothing to withdraw from strategy i.
+                    continue;
+                }
+
                 uint256[2] memory totals;
                 // totals[0] -> total withdrawals
                 // totals[1] -> total matched withdrawals
 
                 for (uint256 j; j < strategies.length; ++j) {
+                    if (j == i) {
+                        // Strategy does not reallocate to itself.
+                        continue;
+                    }
+
                     totals[0] += reallocationTable[i][j][0];
 
                     // Take smaller for matched withdrawals.
@@ -359,16 +399,9 @@ library ReallocationLib {
                 // Unmatched withdrawals are difference between total and matched withdrawals.
                 totalUnmatchedWithdrawals = totals[0] - totals[1];
 
-                if (totals[0] == 0) {
-                    IStrategy(strategies[i]).beforeRedeemalCheck(0, reallocationParams.withdrawalSlippages[i]);
-
-                    // There is nothing to withdraw from strategy i.
-                    continue;
-                }
-
                 // Calculate amount of shares to redeem and to distribute.
                 uint256 sharesToDistribute = // first store here total amount of shares that should have been withdrawn
-                 IStrategy(strategies[i]).totalSupply() * totals[0] / IStrategy(strategies[i]).totalUsdValue();
+                 reallocationTable[i][i][0];
 
                 IStrategy(strategies[i]).beforeRedeemalCheck(
                     sharesToDistribute, reallocationParams.withdrawalSlippages[i]
@@ -380,6 +413,11 @@ library ReallocationLib {
                 // Distribute matched shares to matched strategies.
                 if (sharesToDistribute > 0) {
                     for (uint256 j; j < strategies.length; ++j) {
+                        if (j == i) {
+                            // Strategy does not reallocate to itself.
+                            continue;
+                        }
+
                         uint256 matched;
 
                         // Take smaller for matched withdrawals.
@@ -420,6 +458,7 @@ library ReallocationLib {
             // Distribute withdrawn assets to strategies according to reallocation table.
             for (uint256 j; j < strategies.length; ++j) {
                 if (reallocationTable[i][j][0] <= reallocationTable[j][i][0]) {
+                    // Diagonal values will be equal, no need to check for i == j.
                     // Nothing to deposit into strategy j.
                     continue;
                 }
@@ -473,6 +512,7 @@ library ReallocationLib {
             // Distribute the minted shares to strategies that deposited into this strategy.
             for (uint256 j; j < strategies.length; ++j) {
                 if (reallocationTable[j][i][2] == 0) {
+                    // Diagonal element will be 0, no need to check i == j.
                     // No shares to give to strategy j.
                     continue;
                 }
