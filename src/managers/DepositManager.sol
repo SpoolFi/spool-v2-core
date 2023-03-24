@@ -541,14 +541,20 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         for (uint256 i; i < strategyRatios.length; ++i) {
             flushFactors[i] = new uint256[](exchangeRates.length);
 
+            if (allocation.get(i) == 0) {
+                // ghost strategy
+                // - flush factors should be set to 0, which are already by default
+                continue;
+            }
+
             uint256 normalization = 0;
             // loop over assets
-            for (uint256 j = 0; j < exchangeRates.length; j++) {
+            for (uint256 j = 0; j < exchangeRates.length; ++j) {
                 normalization += strategyRatios[i][j] * exchangeRates[j];
             }
 
             // loop over assets
-            for (uint256 j = 0; j < exchangeRates.length; j++) {
+            for (uint256 j = 0; j < exchangeRates.length; ++j) {
                 flushFactors[i][j] = allocation.get(i) * strategyRatios[i][j] * PRECISION_MULTIPLIER / normalization;
             }
         }
@@ -602,7 +608,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         // loop over strategies
         for (uint256 i; i < flushFactors.length; ++i) {
             // loop over assets
-            for (uint256 j = 0; j < flushFactors[i].length; j++) {
+            for (uint256 j = 0; j < flushFactors[i].length; ++j) {
                 depositRatio[j] += flushFactors[i][j];
             }
         }
@@ -663,7 +669,15 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
 
         // handle dust
         for (uint256 j = 0; j < bag.exchangeRates.length; j++) {
-            distribution[0][j] += bag.deposit[j] - distributed[j];
+            // We cannot just assign the dust to an arbitrary strategy (like first or last one)
+            // in case it is ghost strategy. So we need to find a strategy that was already
+            // allocated some assets and assign dust to that one instead.
+            for (uint256 i; i < bag.strategyRatios.length; ++i) {
+                if (distribution[i][j] > 0) {
+                    distribution[i][j] += bag.deposit[j] - distributed[j];
+                    break;
+                }
+            }
         }
 
         return distribution;
