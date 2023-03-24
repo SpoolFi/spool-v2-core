@@ -33,6 +33,12 @@ error IncorrectDepositRatio();
 error VaultOwnerNotAllowedToDeposit();
 
 /**
+ * @notice Used when trying to burn deposit NFT that was not synced yet.
+ * @param id ID of the NFT.
+ */
+error DepositNftNotSyncedYet(uint256 id);
+
+/**
  * @notice Contains parameters for distributeDeposit call.
  * @custom:member deposit Amounts deposited.
  * @custom:member exchangeRates Asset -> USD exchange rates.
@@ -142,7 +148,8 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         uint256[] calldata nftIds,
         uint256[] calldata nftAmounts,
         address[] calldata tokens,
-        address executor
+        address executor,
+        uint256 flushIndexToSync
     ) external returns (uint256) {
         _checkRole(ROLE_SMART_VAULT_MANAGER, msg.sender);
 
@@ -174,6 +181,10 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             // we can pass empty strategy array and empty DHW index array,
             // because vault should already be synced and mintedVaultShares values available
             bag.data = abi.decode(bag.metadata[i], (DepositMetadata));
+            if (bag.data.flushIndex >= flushIndexToSync) {
+                revert DepositNftNotSyncedYet(nftIds[i]);
+            }
+
             bag.mintedSVTs = _flushShares[smartVault][bag.data.flushIndex].mintedVaultShares;
 
             claimedVaultTokens +=

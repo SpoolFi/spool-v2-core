@@ -4,6 +4,12 @@ pragma solidity 0.8.17;
 import "../libraries/uint16a16Lib.sol";
 
 /**
+ * @notice Used when trying to burn withdrawal NFT that was not synced yet.
+ * @param id ID of the NFT.
+ */
+error WithdrawalNftNotSyncedYet(uint256 id);
+
+/**
  * @notice Base information for redeemal.
  * @custom:member smartVault Smart vault from which to redeem.
  * @custom:member shares Amount of smart vault shares to redeem.
@@ -56,6 +62,7 @@ struct RedeemExtras {
  * @custom:member executor Address that initiated the withdrawal claim.
  * @custom:member assetGroupId ID of the asset group of the smart vault.
  * @custom:member assetGroup Asset group of the smart vault.
+ * @custom:member flushIndexToSync Next flush index to sync for the smart vault.
  */
 struct WithdrawalClaimBag {
     address smartVault;
@@ -65,6 +72,7 @@ struct WithdrawalClaimBag {
     address executor;
     uint256 assetGroupId;
     address[] assetGroup;
+    uint256 flushIndexToSync;
 }
 
 interface IWithdrawalManager {

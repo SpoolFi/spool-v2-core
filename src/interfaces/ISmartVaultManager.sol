@@ -9,11 +9,6 @@ import "./IWithdrawalManager.sol";
 /* ========== ERRORS ========== */
 
 /**
- * @notice Used when trying to claim SVTs for deposit that was not synced yet.
- */
-error DepositNotSyncedYet();
-
-/**
  * @notice Used when user has insufficient balance for redeemal of shares.
  */
 error InsufficientBalance(uint256 available, uint256 required);

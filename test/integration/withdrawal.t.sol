@@ -541,4 +541,32 @@ contract WithdrawalIntegrationTest is Test {
         assertEq(tokenA.balanceOf(alice), 40 ether);
         assertEq(tokenB.balanceOf(alice), 2.72 ether);
     }
+
+    function test_claimWithdrawal_shouldRevertWhenTryingToClaimUnsyncedNfts() public {
+        // set initial state
+        deal(address(mySmartVault), alice, 4_000_000, true);
+        deal(address(mySmartVault), bob, 1_000_000, true);
+        deal(address(strategyA), address(mySmartVault), 40_000_000, true);
+        deal(address(strategyB), address(mySmartVault), 10_000_000, true);
+        deal(address(tokenA), address(strategyA.protocol()), 40 ether, true);
+        deal(address(tokenB), address(strategyA.protocol()), 2.72 ether, true);
+        deal(address(tokenA), address(strategyB.protocol()), 10 ether, true);
+        deal(address(tokenB), address(strategyB.protocol()), 0.67 ether, true);
+
+        // request withdrawal
+        vm.prank(alice);
+        uint256 aliceWithdrawalNftId = smartVaultManager.redeem(
+            RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0)), alice, false
+        );
+
+        // flush
+        smartVaultManager.flushSmartVault(address(mySmartVault));
+
+        // claim withdrawal
+        uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
+        uint256[] memory ids = Arrays.toArray(aliceWithdrawalNftId);
+        vm.expectRevert(abi.encodeWithSelector(WithdrawalNftNotSyncedYet.selector, aliceWithdrawalNftId));
+        vm.prank(alice);
+        smartVaultManager.claimWithdrawal(address(mySmartVault), ids, amounts, alice);
+    }
 }

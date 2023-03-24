@@ -225,7 +225,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         _syncSmartVault(bag.smartVault, strategies_, tokens, false);
-        _depositManager.claimSmartVaultTokens(bag.smartVault, bag.nftIds, bag.nftAmounts, tokens, msg.sender);
+        uint256 flushIndexToSync = _flushIndexes[bag.smartVault].toSync;
+        _depositManager.claimSmartVaultTokens(
+            bag.smartVault, bag.nftIds, bag.nftAmounts, tokens, msg.sender, flushIndexToSync
+        );
         return _withdrawalManager.redeemFast(
             bag,
             RedeemFastExtras(strategies_, tokens, assetGroupId_, msg.sender, withdrawalSlippages, exchangeRateSlippages)
@@ -245,7 +248,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _onlyRegisteredSmartVault(smartVault);
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
         _syncSmartVault(smartVault, _smartVaultStrategies[smartVault], tokens, false);
-        return _depositManager.claimSmartVaultTokens(smartVault, nftIds, nftAmounts, tokens, msg.sender);
+        uint256 flushIndexToSync = _flushIndexes[smartVault].toSync;
+        return
+            _depositManager.claimSmartVaultTokens(smartVault, nftIds, nftAmounts, tokens, msg.sender, flushIndexToSync);
     }
 
     function claimWithdrawal(
@@ -260,7 +265,16 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         _syncSmartVault(smartVault, _smartVaultStrategies[smartVault], tokens, false);
         return _withdrawalManager.claimWithdrawal(
-            WithdrawalClaimBag(smartVault, nftIds, nftAmounts, receiver, msg.sender, assetGroupId_, tokens)
+            WithdrawalClaimBag(
+                smartVault,
+                nftIds,
+                nftAmounts,
+                receiver,
+                msg.sender,
+                assetGroupId_,
+                tokens,
+                _flushIndexes[smartVault].toSync
+            )
         );
     }
 
@@ -664,7 +678,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
         _syncSmartVault(bag.smartVault, _smartVaultStrategies[bag.smartVault], tokens, false);
 
-        _depositManager.claimSmartVaultTokens(bag.smartVault, bag.nftIds, bag.nftAmounts, tokens, redeemer);
+        uint256 flushIndexToSync = _flushIndexes[bag.smartVault].toSync;
+        _depositManager.claimSmartVaultTokens(
+            bag.smartVault, bag.nftIds, bag.nftAmounts, tokens, redeemer, flushIndexToSync
+        );
         uint256 nftId =
             _withdrawalManager.redeem(bag, RedeemExtras(receiver, redeemer, _flushIndexes[bag.smartVault].current));
 

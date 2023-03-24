@@ -460,4 +460,87 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         vm.expectRevert(abi.encodeWithSelector(FlushOverlap.selector, smartVaultStrategies[0]));
         smartVaultManager.flushSmartVault(address(smartVault));
     }
+
+    function test_depositClaim_shouldRevertWhenTryingToClaimUnsyncedNfts() public {
+        // Alice deposits
+        vm.startPrank(alice);
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
+        vm.stopPrank();
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // try to claim SVTs
+        uint256[] memory ids = Arrays.toArray(aliceDepositNftId);
+        uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
+
+        vm.startPrank(alice);
+        vm.expectRevert(abi.encodeWithSelector(DepositNftNotSyncedYet.selector, aliceDepositNftId));
+        smartVaultManager.claimSmartVaultTokens(address(smartVault), ids, amounts);
+        vm.stopPrank();
+    }
+
+    function test_depositRedeem_shouldRevertWhenTryingToRedeemUnsyncedNfts() public {
+        // Alice deposits
+        vm.startPrank(alice);
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
+        vm.stopPrank();
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // try to redeem
+        uint256[] memory ids = Arrays.toArray(aliceDepositNftId);
+        uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
+
+        vm.startPrank(alice);
+        vm.expectRevert(abi.encodeWithSelector(DepositNftNotSyncedYet.selector, aliceDepositNftId));
+        smartVaultManager.redeem(RedeemBag(address(smartVault), 0, ids, amounts), alice, false);
+        vm.stopPrank();
+    }
+
+    function test_depositRedeemFast_shouldRevertWhenTryingToRedeemUnsyncedNfts() public {
+        // Alice deposits
+        vm.startPrank(alice);
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
+        vm.stopPrank();
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // try to redeem
+        uint256[] memory ids = Arrays.toArray(aliceDepositNftId);
+        uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
+
+        uint256[][] memory withdrawalSlippages = new uint256[][](3);
+        uint256[2][] memory exchangeRateSlippages = new uint256[2][](3);
+
+        vm.startPrank(alice);
+        vm.expectRevert(abi.encodeWithSelector(DepositNftNotSyncedYet.selector, aliceDepositNftId));
+        smartVaultManager.redeemFast(
+            RedeemBag(address(smartVault), 0, ids, amounts), withdrawalSlippages, exchangeRateSlippages
+        );
+        vm.stopPrank();
+    }
 }

@@ -117,9 +117,13 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
                 revert InvalidWithdrawalNftId(bag.nftIds[i]);
             }
 
-            uint256[] memory withdrawnAssets_ = _calculateWithdrawal(
-                bag.smartVault, abi.decode(metadata[i], (WithdrawalMetadata)), bag.assetGroup.length
-            );
+            WithdrawalMetadata memory withdrawalMetadata = abi.decode(metadata[i], (WithdrawalMetadata));
+            if (withdrawalMetadata.flushIndex >= bag.flushIndexToSync) {
+                revert WithdrawalNftNotSyncedYet(bag.nftIds[i]);
+            }
+
+            uint256[] memory withdrawnAssets_ =
+                _calculateWithdrawal(bag.smartVault, withdrawalMetadata, bag.assetGroup.length);
             for (uint256 j = 0; j < bag.assetGroup.length; j++) {
                 withdrawnAssets[j] += withdrawnAssets_[j] * bag.nftAmounts[i] / NFT_MINTED_SHARES;
             }

@@ -216,6 +216,7 @@ interface IDepositManager {
      * @param nftAmounts NFT amounts to burn (support for partial burn)
      * @param tokens vault asset group token addresses
      * @param executor address executing the claim transaction
+     * @param flushIndexToSync next flush index to sync for the smart vault
      * @return claimedTokens Amount of smart vault tokens claimed.
      */
     function claimSmartVaultTokens(
@@ -223,6 +224,7 @@ interface IDepositManager {
         uint256[] calldata nftIds,
         uint256[] calldata nftAmounts,
         address[] calldata tokens,
-        address executor
+        address executor,
+        uint256 flushIndexToSync
     ) external returns (uint256 claimedTokens);
 }
