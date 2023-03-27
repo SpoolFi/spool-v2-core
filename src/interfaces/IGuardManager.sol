@@ -17,6 +17,16 @@ error GuardFailed(uint256 guardNum);
 error InvalidGuardParamType(uint256 paramType);
 
 /**
+ * @notice Too many guard definitions have been passed when creating a vault.
+ */
+error TooManyGuards();
+
+/**
+ * @notice The guard definition does not have all required inputs
+ */
+error IncompleteGuardDefinition();
+
+/**
  * @custom:member Receiver Receiver of receipt NFT.
  * @custom:member Executor In case of deposit, executor of deposit action; in case of withdrawal, executor of redeem action.
  * @custom:member Owner In case of deposit, owner of assets; in case of withdrawal, owner of vault shares.

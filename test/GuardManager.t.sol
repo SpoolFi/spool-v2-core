@@ -165,4 +165,30 @@ contract GuardManagerTest is Test, GasHelpers {
 
         guardManager.setGuards(address(2), guards, requestTypes);
     }
+
+    function test_writeGuards_revertsTooManyGuards() public {
+        GuardDefinition[][] memory guards = new GuardDefinition[][](1);
+        guards[0] = new GuardDefinition[](20);
+        RequestType[] memory requestTypes = new RequestType[](1);
+
+        vm.expectRevert(abi.encodeWithSelector(TooManyGuards.selector));
+        guardManager.setGuards(address(2), guards, requestTypes);
+    }
+
+    function test_writeGuards_revertsIncompleteGuardDefinition() public {
+        GuardDefinition[][] memory guards = new GuardDefinition[][](1);
+        RequestType[] memory requestTypes = new RequestType[](1);
+
+        vm.expectRevert(abi.encodeWithSelector(IncompleteGuardDefinition.selector));
+        guardManager.setGuards(address(2), guards, requestTypes);
+    }
+
+    function test_writeGuards_setEmpty() public {
+        GuardDefinition[][] memory guards = new GuardDefinition[][](0);
+        RequestType[] memory requestTypes = new RequestType[](0);
+
+        guardManager.setGuards(address(2), guards, requestTypes);
+        GuardDefinition[] memory guards2 = guardManager.readGuards(address(2), RequestType.Deposit);
+        assertEq(guards2.length, 0);
+    }
 }

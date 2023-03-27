@@ -70,4 +70,13 @@ contract ActionManagerTest is Test {
         vm.prank(smartVaultId);
         actionManager.runActions(actionContext);
     }
+
+    function test_setAction_revertsTooManyActions() public {
+        IAction[] memory actions = new IAction[](20);
+        RequestType[] memory requestTypes = new RequestType[](20);
+        actionManager.whitelistAction(address(0), true);
+
+        vm.expectRevert(abi.encodeWithSelector(TooManyActions.selector));
+        actionManager.setActions(smartVaultId, actions, requestTypes);
+    }
 }

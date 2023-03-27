@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "@solmate/utils/SSTORE2.sol";
 import "../interfaces/IAction.sol";
+import "../interfaces/Constants.sol";
 import "../access/SpoolAccessControllable.sol";
 
 contract ActionManager is IActionManager, SpoolAccessControllable {
@@ -35,10 +36,16 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
         onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)
     {
         _checkInitialized(smartVault);
+
         for (uint256 i; i < actions_.length; ++i) {
             IAction action = actions_[i];
             _onlyWhitelistedAction(address(action));
             actions[smartVault][requestTypes[i]].push(address(action));
+
+            if (actions[smartVault][requestTypes[i]].length > MAX_ACTION_COUNT) {
+                revert TooManyActions();
+            }
+
             actionsExist[smartVault][requestTypes[i]] = actions_.length > 0;
         }
 

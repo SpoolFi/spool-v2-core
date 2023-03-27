@@ -81,6 +81,20 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
     }
 
     function _writeGuards(address smartVaultId, RequestType requestType, GuardDefinition[] calldata guards) internal {
+        if (guards.length == 0) {
+            revert IncompleteGuardDefinition();
+        }
+
+        if (guards.length > MAX_GUARD_COUNT) {
+            revert TooManyGuards();
+        }
+
+        for (uint256 i; i < guards.length; ++i) {
+            if (guards[i].contractAddress == address(0) || bytes(guards[i].methodSignature).length == 0) {
+                revert IncompleteGuardDefinition();
+            }
+        }
+
         address key = SSTORE2.write(abi.encode(guards));
         guardPointer[smartVaultId][requestType] = key;
     }

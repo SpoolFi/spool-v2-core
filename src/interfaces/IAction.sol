@@ -20,6 +20,11 @@ error ActionStatusAlreadySet();
 error ActionsAlreadyInitialized(address smartVault);
 
 /**
+ * @notice Too many actions have been passed when creating a vault.
+ */
+error TooManyActions();
+
+/**
  * @notice Represents a context that is sent to actions.
  * @custom:member smartVault Smart vault address
  * @custom:member recipient In case of deposit, recipient of deposit NFT; in case of withdrawal, recipient of assets.
