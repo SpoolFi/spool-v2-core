@@ -40,7 +40,10 @@ enum GuardParamType {
  * - System only supports guards with return values that can be cast to uint256.
  * @custom:member methodParamTypes Types of parameters that the guard function is expecting.
  * @custom:member methodParamValues Parameter values that will be passed into the guard function call.
- * This array should only include fixed/static values. Parameters that are resolved at runtime should be omitted.
+ * - This array should only include fixed/static values. Parameters that are resolved at runtime should be omitted.
+ * - All values should be encoded using "abi.encode" before passing them to the GuardManager contract.
+ * - We assume that all static types are encoded to 32 bytes. Fixed-size static arrays and structs with only static
+ *      type members are not supported.
  * @custom:member operator The operator to use when comparing expectedValue to guard's function result.
  * - If empty, system will assume the expected value is bool(true).
  */
@@ -71,6 +74,10 @@ interface IGuardManager {
     /**
      * @notice Runs guards for a smart vault.
      * @dev Reverts if any guard fails.
+     * The context.methodParamValues array should only include fixed/static values.
+     * Parameters that are resolved at runtime should be omitted. All values should be encoded using "abi.encode" before
+     * passing them to the GuardManager contract. We assume that all static types are encoded to 32 bytes. Fixed-size
+     * static arrays and structs with only static type members are not supported.
      * @param smartVault Smart vault for which to run the guards.
      * @param context Context for running the guards.
      */
