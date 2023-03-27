@@ -135,7 +135,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
 
     function test_deposit_shouldDepositWithGhostStrategy() public {
         // remove strategy A
-        smartVaultManager.removeStrategy(smartVaultStrategies[0], false);
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
 
         // Alice deposits into strategy
         vm.startPrank(alice);

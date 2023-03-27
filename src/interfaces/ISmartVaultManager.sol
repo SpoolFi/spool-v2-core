@@ -203,10 +203,12 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
      * @notice Removes strategy from vaults, and optionally removes it from the system as well.
      * @dev Requirements:
      * - caller must have role ROLE_SPOOL_ADMIN
+     * - the strategy has to be active (requires ROLE_STRATEGY)
      * @param strategy Strategy address to remove.
-     * @param fromVaultsOnly Whether to remove the strategy from vaults or from the system as well.
+     * @param vaults Array of vaults from which to remove the strategy
+     * @param disableStrategy Also disable the strategy across the system
      */
-    function removeStrategy(address strategy, bool fromVaultsOnly) external;
+    function removeStrategyFromVaults(address strategy, address[] calldata vaults, bool disableStrategy) external;
 
     /**
      * @notice Syncs smart vault with strategies.

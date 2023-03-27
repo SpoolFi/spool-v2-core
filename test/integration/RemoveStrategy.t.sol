@@ -35,7 +35,7 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         assertEq(smartVaultManager.strategies(address(smartVault)).length, 3);
         assertTrue(accessControl.hasRole(ROLE_STRATEGY, smartVaultStrategies[1]));
 
-        smartVaultManager.removeStrategy(smartVaultStrategies[1], false);
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[1], Arrays.toArray(address(smartVault)), true);
 
         address[] memory strategies2 = smartVaultManager.strategies(address(smartVault));
         uint16a16 allocations = smartVaultManager.allocations(address(smartVault));
@@ -56,15 +56,8 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         accessControl.grantRole(ROLE_STRATEGY, address(0xabcd));
 
         assertTrue(accessControl.hasRole(ROLE_STRATEGY, address(0xabcd)));
-        smartVaultManager.removeStrategy(address(0xabcd), true);
+        smartVaultManager.removeStrategyFromVaults(address(0xabcd), Arrays.toArray(address(smartVault)), false);
         assertTrue(accessControl.hasRole(ROLE_STRATEGY, address(0xabcd)));
-    }
-
-    function test_removeStrategy_revertInvalidStrategy() public {
-        createVault();
-
-        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_STRATEGY, address(0xabc)));
-        smartVaultManager.removeStrategy(address(0xabc), true);
     }
 
     function test_removeStrategy_betweenFlushAndDHW() public {
@@ -79,7 +72,7 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         vm.prank(alice);
         smartVaultManager.deposit(DepositBag(address(smartVault), bag.depositAmounts, alice, address(0), true));
 
-        smartVaultManager.removeStrategy(smartVaultStrategies[0], true);
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), false);
         smartVaultStrategies = smartVaultManager.strategies(address(smartVault));
 
         vm.startPrank(doHardWorker);
@@ -128,7 +121,7 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
         vm.stopPrank();
 
-        smartVaultManager.removeStrategy(smartVaultStrategies[0], true);
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), false);
         smartVaultStrategies = smartVaultManager.strategies(address(smartVault));
 
         DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
@@ -168,7 +161,7 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         uint256 nftId =
             smartVaultManager.deposit(DepositBag(address(smartVault), bag.depositAmounts, alice, address(0), true));
 
-        smartVaultManager.removeStrategy(smartVaultStrategies[0], true);
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), false);
         smartVaultStrategies = smartVaultManager.strategies(address(smartVault));
         vm.startPrank(doHardWorker);
         strategyRegistry.doHardWork(

@@ -83,9 +83,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /// @notice Current flush index and index to sync for given Smart Vault
     mapping(address => FlushIndex) internal _flushIndexes;
 
-    /// @notice List of vaults per strategy
-    mapping(address => address[]) internal _smartVaultsWithStrategy;
-
     /**
      * @notice DHW indexes for given Smart Vault and flush index
      * @dev smart vault => flush index => DHW indexes
@@ -295,9 +292,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         // set strategies
         _smartVaultStrategies[smartVault] = registrationForm.strategies;
-        for (uint256 i; i < registrationForm.strategies.length; ++i) {
-            _smartVaultsWithStrategy[registrationForm.strategies[i]].push(smartVault);
-        }
 
         // set smart vault fees
         _smartVaultFees[smartVault] = SmartVaultFees(
@@ -311,13 +305,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _smartVaultRegistry[smartVault] = true;
     }
 
-    function removeStrategy(address strategy, bool fromVaultsOnly) external {
+    function removeStrategyFromVaults(address strategy, address[] calldata vaults, bool disableStrategy) external {
         _checkRole(ROLE_SPOOL_ADMIN, msg.sender);
-        _checkRole(ROLE_STRATEGY, strategy);
 
-        for (uint256 i; i < _smartVaultsWithStrategy[strategy].length; ++i) {
-            address smartVault = _smartVaultsWithStrategy[strategy][i];
-            address[] memory strategies_ = _smartVaultStrategies[smartVault];
+        for (uint256 i; i < vaults.length; ++i) {
+            address smartVault = vaults[i];
+            address[] memory strategies_ = _smartVaultStrategies[vaults[i]];
             for (uint256 j; j < strategies_.length; ++j) {
                 if (strategies_[j] == strategy) {
                     _smartVaultStrategies[smartVault][j] = _ghostStrategy;
@@ -327,7 +320,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             }
         }
 
-        if (!fromVaultsOnly) {
+        if (disableStrategy) {
             _strategyRegistry.removeStrategy(strategy);
         }
     }

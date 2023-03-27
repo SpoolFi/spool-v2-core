@@ -3448,7 +3448,7 @@ contract ReallocationIntegrationTest is Test {
 
         // remove strategy B and update allocation
         {
-            smartVaultManager.removeStrategy(address(strategyB), false);
+            smartVaultManager.removeStrategyFromVaults(address(strategyB), Arrays.toArray(address(smartVaultA)), true);
 
             vm.mockCall(
                 address(riskManager),
