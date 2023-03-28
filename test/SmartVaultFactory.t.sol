@@ -237,6 +237,13 @@ contract SmartVaultFactoryTest is Test {
         factory.deploySmartVault(_getSpecification());
     }
 
+    function test_deploySmartVault_shouldSetOwnerAndAdmin() public {
+        ISmartVault smartVault = factory.deploySmartVault(_getSpecification());
+
+        assertEq(accessControl.smartVaultOwner(address(smartVault)), address(this));
+        assertTrue(accessControl.hasSmartVaultRole(address(smartVault), ROLE_SMART_VAULT_ADMIN, address(this)));
+    }
+
     function test_deploySmartVault_shouldEmitSmartVaultDeployed() public {
         vm.expectEmit(false, false, false, false);
         emit SmartVaultDeployed(address(0x0), address(0x0));

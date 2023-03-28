@@ -100,7 +100,7 @@ interface ISpoolAccessControl is IAccessControlUpgradeable {
     function renounceSmartVaultRole(address smartVault, bytes32 role) external;
 
     /**
-     * @notice Grant ownership to smart vault.
+     * @notice Grant ownership to smart vault and assigns admin role.
      * @dev Ownership can only be granted once and it should be done at vault creation time.
      * @param smartVault Address of the smart vault.
      * @param owner address to which grant ownership to

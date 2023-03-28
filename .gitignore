@@ -3,6 +3,7 @@
 /.idea/**
 /ffline/**
 /broadcast/*/31337/**
+/deploy/local-mainnet.*
 /.env
 /lcov.info
 /lcov/**

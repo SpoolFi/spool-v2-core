@@ -16,6 +16,10 @@ import "../access/SpoolAccessControllable.sol";
 import "../libraries/ArrayMapping.sol";
 import "../libraries/uint128a2Lib.sol";
 
+/**
+ * @dev Requires roles:
+ * - ROLE_MASTER_WALLET_MANAGER
+ */
 contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
     using SafeERC20 for IERC20;
     using uint128a2Lib for uint128a2;

@@ -44,6 +44,22 @@ The html report is then available at `./coverage/src/index.html`.
 
 The `genhtml` tool is not available for Windows, but WSL can be used to bypass this limitation.
 
+To locally test deployment, set `PRIVATE_KEY` and `NETWORK` in the `.env` file. Use `.env.sample` as a guide. Then set `deploy/<NETWORK>.constants.json` file. Use `deploy/sample.constants.json` as a guide.
+
+Then run anvil in one terminal:
+
+```
+anvil
+```
+
+Finally you can execute deployment script by
+
+```
+forge script script/DeploySpool.s.sol:DeploySpool --fork-url http://localhost:8545 --broadcast
+```
+
+The addresses of deployed contracts will be listed in the `deploy/<NETWORK>.contracts.json` file.
+
 ## Smart Contract Overview
 
 ### SmartVaultManager.sol

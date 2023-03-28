@@ -21,7 +21,10 @@ bytes32 constant ROLE_SPOOL_ADMIN = 0x00;
 bytes32 constant ROLE_SMART_VAULT_INTEGRATOR = keccak256("ROLE_SMART_VAULT_INTEGRATOR");
 
 /**
- * @dev Grants permission to manage rewards on smart vaults.
+ * @dev Grants permission to
+ * - manage rewards on smart vaults,
+ * - manage roles on smart vaults,
+ * - redeem for another user of a smart vault.
  */
 bytes32 constant ROLE_SMART_VAULT_ADMIN = keccak256("SMART_VAULT_ADMIN");
 
@@ -37,9 +40,12 @@ bytes32 constant ROLE_GUARD_ALLOWLIST_MANAGER = keccak256("GUARD_ALLOWLIST_MANAG
  *
  * Should be granted to:
  * - the SmartVaultManager contract,
- * - the StrategyRegistry contract.
+ * - the StrategyRegistry contract,
+ * - the DepositManager contract,
+ * - the WithdrawalManager contract.
  */
 bytes32 constant ROLE_MASTER_WALLET_MANAGER = keccak256("MASTER_WALLET_MANAGER");
+// TODO: check if SmartVaultManager need this permission
 
 /**
  * @dev Marks a contract as a smart vault manager.

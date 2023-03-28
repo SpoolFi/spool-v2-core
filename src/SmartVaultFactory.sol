@@ -81,6 +81,7 @@ struct SmartVaultSpecification {
 /**
  * @dev Requires roles:
  * - ROLE_SMART_VAULT_INTEGRATOR
+ * - ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM
  */
 contract SmartVaultFactory is UpgradeableBeacon {
     using uint16a16Lib for uint16a16;

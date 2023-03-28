@@ -58,6 +58,10 @@ struct ClaimTokensLocalBag {
     DepositMetadata data;
 }
 
+/**
+ * @dev Requires roles:
+ * - ROLE_MASTER_WALLET_MANAGER
+ */
 contract DepositManager is SpoolAccessControllable, IDepositManager {
     using SafeERC20 for IERC20;
     using uint16a16Lib for uint16a16;

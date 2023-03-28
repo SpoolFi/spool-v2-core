@@ -48,6 +48,7 @@ contract SpoolAccessControl is AccessControlUpgradeable, PausableUpgradeable, IS
         }
 
         smartVaultOwner[smartVault] = owner;
+        _grantRole(_getSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN), owner);
     }
 
     function grantSmartVaultRole(address smartVault, bytes32 role, address account)
