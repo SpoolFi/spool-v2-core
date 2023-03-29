@@ -29,6 +29,7 @@ contract WithdrawalIntegrationTest is Test {
     address private bob;
 
     address doHardWorker;
+    address emergencyWithdrawalWallet;
 
     MockToken tokenA;
     MockToken tokenB;
@@ -56,6 +57,7 @@ contract WithdrawalIntegrationTest is Test {
 
         address riskProvider = address(0x1);
         doHardWorker = address(0x2);
+        emergencyWithdrawalWallet = address(0x3);
 
         assetGroup =
             Arrays.sort(Arrays.toArray(address(new MockToken("Token", "T")), address(new MockToken("Token", "T"))));
@@ -75,7 +77,10 @@ contract WithdrawalIntegrationTest is Test {
 
         ghostStrategy = new GhostStrategy();
         priceFeedManager = new MockPriceFeedManager();
+
         strategyRegistry = new StrategyRegistry(masterWallet, accessControl, priceFeedManager, address(ghostStrategy));
+        strategyRegistry.initialize(0, 0, address(0xf01), address(0xf02), emergencyWithdrawalWallet);
+
         IActionManager actionManager = new ActionManager(accessControl);
         IGuardManager guardManager = new GuardManager(accessControl);
         IRiskManager riskManager = new RiskManager(accessControl, strategyRegistry, address(ghostStrategy));
@@ -470,8 +475,6 @@ contract WithdrawalIntegrationTest is Test {
         withdrawalSlippages[0] = new uint256[](0);
         withdrawalSlippages[1] = new uint256[](0);
 
-        strategyRegistry.setEmergencyWithdrawalWallet(address(0xabc));
-
         accessControl.grantRole(ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, alice);
         vm.prank(alice);
         strategyRegistry.emergencyWithdraw(mySmartVaultStrategies, withdrawalSlippages, true);
@@ -481,8 +484,8 @@ contract WithdrawalIntegrationTest is Test {
         assertEq(tokenA.balanceOf(address(strategyB.protocol())), 0);
         assertEq(tokenB.balanceOf(address(strategyB.protocol())), 0);
 
-        assertEq(tokenA.balanceOf(address(0xabc)), 40 ether + 10 ether);
-        assertEq(tokenB.balanceOf(address(0xabc)), 2.72 ether + 0.67 ether);
+        assertEq(tokenA.balanceOf(emergencyWithdrawalWallet), 40 ether + 10 ether);
+        assertEq(tokenB.balanceOf(emergencyWithdrawalWallet), 2.72 ether + 0.67 ether);
     }
 
     function test_emergencyWithdraw_shouldSkipGhostStrategy() public {
@@ -568,5 +571,570 @@ contract WithdrawalIntegrationTest is Test {
         vm.expectRevert(abi.encodeWithSelector(WithdrawalNftNotSyncedYet.selector, aliceWithdrawalNftId));
         vm.prank(alice);
         smartVaultManager.claimWithdrawal(address(mySmartVault), ids, amounts, alice);
+    }
+
+    function test_removeStrategyBeforeWithdrawal() public {
+        {
+            // set initial state
+            deal(address(mySmartVault), alice, 4_000_000, true);
+            deal(address(mySmartVault), bob, 1_000_000, true);
+            deal(address(strategyA), address(mySmartVault), 40_000_000, true);
+            deal(address(strategyB), address(mySmartVault), 10_000_000, true);
+            deal(address(tokenA), address(strategyA.protocol()), 40 ether, true);
+            deal(address(tokenB), address(strategyA.protocol()), 2.72 ether, true);
+            deal(address(tokenA), address(strategyB.protocol()), 10 ether, true);
+            deal(address(tokenB), address(strategyB.protocol()), 0.67 ether, true);
+        }
+
+        {
+            // remove strategy A
+            smartVaultManager.removeStrategyFromVaults(address(strategyA), Arrays.toArray(address(mySmartVault)), true);
+        }
+
+        uint256 aliceWithdrawalNftId;
+        uint256 bobWithdrawalNftId;
+        {
+            // request withdrawal
+            vm.prank(alice);
+            aliceWithdrawalNftId = smartVaultManager.redeem(
+                RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0)), alice, false
+            );
+
+            vm.prank(bob);
+            bobWithdrawalNftId = smartVaultManager.redeem(
+                RedeemBag(address(mySmartVault), 200_000, new uint256[](0), new uint256[](0)), bob, false
+            );
+
+            // check state
+            // - vault tokens are returned to vault
+            assertEq(mySmartVault.balanceOf(alice), 1_000_000);
+            assertEq(mySmartVault.balanceOf(bob), 800_000);
+            assertEq(mySmartVault.balanceOf(address(mySmartVault)), 3_200_000);
+            // - withdrawal NFTs are minted
+            assertEq(aliceWithdrawalNftId, 2 ** 255 + 1);
+            assertEq(bobWithdrawalNftId, 2 ** 255 + 2);
+            assertEq(mySmartVault.balanceOfFractional(alice, aliceWithdrawalNftId), NFT_MINTED_SHARES);
+            assertEq(mySmartVault.balanceOf(alice, aliceWithdrawalNftId), 1);
+            assertEq(mySmartVault.balanceOfFractional(bob, bobWithdrawalNftId), NFT_MINTED_SHARES);
+            assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 1);
+        }
+
+        {
+            // flush
+            smartVaultManager.flushSmartVault(address(mySmartVault));
+
+            // check state
+            // - vault tokens are burned
+            assertEq(mySmartVault.balanceOf(address(mySmartVault)), 0);
+            // - strategy B tokens are returned to strategy B, strategy A tokens remain
+            assertEq(strategyA.balanceOf(address(mySmartVault)), 40_000_000);
+            assertEq(strategyB.balanceOf(address(mySmartVault)), 3_600_000);
+            assertEq(strategyA.balanceOf(address(strategyA)), 0);
+            assertEq(strategyB.balanceOf(address(strategyB)), 6_400_000);
+        }
+
+        {
+            // DHW
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(Arrays.toArray(address(strategyB)), assetGroup));
+            vm.stopPrank();
+
+            // check state
+            // - strategy B tokens are burned
+            assertEq(strategyB.balanceOf(address(strategyB)), 0);
+            // - assets are withdrawn from protocol B to master wallet and left on protocol A
+            assertEq(tokenA.balanceOf(address(masterWallet)), 6.4 ether);
+            assertEq(tokenB.balanceOf(address(masterWallet)), 0.4288 ether);
+            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 40 ether);
+            assertEq(tokenB.balanceOf(address(strategyA.protocol())), 2.72 ether);
+            assertEq(tokenA.balanceOf(address(strategyB.protocol())), 3.6 ether);
+            assertEq(tokenB.balanceOf(address(strategyB.protocol())), 0.2412 ether);
+        }
+
+        {
+            // sync vault
+            smartVaultManager.syncSmartVault(address(mySmartVault), true);
+        }
+
+        {
+            // claim withdrawal
+            uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
+            uint256[] memory ids = Arrays.toArray(aliceWithdrawalNftId);
+            vm.prank(alice);
+            smartVaultManager.claimWithdrawal(address(mySmartVault), ids, amounts, alice);
+
+            ids = Arrays.toArray(bobWithdrawalNftId);
+            vm.prank(bob);
+            smartVaultManager.claimWithdrawal(address(mySmartVault), ids, amounts, bob);
+
+            // check state
+            // - assets are transfered to withdrawers
+            assertEq(tokenA.balanceOf(alice), 6 ether);
+            assertEq(tokenB.balanceOf(alice), 0.402 ether);
+            assertEq(tokenA.balanceOf(bob), 0.4 ether);
+            assertEq(tokenB.balanceOf(bob), 0.0268 ether);
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+            assertEq(tokenB.balanceOf(address(masterWallet)), 0);
+            // - withdrawal NFTs are burned
+            assertEq(mySmartVault.balanceOfFractional(alice, aliceWithdrawalNftId), 0);
+            assertEq(mySmartVault.balanceOfFractional(bob, bobWithdrawalNftId), 0);
+            assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 0);
+        }
+    }
+
+    function test_removeStrategyAfterWithdrawalAndBeforeFlush() public {
+        {
+            // set initial state
+            deal(address(mySmartVault), alice, 4_000_000, true);
+            deal(address(mySmartVault), bob, 1_000_000, true);
+            deal(address(strategyA), address(mySmartVault), 40_000_000, true);
+            deal(address(strategyB), address(mySmartVault), 10_000_000, true);
+            deal(address(tokenA), address(strategyA.protocol()), 40 ether, true);
+            deal(address(tokenB), address(strategyA.protocol()), 2.72 ether, true);
+            deal(address(tokenA), address(strategyB.protocol()), 10 ether, true);
+            deal(address(tokenB), address(strategyB.protocol()), 0.67 ether, true);
+        }
+
+        uint256 aliceWithdrawalNftId;
+        uint256 bobWithdrawalNftId;
+        {
+            // request withdrawal
+            vm.prank(alice);
+            aliceWithdrawalNftId = smartVaultManager.redeem(
+                RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0)), alice, false
+            );
+
+            vm.prank(bob);
+            bobWithdrawalNftId = smartVaultManager.redeem(
+                RedeemBag(address(mySmartVault), 200_000, new uint256[](0), new uint256[](0)), bob, false
+            );
+
+            // check state
+            // - vault tokens are returned to vault
+            assertEq(mySmartVault.balanceOf(alice), 1_000_000);
+            assertEq(mySmartVault.balanceOf(bob), 800_000);
+            assertEq(mySmartVault.balanceOf(address(mySmartVault)), 3_200_000);
+            // - withdrawal NFTs are minted
+            assertEq(aliceWithdrawalNftId, 2 ** 255 + 1);
+            assertEq(bobWithdrawalNftId, 2 ** 255 + 2);
+            assertEq(mySmartVault.balanceOfFractional(alice, aliceWithdrawalNftId), NFT_MINTED_SHARES);
+            assertEq(mySmartVault.balanceOf(alice, aliceWithdrawalNftId), 1);
+            assertEq(mySmartVault.balanceOfFractional(bob, bobWithdrawalNftId), NFT_MINTED_SHARES);
+            assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 1);
+        }
+
+        {
+            // remove strategy A
+            smartVaultManager.removeStrategyFromVaults(address(strategyA), Arrays.toArray(address(mySmartVault)), true);
+        }
+
+        {
+            // flush
+            smartVaultManager.flushSmartVault(address(mySmartVault));
+
+            // check state
+            // - vault tokens are burned
+            assertEq(mySmartVault.balanceOf(address(mySmartVault)), 0);
+            // - strategy B tokens are returned to strategy B, strategy A tokens remain
+            assertEq(strategyA.balanceOf(address(mySmartVault)), 40_000_000);
+            assertEq(strategyB.balanceOf(address(mySmartVault)), 3_600_000);
+            assertEq(strategyA.balanceOf(address(strategyA)), 0);
+            assertEq(strategyB.balanceOf(address(strategyB)), 6_400_000);
+        }
+
+        {
+            // DHW
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(Arrays.toArray(address(strategyB)), assetGroup));
+            vm.stopPrank();
+
+            // check state
+            // - strategy B tokens are burned
+            assertEq(strategyB.balanceOf(address(strategyB)), 0);
+            // - assets are withdrawn from protocol B to master wallet and left on protocol A
+            assertEq(tokenA.balanceOf(address(masterWallet)), 6.4 ether);
+            assertEq(tokenB.balanceOf(address(masterWallet)), 0.4288 ether);
+            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 40 ether);
+            assertEq(tokenB.balanceOf(address(strategyA.protocol())), 2.72 ether);
+            assertEq(tokenA.balanceOf(address(strategyB.protocol())), 3.6 ether);
+            assertEq(tokenB.balanceOf(address(strategyB.protocol())), 0.2412 ether);
+        }
+
+        {
+            // sync vault
+            smartVaultManager.syncSmartVault(address(mySmartVault), true);
+        }
+
+        {
+            // claim withdrawal
+            uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
+            uint256[] memory ids = Arrays.toArray(aliceWithdrawalNftId);
+            vm.prank(alice);
+            smartVaultManager.claimWithdrawal(address(mySmartVault), ids, amounts, alice);
+
+            ids = Arrays.toArray(bobWithdrawalNftId);
+            vm.prank(bob);
+            smartVaultManager.claimWithdrawal(address(mySmartVault), ids, amounts, bob);
+
+            // check state
+            // - assets are transfered to withdrawers
+            assertEq(tokenA.balanceOf(alice), 6 ether);
+            assertEq(tokenB.balanceOf(alice), 0.402 ether);
+            assertEq(tokenA.balanceOf(bob), 0.4 ether);
+            assertEq(tokenB.balanceOf(bob), 0.0268 ether);
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+            assertEq(tokenB.balanceOf(address(masterWallet)), 0);
+            // - withdrawal NFTs are burned
+            assertEq(mySmartVault.balanceOfFractional(alice, aliceWithdrawalNftId), 0);
+            assertEq(mySmartVault.balanceOfFractional(bob, bobWithdrawalNftId), 0);
+            assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 0);
+        }
+    }
+
+    function test_removeStrategyAfterFlushAndBeforeDhw() public {
+        {
+            // set initial state
+            deal(address(mySmartVault), alice, 4_000_000, true);
+            deal(address(mySmartVault), bob, 1_000_000, true);
+            deal(address(strategyA), address(mySmartVault), 40_000_000, true);
+            deal(address(strategyB), address(mySmartVault), 10_000_000, true);
+            deal(address(tokenA), address(strategyA.protocol()), 40 ether, true);
+            deal(address(tokenB), address(strategyA.protocol()), 2.72 ether, true);
+            deal(address(tokenA), address(strategyB.protocol()), 10 ether, true);
+            deal(address(tokenB), address(strategyB.protocol()), 0.67 ether, true);
+        }
+
+        uint256 aliceWithdrawalNftId;
+        uint256 bobWithdrawalNftId;
+        {
+            // request withdrawal
+            vm.prank(alice);
+            aliceWithdrawalNftId = smartVaultManager.redeem(
+                RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0)), alice, false
+            );
+
+            vm.prank(bob);
+            bobWithdrawalNftId = smartVaultManager.redeem(
+                RedeemBag(address(mySmartVault), 200_000, new uint256[](0), new uint256[](0)), bob, false
+            );
+
+            // check state
+            // - vault tokens are returned to vault
+            assertEq(mySmartVault.balanceOf(alice), 1_000_000);
+            assertEq(mySmartVault.balanceOf(bob), 800_000);
+            assertEq(mySmartVault.balanceOf(address(mySmartVault)), 3_200_000);
+            // - withdrawal NFTs are minted
+            assertEq(aliceWithdrawalNftId, 2 ** 255 + 1);
+            assertEq(bobWithdrawalNftId, 2 ** 255 + 2);
+            assertEq(mySmartVault.balanceOfFractional(alice, aliceWithdrawalNftId), NFT_MINTED_SHARES);
+            assertEq(mySmartVault.balanceOf(alice, aliceWithdrawalNftId), 1);
+            assertEq(mySmartVault.balanceOfFractional(bob, bobWithdrawalNftId), NFT_MINTED_SHARES);
+            assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 1);
+        }
+
+        {
+            // flush
+            smartVaultManager.flushSmartVault(address(mySmartVault));
+
+            // check state
+            // - vault tokens are burned
+            assertEq(mySmartVault.balanceOf(address(mySmartVault)), 0);
+            // - strategy tokens are returned to strategies
+            assertEq(strategyA.balanceOf(address(mySmartVault)), 14_400_000);
+            assertEq(strategyB.balanceOf(address(mySmartVault)), 3_600_000);
+            assertEq(strategyA.balanceOf(address(strategyA)), 25_600_000);
+            assertEq(strategyB.balanceOf(address(strategyB)), 6_400_000);
+        }
+
+        {
+            // remove strategy A
+            smartVaultManager.removeStrategyFromVaults(address(strategyA), Arrays.toArray(address(mySmartVault)), true);
+        }
+
+        {
+            // DHW
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(Arrays.toArray(address(strategyB)), assetGroup));
+            vm.stopPrank();
+
+            // check state
+            // - strategy B tokens are burned
+            assertEq(strategyB.balanceOf(address(strategyB)), 0);
+            // - assets are withdrawn from protocol B to master wallet and left on protocol A
+            assertEq(tokenA.balanceOf(address(masterWallet)), 6.4 ether);
+            assertEq(tokenB.balanceOf(address(masterWallet)), 0.4288 ether);
+            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 40 ether);
+            assertEq(tokenB.balanceOf(address(strategyA.protocol())), 2.72 ether);
+            assertEq(tokenA.balanceOf(address(strategyB.protocol())), 3.6 ether);
+            assertEq(tokenB.balanceOf(address(strategyB.protocol())), 0.2412 ether);
+        }
+
+        {
+            // sync vault
+            smartVaultManager.syncSmartVault(address(mySmartVault), true);
+        }
+
+        {
+            // claim withdrawal
+            uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
+            uint256[] memory ids = Arrays.toArray(aliceWithdrawalNftId);
+            vm.prank(alice);
+            smartVaultManager.claimWithdrawal(address(mySmartVault), ids, amounts, alice);
+
+            ids = Arrays.toArray(bobWithdrawalNftId);
+            vm.prank(bob);
+            smartVaultManager.claimWithdrawal(address(mySmartVault), ids, amounts, bob);
+
+            // check state
+            // - assets are transfered to withdrawers
+            assertEq(tokenA.balanceOf(alice), 6 ether);
+            assertEq(tokenB.balanceOf(alice), 0.402 ether);
+            assertEq(tokenA.balanceOf(bob), 0.4 ether);
+            assertEq(tokenB.balanceOf(bob), 0.0268 ether);
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+            assertEq(tokenB.balanceOf(address(masterWallet)), 0);
+            // - withdrawal NFTs are burned
+            assertEq(mySmartVault.balanceOfFractional(alice, aliceWithdrawalNftId), 0);
+            assertEq(mySmartVault.balanceOfFractional(bob, bobWithdrawalNftId), 0);
+            assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 0);
+        }
+    }
+
+    function test_removeStrategyAfterDhwAndBeforeSync() public {
+        {
+            // set initial state
+            deal(address(mySmartVault), alice, 4_000_000, true);
+            deal(address(mySmartVault), bob, 1_000_000, true);
+            deal(address(strategyA), address(mySmartVault), 40_000_000, true);
+            deal(address(strategyB), address(mySmartVault), 10_000_000, true);
+            deal(address(tokenA), address(strategyA.protocol()), 40 ether, true);
+            deal(address(tokenB), address(strategyA.protocol()), 2.72 ether, true);
+            deal(address(tokenA), address(strategyB.protocol()), 10 ether, true);
+            deal(address(tokenB), address(strategyB.protocol()), 0.67 ether, true);
+        }
+
+        uint256 aliceWithdrawalNftId;
+        uint256 bobWithdrawalNftId;
+        {
+            // request withdrawal
+            vm.prank(alice);
+            aliceWithdrawalNftId = smartVaultManager.redeem(
+                RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0)), alice, false
+            );
+
+            vm.prank(bob);
+            bobWithdrawalNftId = smartVaultManager.redeem(
+                RedeemBag(address(mySmartVault), 200_000, new uint256[](0), new uint256[](0)), bob, false
+            );
+
+            // check state
+            // - vault tokens are returned to vault
+            assertEq(mySmartVault.balanceOf(alice), 1_000_000);
+            assertEq(mySmartVault.balanceOf(bob), 800_000);
+            assertEq(mySmartVault.balanceOf(address(mySmartVault)), 3_200_000);
+            // - withdrawal NFTs are minted
+            assertEq(aliceWithdrawalNftId, 2 ** 255 + 1);
+            assertEq(bobWithdrawalNftId, 2 ** 255 + 2);
+            assertEq(mySmartVault.balanceOfFractional(alice, aliceWithdrawalNftId), NFT_MINTED_SHARES);
+            assertEq(mySmartVault.balanceOf(alice, aliceWithdrawalNftId), 1);
+            assertEq(mySmartVault.balanceOfFractional(bob, bobWithdrawalNftId), NFT_MINTED_SHARES);
+            assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 1);
+        }
+
+        {
+            // flush
+            smartVaultManager.flushSmartVault(address(mySmartVault));
+
+            // check state
+            // - vault tokens are burned
+            assertEq(mySmartVault.balanceOf(address(mySmartVault)), 0);
+            // - strategy tokens are returned to strategies
+            assertEq(strategyA.balanceOf(address(mySmartVault)), 14_400_000);
+            assertEq(strategyB.balanceOf(address(mySmartVault)), 3_600_000);
+            assertEq(strategyA.balanceOf(address(strategyA)), 25_600_000);
+            assertEq(strategyB.balanceOf(address(strategyB)), 6_400_000);
+        }
+
+        {
+            // DHW
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(
+                generateDhwParameterBag(Arrays.toArray(address(strategyA), address(strategyB)), assetGroup)
+            );
+            vm.stopPrank();
+
+            // check state
+            // - strategy tokens are burned
+            assertEq(strategyA.balanceOf(address(strategyA)), 0);
+            assertEq(strategyB.balanceOf(address(strategyB)), 0);
+            // - assets are withdrawn from protocols to master wallet
+            assertEq(tokenA.balanceOf(address(masterWallet)), 32 ether);
+            assertEq(tokenB.balanceOf(address(masterWallet)), 2.1696 ether);
+            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 14.4 ether);
+            assertEq(tokenB.balanceOf(address(strategyA.protocol())), 0.9792 ether);
+            assertEq(tokenA.balanceOf(address(strategyB.protocol())), 3.6 ether);
+            assertEq(tokenB.balanceOf(address(strategyB.protocol())), 0.2412 ether);
+        }
+
+        {
+            // remove strategy A
+            smartVaultManager.removeStrategyFromVaults(address(strategyA), Arrays.toArray(address(mySmartVault)), true);
+
+            // check state
+            // - assets from strategy A are moved from master wallet to emergency withdrawal recipient
+            assertEq(tokenA.balanceOf(address(masterWallet)), 6.4 ether);
+            assertEq(tokenB.balanceOf(address(masterWallet)), 0.4288 ether);
+            assertEq(tokenA.balanceOf(address(emergencyWithdrawalWallet)), 25.6 ether);
+            assertEq(tokenB.balanceOf(address(emergencyWithdrawalWallet)), 1.7408 ether);
+        }
+
+        {
+            // sync vault
+            smartVaultManager.syncSmartVault(address(mySmartVault), true);
+        }
+
+        {
+            // claim withdrawal
+            uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
+            uint256[] memory ids = Arrays.toArray(aliceWithdrawalNftId);
+            vm.prank(alice);
+            smartVaultManager.claimWithdrawal(address(mySmartVault), ids, amounts, alice);
+
+            ids = Arrays.toArray(bobWithdrawalNftId);
+            vm.prank(bob);
+            smartVaultManager.claimWithdrawal(address(mySmartVault), ids, amounts, bob);
+
+            // check state
+            // - assets from strategy B are transfered to withdrawers
+            assertEq(tokenA.balanceOf(alice), 6 ether);
+            assertEq(tokenB.balanceOf(alice), 0.402 ether);
+            assertEq(tokenA.balanceOf(bob), 0.4 ether);
+            assertEq(tokenB.balanceOf(bob), 0.0268 ether);
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+            assertEq(tokenB.balanceOf(address(masterWallet)), 0);
+            // - withdrawal NFTs are burned
+            assertEq(mySmartVault.balanceOfFractional(alice, aliceWithdrawalNftId), 0);
+            assertEq(mySmartVault.balanceOfFractional(bob, bobWithdrawalNftId), 0);
+            assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 0);
+        }
+    }
+
+    function test_removeStrategyAfterSyncAndBeforeClaim() public {
+        {
+            // set initial state
+            deal(address(mySmartVault), alice, 4_000_000, true);
+            deal(address(mySmartVault), bob, 1_000_000, true);
+            deal(address(strategyA), address(mySmartVault), 40_000_000, true);
+            deal(address(strategyB), address(mySmartVault), 10_000_000, true);
+            deal(address(tokenA), address(strategyA.protocol()), 40 ether, true);
+            deal(address(tokenB), address(strategyA.protocol()), 2.72 ether, true);
+            deal(address(tokenA), address(strategyB.protocol()), 10 ether, true);
+            deal(address(tokenB), address(strategyB.protocol()), 0.67 ether, true);
+        }
+
+        uint256 aliceWithdrawalNftId;
+        uint256 bobWithdrawalNftId;
+        {
+            // request withdrawal
+            vm.prank(alice);
+            aliceWithdrawalNftId = smartVaultManager.redeem(
+                RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0)), alice, false
+            );
+
+            vm.prank(bob);
+            bobWithdrawalNftId = smartVaultManager.redeem(
+                RedeemBag(address(mySmartVault), 200_000, new uint256[](0), new uint256[](0)), bob, false
+            );
+
+            // check state
+            // - vault tokens are returned to vault
+            assertEq(mySmartVault.balanceOf(alice), 1_000_000);
+            assertEq(mySmartVault.balanceOf(bob), 800_000);
+            assertEq(mySmartVault.balanceOf(address(mySmartVault)), 3_200_000);
+            // - withdrawal NFTs are minted
+            assertEq(aliceWithdrawalNftId, 2 ** 255 + 1);
+            assertEq(bobWithdrawalNftId, 2 ** 255 + 2);
+            assertEq(mySmartVault.balanceOfFractional(alice, aliceWithdrawalNftId), NFT_MINTED_SHARES);
+            assertEq(mySmartVault.balanceOf(alice, aliceWithdrawalNftId), 1);
+            assertEq(mySmartVault.balanceOfFractional(bob, bobWithdrawalNftId), NFT_MINTED_SHARES);
+            assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 1);
+        }
+
+        {
+            // flush
+            smartVaultManager.flushSmartVault(address(mySmartVault));
+
+            // check state
+            // - vault tokens are burned
+            assertEq(mySmartVault.balanceOf(address(mySmartVault)), 0);
+            // - strategy tokens are returned to strategies
+            assertEq(strategyA.balanceOf(address(mySmartVault)), 14_400_000);
+            assertEq(strategyB.balanceOf(address(mySmartVault)), 3_600_000);
+            assertEq(strategyA.balanceOf(address(strategyA)), 25_600_000);
+            assertEq(strategyB.balanceOf(address(strategyB)), 6_400_000);
+        }
+
+        {
+            // DHW
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(
+                generateDhwParameterBag(Arrays.toArray(address(strategyA), address(strategyB)), assetGroup)
+            );
+            vm.stopPrank();
+
+            // check state
+            // - strategy tokens are burned
+            assertEq(strategyA.balanceOf(address(strategyA)), 0);
+            assertEq(strategyB.balanceOf(address(strategyB)), 0);
+            // - assets are withdrawn from protocols to master wallet
+            assertEq(tokenA.balanceOf(address(masterWallet)), 32 ether);
+            assertEq(tokenB.balanceOf(address(masterWallet)), 2.1696 ether);
+            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 14.4 ether);
+            assertEq(tokenB.balanceOf(address(strategyA.protocol())), 0.9792 ether);
+            assertEq(tokenA.balanceOf(address(strategyB.protocol())), 3.6 ether);
+            assertEq(tokenB.balanceOf(address(strategyB.protocol())), 0.2412 ether);
+        }
+
+        {
+            // sync vault
+            smartVaultManager.syncSmartVault(address(mySmartVault), true);
+        }
+
+        {
+            // remove strategy A
+            smartVaultManager.removeStrategyFromVaults(address(strategyA), Arrays.toArray(address(mySmartVault)), true);
+
+            // check state
+            // - no assets moved from master wallet to emergency withdrawal recipient
+            assertEq(tokenA.balanceOf(address(masterWallet)), 32 ether);
+            assertEq(tokenB.balanceOf(address(masterWallet)), 2.1696 ether);
+            assertEq(tokenA.balanceOf(address(emergencyWithdrawalWallet)), 0 ether);
+            assertEq(tokenB.balanceOf(address(emergencyWithdrawalWallet)), 0 ether);
+        }
+
+        {
+            // claim withdrawal
+            uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
+            uint256[] memory ids = Arrays.toArray(aliceWithdrawalNftId);
+            vm.prank(alice);
+            smartVaultManager.claimWithdrawal(address(mySmartVault), ids, amounts, alice);
+
+            ids = Arrays.toArray(bobWithdrawalNftId);
+            vm.prank(bob);
+            smartVaultManager.claimWithdrawal(address(mySmartVault), ids, amounts, bob);
+
+            // check state
+            // - assets from strategy B are transfered to withdrawers
+            assertEq(tokenA.balanceOf(alice), 30 ether);
+            assertEq(tokenB.balanceOf(alice), 2.034 ether);
+            assertEq(tokenA.balanceOf(bob), 2 ether);
+            assertEq(tokenB.balanceOf(bob), 0.1356 ether);
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+            assertEq(tokenB.balanceOf(address(masterWallet)), 0);
+            // - withdrawal NFTs are burned
+            assertEq(mySmartVault.balanceOfFractional(alice, aliceWithdrawalNftId), 0);
+            assertEq(mySmartVault.balanceOfFractional(bob, bobWithdrawalNftId), 0);
+            assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 0);
+        }
     }
 }

@@ -92,6 +92,12 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     mapping(address => mapping(uint256 => mapping(uint256 => uint256))) internal _assetsWithdrawn;
 
     /**
+     * @notice Amounts of assets withdrawn from protocol and not claimed yet.
+     * @dev strategy => asset index => amount not claimed
+     */
+    mapping(address => mapping(uint256 => uint256)) internal _assetsNotClaimed;
+
+    /**
      * @notice Running average APY.
      * @dev strategy => apy
      */
@@ -334,6 +340,9 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                     _dhwAssetRatios[strategy] = IStrategy(strategy).assetRatio();
                     _exchangeRates[strategy][dhwIndex].setValues(assetGroupExchangeRates);
                     _assetsWithdrawn[strategy][dhwIndex].setValues(dhwInfo.assetsWithdrawn);
+                    for (uint256 k; k < dhwInfo.assetsWithdrawn.length; ++k) {
+                        _assetsNotClaimed[strategy][k] += dhwInfo.assetsWithdrawn[k];
+                    }
 
                     ++_currentIndexes[strategy];
 
@@ -428,7 +437,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
     function claimWithdrawals(address[] calldata strategies_, uint16a16 dhwIndexes, uint256[] calldata strategyShares)
         external
-        view
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256[] memory)
     {
@@ -455,8 +463,10 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
             for (uint256 j = 0; j < totalWithdrawnAssets.length; j++) {
                 // NOTE: can _sharesRedeemed[strategy][dhwIndex] be 0?
-                totalWithdrawnAssets[j] +=
+                uint256 withdrawnAssets =
                     _assetsWithdrawn[strategy][dhwIndex][j] * strategyShares[i] / _sharesRedeemed[strategy][dhwIndex];
+                totalWithdrawnAssets[j] += withdrawnAssets;
+                _assetsNotClaimed[strategy][j] -= withdrawnAssets;
                 // there will be dust left after all vaults sync
             }
         }
@@ -616,8 +626,20 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
     function _removeStrategy(address strategy) private {
         if (!_accessControl.hasRole(ROLE_STRATEGY, strategy)) revert InvalidStrategy({address_: strategy});
-        _accessControl.revokeRole(ROLE_STRATEGY, strategy);
 
+        // send flushed and non-claimed funds to emergency withdrawal wallet
+        uint256 dhwIndex = _currentIndexes[strategy];
+        address[] memory tokens = IStrategy(strategy).assets();
+        for (uint256 i; i < tokens.length; ++i) {
+            uint256 amount = _assetsDeposited[strategy][dhwIndex][i] + _assetsNotClaimed[strategy][i];
+
+            if (amount > 0) {
+                _masterWallet.transfer(IERC20(tokens[i]), emergencyWithdrawalWallet, amount);
+            }
+        }
+
+        // remove strategy
+        _accessControl.revokeRole(ROLE_STRATEGY, strategy);
         _removedStrategies[strategy] = true;
     }
 }

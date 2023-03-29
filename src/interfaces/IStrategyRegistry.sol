@@ -297,7 +297,6 @@ interface IStrategyRegistry {
      */
     function claimWithdrawals(address[] calldata strategies, uint16a16 dhwIndexes, uint256[] calldata strategyShares)
         external
-        view
         returns (uint256[] memory assetsWithdrawn);
 
     /**

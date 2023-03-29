@@ -238,6 +238,10 @@ contract MockStrategy {
     function assetRatio() external pure returns (uint256[] memory) {
         return Arrays.toArray(1, 2);
     }
+
+    function assets() external pure returns (address[] memory) {
+        return new address[](0);
+    }
 }
 
 contract StrategyRegistryStub is StrategyRegistry {
