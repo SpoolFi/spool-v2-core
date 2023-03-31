@@ -79,7 +79,7 @@ contract VaultSyncTest is IntegrationTestFixture {
         DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
             SimulateDepositParams(
                 address(smartVault),
-                [uint256(0), 0, 0], // flush index, first dhw timestamp, total SVTs minted til now
+                [uint256(0), 0], // flush index, first dhw timestamp, total SVTs minted til now
                 smartVaultStrategies,
                 assetGroup,
                 Arrays.toUint16a16(1, 1, 1),
@@ -144,7 +144,7 @@ contract VaultSyncTest is IntegrationTestFixture {
         DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
             SimulateDepositParams(
                 address(smartVault),
-                [1, dhwTimestamp, vaultSupplyBefore],
+                [1, dhwTimestamp],
                 smartVaultStrategies,
                 assetGroup,
                 dhwIndexes,
@@ -192,7 +192,7 @@ contract VaultSyncTest is IntegrationTestFixture {
         DepositSyncResult memory syncResult = depositManager.syncDepositsSimulate(
             SimulateDepositParams(
                 address(smartVault),
-                [uint256(0), 0, 0],
+                [uint256(0), 0],
                 smartVaultStrategies,
                 assetGroup,
                 dhwIndexes,
@@ -310,7 +310,7 @@ contract VaultSyncTest is IntegrationTestFixture {
             depositManager.syncDepositsSimulate(
                 SimulateDepositParams(
                     address(smartVault),
-                    [uint256(0), 0, 0],
+                    [uint256(0), 0],
                     smartVaultStrategies,
                     assetGroup,
                     dhwIndexes,

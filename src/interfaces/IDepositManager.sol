@@ -55,20 +55,21 @@ struct DepositSyncResult {
     uint256[] sstShares;
 }
 
-//  * @param smartVault Smart Vault address
-//  * @param bag flush index, lastDhwSyncedTimestamp, oldTotalSVTs
-//  * @param strategies strategy addresses
-//  * @param assetGroup vault asset group token addresses
-//  * @param dhwIndexes DHW Indexes for given flush index
-//  * @param dhwIndexesOld DHW Indexes for previous flush index
-//  * @param fees smart vault fee configuration
-//  * @return syncResult Result of the smart vault sync.
+/**
+ * @custom:member smartVault Smart Vault address
+ * @custom:member bag flush index, lastDhwSyncedTimestamp, oldTotalSVTs
+ * @custom:member strategies strategy addresses
+ * @custom:member assetGroup vault asset group token addresses
+ * @custom:member dhwIndexes DHW Indexes for given flush index
+ * @custom:member dhwIndexesOld DHW Indexes for previous flush index
+ * @custom:member fees smart vault fee configuration
+ * @return syncResult Result of the smart vault sync.
+ */
 struct SimulateDepositParams {
     address smartVault;
     // bag[0]: flushIndex,
     // bag[1]: lastDhwSyncedTimestamp,
-    // bag[2]: oldTotalSVTs,
-    uint256[3] bag;
+    uint256[2] bag;
     address[] strategies;
     address[] assetGroup;
     uint16a16 dhwIndexes;
@@ -135,7 +136,7 @@ interface IDepositManager {
      * @dev Requirements:
      * - caller must have role ROLE_SMART_VAULT_MANAGER
      * @param smartVault Smart Vault address
-     * @param bag flushIndex, lastDhwSyncedTimestamp, oldTotalSVTs
+     * @param bag flushIndex, lastDhwSyncedTimestamp
      * @param strategies vault strategy addresses
      * @param dhwIndexes dhw indexes for given and previous flushIndex
      * @param assetGroup vault asset group token addresses
@@ -144,10 +145,9 @@ interface IDepositManager {
      */
     function syncDeposits(
         address smartVault,
-        uint256[3] calldata bag,
+        uint256[2] calldata bag,
         // uint256 flushIndex,
-        // uint256 lastDhwSyncedTimestamp,
-        // uint256 oldTotalSVTs,
+        // uint256 lastDhwSyncedTimestamp
         address[] calldata strategies,
         uint16a16[2] calldata dhwIndexes,
         address[] calldata assetGroup,

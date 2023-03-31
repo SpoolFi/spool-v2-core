@@ -135,13 +135,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         view
         returns (uint256)
     {
-        // Vault owner is not allowed to deposit, there fore has no D-NFTs
+        uint256 currentBalance = ISmartVault(smartVaultAddress).balanceOf(userAddress);
+
         if (_accessControl.smartVaultOwner(smartVaultAddress) == userAddress) {
-            (, uint256 ownerSVTs,, uint256 fees) = _simulateSync(smartVaultAddress);
-            return ownerSVTs + fees;
+            (,, uint256 fees) = _simulateSync(smartVaultAddress);
+            currentBalance += fees;
         }
 
-        uint256 currentBalance = ISmartVault(smartVaultAddress).balanceOf(userAddress);
         if (nftIds.length > 0) {
             currentBalance += _simulateSyncWithBurn(smartVaultAddress, userAddress, nftIds);
         }
@@ -150,8 +150,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     }
 
     function getSVTTotalSupply(address smartVault) external view returns (uint256) {
-        (uint256 currentSupply, uint256 vaultOwnerSVTs, uint256 mintedSVTs, uint256 fees) = _simulateSync(smartVault);
-        return currentSupply + vaultOwnerSVTs + mintedSVTs + fees;
+        (uint256 currentSupply, uint256 mintedSVTs, uint256 fees) = _simulateSync(smartVault);
+        return currentSupply + mintedSVTs + fees;
     }
 
     /**
@@ -456,9 +456,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         SmartVaultFees memory fees = _smartVaultFees[smartVault];
         address vaultOwner = _accessControl.smartVaultOwner(smartVault);
-        uint256 oldTotalSVTs = ISmartVault(smartVault).totalSupply() - ISmartVault(smartVault).balanceOf(vaultOwner);
         // Pack values to avoid stack depth limit
-        uint256[3] memory packedParams = [flushIndex.toSync, _lastDhwTimestampSynced[smartVault], oldTotalSVTs];
+        uint256[2] memory packedParams = [flushIndex.toSync, _lastDhwTimestampSynced[smartVault]];
 
         // SYNC WITHDRAWALS
         _withdrawalManager.syncWithdrawals(smartVault, flushIndex.toSync, strategies_, indexes);
@@ -514,24 +513,17 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * - There can't be more than once un-synced flush index per vault at any given time.
      * - Flush index can't be synced, if all DHWs haven't been completed yet.
      */
-    function _simulateSync(address smartVault)
-        private
-        view
-        returns (uint256 oldTotalSVTs, uint256 vaultOwnerSVTs, uint256, uint256)
-    {
+    function _simulateSync(address smartVault) private view returns (uint256 oldTotalSVTs, uint256, uint256) {
         address[] memory tokens;
         address[] memory strategies_;
         FlushIndex memory flushIndex;
         SmartVaultFees memory fees;
         uint16a16 indexes;
 
-        address vaultOwner = _accessControl.smartVaultOwner(smartVault);
-
         {
             tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-            vaultOwnerSVTs = ISmartVault(smartVault).balanceOf(vaultOwner);
             strategies_ = _smartVaultStrategies[smartVault];
-            oldTotalSVTs = ISmartVault(smartVault).totalSupply() - vaultOwnerSVTs;
+            oldTotalSVTs = ISmartVault(smartVault).totalSupply();
             flushIndex = _flushIndexes[smartVault];
             fees = _smartVaultFees[smartVault];
             indexes = _dhwIndexes[smartVault][flushIndex.toSync];
@@ -539,16 +531,16 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         // If DHWs haven't been run yet, we can't sync
         if (!_areAllDhwRunsCompleted(_strategyRegistry.currentIndex(strategies_), indexes, strategies_, false)) {
-            return (oldTotalSVTs, vaultOwnerSVTs, 0, 0);
+            return (oldTotalSVTs, 0, 0);
         }
 
-        uint256[3] memory packedParams;
+        uint256[2] memory packedParams;
         uint16a16 previousIndexes;
 
         {
             previousIndexes = _getPreviousDhwIndexes(smartVault, flushIndex.toSync);
             uint256 lastDhwTimestamp = _lastDhwTimestampSynced[smartVault];
-            packedParams = [flushIndex.toSync, lastDhwTimestamp, oldTotalSVTs];
+            packedParams = [flushIndex.toSync, lastDhwTimestamp];
         }
 
         SimulateDepositParams memory params;
@@ -561,7 +553,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         flushIndex.toSync++;
 
-        return (oldTotalSVTs, vaultOwnerSVTs, syncResult.mintedSVTs, syncResult.feeSVTs);
+        return (oldTotalSVTs, syncResult.mintedSVTs, syncResult.feeSVTs);
     }
 
     /**
@@ -607,11 +599,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             return newBalance;
         }
 
-        uint256[3] memory packedParams;
+        uint256[2] memory packedParams;
         {
-            uint256 oldTotalSVTs = ISmartVault(smartVault).totalSupply()
-                - ISmartVault(smartVault).balanceOf(_accessControl.smartVaultOwner(smartVault));
-            packedParams = [flushIndex.toSync, _lastDhwTimestampSynced[smartVault], oldTotalSVTs];
+            packedParams = [flushIndex.toSync, _lastDhwTimestampSynced[smartVault]];
         }
 
         uint16a16 previousIndexes = _getPreviousDhwIndexes(smartVault, flushIndex.toSync);
@@ -737,10 +727,11 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address[] memory tokens
     ) private {
         FlushIndex memory flushIndex = _flushIndexes[smartVault];
-        uint16a16 flushDhwIndexes =
-            _depositManager.flushSmartVault(smartVault, flushIndex.current, strategies_, allocations_, tokens);
 
-        uint16a16 flushDhwIndexes2 = _withdrawalManager.flushSmartVault(smartVault, flushIndex.current, strategies_);
+        // need to flush withdrawal before flushing deposit
+        uint16a16 flushDhwIndexes = _withdrawalManager.flushSmartVault(smartVault, flushIndex.current, strategies_);
+        uint16a16 flushDhwIndexes2 =
+            _depositManager.flushSmartVault(smartVault, flushIndex.current, strategies_, allocations_, tokens);
 
         if (uint16a16.unwrap(flushDhwIndexes2) > 0) {
             flushDhwIndexes = flushDhwIndexes2;
