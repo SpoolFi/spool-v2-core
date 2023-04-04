@@ -53,11 +53,6 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuardUpgradeable
         return tokenBlacklist[smartVault][token];
     }
 
-    function getRewardForDuration(address smartVault, IERC20 token) external view returns (uint256) {
-        RewardConfiguration storage config = rewardConfiguration[smartVault][token];
-        return uint256(config.rewardRate) * config.rewardsDuration;
-    }
-
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     function initialize() external initializer {
@@ -78,7 +73,7 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuardUpgradeable
      * - the token must not have already been added
      *
      */
-    function addToken(address smartVault, IERC20 token, uint32 rewardsDuration, uint256 reward)
+    function addToken(address smartVault, IERC20 token, uint256 endTimestamp, uint256 reward)
         external
         onlyAdminOrVaultAdmin(smartVault, msg.sender)
         exceptUnderlying(smartVault, token)
@@ -87,13 +82,13 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuardUpgradeable
 
         if (tokenBlacklist[smartVault][token]) revert RewardTokenBlacklisted(address(token));
         if (config.tokenAdded != 0) revert RewardTokenAlreadyAdded(address(token));
-        if (rewardsDuration == 0) revert InvalidRewardDuration();
+        if (endTimestamp <= block.timestamp) revert InvalidEndTimestamp();
         if (rewardTokensCount[smartVault] > 5) revert RewardTokenCapReached();
 
         rewardTokens[smartVault][rewardTokensCount[smartVault]] = token;
         rewardTokensCount[smartVault]++;
 
-        config.rewardsDuration = rewardsDuration;
+        config.rewardsDuration = uint32(endTimestamp - block.timestamp);
         config.tokenAdded = uint32(block.timestamp);
 
         if (reward > 0) {
@@ -104,18 +99,18 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuardUpgradeable
     /**
      * @notice Extend reward emission
      */
-    function extendRewardEmission(address smartVault, IERC20 token, uint256 reward, uint32 rewardsDuration)
+    function extendRewardEmission(address smartVault, IERC20 token, uint256 reward, uint256 endTimestamp)
         external
         onlyAdminOrVaultAdmin(smartVault, msg.sender)
         exceptUnderlying(smartVault, token)
     {
         if (tokenBlacklist[smartVault][token]) revert RewardTokenBlacklisted(address(token));
-        if (rewardsDuration == 0) revert InvalidRewardDuration();
+        if (endTimestamp <= block.timestamp) revert InvalidEndTimestamp();
         if (rewardConfiguration[smartVault][token].tokenAdded == 0) {
             revert InvalidRewardToken(address(token));
         }
 
-        rewardConfiguration[smartVault][token].rewardsDuration = rewardsDuration;
+        rewardConfiguration[smartVault][token].rewardsDuration = uint32(endTimestamp - block.timestamp);
         _extendRewardEmission(smartVault, token, reward);
     }
 

@@ -21,7 +21,8 @@ contract RewardManagerTests is Test {
     RewardManager rewardManager;
     AssetGroupRegistry assetGroupRegistry;
     uint256 rewardAmount = 100000 ether;
-    uint32 rewardDuration;
+    uint256 endTimestamp;
+    uint256 duration = 10 days;
     address vaultOwner = address(100);
     address user = address(101);
     address smartVaultManager = address(102);
@@ -48,7 +49,7 @@ contract RewardManagerTests is Test {
         rewardManager.initialize();
 
         // NOTE: can use days keyword
-        rewardDuration = SECONDS_IN_DAY * 10;
+        endTimestamp = block.timestamp + duration;
         smartVault = address(smartVault_);
 
         sac.grantSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, vaultOwner);
@@ -60,7 +61,7 @@ contract RewardManagerTests is Test {
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
-        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
         vm.stopPrank();
 
         assertEq(1, rewardManager.rewardTokensCount(smartVault));
@@ -71,13 +72,10 @@ contract RewardManagerTests is Test {
             uint192 configurationRewardRate, // rewards per second multiplied by accuracy
         ) = rewardManager.rewardConfiguration(smartVault, IERC20(rewardToken));
 
-        assertEq(rewardDuration, configurationRewardsDuration);
+        assertEq(configurationRewardsDuration, duration);
 
-        uint256 rate = rewardAmount * 1 ether / rewardDuration;
+        uint256 rate = rewardAmount * 1 ether / duration;
         assertEq(rate, configurationRewardRate);
-
-        uint256 rewards = rewardManager.getRewardForDuration(smartVault, IERC20(rewardToken));
-        assertEq(rewards, rate * rewardDuration);
 
         assertEq(false, rewardManager.tokenBlacklisted(smartVault, rewardToken));
     }
@@ -90,8 +88,8 @@ contract RewardManagerTests is Test {
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
         r2Token.approve(address(rewardManager), rewardAmount);
-        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
-        rewardManager.addToken(smartVault, r2Token, rewardDuration, rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
+        rewardManager.addToken(smartVault, r2Token, endTimestamp, rewardAmount);
         vm.stopPrank();
 
         assertEq(2, rewardManager.rewardTokensCount(smartVault));
@@ -103,9 +101,9 @@ contract RewardManagerTests is Test {
             uint192 configurationRewardRate, // rewards per second multiplied by accuracy
         ) = rewardManager.rewardConfiguration(smartVault, IERC20(rewardToken));
 
-        assertEq(rewardDuration, configurationRewardsDuration);
+        assertEq(duration, configurationRewardsDuration);
 
-        uint256 rate = rewardAmount * 1 ether / rewardDuration;
+        uint256 rate = rewardAmount * 1 ether / duration;
         assertEq(rate, configurationRewardRate);
 
         assertEq(rewardToken.balanceOf(address(rewardManager)), rewardAmount);
@@ -118,7 +116,7 @@ contract RewardManagerTests is Test {
 
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
-        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
         vm.stopPrank();
 
         vm.prank(user);
@@ -126,7 +124,7 @@ contract RewardManagerTests is Test {
         vm.expectRevert(abi.encodeWithSelector(RewardTokenBlacklisted.selector, address(rewardToken)));
 
         vm.prank(vaultOwner);
-        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
 
         assertEq(true, rewardManager.tokenBlacklisted(smartVault, rewardToken));
 
@@ -145,28 +143,28 @@ contract RewardManagerTests is Test {
 
     function test_extendWithoutAdd() public {
         vm.expectRevert(abi.encodeWithSelector(InvalidRewardToken.selector, address(rewardToken)));
-        rewardManager.extendRewardEmission(smartVault, rewardToken, rewardAmount, rewardDuration);
+        rewardManager.extendRewardEmission(smartVault, rewardToken, rewardAmount, endTimestamp);
     }
 
-    function test_addToken_invalidRewardDuration() public {
+    function test_addToken_invalidEndTimestamp() public {
         vm.prank(vaultOwner);
-        vm.expectRevert(abi.encodeWithSelector(InvalidRewardDuration.selector));
+        vm.expectRevert(abi.encodeWithSelector(InvalidEndTimestamp.selector));
         rewardManager.addToken(smartVault, rewardToken, 0, rewardAmount);
     }
 
     function test_addToken_revertRewardEqualsUnderlying() public {
         vm.prank(vaultOwner);
         vm.expectRevert(abi.encodeWithSelector(AssetGroupToken.selector, address(underlying)));
-        rewardManager.addToken(smartVault, underlying, rewardDuration, rewardAmount);
+        rewardManager.addToken(smartVault, underlying, endTimestamp, rewardAmount);
     }
 
-    function test_extendRewardEmission_revertInvalidRewardDuration() public {
+    function test_extendRewardEmission_revertInvalidEndTimestamp() public {
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
-        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
 
-        vm.expectRevert(abi.encodeWithSelector(InvalidRewardDuration.selector));
+        vm.expectRevert(abi.encodeWithSelector(InvalidEndTimestamp.selector));
         rewardManager.extendRewardEmission(smartVault, rewardToken, 0, 0);
         vm.stopPrank();
     }
@@ -175,10 +173,10 @@ contract RewardManagerTests is Test {
         deal(address(rewardToken), vaultOwner, rewardAmount + 1 ether, true);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount + 1 ether);
-        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
 
         vm.expectRevert(abi.encodeWithSelector(NewRewardRateLessThanBefore.selector));
-        rewardManager.extendRewardEmission(smartVault, rewardToken, 1 ether, rewardDuration * 100);
+        rewardManager.extendRewardEmission(smartVault, rewardToken, 1 ether, endTimestamp * 100);
         vm.stopPrank();
     }
 
@@ -186,9 +184,9 @@ contract RewardManagerTests is Test {
         deal(address(rewardToken), vaultOwner, 200 ether, true);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), 200 ether);
-        rewardManager.addToken(smartVault, rewardToken, rewardDuration, 0);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, 0);
 
-        rewardManager.extendRewardEmission(smartVault, rewardToken, 1 ether, rewardDuration);
+        rewardManager.extendRewardEmission(smartVault, rewardToken, 1 ether, endTimestamp);
         vm.stopPrank();
     }
 
@@ -196,9 +194,9 @@ contract RewardManagerTests is Test {
         deal(address(rewardToken), vaultOwner, rewardAmount * 2, true);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount * 2);
-        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
 
-        rewardManager.extendRewardEmission(smartVault, rewardToken, 1 ether, rewardDuration);
+        rewardManager.extendRewardEmission(smartVault, rewardToken, 1 ether, endTimestamp);
         vm.stopPrank();
     }
 
@@ -206,10 +204,10 @@ contract RewardManagerTests is Test {
         deal(address(rewardToken), vaultOwner, rewardAmount * 2, true);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount * 2);
-        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
 
         vm.expectRevert(abi.encodeWithSelector(NewPeriodFinishLessThanBefore.selector));
-        rewardManager.extendRewardEmission(smartVault, rewardToken, 1 ether, rewardDuration / 2);
+        rewardManager.extendRewardEmission(smartVault, rewardToken, 1 ether, endTimestamp - 5 days);
         vm.stopPrank();
     }
 
@@ -217,7 +215,7 @@ contract RewardManagerTests is Test {
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
-        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
 
         vm.expectRevert(abi.encodeWithSelector(RewardsNotFinished.selector));
         rewardManager.removeReward(smartVault, rewardToken);
@@ -228,9 +226,9 @@ contract RewardManagerTests is Test {
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
-        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
 
-        skip(rewardDuration + 1);
+        skip(duration + 1);
 
         rewardManager.removeReward(smartVault, rewardToken);
         vm.stopPrank();
@@ -241,7 +239,7 @@ contract RewardManagerTests is Test {
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
-        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
         vm.stopPrank();
 
         vm.prank(user);
@@ -253,7 +251,7 @@ contract RewardManagerTests is Test {
 
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
-        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
         vm.stopPrank();
 
         vm.prank(user);
@@ -267,7 +265,7 @@ contract RewardManagerTests is Test {
 
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
-        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
         vm.stopPrank();
 
         vm.prank(user);
@@ -281,7 +279,7 @@ contract RewardManagerTests is Test {
 
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
-        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
         vm.stopPrank();
 
         vm.startPrank(user);
@@ -297,7 +295,7 @@ contract RewardManagerTests is Test {
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
-        rewardManager.addToken(smartVault, rewardToken, rewardDuration, rewardAmount);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
         vm.stopPrank();
 
         vm.prank(user);
@@ -309,13 +307,13 @@ contract RewardManagerTests is Test {
         deal(address(rewardToken), vaultOwner, 2000 ether, true);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), 2000 ether);
-        rewardManager.addToken(smartVault, rewardToken, 20 days, 1000 ether);
+        rewardManager.addToken(smartVault, rewardToken, block.timestamp + 20 days, 1000 ether);
 
         skip(30 days);
 
         rewardManager.removeReward(smartVault, rewardToken);
         vm.expectRevert(abi.encodeWithSelector(InvalidRewardToken.selector, address(rewardToken)));
-        rewardManager.extendRewardEmission(smartVault, rewardToken, 1000 ether, 60 days);
+        rewardManager.extendRewardEmission(smartVault, rewardToken, 1000 ether, block.timestamp + 60 days);
         vm.stopPrank();
     }
 
@@ -323,7 +321,7 @@ contract RewardManagerTests is Test {
         deal(address(rewardToken), vaultOwner, 2000 ether, true);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), 2000 ether);
-        rewardManager.addToken(smartVault, rewardToken, 20 days, 1000 ether);
+        rewardManager.addToken(smartVault, rewardToken, block.timestamp + 20 days, 1000 ether);
 
         skip(30 days);
 
@@ -331,7 +329,7 @@ contract RewardManagerTests is Test {
 
         skip(1 days);
 
-        rewardManager.addToken(smartVault, rewardToken, 15 days, 150 ether);
+        rewardManager.addToken(smartVault, rewardToken, block.timestamp + 15 days, 150 ether);
         vm.stopPrank();
 
         (uint32 rewardsDuration,,,) = rewardManager.rewardConfiguration(smartVault, rewardToken);

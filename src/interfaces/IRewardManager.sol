@@ -6,7 +6,7 @@ import "@openzeppelin/token/ERC20/IERC20.sol";
 error AssetGroupToken(address token);
 error RewardTokenBlacklisted(address token);
 error RewardTokenAlreadyAdded(address token);
-error InvalidRewardDuration();
+error InvalidEndTimestamp();
 error InvalidRewardToken(address token);
 error RewardTokenCapReached();
 error RewardsNotFinished();
@@ -27,16 +27,40 @@ interface IRewardManager {
 
     /* ========== FUNCTIONS ========== */
 
-    function getRewardForDuration(address smartVault, IERC20 token) external view returns (uint256);
-
+    /**
+     * @notice Returns true if the given token is blacklisted
+     * @param smartVault Smart vault for which the token should be blacklisted
+     * @param token Token address
+     */
     function tokenBlacklisted(address smartVault, IERC20 token) external view returns (bool);
 
+    /**
+     * @notice Forcibly remove a reward token for a given vault
+     * @param token Token rewards to be removed
+     */
     function forceRemoveReward(address smartVault, IERC20 token) external;
 
-    function extendRewardEmission(address smartVault, IERC20 token, uint256 reward, uint32 rewardsDuration) external;
+    /**
+     * @notice Extend reward emissions
+     * @param smartVault Smart vault address
+     * @param reward Token reward amount
+     * @param endTimestamp Reward end time
+     */
+    function extendRewardEmission(address smartVault, IERC20 token, uint256 reward, uint256 endTimestamp) external;
 
-    function addToken(address smartVault, IERC20 token, uint32 rewardsDuration, uint256 reward) external;
+    /**
+     * @notice Add reward token for vault
+     * @param smartVault Vault address
+     * @param token Token address
+     * @param reward Token reward amount
+     */
+    function addToken(address smartVault, IERC20 token, uint256 endTimestamp, uint256 reward) external;
 
+    /**
+     * @notice Remove token from blacklist
+     * @param smartVault Smart vault address
+     * @param token Token address
+     */
     function removeFromBlacklist(address smartVault, IERC20 token) external;
 
     /* ========== EVENTS ========== */
