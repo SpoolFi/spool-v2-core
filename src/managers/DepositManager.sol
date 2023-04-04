@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/utils/math/Math.sol";
+import "@openzeppelin/utils/math/SafeCast.sol";
 import "../interfaces/IAction.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
 import "../interfaces/IDepositManager.sol";
@@ -237,7 +238,9 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
                 _vaultFlushedDeposits[smartVault][flushIndex][strategies[i]].setValues(distribution[i]);
             }
         }
-        _flushShares[smartVault][flushIndex].flushSvtSupply = uint128(ISmartVault(smartVault).totalSupply());
+
+        // Strategy shares should not exceed uint128
+        _flushShares[smartVault][flushIndex].flushSvtSupply = SafeCast.toUint128(ISmartVault(smartVault).totalSupply());
 
         return _strategyRegistry.addDeposits(strategies, distribution);
     }
@@ -260,7 +263,8 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         );
 
         if (syncResult.mintedSVTs > 0) {
-            _flushShares[smartVault][bag[0]].mintedVaultShares = uint128(syncResult.mintedSVTs);
+            // Vault shares should not exceed uint128
+            _flushShares[smartVault][bag[0]].mintedVaultShares = SafeCast.toUint128(syncResult.mintedSVTs);
             for (uint256 i; i < strategies.length; ++i) {
                 if (syncResult.sstShares[i] > 0) {
                     IStrategy(strategies[i]).claimShares(smartVault, syncResult.sstShares[i]);

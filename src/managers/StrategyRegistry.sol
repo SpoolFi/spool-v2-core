@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/utils/math/SafeCast.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
@@ -224,7 +225,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         _accessControl.grantRole(ROLE_STRATEGY, strategy);
         _currentIndexes[strategy] = 1;
         _dhwAssetRatios[strategy] = IStrategy(strategy).assetRatio();
-        _stateAtDhw[address(strategy)][0].timestamp = uint32(block.timestamp);
+        _stateAtDhw[address(strategy)][0].timestamp = SafeCast.toUint32(block.timestamp);
 
         emit StrategyRegistered(strategy);
     }
@@ -352,11 +353,11 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                     yield += dhwInfo.yieldPercentage + yield * dhwInfo.yieldPercentage / YIELD_FULL_PERCENT_INT;
 
                     _stateAtDhw[strategy][dhwIndex] = StateAtDhwIndex({
-                        sharesMinted: uint128(dhwInfo.sharesMinted),
-                        totalStrategyValue: uint128(dhwInfo.valueAtDhw),
-                        totalSSTs: uint128(dhwInfo.totalSstsAtDhw),
-                        yield: int96(yield), // accumulate the yield from before
-                        timestamp: uint32(block.timestamp)
+                        sharesMinted: SafeCast.toUint128(dhwInfo.sharesMinted), // shares should not exceed uint128
+                        totalStrategyValue: SafeCast.toUint128(dhwInfo.valueAtDhw), // measured in USD
+                        totalSSTs: SafeCast.toUint128(dhwInfo.totalSstsAtDhw), // shares should not exceed uint128
+                        yield: SafeCast.toInt96(yield), // accumulate the yield from before
+                        timestamp: SafeCast.toUint32(block.timestamp)
                     });
 
                     _updateDhwYieldAndApy(strategy, dhwIndex, dhwInfo.yieldPercentage);
@@ -599,7 +600,9 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     function _updateDhwYieldAndApy(address strategy, uint256 dhwIndex, int256 yieldPercentage) internal {
         if (dhwIndex > 1) {
             unchecked {
-                int256 timeDelta = int256(block.timestamp - _stateAtDhw[address(strategy)][dhwIndex - 1].timestamp);
+                int256 timeDelta =
+                    SafeCast.toInt256(block.timestamp - _stateAtDhw[address(strategy)][dhwIndex - 1].timestamp);
+
                 if (timeDelta > 0) {
                     int256 normalizedApy = yieldPercentage * SECONDS_IN_YEAR_INT / timeDelta;
                     int256 weight = _getRunningAverageApyWeight(timeDelta);
