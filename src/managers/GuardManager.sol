@@ -58,7 +58,7 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
         }
 
         guardsInitialized[smartVaultId] = true;
-        emit GuardsInitialized(smartVaultId);
+        emit GuardsInitialized(smartVaultId, guards, requestTypes);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */

@@ -34,6 +34,12 @@ contract Swapper is ISwapper, SpoolAccessControllable {
         address[] calldata tokensOut,
         address receiver
     ) external returns (uint256[] memory tokenAmounts) {
+        uint256[] memory amountsIn = new uint256[](tokensIn.length);
+
+        for (uint256 i; i < tokensIn.length; ++i) {
+            amountsIn[i] = IERC20(tokensIn[i]).balanceOf(address(this));
+        }
+
         // Perform the swaps.
         for (uint256 i; i < swapInfo.length; ++i) {
             if (!swapInfo[i].swapTarget.isContract()) {
@@ -50,6 +56,14 @@ contract Swapper is ISwapper, SpoolAccessControllable {
             if (!success) revert(SpoolUtils.getRevertMsg(data));
         }
 
+        tokenAmounts = new uint256[](tokensOut.length);
+        for (uint256 i; i < tokensOut.length; ++i) {
+            tokenAmounts[i] = IERC20(tokensOut[i]).balanceOf(address(this));
+            if (tokenAmounts[i] > 0) {
+                IERC20(tokensOut[i]).safeTransfer(receiver, tokenAmounts[i]);
+            }
+        }
+
         // Return unswapped tokens.
         for (uint256 i; i < tokensIn.length; ++i) {
             uint256 tokenInBalance = IERC20(tokensIn[i]).balanceOf(address(this));
@@ -58,13 +72,7 @@ contract Swapper is ISwapper, SpoolAccessControllable {
             }
         }
 
-        tokenAmounts = new uint256[](tokensOut.length);
-        for (uint256 i; i < tokensOut.length; ++i) {
-            tokenAmounts[i] = IERC20(tokensOut[i]).balanceOf(address(this));
-            if (tokenAmounts[i] > 0) {
-                IERC20(tokensOut[i]).safeTransfer(receiver, tokenAmounts[i]);
-            }
-        }
+        emit Swapped(receiver, tokensIn, tokensOut, amountsIn, tokenAmounts);
     }
 
     function updateExchangeAllowlist(address[] calldata exchanges, bool[] calldata allowed)

@@ -47,6 +47,8 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
             }
 
             actionsExist[smartVault][requestTypes[i]] = actions_.length > 0;
+
+            emit ActionSet(smartVault, address(action), requestTypes[i]);
         }
 
         actionsInitialized[smartVault] = true;

@@ -49,6 +49,8 @@ contract SpoolAccessControl is AccessControlUpgradeable, PausableUpgradeable, IS
 
         smartVaultOwner[smartVault] = owner;
         _grantRole(_getSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN), owner);
+
+        emit SmartVaultOwnershipGranted(smartVault, owner);
     }
 
     function grantSmartVaultRole(address smartVault, bytes32 role, address account)
@@ -56,6 +58,7 @@ contract SpoolAccessControl is AccessControlUpgradeable, PausableUpgradeable, IS
         onlyAdminOrVaultAdmin(smartVault, msg.sender)
     {
         _grantRole(_getSmartVaultRole(smartVault, role), account);
+        emit SmartVaultRoleGranted(smartVault, role, account);
     }
 
     function revokeSmartVaultRole(address smartVault, bytes32 role, address account)
@@ -63,10 +66,12 @@ contract SpoolAccessControl is AccessControlUpgradeable, PausableUpgradeable, IS
         onlyAdminOrVaultAdmin(smartVault, msg.sender)
     {
         _revokeRole(_getSmartVaultRole(smartVault, role), account);
+        emit SmartVaultRoleRevoked(smartVault, role, account);
     }
 
     function renounceSmartVaultRole(address smartVault, bytes32 role) external {
         renounceRole(_getSmartVaultRole(smartVault, role), msg.sender);
+        emit SmartVaultRoleRenounced(smartVault, role, msg.sender);
     }
 
     function pause() external onlyRole(ROLE_PAUSER) {

@@ -150,7 +150,9 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
             // - swap assets
             _swapAssets(dhwParams.assetGroup, assetsToDeposit, dhwParams.swapInfo);
+            uint256[] memory assetsIn = new uint256[](assetsToDeposit.length);
             for (uint256 i; i < dhwParams.assetGroup.length; ++i) {
+                assetsIn[i] = assetsToDeposit[i];
                 assetsToDeposit[i] = IERC20(dhwParams.assetGroup[i]).balanceOf(address(this)) - withdrawnAssets[i];
             }
 
@@ -168,6 +170,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
                 }
             }
             _mint(address(this), mintedShares);
+
+            emit Deposited(mintedShares, usdWorthDeposited, assetsIn, assetsToDeposit);
 
             mintedShares += matchedShares;
         } else if (withdrawnShares > depositShareEquivalent) {
@@ -193,6 +197,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
                     withdrawnAssets[i] = IERC20(dhwParams.assetGroup[i]).balanceOf(address(this));
                 }
             }
+
+            emit Withdrawn(withdrawnShares, usdWorth[1], withdrawnAssets);
         } else {
             // Neither withdrawal nor deposit is needed.
 
@@ -372,6 +378,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             unchecked {
                 sharesMinted = newEcosystemFeeSsts + newTreasuryFeeSsts;
             }
+
+            emit PlatformFeesCollected(address(this), sharesMinted);
         }
     }
 

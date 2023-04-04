@@ -86,4 +86,12 @@ interface IActionManager {
      * @param whitelisted True if it was added, false if it was removed from the whitelist.
      */
     event ActionListed(address indexed action, bool whitelisted);
+
+    /**
+     * @notice Emitted when an action is set for a vault
+     * @param smartVault Address of the smart vault
+     * @param action Address of the action that was added
+     * @param requestType Trigger for executing the action
+     */
+    event ActionSet(address indexed smartVault, address indexed action, RequestType requestType);
 }

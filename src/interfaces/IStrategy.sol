@@ -73,13 +73,13 @@ error NotFastRedeemer(address user);
 interface IStrategy is IERC20Upgradeable {
     /* ========== EVENTS ========== */
 
-    event Slippage(address strategy, IERC20 underlying, bool isDeposit, uint256 amountIn, uint256 amountOut);
-
-    event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
-
-    event Withdraw(
-        address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
+    event Deposited(
+        uint256 mintedShares, uint256 usdWorthDeposited, uint256[] assetsBeforeSwap, uint256[] assetsDeposited
     );
+
+    event Withdrawn(uint256 withdrawnShares, uint256 usdWorthWithdrawn, uint256[] withdrawnAssets);
+
+    event PlatformFeesCollected(address indexed strategy, uint256 sharesMinted);
 
     /* ========== VIEW FUNCTIONS ========== */
 

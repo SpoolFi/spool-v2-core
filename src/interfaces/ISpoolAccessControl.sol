@@ -106,4 +106,35 @@ interface ISpoolAccessControl is IAccessControlUpgradeable {
      * @param owner address to which grant ownership to
      */
     function grantSmartVaultOwnership(address smartVault, address owner) external;
+
+    /**
+     * @notice Emitted when ownership of a smart vault is granted to an address
+     * @param smartVault Smart vault address
+     * @param address_ Address of the new smart vault owner
+     */
+    event SmartVaultOwnershipGranted(address indexed smartVault, address indexed address_);
+
+    /**
+     * @notice Smart vault specific role was granted
+     * @param smartVault Smart vault address
+     * @param role Role ID
+     * @param account Account to which the role was granted
+     */
+    event SmartVaultRoleGranted(address indexed smartVault, bytes32 indexed role, address indexed account);
+
+    /**
+     * @notice Smart vault specific role was revoked
+     * @param smartVault Smart vault address
+     * @param role Role ID
+     * @param account Account for which the role was revoked
+     */
+    event SmartVaultRoleRevoked(address indexed smartVault, bytes32 indexed role, address indexed account);
+
+    /**
+     * @notice Smart vault specific role was renounced
+     * @param smartVault Smart vault address
+     * @param role Role ID
+     * @param account Account that renounced the role
+     */
+    event SmartVaultRoleRenounced(address indexed smartVault, bytes32 indexed role, address indexed account);
 }

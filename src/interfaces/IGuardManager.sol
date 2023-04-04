@@ -120,6 +120,8 @@ interface IGuardManager {
     /**
      * @notice Emitted when guards are set for a smart vault.
      * @param smartVault Smart vault for which guards were set.
+     * @param guards Guard definitions
+     * @param requestTypes Guard triggers
      */
-    event GuardsInitialized(address indexed smartVault);
+    event GuardsInitialized(address indexed smartVault, GuardDefinition[][] guards, RequestType[] requestTypes);
 }

@@ -303,6 +303,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         // update registry
         _smartVaultRegistry[smartVault] = true;
+
+        emit SmartVaultRegistered(smartVault, registrationForm);
     }
 
     function removeStrategyFromVaults(address strategy, address[] calldata vaults, bool disableStrategy) external {
@@ -315,10 +317,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
                 if (strategies_[j] == strategy) {
                     _smartVaultStrategies[smartVault][j] = _ghostStrategy;
                     _smartVaultAllocations[smartVault] = _smartVaultAllocations[smartVault].set(j, 0);
+
                     break;
                 }
             }
         }
+
+        emit StrategyRemovedFromVaults(strategy, vaults);
 
         if (disableStrategy) {
             _strategyRegistry.removeStrategy(strategy);
@@ -386,8 +391,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             _syncSmartVault(smartVault, _smartVaultStrategies[smartVault], tokens, false);
 
             // Set new allocation.
-            _smartVaultAllocations[smartVault] =
-                _riskManager.calculateAllocation(smartVault, _smartVaultStrategies[smartVault]);
+            uint16a16 newAllocations = _riskManager.calculateAllocation(smartVault, _smartVaultStrategies[smartVault]);
+            _smartVaultAllocations[smartVault] = newAllocations;
+
+            emit SmartVaultReallocated(smartVault, newAllocations);
         }
 
         ReallocationParameterBag memory reallocationParameterBag = ReallocationParameterBag({

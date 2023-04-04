@@ -39,6 +39,10 @@ interface ISwapper {
      */
     event ExchangeAllowlistUpdated(address indexed exchange, bool isAllowed);
 
+    event Swapped(
+        address indexed receiver, address[] tokensIn, address[] tokensOut, uint256[] amountsIn, uint256[] amountsOut
+    );
+
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     /**

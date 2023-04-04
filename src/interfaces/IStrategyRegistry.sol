@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "./ISwapper.sol";
+import "./IStrategy.sol";
 import "../libraries/uint16a16Lib.sol";
 
 /* ========== ERRORS ========== */
@@ -311,6 +312,87 @@ interface IStrategyRegistry {
         uint256[] calldata shares,
         uint256[][] calldata withdrawalSlippages
     ) external;
+
+    /**
+     * @notice Strategy was registered
+     * @param strategy Strategy address
+     */
+    event StrategyRegistered(address indexed strategy);
+
+    /**
+     * @notice Strategy was removed
+     * @param strategy Strategy address
+     */
+    event StrategyRemoved(address indexed strategy);
+
+    /**
+     * @notice Strategy DHW was executed
+     * @param strategy Strategy address
+     * @param dhwIndex DHW index
+     * @param dhwInfo DHW info
+     */
+    event StrategyDhw(address indexed strategy, uint256 dhwIndex, DhwInfo dhwInfo);
+
+    /**
+     * @notice Ecosystem fee configuration was changed
+     * @param feePct Fee percentage value
+     */
+    event EcosystemFeeSet(uint256 feePct);
+
+    /**
+     * @notice Ecosystem fee receiver was changed
+     * @param ecosystemFeeReceiver Receiver address
+     */
+    event EcosystemFeeReceiverSet(address indexed ecosystemFeeReceiver);
+
+    /**
+     * @notice Treasury fee configuration was changed
+     * @param feePct Fee percentage value
+     */
+    event TreasuryFeeSet(uint256 feePct);
+
+    /**
+     * @notice Treasury fee receiver was changed
+     * @param treasuryFeeReceiver Receiver address
+     */
+    event TreasuryFeeReceiverSet(address indexed treasuryFeeReceiver);
+
+    /**
+     * @notice Emergency withdrawal wallet changed
+     * @param wallet Emergency withdrawal wallet address
+     */
+    event EmergencyWithdrawalWalletSet(address indexed wallet);
+
+    /**
+     * @notice Strategy shares have been redeemed
+     * @param strategy Strategy address
+     * @param owner Address that owns the shares
+     * @param recipient Address that received the withdrawn funds
+     * @param shares Amount of shares that were redeemed
+     * @param assetsWithdrawn Amounts of withdrawn assets
+     */
+    event StrategySharesRedeemed(
+        address indexed strategy,
+        address indexed owner,
+        address indexed recipient,
+        uint256 shares,
+        uint256[] assetsWithdrawn
+    );
+
+    /**
+     * @notice Strategy shares were fast redeemed
+     * @param strategy Strategy address
+     * @param shares Amount of shares redeemed
+     * @param assetsWithdrawn Amounts of withdrawn assets
+     */
+    event StrategySharesFastRedeemed(address indexed strategy, uint256 shares, uint256[] assetsWithdrawn);
+
+    /**
+     * @notice Strategy APY value was updated
+     * @param strategy Strategy address
+     * @param apy New APY value
+     */
+    event StrategyApyUpdated(address indexed strategy, int256 apy);
 }
 
 interface IEmergencyWithdrawal {

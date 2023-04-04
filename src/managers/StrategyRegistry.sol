@@ -225,6 +225,8 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         _currentIndexes[strategy] = 1;
         _dhwAssetRatios[strategy] = IStrategy(strategy).assetRatio();
         _stateAtDhw[address(strategy)][0].timestamp = uint32(block.timestamp);
+
+        emit StrategyRegistered(strategy);
     }
 
     /**
@@ -358,6 +360,8 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                     });
 
                     _updateDhwYieldAndApy(strategy, dhwIndex, dhwInfo.yieldPercentage);
+
+                    emit StrategyDhw(strategy, dhwIndex, dhwInfo);
                 }
             }
         }
@@ -433,6 +437,10 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
             for (uint256 j = 0; j < strategyWithdrawnAssets.length; j++) {
                 withdrawnAssets[j] += strategyWithdrawnAssets[j];
             }
+
+            emit StrategySharesFastRedeemed(
+                redeemFastParams.strategies[i], redeemFastParams.strategyShares[i], withdrawnAssets
+            );
         }
 
         return withdrawnAssets;
@@ -512,9 +520,11 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
             address[] memory assetGroup = IStrategy(strategies[i]).assets();
             uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(assetGroup, _priceFeedManager);
 
-            IStrategy(strategies[i]).redeemShares(
+            uint256[] memory withdrawnAssets = IStrategy(strategies[i]).redeemShares(
                 shares[i], msg.sender, assetGroup, exchangeRates, _priceFeedManager, withdrawalSlippages[i]
             );
+
+            emit StrategySharesRedeemed(strategies[i], msg.sender, msg.sender, shares[i], withdrawnAssets);
         }
     }
 
@@ -547,6 +557,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         }
 
         _platformFees.ecosystemFeePct = ecosystemFeePct_;
+        emit EcosystemFeeSet(ecosystemFeePct_);
     }
 
     function _setEcosystemFeeReceiver(address ecosystemFeeReceiver_) private {
@@ -555,6 +566,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         }
 
         _platformFees.ecosystemFeeReceiver = ecosystemFeeReceiver_;
+        emit EcosystemFeeReceiverSet(ecosystemFeeReceiver_);
     }
 
     function _setTreasuryFee(uint96 treasuryFeePct_) private {
@@ -563,6 +575,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         }
 
         _platformFees.treasuryFeePct = treasuryFeePct_;
+        emit TreasuryFeeSet(treasuryFeePct_);
     }
 
     function _setTreasuryFeeReceiver(address treasuryFeeReceiver_) private {
@@ -571,6 +584,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         }
 
         _platformFees.treasuryFeeReceiver = treasuryFeeReceiver_;
+        emit TreasuryFeeReceiverSet(treasuryFeeReceiver_);
     }
 
     function _setEmergencyWithdrawalWallet(address emergencyWithdrawalWallet_) private {
@@ -579,6 +593,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         }
 
         emergencyWithdrawalWallet = emergencyWithdrawalWallet_;
+        emit EmergencyWithdrawalWalletSet(emergencyWithdrawalWallet_);
     }
 
     function _updateDhwYieldAndApy(address strategy, uint256 dhwIndex, int256 yieldPercentage) internal {
@@ -588,8 +603,11 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                 if (timeDelta > 0) {
                     int256 normalizedApy = yieldPercentage * SECONDS_IN_YEAR_INT / timeDelta;
                     int256 weight = _getRunningAverageApyWeight(timeDelta);
-                    _apys[strategy] =
+                    int256 apy =
                         (_apys[strategy] * (FULL_PERCENT_INT - weight) + normalizedApy * weight) / FULL_PERCENT_INT;
+                    _apys[strategy] = apy;
+
+                    emit StrategyApyUpdated(strategy, apy);
                 }
             }
         }
@@ -644,5 +662,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         // remove strategy
         _accessControl.revokeRole(ROLE_STRATEGY, strategy);
         _removedStrategies[strategy] = true;
+
+        emit StrategyRemoved(strategy);
     }
 }

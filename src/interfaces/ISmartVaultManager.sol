@@ -307,4 +307,25 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
      * @param flushIndex Flush index
      */
     event SmartVaultSynced(address indexed smartVault, uint256 flushIndex);
+
+    /**
+     * @notice Smart vault has been registered
+     * @param smartVault Smart vault address
+     * @param registrationForm Smart vault configuration
+     */
+    event SmartVaultRegistered(address indexed smartVault, SmartVaultRegistrationForm registrationForm);
+
+    /**
+     * @notice Strategy was removed from a set of vaults
+     * @param strategy Strategy address
+     * @param vaults Vaults to remove the strategy from
+     */
+    event StrategyRemovedFromVaults(address indexed strategy, address[] vaults);
+
+    /**
+     * @notice Vault was reallocation executed
+     * @param smartVault Smart vault address
+     * @param newAllocations new vault strategy allocations
+     */
+    event SmartVaultReallocated(address indexed smartVault, uint16a16 newAllocations);
 }
