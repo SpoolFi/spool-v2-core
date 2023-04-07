@@ -90,7 +90,7 @@ contract SmartVaultFactoryTest is Test {
         vm.mockCall(
             address(allocProvider),
             abi.encodeWithSelector(IAllocationProvider.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(0))
+            abi.encode(Arrays.toArray(FULL_PERCENT))
         );
 
         riskManager = new RiskManager(accessControl, strategyRegistry, address(0xabc));
@@ -111,6 +111,12 @@ contract SmartVaultFactoryTest is Test {
         accessControl.grantRole(ROLE_STRATEGY, strategy);
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, allocProviderAddress);
+
+        uint8[] memory riskScores = new uint8[](1);
+        address[] memory strategies = Arrays.toArray(strategy);
+        riskScores[0] = 1;
+        vm.prank(riskProvider);
+        riskManager.setRiskScores(riskScores, strategies);
     }
 
     /* ========== deploySmartVault ========== */

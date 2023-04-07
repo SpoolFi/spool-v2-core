@@ -6,6 +6,7 @@ import "forge-std/Test.sol";
 import "../src/managers/RiskManager.sol";
 import "../src/access/SpoolAccessControl.sol";
 import "./libraries/Arrays.sol";
+import "../src/providers/UniformAllocationProvider.sol";
 
 contract RiskManagerTest is Test {
     using uint16a16Lib for uint16a16;
@@ -17,12 +18,13 @@ contract RiskManagerTest is Test {
     address smartVault = address(100);
     address actor = actor;
     address strategyRegistry = address(0x0101);
+    address ghostStrategy = address(0xabc);
 
     function setUp() public {
         accessControl = new SpoolAccessControl();
         accessControl.initialize();
 
-        riskManager = new RiskManager(accessControl, IStrategyRegistry(strategyRegistry), address(0xabc));
+        riskManager = new RiskManager(accessControl, IStrategyRegistry(strategyRegistry), ghostStrategy);
     }
 
     function test_calculateAllocation() public {
@@ -53,6 +55,30 @@ contract RiskManagerTest is Test {
         assertEq(allocations.get(2), 0);
     }
 
+    function test_calculateAllocation_withGhostStrategy() public {
+        IAllocationProvider allocProvider = new UniformAllocationProvider();
+
+        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(this));
+        accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, address(allocProvider));
+        accessControl.grantRole(ROLE_RISK_PROVIDER, STATIC_RISK_PROVIDER);
+
+        riskManager.setAllocationProvider(smartVault, address(allocProvider));
+        riskManager.setRiskProvider(smartVault, STATIC_RISK_PROVIDER);
+
+        vm.mockCall(
+            strategyRegistry,
+            abi.encodeWithSelector(IStrategyRegistry.strategyAPYs.selector),
+            abi.encode(Arrays.toArray(10_00, 5_00, 10_00))
+        );
+
+        uint16a16 allocations =
+            riskManager.calculateAllocation(smartVault, Arrays.toArray(address(0x0101), ghostStrategy, address(0x0102)));
+
+        assertEq(allocations.get(0), 50_00);
+        assertEq(allocations.get(1), 0);
+        assertEq(allocations.get(2), 50_00);
+    }
+
     function test_setRiskScore_success() public {
         address[] memory strategies = Arrays.toArray(address(1), address(2));
         uint8[] memory riskScores = new uint8[](2);
@@ -70,6 +96,19 @@ contract RiskManagerTest is Test {
         assertEq(riskScores[1], 2_0);
     }
 
+    function test_setRiskScore_revertGhostStrategyValue() public {
+        address[] memory strategies = Arrays.toArray(address(1), ghostStrategy);
+        uint8[] memory riskScores = new uint8[](2);
+        riskScores[0] = 1_0;
+        riskScores[1] = 2_0;
+
+        accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
+
+        vm.prank(riskProvider);
+        vm.expectRevert(abi.encodeWithSelector(CannotSetRiskScoreForGhostStrategy.selector, 2_0));
+        riskManager.setRiskScores(riskScores, strategies);
+    }
+
     function test_setRiskScore_missingRole() public {
         address[] memory strategies = Arrays.toArray(address(1), address(2));
         uint8[] memory riskScores = new uint8[](2);
@@ -82,10 +121,11 @@ contract RiskManagerTest is Test {
     }
 
     function test_setRiskScore_revertOutOfBounds() public {
-        address[] memory strategies = Arrays.toArray(address(1), address(2));
-        uint8[] memory riskScores = new uint8[](2);
+        address[] memory strategies = Arrays.toArray(address(1), address(2), ghostStrategy);
+        uint8[] memory riskScores = new uint8[](3);
         riskScores[0] = 150;
         riskScores[1] = 200;
+        riskScores[2] = 0;
 
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         vm.prank(riskProvider);
@@ -170,5 +210,13 @@ contract RiskManagerTest is Test {
         vm.prank(actor);
         vm.expectRevert(abi.encodeWithSelector(RiskToleranceValueOutOfBounds.selector, 12));
         riskManager.setRiskTolerance(smartVault, 12);
+    }
+
+    function test_getRiskScore_revertInvalidRiskScores() public {
+        address[] memory strategies = Arrays.toArray(address(1), address(2));
+        accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
+        vm.prank(riskProvider);
+        vm.expectRevert(abi.encodeWithSelector(InvalidRiskScores.selector, riskProvider, address(1)));
+        riskManager.getRiskScores(riskProvider, strategies);
     }
 }

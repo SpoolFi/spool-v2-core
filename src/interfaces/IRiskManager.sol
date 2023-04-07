@@ -6,6 +6,9 @@ import "../libraries/uint16a16Lib.sol";
 error InvalidRiskInputLength();
 error RiskScoreValueOutOfBounds(uint8 value);
 error RiskToleranceValueOutOfBounds(int8 value);
+error CannotSetRiskScoreForGhostStrategy(uint8 riskScore);
+error InvalidAllocationSum(uint256 allocationsSum);
+error InvalidRiskScores(address riskProvider, address strategy);
 
 interface IRiskManager {
     /* ========== VIEW FUNCTIONS ========== */
@@ -29,7 +32,7 @@ interface IRiskManager {
      * @param strategy Strategies.
      * @return riskScores Risk scores for strategies.
      */
-    function getRiskScores(address riskProvider, address[] calldata strategy)
+    function getRiskScores(address riskProvider, address[] memory strategy)
         external
         view
         returns (uint8[] memory riskScores);
