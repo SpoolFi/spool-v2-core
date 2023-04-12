@@ -6,8 +6,9 @@ import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../external/interfaces/strategies/morpho/IMorpho.sol";
 import "../interfaces/ISwapper.sol";
 import "../strategies/Strategy.sol";
+import "./helpers/StrategyManualYieldVerifier.sol";
 
-abstract contract MorphoStrategyBase is Strategy {
+abstract contract MorphoStrategyBase is StrategyManualYieldVerifier, Strategy {
     using SafeERC20 for IERC20;
 
     /// @notice Swapper implementaiton.
@@ -39,15 +40,20 @@ abstract contract MorphoStrategyBase is Strategy {
         poolRewardToken = poolRewardToken_;
     }
 
-    function __MorphoStrategyBase_init(string memory strategyName_, address poolTokenAddress_)
-        internal
-        onlyInitializing
-    {
+    function __MorphoStrategyBase_init(
+        string memory strategyName_,
+        address poolTokenAddress_,
+        int128 positiveLimit_,
+        int128 negativeLimit_
+    ) internal onlyInitializing {
         __Strategy_init(strategyName_);
 
         if (poolTokenAddress_ == address(0)) revert ConfigurationAddressZero();
 
         poolTokenAddress = poolTokenAddress_;
+
+        _setPositiveLimit(positiveLimit_);
+        _setNegativeLimit(negativeLimit_);
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {
@@ -91,8 +97,9 @@ abstract contract MorphoStrategyBase is Strategy {
         }
     }
 
-    function _getYieldPercentage(int256) internal view virtual override returns (int256 baseYieldPercentage) {
-        return baseYieldPercentage;
+    function _getYieldPercentage(int256 manualYield) internal view virtual override returns (int256) {
+        _verifyManualYieldPercentage(manualYield);
+        return manualYield;
     }
 
     function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)

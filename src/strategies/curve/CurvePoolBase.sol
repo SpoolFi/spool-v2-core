@@ -6,9 +6,10 @@ import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import {ICurve3CoinPool} from "../../external/interfaces/strategies/curve/ICurvePool.sol";
 import "../../libraries/uint16a16Lib.sol";
 import "../Strategy.sol";
+import "../helpers/StrategyManualYieldVerifier.sol";
 
 // multiple assets
-abstract contract CurvePoolBase is Strategy {
+abstract contract CurvePoolBase is StrategyManualYieldVerifier, Strategy {
     using SafeERC20 for IERC20;
     using uint16a16Lib for uint16a16;
 
@@ -26,10 +27,13 @@ abstract contract CurvePoolBase is Strategy {
         swapper = swapper_;
     }
 
-    function __CurvePoolBase_init(string memory strategyName_, IERC20 lpToken_, uint16a16 assetMapping_)
-        internal
-        onlyInitializing
-    {
+    function __CurvePoolBase_init(
+        string memory strategyName_,
+        IERC20 lpToken_,
+        uint16a16 assetMapping_,
+        int128 positiveLimit_,
+        int128 negativeLimit_
+    ) internal onlyInitializing {
         __Strategy_init(strategyName_);
 
         if (address(lpToken_) == address(0)) {
@@ -50,6 +54,9 @@ abstract contract CurvePoolBase is Strategy {
         }
 
         assetMapping = assetMapping_;
+
+        _setPositiveLimit(positiveLimit_);
+        _setNegativeLimit(negativeLimit_);
     }
 
     function _compound(address[] calldata tokens, SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
@@ -80,7 +87,8 @@ abstract contract CurvePoolBase is Strategy {
         compoundYield = int256(YIELD_FULL_PERCENT * lpTokensMinted / lpTokensBefore);
     }
 
-    function _getYieldPercentage(int256 manualYield) internal pure override returns (int256) {
+    function _getYieldPercentage(int256 manualYield) internal view override returns (int256) {
+        _verifyManualYieldPercentage(manualYield);
         return manualYield;
     }
 
