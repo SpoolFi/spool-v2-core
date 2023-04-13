@@ -205,6 +205,50 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         );
     }
 
+    function test_flushTwiceWithoutSyncing() public {
+        // - have a smart vault with multiple strategies
+        // - deposit
+        // - flush
+        // - run DHW for some strategies, but not for all
+        // - deposit again
+        // - run DHW for remaining strategies
+        // - flush
+        vm.startPrank(alice);
+        tokenA.approve(address(smartVaultManager), 100 ether);
+        tokenB.approve(address(smartVaultManager), 100 ether);
+        tokenC.approve(address(smartVaultManager), 200 ether);
+
+        uint256[] memory depositAmounts = Arrays.toArray(10 ether, 0.7237 ether, 43.88 ether);
+
+        // deposit #1
+        smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
+        vm.stopPrank();
+
+        // flush #1
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // dhw
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(Arrays.toArray(address(strategyA)), assetGroup));
+        vm.stopPrank();
+
+        // deposit #2
+        vm.startPrank(alice);
+        smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
+        vm.stopPrank();
+
+        // dhw
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(
+            generateDhwParameterBag(Arrays.toArray(address(strategyB), address(strategyC)), assetGroup)
+        );
+        vm.stopPrank();
+
+        // flush #2
+        vm.expectRevert(abi.encodeWithSelector(VaultNotSynced.selector));
+        smartVaultManager.flushSmartVault(address(smartVault));
+    }
+
     function test_claimSmartVaultTokensPartially() public {
         // Alice deposits
         vm.startPrank(alice);
@@ -437,7 +481,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         tokenC.approve(address(smartVaultManager), depositAmounts[2]);
 
         // Should revert for trying to flush after depositing
-        vm.expectRevert(abi.encodeWithSelector(FlushOverlap.selector, smartVaultStrategies[0]));
+        vm.expectRevert(abi.encodeWithSelector(VaultNotSynced.selector));
         smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, bob, address(0), true));
 
         smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, bob, address(0), false));
@@ -445,7 +489,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         vm.stopPrank();
 
         // Should revert for trying to flush
-        vm.expectRevert(abi.encodeWithSelector(FlushOverlap.selector, smartVaultStrategies[0]));
+        vm.expectRevert(abi.encodeWithSelector(VaultNotSynced.selector));
         smartVaultManager.flushSmartVault(address(smartVault));
     }
 

@@ -342,7 +342,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         );
     }
 
-    function syncSmartVault(address smartVault, bool revertIfError) external whenNotPaused {
+    function syncSmartVault(address smartVault, bool revertIfError) public whenNotPaused {
         _onlyRegisteredSmartVault(smartVault);
         _syncSmartVault(
             smartVault,
@@ -728,6 +728,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     ) private {
         FlushIndex memory flushIndex = _flushIndexes[smartVault];
 
+        // Flushing without having synced the previous flush is not allowed
+        if (flushIndex.toSync != flushIndex.current) revert VaultNotSynced();
+
         // need to flush withdrawal before flushing deposit
         uint16a16 flushDhwIndexes = _withdrawalManager.flushSmartVault(smartVault, flushIndex.current, strategies_);
         uint16a16 flushDhwIndexes2 =
@@ -738,19 +741,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         if (uint16a16.unwrap(flushDhwIndexes) == 0) revert NothingToFlush();
-
-        // Skip flush if at least one strategy DHW index overlaps with the previous flush.
-        if (flushIndex.current > 0) {
-            uint16a16 currentFlushDhwIndexes = _dhwIndexes[smartVault][flushIndex.current - 1];
-
-            for (uint256 i; i < strategies_.length; ++i) {
-                if (strategies_[i] == _ghostStrategy) continue;
-
-                if (flushDhwIndexes.get(i) == currentFlushDhwIndexes.get(i)) {
-                    revert FlushOverlap(strategies_[i]);
-                }
-            }
-        }
 
         _dhwIndexes[smartVault][flushIndex.current] = flushDhwIndexes;
 

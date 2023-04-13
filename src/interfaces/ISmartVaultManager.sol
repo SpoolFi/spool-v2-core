@@ -54,14 +54,14 @@ error StaticAllocationSmartVault();
 error DepositFeeTooLarge(uint256 depositFeePct);
 
 /**
- * @notice Used when user tries to flush a vault, but DHW indexes overlap with previous flush
- */
-error FlushOverlap(address strategy);
-
-/**
  * @notice Used when user tries redeem on behalf of another user, but the vault does not support it
  */
 error RedeemForNotAllowed();
+
+/**
+ * @notice Used when trying to flush a vault that still needs to be synced.
+ */
+error VaultNotSynced();
 
 /* ========== STRUCTS ========== */
 
