@@ -62,8 +62,7 @@ contract DepositSwapIntegrationTest is TestFixture {
             strategyRatios[0] = 800;
             strategyRatios[1] = 200;
             strategy.initialize("Strategy", strategyRatios);
-            strategyRegistry.registerStrategy(address(strategy),
-            0);
+            strategyRegistry.registerStrategy(address(strategy), 0);
         }
 
         {
