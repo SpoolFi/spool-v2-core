@@ -22,8 +22,13 @@ contract MorphoCompoundV2Strategy is MorphoStrategyBase {
         lens = lens_;
     }
 
-    function initialize(string memory strategyName_, address poolTokenAddress_) external initializer {
-        __MorphoStrategyBase_init(strategyName_, poolTokenAddress_);
+    function initialize(
+        string memory strategyName_,
+        address poolTokenAddress_,
+        int128 positiveYieldLimit_,
+        int128 negativeYieldLimit_
+    ) external initializer {
+        __MorphoStrategyBase_init(strategyName_, poolTokenAddress_, positiveYieldLimit_, negativeYieldLimit_);
     }
 
     function _getTotalBalance() internal view override returns (uint256) {

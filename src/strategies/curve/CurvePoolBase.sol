@@ -31,8 +31,8 @@ abstract contract CurvePoolBase is StrategyManualYieldVerifier, Strategy {
         string memory strategyName_,
         IERC20 lpToken_,
         uint16a16 assetMapping_,
-        int128 positiveLimit_,
-        int128 negativeLimit_
+        int128 positiveYieldLimit_,
+        int128 negativeYieldLimit_
     ) internal onlyInitializing {
         __Strategy_init(strategyName_);
 
@@ -55,8 +55,8 @@ abstract contract CurvePoolBase is StrategyManualYieldVerifier, Strategy {
 
         assetMapping = assetMapping_;
 
-        _setPositiveLimit(positiveLimit_);
-        _setNegativeLimit(negativeLimit_);
+        _setPositiveYieldLimit(positiveYieldLimit_);
+        _setNegativeYieldLimit(negativeYieldLimit_);
     }
 
     function _compound(address[] calldata tokens, SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)

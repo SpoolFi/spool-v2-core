@@ -43,8 +43,8 @@ abstract contract MorphoStrategyBase is StrategyManualYieldVerifier, Strategy {
     function __MorphoStrategyBase_init(
         string memory strategyName_,
         address poolTokenAddress_,
-        int128 positiveLimit_,
-        int128 negativeLimit_
+        int128 positiveYieldLimit_,
+        int128 negativeYieldLimit_
     ) internal onlyInitializing {
         __Strategy_init(strategyName_);
 
@@ -52,8 +52,8 @@ abstract contract MorphoStrategyBase is StrategyManualYieldVerifier, Strategy {
 
         poolTokenAddress = poolTokenAddress_;
 
-        _setPositiveLimit(positiveLimit_);
-        _setNegativeLimit(negativeLimit_);
+        _setPositiveYieldLimit(positiveYieldLimit_);
+        _setNegativeYieldLimit(negativeYieldLimit_);
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {

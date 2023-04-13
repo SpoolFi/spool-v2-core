@@ -17,11 +17,13 @@ contract Curve3poolStrategy is Curve3CoinPoolBase {
         ISwapper swapper_
     ) CurvePoolBase(assetGroupRegistry_, accessControl_, assetGroupId_, swapper_) {}
 
-    function initialize(string memory strategyName_, ICurve3CoinPool pool_, uint16a16 assetMapping_, ICurveGauge gauge_)
+    function initialize(string memory strategyName_, ICurve3CoinPool pool_, uint16a16 assetMapping_, ICurveGauge gauge_,
+        int128 positiveYieldLimit_,
+        int128 negativeYieldLimit_)
         external
         initializer
     {
-        __Curve3CoinPoolBase_init(strategyName_, IERC20(gauge_.lp_token()), assetMapping_, pool_);
+        __Curve3CoinPoolBase_init(strategyName_, IERC20(gauge_.lp_token()), assetMapping_, pool_, positiveYieldLimit_, negativeYieldLimit_);
 
         if (address(gauge_) == address(0)) {
             revert ConfigurationAddressZero();

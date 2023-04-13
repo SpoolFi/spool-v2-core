@@ -45,11 +45,13 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
         string memory strategyName_,
         IERC20 lpToken_,
         uint16a16 assetMapping_,
-        ICurve3CoinPool pool_
+        ICurve3CoinPool pool_,
+        int128 positiveYieldLimit_,
+        int128 negativeYieldLimit_
     ) internal onlyInitializing {
         pool = pool_;
 
-        __CurvePoolBase_init(strategyName_, lpToken_, assetMapping_);
+        __CurvePoolBase_init(strategyName_, lpToken_, assetMapping_, positiveYieldLimit_, negativeYieldLimit_);
     }
 
     function assetRatio() external view override returns (uint256[] memory) {

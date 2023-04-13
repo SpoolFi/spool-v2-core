@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
+import "../../interfaces/Constants.sol";
 import "../../access/SpoolAccessControllable.sol";
 
 /// @notice Used when manual yield is more than allowed.
@@ -20,25 +21,25 @@ abstract contract StrategyManualYieldVerifier is SpoolAccessControllable {
      * @notice Sets positive yield limit.
      * @param positiveLimit_ New positive yield limit.
      */
-    function setPositiveLimit(int128 positiveLimit_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
-        _setPositiveLimit(positiveLimit_);
+    function setPositiveYieldLimit(int128 positiveLimit_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        _setPositiveYieldLimit(positiveLimit_);
     }
 
     /**
      * @notice Sets negative yield limit.
      * @param negativeLimit_ New negative yield limit.
      */
-    function setNegativeLimit(int128 negativeLimit_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
-        _setNegativeLimit(negativeLimit_);
+    function setNegativeYieldLimit(int128 negativeLimit_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        _setNegativeYieldLimit(negativeLimit_);
     }
 
-    function _setPositiveLimit(int128 positiveLimit_) internal {
+    function _setPositiveYieldLimit(int128 positiveLimit_) internal {
         if (positiveLimit_ < 0) revert InvalidConfiguration();
         positiveLimit = positiveLimit_;
     }
 
-    function _setNegativeLimit(int128 negativeLimit_) internal {
-        if (negativeLimit_ > 0) revert InvalidConfiguration();
+    function _setNegativeYieldLimit(int128 negativeLimit_) internal {
+        if (negativeLimit_ > 0 || negativeLimit_ < -YIELD_FULL_PERCENT_INT) revert InvalidConfiguration();
         negativeLimit = negativeLimit_;
     }
 
@@ -47,14 +48,10 @@ abstract contract StrategyManualYieldVerifier is SpoolAccessControllable {
      * @param manualYield Manual yiedl value to verify.
      */
     function _verifyManualYieldPercentage(int256 manualYield) internal view virtual {
-        if (manualYield > 0) {
-            if (manualYield > positiveLimit) {
-                revert ManualYieldTooBig(manualYield);
-            }
-        } else if (manualYield < 0) {
-            if (manualYield < negativeLimit) {
-                revert ManualYieldTooSmall(manualYield);
-            }
+        if (manualYield > positiveLimit) {
+            revert ManualYieldTooBig(manualYield);
+        } else if (manualYield < negativeLimit) {
+            revert ManualYieldTooSmall(manualYield);
         }
     }
 }

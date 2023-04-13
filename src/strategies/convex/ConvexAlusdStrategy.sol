@@ -7,6 +7,7 @@ import "../../external/interfaces/strategies/convex/IBaseRewardPool.sol";
 import "../../external/interfaces/strategies/convex/IBooster.sol";
 import "../curve/CurveAdapter.sol";
 import "../Strategy.sol";
+import "../helpers/StrategyManualYieldVerifier.sol";
 
 error StratBeforeDepositCheckFailed();
 error StratBeforeRedeemalCheckFailed();
@@ -34,7 +35,7 @@ error StratRedeemSlippagesFailed();
 //   - _redeemFromProtocol: withdrawalSlippages[3..tokenLength+2]
 // - redeemFast or emergencyWithdraw: slippages[0] == 3
 //   - _redeemFromProtocol or _emergencyWithdrawImpl: slippages[1..tokenLength]
-contract ConvexAlusdStrategy is Strategy, CurveMetaPoolAdapter, Curve3CoinPoolAdapter, CurveUint256PoolAdapter {
+contract ConvexAlusdStrategy is StrategyManualYieldVerifier, Strategy, CurveMetaPoolAdapter, Curve3CoinPoolAdapter, CurveUint256PoolAdapter {
     using SafeERC20 for IERC20;
     using uint16a16Lib for uint16a16;
 
@@ -75,7 +76,9 @@ contract ConvexAlusdStrategy is Strategy, CurveMetaPoolAdapter, Curve3CoinPoolAd
         uint16a16 assetMapping_,
         address poolMeta_,
         uint96 pid_,
-        bool extraRewards_
+        bool extraRewards_,
+        int128 positiveYieldLimit_,
+        int128 negativeYieldLimit_
     ) external initializer {
         __Strategy_init(strategyName_);
 
@@ -112,6 +115,9 @@ contract ConvexAlusdStrategy is Strategy, CurveMetaPoolAdapter, Curve3CoinPoolAd
         crvRewards = IBaseRewardPool(cvxPool.crvRewards);
         crvRewardToken = crvRewards.rewardToken();
         cvxRewardToken = booster.minter();
+
+        _setPositiveYieldLimit(positiveYieldLimit_);
+        _setNegativeYieldLimit(negativeYieldLimit_);
     }
 
     // adapters
@@ -242,7 +248,8 @@ contract ConvexAlusdStrategy is Strategy, CurveMetaPoolAdapter, Curve3CoinPoolAd
         compoundYield = int256(YIELD_FULL_PERCENT * lpTokensMinted / lpTokensBefore);
     }
 
-    function _getYieldPercentage(int256 manualYield) internal pure override returns (int256) {
+    function _getYieldPercentage(int256 manualYield) internal view override returns (int256) {
+        _verifyManualYieldPercentage(manualYield);
         return manualYield;
     }
 
