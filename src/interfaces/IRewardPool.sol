@@ -56,6 +56,16 @@ interface IRewardPool {
     function allowUpdates() external view returns (bool);
 
     /**
+     * @notice Pause claiming
+     */
+    function pause() external;
+
+    /**
+     * @notice Unapuse claiming
+     */
+    function unpause() external;
+
+    /**
      * @notice Amount already claimed by user per token per vault
      * @param user claimer
      * @param smartVault smart vault address

@@ -3,10 +3,11 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/security/Pausable.sol";
 import "../interfaces/IRewardPool.sol";
 import "../access/SpoolAccessControllable.sol";
 
-contract RewardPool is IRewardPool, SpoolAccessControllable {
+contract RewardPool is IRewardPool, Pausable {
     using SafeERC20 for IERC20;
 
     mapping(uint256 => bytes32) public roots;
@@ -19,8 +20,22 @@ contract RewardPool is IRewardPool, SpoolAccessControllable {
 
     bool public immutable allowUpdates;
 
-    constructor(ISpoolAccessControl accessControl, bool allowUpdates_) SpoolAccessControllable(accessControl) {
+    /**
+     * @dev Spool access control manager.
+     */
+    ISpoolAccessControl internal immutable _accessControl;
+
+    constructor(ISpoolAccessControl accessControl, bool allowUpdates_) {
         allowUpdates = allowUpdates_;
+        _accessControl = accessControl;
+    }
+
+    function pause() external onlyRole(ROLE_PAUSER, msg.sender) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(ROLE_UNPAUSER, msg.sender) {
+        _unpause();
     }
 
     function addTreeRoot(bytes32 root) external onlyRole(ROLE_REWARD_POOL_ADMIN, msg.sender) {
@@ -79,6 +94,50 @@ contract RewardPool is IRewardPool, SpoolAccessControllable {
         return keccak256(
             bytes.concat(keccak256(abi.encode(user, data.cycle, data.smartVault, data.token, data.rewardsTotal)))
         );
+    }
+
+    /**
+     * @dev Throws if the contract or the whole system is paused.
+     */
+    function _requireNotPaused() internal view override {
+        if (_accessControl.paused()) {
+            revert SystemPaused();
+        }
+
+        super._requireNotPaused();
+    }
+
+    /**
+     * @dev Reverts if an account is missing a role.\
+     * @param role Role to check for.
+     * @param account Account to check.
+     */
+    function _checkRole(bytes32 role, address account) internal view virtual {
+        if (!_accessControl.hasRole(role, account)) {
+            revert MissingRole(role, account);
+        }
+    }
+
+    /**
+     * @notice Only allows accounts with granted role.
+     * @dev Reverts when the account fails check.
+     * @param role Role to check for.
+     * @param account Account to check.
+     */
+    modifier onlyRole(bytes32 role, address account) {
+        _checkRole(role, account);
+        _;
+    }
+
+    /**
+     * @notice Only allows accounts that are Spool admins or admins of a smart vault.
+     * @dev Reverts when the account fails check.
+     * @param smartVault Address of the smart vault.
+     * @param account Account to check.
+     */
+    modifier onlyAdminOrVaultAdmin(address smartVault, address account) {
+        _accessControl.checkIsAdminOrVaultAdmin(smartVault, account);
+        _;
     }
 
     /**
