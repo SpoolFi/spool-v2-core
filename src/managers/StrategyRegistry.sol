@@ -216,7 +216,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     /**
      * @notice Add strategy to registry
      */
-    function registerStrategy(address strategy) external {
+    function registerStrategy(address strategy, int256 apy) external {
         _checkRole(ROLE_SPOOL_ADMIN, msg.sender);
 
         if (_removedStrategies[strategy]) revert StrategyPreviouslyRemoved(strategy);
@@ -228,6 +228,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         _stateAtDhw[address(strategy)][0].timestamp = SafeCast.toUint32(block.timestamp);
 
         emit StrategyRegistered(strategy);
+        _setStrategyApy(strategy, apy);
     }
 
     /**
@@ -529,6 +530,11 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         }
     }
 
+    function setStrategyApy(address strategy, int256 apy) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        _checkRole(ROLE_STRATEGY, strategy);
+        _setStrategyApy(strategy, apy);
+    }
+
     function setEcosystemFee(uint96 ecosystemFeePct_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
         _setEcosystemFee(ecosystemFeePct_);
     }
@@ -550,6 +556,11 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         onlyRole(ROLE_SPOOL_ADMIN, msg.sender)
     {
         _setEmergencyWithdrawalWallet(emergencyWithdrawalWallet_);
+    }
+
+    function _setStrategyApy(address strategy, int256 apy) private {
+        _apys[strategy] = apy;
+        emit StrategyApyUpdated(strategy, apy);
     }
 
     function _setEcosystemFee(uint96 ecosystemFeePct_) private {
@@ -608,9 +619,8 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                     int256 weight = _getRunningAverageApyWeight(timeDelta);
                     int256 apy =
                         (_apys[strategy] * (FULL_PERCENT_INT - weight) + normalizedApy * weight) / FULL_PERCENT_INT;
-                    _apys[strategy] = apy;
 
-                    emit StrategyApyUpdated(strategy, apy);
+                    _setStrategyApy(strategy, apy);
                 }
             }
         }

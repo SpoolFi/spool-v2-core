@@ -200,8 +200,9 @@ interface IStrategyRegistry {
      * @dev Requirements:
      * - caller must have role ROLE_SPOOL_ADMIN
      * @param strategy Address of strategy to register.
+     * @param apy Apy of the strategy at the time of the registration.
      */
-    function registerStrategy(address strategy) external;
+    function registerStrategy(address strategy, int256 apy) external;
 
     /**
      * @notice Removes strategy from the system.
