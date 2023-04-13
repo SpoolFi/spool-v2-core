@@ -335,7 +335,6 @@ contract PlatformFeesTest is TestFixture {
             // collect fees for strategy B, but not for strategy A
             uint256[] memory shares = new uint256[](1);
             uint256[][] memory withdrawalSlippages = new uint256[][](1);
-            withdrawalSlippages[0] = new uint256[](0);
             // collect ecosystem fees
             shares[0] = strategyB.balanceOf(ecosystemFeeRecipient);
             vm.startPrank(ecosystemFeeRecipient);
@@ -352,7 +351,6 @@ contract PlatformFeesTest is TestFixture {
         {
             uint256[] memory shares = new uint256[](1);
             uint256[][] memory withdrawalSlippages = new uint256[][](1);
-            withdrawalSlippages[0] = new uint256[](0);
             // collect ecosystem fees
             shares[0] = strategyA.balanceOf(ecosystemFeeRecipient);
             vm.startPrank(ecosystemFeeRecipient);
@@ -466,7 +464,6 @@ contract PlatformFeesTest is TestFixture {
         {
             uint256[] memory shares = new uint256[](1);
             uint256[][] memory withdrawalSlippages = new uint256[][](1);
-            withdrawalSlippages[0] = new uint256[](0);
             // collect ecosystem fees
             shares[0] = strategyA.balanceOf(ecosystemFeeRecipient);
             vm.startPrank(ecosystemFeeRecipient);
@@ -534,7 +531,6 @@ contract PlatformFeesTest is TestFixture {
         {
             uint256[] memory shares = new uint256[](1);
             uint256[][] memory withdrawalSlippages = new uint256[][](1);
-            withdrawalSlippages[0] = new uint256[](0);
             // collect ecosystem fees
             shares[0] = strategyA.balanceOf(ecosystemFeeRecipient);
             vm.startPrank(ecosystemFeeRecipient);

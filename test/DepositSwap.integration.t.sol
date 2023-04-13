@@ -99,10 +99,8 @@ contract DepositSwapIntegrationTest is TestFixture {
 
         MockExchange exchangeAC = new MockExchange(tokenA, tokenC, priceFeedManager);
         tokenA.mint(address(exchangeAC), 1000 ether);
-        tokenC.mint(address(exchangeAC), 1000 ether);
         MockExchange exchangeBC = new MockExchange(tokenB, tokenC, priceFeedManager);
         tokenB.mint(address(exchangeBC), 1000 ether);
-        tokenC.mint(address(exchangeBC), 1000 ether);
 
         vm.startPrank(swapperAdmin);
         swapper.updateExchangeAllowlist(
@@ -156,7 +154,6 @@ contract DepositSwapIntegrationTest is TestFixture {
         tokenA.mint(alice, 2 ether);
 
         MockExchange exchangeAB = new MockExchange(tokenA, tokenB, priceFeedManager);
-        tokenA.mint(address(exchangeAB), 1000 ether);
         tokenB.mint(address(exchangeAB), 1000 ether);
 
         vm.startPrank(swapperAdmin);
@@ -262,7 +259,6 @@ contract DepositSwapIntegrationTest is TestFixture {
         tokenB.mint(alice, 0.5 ether);
 
         priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
-        priceFeedManager.setExchangeRate(address(tokenB), 1 * USD_DECIMALS_MULTIPLIER);
 
         depositSwap = new DepositSwap(weth, assetGroupRegistry, smartVaultManager, swapper);
 

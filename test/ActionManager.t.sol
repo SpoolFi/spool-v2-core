@@ -10,6 +10,8 @@ import "../src/access/SpoolAccessControl.sol";
 import {MockAction, MockActionSetAmountTo100} from "./mocks/MockAction.sol";
 
 contract ActionManagerTest is Test {
+    event ActionSet(address indexed smartVault, address indexed action, RequestType requestType);
+
     IActionManager actionManager;
     IAction mockAction;
     MockToken mockToken;
@@ -58,6 +60,8 @@ contract ActionManagerTest is Test {
         actionManager.whitelistAction(address(mockAction), true);
         actionManager.whitelistAction(address(mockActionSetsAmountsTo100), true);
 
+        vm.expectEmit(true, true, true, true);
+        emit ActionSet(smartVaultId, address(mockAction), RequestType.Deposit);
         actionManager.setActions(smartVaultId, actions, requestTypes);
 
         address[] memory tokens = new address[](1);

@@ -70,8 +70,6 @@ contract MasterWalletTest is Test {
     }
 
     function test_transfer_shouldRevertWhenCalledByWrongActor() public {
-        deal(address(token), address(masterWallet), 1 ether, true);
-
         vm.prank(user);
         vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_MASTER_WALLET_MANAGER, user));
         masterWallet.transfer(token, user, 1 ether);

@@ -10,6 +10,8 @@ import "../src/access/SpoolAccessControl.sol";
 import "./libraries/Arrays.sol";
 
 contract GuardManagerTest is Test, GasHelpers {
+    event GuardsInitialized(address indexed smartVault, GuardDefinition[][] guards, RequestType[] requestTypes);
+
     IGuardManager guardManager;
     MockGuard mockGuard;
     address smartVaultId = address(1);
@@ -87,10 +89,6 @@ contract GuardManagerTest is Test, GasHelpers {
 
     function test_runGuards() public {
         address[] memory tokens = new address[](4);
-        tokens[0] = address(10);
-        tokens[1] = address(11);
-        tokens[2] = address(12);
-        tokens[3] = address(13);
 
         RequestContext memory context = RequestContext(user, user, user, RequestType.Deposit, new uint256[](0), tokens);
 
@@ -116,6 +114,8 @@ contract GuardManagerTest is Test, GasHelpers {
         RequestType[] memory requestTypes = new RequestType[](1);
         requestTypes[0] = RequestType.Deposit;
 
+        vm.expectEmit(true, true, true, true);
+        emit GuardsInitialized(address(2), guards, requestTypes);
         guardManager.setGuards(address(2), guards, requestTypes);
         guardManager.runGuards(
             address(2), RequestContext(user, user, user, RequestType.Deposit, new uint256[](0), new address[](0))
@@ -154,6 +154,8 @@ contract GuardManagerTest is Test, GasHelpers {
         RequestType[] memory requestTypes = new RequestType[](1);
         requestTypes[0] = RequestType.Deposit;
 
+        vm.expectEmit(true, true, true, true);
+        emit GuardsInitialized(address(2), guards, requestTypes);
         guardManager.setGuards(address(2), guards, requestTypes);
         guardManager.runGuards(
             address(2), RequestContext(user, user, user, RequestType.Deposit, new uint256[](0), new address[](0))
@@ -187,6 +189,8 @@ contract GuardManagerTest is Test, GasHelpers {
         GuardDefinition[][] memory guards = new GuardDefinition[][](0);
         RequestType[] memory requestTypes = new RequestType[](0);
 
+        vm.expectEmit(true, true, true, true);
+        emit GuardsInitialized(address(2), guards, requestTypes);
         guardManager.setGuards(address(2), guards, requestTypes);
         GuardDefinition[] memory guards2 = guardManager.readGuards(address(2), RequestType.Deposit);
         assertEq(guards2.length, 0);

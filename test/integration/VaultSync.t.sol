@@ -58,18 +58,10 @@ contract VaultSyncTest is IntegrationTestFixture {
     function test_syncVault_oneDeposit() public {
         createVault(2_00, 0, 0);
         TestBag memory bag;
-        bag.fees = SmartVaultFees(2_00, 0, 0);
         bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
-        vm.startPrank(alice);
-
-        tokenA.approve(address(smartVaultManager), 100 ether);
-        tokenB.approve(address(smartVaultManager), 100 ether);
-        tokenC.approve(address(smartVaultManager), 500 ether);
-
+        vm.prank(alice);
         smartVaultManager.deposit(DepositBag(address(smartVault), bag.depositAmounts, alice, address(0), true));
-
-        vm.stopPrank();
 
         vm.startPrank(doHardWorker);
         strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
@@ -348,9 +340,6 @@ contract VaultSyncTest is IntegrationTestFixture {
     function test_depositAndRedeemNFTs() public {
         TestBag memory bag;
         createVault();
-        vm.clearMockedCalls();
-
-        bag.fees = SmartVaultFees(0, 0, 0);
         bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
         vm.prank(alice);

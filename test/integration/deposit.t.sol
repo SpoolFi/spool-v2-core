@@ -32,14 +32,6 @@ contract DepositIntegrationTest is IntegrationTestFixture {
 
     function test_deposit_revertNothingToFlushAndSync() public {
         // Alice deposits
-        vm.startPrank(alice);
-
-        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
-
-        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
-        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
-        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
-
         vm.expectRevert(abi.encodeWithSelector(NothingToFlush.selector));
         smartVaultManager.flushSmartVault(address(smartVault));
 
@@ -337,8 +329,8 @@ contract DepositIntegrationTest is IntegrationTestFixture {
 
         nftIds = Arrays.toArray(nftIds[0], aliceDepositNftId);
         // balances after deposit #2, before DHW, should be the same
-        aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice, nftIds);
-        assertEq(aliceBalance, expectedBalance);
+        uint256 aliceBalance2 = smartVaultManager.getUserSVTBalance(address(smartVault), alice, nftIds);
+        assertEq(aliceBalance2, expectedBalance);
         assertEq(smartVault.totalSupply(), expectedBalance);
         assertEq(smartVault.balanceOf(address(smartVault)), expectedBalance);
     }
@@ -362,8 +354,6 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
         vm.stopPrank();
 
-        smartVaultManager.syncSmartVault(address(smartVault), true);
-
         vm.startPrank(alice);
         uint256[] memory nftIds = Arrays.toArray(aliceDepositNftId);
         uint256[] memory nftAmounts = Arrays.toArray(NFT_MINTED_SHARES);
@@ -373,10 +363,6 @@ contract DepositIntegrationTest is IntegrationTestFixture {
     }
 
     function test_claimSVTs_revertInvalidNFT() public {
-        deal(address(tokenA), alice, 2000 ether, true);
-        deal(address(tokenB), alice, 2000 ether, true);
-        deal(address(tokenC), alice, 2000 ether, true);
-
         uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
 
         // Alice deposits #1
@@ -476,9 +462,6 @@ contract DepositIntegrationTest is IntegrationTestFixture {
             smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
         vm.stopPrank();
 
-        // flush
-        smartVaultManager.flushSmartVault(address(smartVault));
-
         // try to claim SVTs
         uint256[] memory ids = Arrays.toArray(aliceDepositNftId);
         uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
@@ -502,9 +485,6 @@ contract DepositIntegrationTest is IntegrationTestFixture {
             smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
         vm.stopPrank();
 
-        // flush
-        smartVaultManager.flushSmartVault(address(smartVault));
-
         // try to redeem
         uint256[] memory ids = Arrays.toArray(aliceDepositNftId);
         uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
@@ -527,9 +507,6 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         uint256 aliceDepositNftId =
             smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
         vm.stopPrank();
-
-        // flush
-        smartVaultManager.flushSmartVault(address(smartVault));
 
         // try to redeem
         uint256[] memory ids = Arrays.toArray(aliceDepositNftId);
@@ -648,11 +625,6 @@ contract DepositIntegrationTest is IntegrationTestFixture {
     }
 
     function test_removeStrategyAfterDepositAndBeforeFlush() public {
-        console.log("strategyA", address(strategyA));
-        console.log("strategyB", address(strategyB));
-        console.log("strategyC", address(strategyC));
-        console.log("ghost strategy", address(ghostStrategy));
-
         uint256 aliceDepositNftId;
         {
             // Alice deposits

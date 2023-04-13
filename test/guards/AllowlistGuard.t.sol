@@ -70,6 +70,7 @@ contract AllowlistGuardTest is Test {
 
         vm.prank(alice);
         allowlistGuard.addToAllowlist(smartVault1, 0, addressesToAdd);
+        assertEq(allowlistGuard.isAllowed(smartVault1, 0, bob), true, "Bob");
     }
 
     function test_removeFromAllowlist_shouldRemoveFromAllowlist() public {
@@ -79,6 +80,9 @@ contract AllowlistGuardTest is Test {
 
         vm.prank(alice);
         allowlistGuard.addToAllowlist(address(smartVault1), 0, addressesToAdd);
+
+        assertEq(allowlistGuard.isAllowed(smartVault1, 0, bob), true, "Bob");
+        assertEq(allowlistGuard.isAllowed(smartVault1, 0, charlie), true, "Charlie");
 
         address[] memory addressesToRemove = new address[](1);
         addressesToRemove[0] = charlie;
@@ -99,14 +103,20 @@ contract AllowlistGuardTest is Test {
     }
 
     function test_removeFromAllowlist_shouldEmitRemovedFromAllowlistEvent() public {
-        address[] memory addressesToRemove = new address[](1);
-        addressesToRemove[0] = bob;
-
-        vm.expectEmit(true, true, true, false, address(allowlistGuard));
-        emit RemovedFromAllowlist(smartVault1, 0, addressesToRemove);
+        address[] memory addresses = new address[](1);
+        addresses[0] = bob;
 
         vm.prank(alice);
-        allowlistGuard.removeFromAllowlist(smartVault1, 0, addressesToRemove);
+        allowlistGuard.addToAllowlist(address(smartVault1), 0, addresses);
+        assertEq(allowlistGuard.isAllowed(smartVault1, 0, bob), true);
+
+        vm.expectEmit(true, true, true, false, address(allowlistGuard));
+        emit RemovedFromAllowlist(smartVault1, 0, addresses);
+
+        vm.prank(alice);
+        allowlistGuard.removeFromAllowlist(smartVault1, 0, addresses);
+
+        assertEq(allowlistGuard.isAllowed(smartVault1, 0, bob), false);
     }
 
     function test_isAllowed_shouldTakeIntoAccountSmartVaultAndAllowlistIdAndAddress() public {
@@ -117,7 +127,7 @@ contract AllowlistGuardTest is Test {
         allowlistGuard.addToAllowlist(address(smartVault1), 0, addressesToAdd);
 
         assertEq(allowlistGuard.isAllowed(smartVault2, 0, bob), false, "SmartVault2 Bob");
-        assertEq(allowlistGuard.isAllowed(smartVault1, 1, bob), false, "Allowlist1 Bob");
+        assertEq(allowlistGuard.isAllowed(smartVault1, 0, bob), true, "Allowlist1 Bob");
         assertEq(allowlistGuard.isAllowed(smartVault1, 0, charlie), false, "Charlie");
     }
 }

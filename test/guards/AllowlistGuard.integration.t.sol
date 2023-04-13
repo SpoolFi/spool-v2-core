@@ -156,8 +156,6 @@ contract AllowlistGuardIntegrationTest is TestFixture {
     }
 
     function test_depositWithAllowList() public {
-        token.mint(charlie, 2 ether);
-        token.mint(eve, 1 ether);
         token.mint(bob, 1 ether);
 
         vm.prank(charlie);

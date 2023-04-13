@@ -55,18 +55,10 @@ contract AllocationProviderTest is Test {
 
     function test_uniformAllocationProvider() public {
         address[] memory strategies = new address[](3);
-        strategies[0] = strategy1;
-        strategies[1] = strategy2;
-        strategies[2] = strategy3;
-
-        int256[] memory apys = new int256[](3);
-        apys[0] = apy_strategy1;
-        apys[1] = apy_strategy2;
-        apys[2] = apy_strategy3;
-
         FixedRM rm = new FixedRM();
-        AllocationCalculationInput memory input =
-            AllocationCalculationInput(strategies, apys, rm.getRiskScores(riskProvider, strategies), riskTolerance);
+        AllocationCalculationInput memory input = AllocationCalculationInput(
+            strategies, new int256[](3), rm.getRiskScores(riskProvider, strategies), riskTolerance
+        );
 
         IAllocationProvider ap = new UniformAllocationProvider();
 

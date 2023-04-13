@@ -195,9 +195,21 @@ contract RewardManagerTests is Test {
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount * 2);
         rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
+        (uint32 duration_,, uint192 rewardRate_,) = rewardManager.rewardConfiguration(smartVault, IERC20(rewardToken));
+
+        skip(5 days);
 
         rewardManager.extendRewardEmission(smartVault, rewardToken, 1 ether, endTimestamp);
         vm.stopPrank();
+
+        (uint32 newDuration,, uint192 newRewardRate,) =
+            rewardManager.rewardConfiguration(smartVault, IERC20(rewardToken));
+
+        assertEq(duration_, duration);
+        assertEq(newDuration, duration - 5 days);
+        assertEq(rewardRate_, rewardAmount * 1e18 / duration);
+        assertApproxEqAbs(newRewardRate, (1e18 ether + rewardAmount / 2 * 1e18) / newDuration, 1);
+        assertGt(newRewardRate, rewardRate_);
     }
 
     function test_extendRewardEmission_revertSmallerRate() public {
@@ -222,16 +234,37 @@ contract RewardManagerTests is Test {
         vm.stopPrank();
     }
 
+    function test_removeReward_revertMissingRole() public {
+        address bob = address(0xb);
+        vm.expectRevert(
+            abi.encodeWithSelector(MissingRole.selector, keccak256(abi.encode(smartVault, ROLE_SMART_VAULT_ADMIN)), bob)
+        );
+        vm.prank(bob);
+        rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
+    }
+
     function test_removeReward_ok() public {
         deal(address(rewardToken), vaultOwner, rewardAmount, true);
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), rewardAmount);
         rewardManager.addToken(smartVault, rewardToken, endTimestamp, rewardAmount);
+        uint256 countBefore = rewardManager.rewardTokensCount(smartVault);
 
         skip(duration + 1);
 
         rewardManager.removeReward(smartVault, rewardToken);
         vm.stopPrank();
+
+        (uint32 duration_, uint32 finish_, uint192 rate_, uint32 updated_) =
+            rewardManager.rewardConfiguration(smartVault, IERC20(rewardToken));
+
+        assertEq(duration_, 0);
+        assertEq(finish_, 0);
+        assertEq(rate_, 0);
+        assertEq(updated_, 0);
+
+        uint256 countAfter = rewardManager.rewardTokensCount(smartVault);
+        assertEq(countAfter, countBefore - 1);
     }
 
     function test_forceRemoveReward_ok() public {
@@ -244,6 +277,15 @@ contract RewardManagerTests is Test {
 
         vm.prank(user);
         rewardManager.forceRemoveReward(smartVault, rewardToken);
+
+        (uint32 duration_, uint32 finish_, uint192 rate_, uint32 updated_) =
+            rewardManager.rewardConfiguration(smartVault, IERC20(rewardToken));
+
+        assertEq(duration_, 0);
+        assertEq(finish_, 0);
+        assertEq(rate_, 0);
+        assertEq(updated_, 0);
+        assertTrue(rewardManager.tokenBlacklisted(smartVault, IERC20(rewardToken)));
     }
 
     function test_removeFromBlacklist_revertMissingRole() public {
@@ -322,17 +364,17 @@ contract RewardManagerTests is Test {
         vm.startPrank(vaultOwner);
         rewardToken.approve(address(rewardManager), 2000 ether);
         rewardManager.addToken(smartVault, rewardToken, block.timestamp + 20 days, 1000 ether);
+        (uint32 rewardsDuration,,,) = rewardManager.rewardConfiguration(smartVault, rewardToken);
+        assertEq(rewardsDuration, 20 days);
 
         skip(30 days);
 
         rewardManager.removeReward(smartVault, rewardToken);
 
-        skip(1 days);
-
         rewardManager.addToken(smartVault, rewardToken, block.timestamp + 15 days, 150 ether);
         vm.stopPrank();
 
-        (uint32 rewardsDuration,,,) = rewardManager.rewardConfiguration(smartVault, rewardToken);
+        (rewardsDuration,,,) = rewardManager.rewardConfiguration(smartVault, rewardToken);
         assertEq(rewardsDuration, 15 days);
     }
 }
