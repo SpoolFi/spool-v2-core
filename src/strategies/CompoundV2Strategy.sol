@@ -12,7 +12,7 @@ import "../strategies/Strategy.sol";
 /// @notice Used when Compound V2 mint returns an error code.
 error BadCompoundV2Deposit();
 
-/// @notice Used Compound V2 redeem returns an error code.
+/// @notice Used when Compound V2 redeem returns an error code.
 error BadCompoundV2Withdrawal();
 
 contract CompoundV2Strategy is Strategy {
