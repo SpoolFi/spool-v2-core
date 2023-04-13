@@ -53,7 +53,9 @@ contract MorphoAaveV2StrategyTest is TestFixture, ForkTestFixture {
             lens
         );
 
-        morphoAaveV2Strategy.initialize("MorphoAaveV2Strategy", aUSDC, int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT));
+        morphoAaveV2Strategy.initialize(
+            "MorphoAaveV2Strategy", aUSDC, int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT)
+        );
     }
 
     function test_depositToProtocol() public {

@@ -23,7 +23,9 @@ contract Convex3poolStrategy is Curve3CoinPoolBase, ConvexStrategy {
         int128 positiveYieldLimit_,
         int128 negativeYieldLimit_
     ) external initializer {
-        __Curve3CoinPoolBase_init(strategyName_, lpToken_, assetMapping_, pool_, positiveYieldLimit_, negativeYieldLimit_);
+        __Curve3CoinPoolBase_init(
+            strategyName_, lpToken_, assetMapping_, pool_, positiveYieldLimit_, negativeYieldLimit_
+        );
         __ConvexStrategy_init(pid_, extraRewards_);
     }
 

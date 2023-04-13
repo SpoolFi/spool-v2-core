@@ -53,7 +53,9 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
             lens
         );
 
-        morphoCompoundV2Strategy.initialize("MorphoCompoundV2Strategy", cUSDC, int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT));
+        morphoCompoundV2Strategy.initialize(
+            "MorphoCompoundV2Strategy", cUSDC, int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT)
+        );
     }
 
     function test_depositToProtocol() public {

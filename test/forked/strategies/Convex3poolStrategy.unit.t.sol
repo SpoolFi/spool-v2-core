@@ -78,7 +78,16 @@ contract Convex3poolStrategyTest is TestFixture, ForkTestFixture {
 
         assetMapping = Arrays.toUint16a16(0, 1, 2);
 
-        convexStrategy.initialize("convex-3pool-strategy", curvePool, curveLpToken, assetMapping, pid, false, int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT));
+        convexStrategy.initialize(
+            "convex-3pool-strategy",
+            curvePool,
+            curveLpToken,
+            assetMapping,
+            pid,
+            false,
+            int128(YIELD_FULL_PERCENT_INT),
+            int128(-YIELD_FULL_PERCENT_INT)
+        );
     }
 
     function test_assetRatio() public {

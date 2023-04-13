@@ -84,7 +84,15 @@ contract ConvexAlusdStrategyTest is TestFixture, ForkTestFixture {
         assetMapping = Arrays.toUint16a16(0, 1, 2);
 
         convexStrategy.initialize(
-            "convex-alusd-strategy", address(curvePool), address(curveLpToken), assetMapping, curvePoolMeta, pid, false, int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT)
+            "convex-alusd-strategy",
+            address(curvePool),
+            address(curveLpToken),
+            assetMapping,
+            curvePoolMeta,
+            pid,
+            false,
+            int128(YIELD_FULL_PERCENT_INT),
+            int128(-YIELD_FULL_PERCENT_INT)
         );
     }
 

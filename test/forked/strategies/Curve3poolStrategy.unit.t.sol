@@ -70,7 +70,14 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
 
         assetMapping = Arrays.toUint16a16(0, 1, 2);
 
-        curveStrategy.initialize("curve-3pool-strategy", curvePool, assetMapping, curveGauge, int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT));
+        curveStrategy.initialize(
+            "curve-3pool-strategy",
+            curvePool,
+            assetMapping,
+            curveGauge,
+            int128(YIELD_FULL_PERCENT_INT),
+            int128(-YIELD_FULL_PERCENT_INT)
+        );
     }
 
     function test_assetRatio() public {
@@ -282,7 +289,7 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
         assertGt(compoundYieldPercentage, 0);
         assertEq(compoundYieldPercentage, compoundYieldPercentageExpected);
     }
-    
+
     function test_getYieldPercentage() public {
         // arrange
         int128 positiveLimit = int128(YIELD_FULL_PERCENT_INT / 100);

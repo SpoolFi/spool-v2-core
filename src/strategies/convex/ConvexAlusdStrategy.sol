@@ -35,7 +35,13 @@ error StratRedeemSlippagesFailed();
 //   - _redeemFromProtocol: withdrawalSlippages[3..tokenLength+2]
 // - redeemFast or emergencyWithdraw: slippages[0] == 3
 //   - _redeemFromProtocol or _emergencyWithdrawImpl: slippages[1..tokenLength]
-contract ConvexAlusdStrategy is StrategyManualYieldVerifier, Strategy, CurveMetaPoolAdapter, Curve3CoinPoolAdapter, CurveUint256PoolAdapter {
+contract ConvexAlusdStrategy is
+    StrategyManualYieldVerifier,
+    Strategy,
+    CurveMetaPoolAdapter,
+    Curve3CoinPoolAdapter,
+    CurveUint256PoolAdapter
+{
     using SafeERC20 for IERC20;
     using uint16a16Lib for uint16a16;
 
