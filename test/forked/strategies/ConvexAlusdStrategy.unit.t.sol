@@ -84,7 +84,7 @@ contract ConvexAlusdStrategyTest is TestFixture, ForkTestFixture {
         assetMapping = Arrays.toUint16a16(0, 1, 2);
 
         convexStrategy.initialize(
-            "convex-alusd-strategy", address(curvePool), address(curveLpToken), assetMapping, curvePoolMeta, pid, false
+            "convex-alusd-strategy", address(curvePool), address(curveLpToken), assetMapping, curvePoolMeta, pid, false, int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT)
         );
     }
 
@@ -317,11 +317,25 @@ contract ConvexAlusdStrategyTest is TestFixture, ForkTestFixture {
     }
 
     function test_getYieldPercentage() public {
-        // act
-        int256 yieldPercentage = convexStrategy.exposed_getYieldPercentage(123);
+        // arrange
+        int128 positiveLimit = int128(YIELD_FULL_PERCENT_INT / 100);
+        int128 negativeLimit = int128(-YIELD_FULL_PERCENT_INT);
 
-        // assert
-        assertEq(yieldPercentage, 123);
+        convexStrategy.setPositiveYieldLimit(positiveLimit);
+        convexStrategy.setNegativeYieldLimit(negativeLimit);
+
+        // act / assert
+        int256 zeroManualYield = 123;
+        int256 yieldPercentage = convexStrategy.exposed_getYieldPercentage(zeroManualYield);
+        assertEq(zeroManualYield, yieldPercentage);
+
+        int256 tooBigYield = positiveLimit + 1;
+        vm.expectRevert(abi.encodeWithSelector(ManualYieldTooBig.selector, int256(tooBigYield)));
+        convexStrategy.exposed_getYieldPercentage(tooBigYield);
+
+        int256 tooSmallYield = negativeLimit - 1;
+        vm.expectRevert(abi.encodeWithSelector(ManualYieldTooSmall.selector, int256(tooSmallYield)));
+        convexStrategy.exposed_getYieldPercentage(tooSmallYield);
     }
 
     function test_getUsdWorth() public {

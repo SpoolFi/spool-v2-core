@@ -53,7 +53,7 @@ contract MorphoAaveV2StrategyTest is TestFixture, ForkTestFixture {
             lens
         );
 
-        morphoAaveV2Strategy.initialize("MorphoAaveV2Strategy", aUSDC);
+        morphoAaveV2Strategy.initialize("MorphoAaveV2Strategy", aUSDC, int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT));
     }
 
     function test_depositToProtocol() public {
@@ -124,6 +124,28 @@ contract MorphoAaveV2StrategyTest is TestFixture, ForkTestFixture {
         assertApproxEqAbs(usdcBalanceOfCTokenBefore - usdcBalanceOfCTokenAfter, toDeposit, 1);
         assertApproxEqAbs(usdcBalanceOfEmergencyWithdrawalRecipient, toDeposit, 1);
         assertEq(balanceOfStrategyAfter, 0);
+    }
+
+    function test_getYieldPercentage() public {
+        // arrange
+        int128 positiveLimit = int128(YIELD_FULL_PERCENT_INT / 100);
+        int128 negativeLimit = int128(-YIELD_FULL_PERCENT_INT);
+
+        morphoAaveV2Strategy.setPositiveYieldLimit(positiveLimit);
+        morphoAaveV2Strategy.setNegativeYieldLimit(negativeLimit);
+
+        // act / assert
+        int256 zeroManualYield = 123;
+        int256 yieldPercentage = morphoAaveV2Strategy.exposed_getYieldPercentage(zeroManualYield);
+        assertEq(zeroManualYield, yieldPercentage);
+
+        int256 tooBigYield = positiveLimit + 1;
+        vm.expectRevert(abi.encodeWithSelector(ManualYieldTooBig.selector, int256(tooBigYield)));
+        morphoAaveV2Strategy.exposed_getYieldPercentage(tooBigYield);
+
+        int256 tooSmallYield = negativeLimit - 1;
+        vm.expectRevert(abi.encodeWithSelector(ManualYieldTooSmall.selector, int256(tooSmallYield)));
+        morphoAaveV2Strategy.exposed_getYieldPercentage(tooSmallYield);
     }
 
     function test_getUsdWorth() public {

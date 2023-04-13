@@ -53,7 +53,7 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
             lens
         );
 
-        morphoCompoundV2Strategy.initialize("MorphoCompoundV2Strategy", cUSDC);
+        morphoCompoundV2Strategy.initialize("MorphoCompoundV2Strategy", cUSDC, int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT));
     }
 
     function test_depositToProtocol() public {
@@ -124,6 +124,28 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
         assertApproxEqAbs(usdcBalanceOfCTokenBefore - usdcBalanceOfCTokenAfter, toDeposit, 1);
         assertApproxEqAbs(usdcBalanceOfEmergencyWithdrawalRecipient, toDeposit, 1);
         assertEq(balanceOfStrategyAfter, 0);
+    }
+
+    function test_getYieldPercentage() public {
+        // arrange
+        int128 positiveLimit = int128(YIELD_FULL_PERCENT_INT / 100);
+        int128 negativeLimit = int128(-YIELD_FULL_PERCENT_INT);
+
+        morphoCompoundV2Strategy.setPositiveYieldLimit(positiveLimit);
+        morphoCompoundV2Strategy.setNegativeYieldLimit(negativeLimit);
+
+        // act / assert
+        int256 zeroManualYield = 123;
+        int256 yieldPercentage = morphoCompoundV2Strategy.exposed_getYieldPercentage(zeroManualYield);
+        assertEq(zeroManualYield, yieldPercentage);
+
+        int256 tooBigYield = positiveLimit + 1;
+        vm.expectRevert(abi.encodeWithSelector(ManualYieldTooBig.selector, int256(tooBigYield)));
+        morphoCompoundV2Strategy.exposed_getYieldPercentage(tooBigYield);
+
+        int256 tooSmallYield = negativeLimit - 1;
+        vm.expectRevert(abi.encodeWithSelector(ManualYieldTooSmall.selector, int256(tooSmallYield)));
+        morphoCompoundV2Strategy.exposed_getYieldPercentage(tooSmallYield);
     }
 
     function test_compound() public {

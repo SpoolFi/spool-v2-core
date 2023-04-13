@@ -70,7 +70,7 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
 
         assetMapping = Arrays.toUint16a16(0, 1, 2);
 
-        curveStrategy.initialize("curve-3pool-strategy", curvePool, assetMapping, curveGauge);
+        curveStrategy.initialize("curve-3pool-strategy", curvePool, assetMapping, curveGauge, int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT));
     }
 
     function test_assetRatio() public {
@@ -282,13 +282,27 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
         assertGt(compoundYieldPercentage, 0);
         assertEq(compoundYieldPercentage, compoundYieldPercentageExpected);
     }
-
+    
     function test_getYieldPercentage() public {
-        // act
-        int256 yieldPercentage = curveStrategy.exposed_getYieldPercentage(123);
+        // arrange
+        int128 positiveLimit = int128(YIELD_FULL_PERCENT_INT / 100);
+        int128 negativeLimit = int128(-YIELD_FULL_PERCENT_INT);
 
-        // assert
-        assertEq(yieldPercentage, 123);
+        curveStrategy.setPositiveYieldLimit(positiveLimit);
+        curveStrategy.setNegativeYieldLimit(negativeLimit);
+
+        // act / assert
+        int256 zeroManualYield = 123;
+        int256 yieldPercentage = curveStrategy.exposed_getYieldPercentage(zeroManualYield);
+        assertEq(zeroManualYield, yieldPercentage);
+
+        int256 tooBigYield = positiveLimit + 1;
+        vm.expectRevert(abi.encodeWithSelector(ManualYieldTooBig.selector, int256(tooBigYield)));
+        curveStrategy.exposed_getYieldPercentage(tooBigYield);
+
+        int256 tooSmallYield = negativeLimit - 1;
+        vm.expectRevert(abi.encodeWithSelector(ManualYieldTooSmall.selector, int256(tooSmallYield)));
+        curveStrategy.exposed_getYieldPercentage(tooSmallYield);
     }
 
     function test_getUsdWorth() public {
