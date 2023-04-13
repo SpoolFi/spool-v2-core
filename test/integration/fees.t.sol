@@ -46,11 +46,11 @@ contract PlatformFeesTest is TestFixture {
         {
             strategyA = new MockStrategy2(assetGroupRegistry, accessControl, assetGroupId);
             strategyA.initialize("StratA");
-            strategyRegistry.registerStrategy(address(strategyA));
+            strategyRegistry.registerStrategy(address(strategyA), 0);
 
             strategyB = new MockStrategy2(assetGroupRegistry, accessControl, assetGroupId);
             strategyB.initialize("StratB");
-            strategyRegistry.registerStrategy(address(strategyB));
+            strategyRegistry.registerStrategy(address(strategyB), 0);
 
             strategiesA = Arrays.toArray(address(strategyA));
             strategiesB = Arrays.toArray(address(strategyB));
@@ -594,7 +594,7 @@ contract SmartVaultFeesTest is TestFixture {
         {
             strategyA = new MockStrategy2(assetGroupRegistry, accessControl, assetGroupId);
             strategyA.initialize("StratA");
-            strategyRegistry.registerStrategy(address(strategyA));
+            strategyRegistry.registerStrategy(address(strategyA), 0);
 
             strategiesA = Arrays.toArray(address(strategyA));
         }
@@ -2564,11 +2564,11 @@ contract AllFeesTest is TestFixture {
         {
             strategyA = new MockStrategy2(assetGroupRegistry, accessControl, assetGroupId);
             strategyA.initialize("StratA");
-            strategyRegistry.registerStrategy(address(strategyA));
+            strategyRegistry.registerStrategy(address(strategyA), 0);
 
             strategyB = new MockStrategy2(assetGroupRegistry, accessControl, assetGroupId);
             strategyB.initialize("StratB");
-            strategyRegistry.registerStrategy(address(strategyB));
+            strategyRegistry.registerStrategy(address(strategyB), 0);
 
             strategiesA = Arrays.toArray(address(strategyA), address(strategyB));
         }

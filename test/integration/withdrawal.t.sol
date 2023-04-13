@@ -108,12 +108,12 @@ contract WithdrawalIntegrationTest is Test {
         strategyRatios[0] = 1_000;
         strategyRatios[1] = 68;
         strategyA.initialize("StratA", strategyRatios);
-        strategyRegistry.registerStrategy(address(strategyA));
+        strategyRegistry.registerStrategy(address(strategyA), 0);
 
         strategyRatios[1] = 67;
         strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
         strategyB.initialize("StratB", strategyRatios);
-        strategyRegistry.registerStrategy(address(strategyB));
+        strategyRegistry.registerStrategy(address(strategyB), 0);
 
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         accessControl.grantRole(ROLE_DO_HARD_WORKER, doHardWorker);

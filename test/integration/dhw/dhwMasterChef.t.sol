@@ -48,7 +48,7 @@ contract DhwMasterChefTest is TestFixture {
 
         strategyA = new MockMasterChefStrategy(assetGroupRegistry, accessControl, masterChef, 0, assetGroupId);
         strategyA.initialize("StratA");
-        strategyRegistry.registerStrategy(address(strategyA));
+        strategyRegistry.registerStrategy(address(strategyA), 0);
 
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
         accessControl.grantRole(ROLE_STRATEGY_REGISTRY, address(strategyRegistry));

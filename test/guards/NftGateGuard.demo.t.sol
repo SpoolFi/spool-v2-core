@@ -51,7 +51,7 @@ contract NftGateGuardDemoTest is TestFixture {
             uint256[] memory strategyRatios = new uint256[](1);
             strategyRatios[0] = 1_000;
             strategy.initialize("Strategy", strategyRatios);
-            strategyRegistry.registerStrategy(address(strategy));
+            strategyRegistry.registerStrategy(address(strategy), 0);
         }
 
         (GuardDefinition[][] memory guards, RequestType[] memory guardRequestTypes) = setUpNftGateGuard();

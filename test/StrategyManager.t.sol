@@ -30,22 +30,22 @@ contract StrategyRegistryTest is Test {
         address strategy = address(new MockStrategy());
         assertFalse(accessControl.hasRole(ROLE_STRATEGY, strategy));
 
-        strategyRegistry.registerStrategy(strategy);
+        strategyRegistry.registerStrategy(strategy, 0);
         assertTrue(accessControl.hasRole(ROLE_STRATEGY, strategy));
 
         vm.expectRevert(abi.encodeWithSelector(StrategyAlreadyRegistered.selector, strategy));
-        strategyRegistry.registerStrategy(strategy);
+        strategyRegistry.registerStrategy(strategy, 0);
     }
 
     function test_registerStrategy_revertPreviouslyRemoved() public {
         address strategy = address(new MockStrategy());
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(this));
 
-        strategyRegistry.registerStrategy(strategy);
+        strategyRegistry.registerStrategy(strategy, 0);
         strategyRegistry.removeStrategy(strategy);
 
         vm.expectRevert(abi.encodeWithSelector(StrategyPreviouslyRemoved.selector, strategy));
-        strategyRegistry.registerStrategy(strategy);
+        strategyRegistry.registerStrategy(strategy, 0);
     }
 
     function test_removeStrategy_revertNotVaultManager() public {
@@ -67,7 +67,7 @@ contract StrategyRegistryTest is Test {
         address strategy = address(new MockStrategy());
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(this));
 
-        strategyRegistry.registerStrategy(strategy);
+        strategyRegistry.registerStrategy(strategy, 0);
         assertTrue(accessControl.hasRole(ROLE_STRATEGY, strategy));
 
         strategyRegistry.removeStrategy(strategy);
