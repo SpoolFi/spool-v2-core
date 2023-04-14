@@ -15,6 +15,11 @@ import "../libraries/ArrayMapping.sol";
 import "../libraries/SpoolUtils.sol";
 
 /**
+ * @notice Used when strategy apy is out of bounds.
+ */
+error BadStrategyApy(int256);
+
+/**
  * @dev Requires roles:
  * - ROLE_MASTER_WALLET_MANAGER
  * - ADMIN_ROLE_STRATEGY
@@ -530,7 +535,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         }
     }
 
-    function setStrategyApy(address strategy, int256 apy) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+    function setStrategyApy(address strategy, int256 apy) external onlyRole(ROLE_STRATEGY_APY_SETTER, msg.sender) {
         _checkRole(ROLE_STRATEGY, strategy);
         _setStrategyApy(strategy, apy);
     }
@@ -559,6 +564,8 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     }
 
     function _setStrategyApy(address strategy, int256 apy) private {
+        if (apy < -YIELD_FULL_PERCENT_INT) revert BadStrategyApy(apy);
+
         _apys[strategy] = apy;
         emit StrategyApyUpdated(strategy, apy);
     }

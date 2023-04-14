@@ -101,6 +101,11 @@ bytes32 constant ROLE_REALLOCATOR = keccak256("REALLOCATOR");
 bytes32 constant ROLE_STRATEGY = keccak256("STRATEGY");
 
 /**
+ * @dev Grants permission to manually set strategy apy.
+ */
+bytes32 constant ROLE_STRATEGY_APY_SETTER = keccak256("STRATEGY_APY_SETTER");
+
+/**
  * @dev Grants permission to manage role ROLE_STRATEGY.
  */
 bytes32 constant ADMIN_ROLE_STRATEGY = keccak256("ADMIN_STRATEGY");

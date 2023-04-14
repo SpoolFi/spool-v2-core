@@ -187,6 +187,39 @@ contract StrategyRegistryTest is Test {
         assertEq(strategyRegistry.platformFees().ecosystemFeeReceiver, address(0xb));
     }
 
+    function test_setStrategyApy() public {
+        // arrange
+        address strategy = address(new MockStrategy());
+        accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(this));
+        accessControl.grantRole(ROLE_STRATEGY_APY_SETTER, address(0xa));
+
+        int256 initialStrategyApy = 100000;
+        strategyRegistry.registerStrategy(strategy, initialStrategyApy);
+        address[] memory strategies = new address[](1);
+        strategies[0] = strategy;
+
+        // act
+        int256[] memory apysInitial = strategyRegistry.strategyAPYs(strategies);
+
+        // assert
+        assertEq(initialStrategyApy, apysInitial[0]);
+
+        // act
+        int256 manualStrategyApy = 200000;
+        vm.prank(address(0xa));
+        strategyRegistry.setStrategyApy(strategy, manualStrategyApy);
+        int256[] memory apysManual = strategyRegistry.strategyAPYs(strategies);
+
+        // assert
+        assertEq(manualStrategyApy, apysManual[0]);
+
+        // act / assert
+        int256 badApy = -YIELD_FULL_PERCENT_INT - 1;
+        vm.expectRevert(abi.encodeWithSelector(BadStrategyApy.selector, int256(badApy)));
+        vm.prank(address(0xa));
+        strategyRegistry.setStrategyApy(strategy, badApy);
+    }
+
     function test_getRunningAverageApyWeight() public {
         int256 weight = strategyRegistry.getRunningAverageApyWeight(2 hours);
         assertEq(weight, int256(4_15));
