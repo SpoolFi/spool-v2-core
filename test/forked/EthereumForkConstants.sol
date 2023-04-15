@@ -8,6 +8,8 @@ address constant USDC = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
 address constant USDT = address(0xdAC17F958D2ee523a2206206994597C13D831ec7);
 address constant DAI = address(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
+address constant WETH = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+
 address constant COMP = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);
 address constant NOTE = address(0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5);
 address constant stkAAVE = address(0x4da27a545c0c5B758a6BA100e3a049001de870f5);
@@ -38,6 +40,8 @@ address constant CURVE_3POOL_GAUGE = address(0xbFcF63294aD7105dEa65aA58F8AE5BE2D
 //   alusd
 address constant CURVE_ALUSD_POOL_TOKEN = address(0x43b4FdFD4Ff969587185cDB6f0BD875c5Fc83f8c);
 address constant CURVE_ALUSD_GAUGE = address(0x9582C4ADACB3BCE56Fea3e590F05c3ca2fb9C477);
+//   steth
+address constant CURVE_STETH_POOL = address(0xDC24316b9AE028F1497c275EB9192a3Ea0f67022);
 
 // Convex
 address constant CONVEX_BOOSTER = address(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
@@ -56,3 +60,6 @@ address constant YEARN_V2_USDC_TOKEN_VAULT = address(0xa354F35829Ae975e850e23e96
 // Notional Finance
 address constant NOTIONAL_FINANCE_PROXY = address(0x1344A36A1B56144C3Bc62E7757377D288fDE0369);
 address constant NOTIONAL_FINANCE_NUSDC = address(0x18b0Fc5A233acF1586Da7C199Ca9E3f486305A29);
+
+// Lido
+address constant LIDO = address(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);

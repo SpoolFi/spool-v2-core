@@ -22,3 +22,7 @@ interface ICurvePoolUint256 {
 
     function coins(uint256 arg0) external view returns (address);
 }
+
+interface ICurveEthPool {
+    function exchange(int128 i, int128 j, uint256 dx, uint256 min_dy) external payable returns (uint256);
+}

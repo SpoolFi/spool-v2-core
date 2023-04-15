@@ -1,0 +1,201 @@
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity 0.8.17;
+
+import "@openzeppelin/token/ERC20/IERC20.sol";
+import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "../external/interfaces/strategies/stEth/ILido.sol";
+import "../external/interfaces/strategies/curve/ICurvePool.sol";
+import "./Strategy.sol";
+import "./WethHelper.sol";
+
+error StEthHoldingBeforeDepositCheckFailed();
+error StEthHoldingBeforeRedeemalCheckFailed();
+error StEthHoldingDepositSlippagesFailed();
+error StEthHoldingRedeemSlippagesFailed();
+
+// one asset
+// no rewards
+// slippages
+// - mode selection: slippages[0]
+// - DHW with deposit: slippages[0] == 0
+//   - beforeDepositCheck: slippages[1..2]
+//   - beforeRedeemalCheck: slippages[3..4]
+//   - _depositToProtocol: slippages[5]
+// - DHW with withdrawal: slippages[0] == 1
+//   - beforeDepositCheck: slippages[1..2]
+//   - beforeRedeemalCheck: slippages[3..4]
+//   - _redeemFromProtocol: slippages[5]
+// - reallocate: slippages[0] == 2
+//   - beforeDepositCheck: depositSlippages[1..2]
+//   - _depositToProtocol: depositSlippages[3]
+//   - beforeRedeemalCheck: withdrawalSlippages[1..2]
+//   - _redeemFromProtocol: withdrawalSlippages[3]
+// - redeemFast or emergencyWithdraw: slippages[0] == 3
+//   - _redeemFromProtocol or _emergencyWithdrawImpl: slippages[1]
+// - _depositToProtocol:
+//   - if slippage == uint256 max -> stake
+//     else -> buy on curve
+// Description:
+// This is a liquid staking derivative strategy where eth is staked with Lido
+// to be used for spinning up validators. Users staking share is represented by
+// stETH that is minted 1:1 when staking eth.
+// The strategy supports two ways to obtain the stETH
+// - stake eth directly with Lido
+// - buy stETH with eth on the curve steth pool
+// The do-hard-worker can decide which way to use based on profitability by
+// setting appropriate slippages (see slippages above).
+// Since staked eth is used to spin-up validators, it cannot be unstaked. To
+// exit the protocol, the strategy sells stETH for eth on the curve steth pool.
+contract StEthHoldingStrategy is Strategy, WethHelper {
+    using SafeERC20 for IERC20;
+
+    int128 public constant CURVE_ETH_POOL_ETH_INDEX = 0;
+    int128 public constant CURVE_ETH_POOL_STETH_INDEX = 1;
+
+    ILido public immutable lido;
+    ICurveEthPool public immutable curve;
+
+    uint256 private _lastSharePrice;
+
+    constructor(
+        IAssetGroupRegistry assetGroupRegistry_,
+        ISpoolAccessControl accessControl_,
+        uint256 assetGroupId_,
+        ILido lido_,
+        ICurveEthPool curve_,
+        address weth_
+    ) Strategy(assetGroupRegistry_, accessControl_, assetGroupId_) WethHelper(weth_) {
+        if (address(lido_) == address(0)) {
+            revert ConfigurationAddressZero();
+        }
+        if (address(curve_) == address(0)) {
+            revert ConfigurationAddressZero();
+        }
+
+        lido = lido_;
+        curve = curve_;
+    }
+
+    function initialize(string memory strategyName_) external initializer {
+        __Strategy_init(strategyName_);
+
+        _lastSharePrice = _getSharePrice();
+    }
+
+    function assetRatio() external pure override returns (uint256[] memory) {
+        uint256[] memory _assetRatio = new uint256[](1);
+        _assetRatio[0] = 1;
+        return _assetRatio;
+    }
+
+    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public pure override {
+        if (amounts[0] < slippages[1] || amounts[1] > slippages[2]) {
+            revert StEthHoldingBeforeDepositCheckFailed();
+        }
+    }
+
+    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public pure override {
+        if (
+            (slippages[0] < 2 && (ssts < slippages[3] || ssts > slippages[4]))
+                || (ssts < slippages[1] || ssts > slippages[2])
+        ) {
+            revert StEthHoldingBeforeRedeemalCheckFailed();
+        }
+    }
+
+    function _depositToProtocol(address[] calldata, uint256[] memory amounts, uint256[] calldata slippages)
+        internal
+        override
+    {
+        uint256 slippage;
+        if (slippages[0] == 0) {
+            slippage = slippages[5];
+        } else if (slippages[0] == 2) {
+            slippage = slippages[3];
+        } else {
+            revert StEthHoldingDepositSlippagesFailed();
+        }
+
+        if (slippage == type(uint256).max) {
+            _stake(amounts[0]);
+        } else {
+            _buyOnCurve(amounts[0], slippage);
+        }
+    }
+
+    function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
+        uint256 stEthToSell = lido.balanceOf(address(this)) * ssts / totalSupply();
+        uint256 slippage;
+
+        if (slippages[0] == 1) {
+            slippage = slippages[5];
+        } else if (slippages[0] == 2) {
+            slippage = slippages[3];
+        } else if (slippages[0] == 3) {
+            slippage = slippages[1];
+        } else {
+            revert StEthHoldingRedeemSlippagesFailed();
+        }
+
+        _sellOnCurve(stEthToSell, slippage);
+    }
+
+    function _emergencyWithdrawImpl(uint256[] calldata slippages, address recipient) internal override {
+        if (slippages[0] != 3) {
+            revert StEthHoldingRedeemSlippagesFailed();
+        }
+
+        uint256 bought = _sellOnCurve(lido.balanceOf(address(this)), slippages[1]);
+
+        IERC20(weth).safeTransfer(recipient, bought);
+    }
+
+    function _compound(address[] calldata tokens, SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
+        internal
+        override
+        returns (int256 compoundYield)
+    {}
+
+    function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {
+        uint256 currentSharePrice = _getSharePrice();
+
+        baseYieldPercentage = _calculateYieldPercentage(_lastSharePrice, currentSharePrice);
+
+        _lastSharePrice = currentSharePrice;
+    }
+
+    function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
+
+    function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
+        internal
+        view
+        override
+        returns (uint256)
+    {
+        return priceFeedManager.assetToUsdCustomPrice(weth, lido.balanceOf(address(this)), exchangeRates[0]);
+    }
+
+    function _stake(uint256 amount) private {
+        unwrapEth(amount);
+
+        lido.submit{value: amount}(address(0));
+    }
+
+    function _buyOnCurve(uint256 amount, uint256 slippage) private {
+        unwrapEth(amount);
+
+        curve.exchange{value: amount}(CURVE_ETH_POOL_ETH_INDEX, CURVE_ETH_POOL_STETH_INDEX, amount, slippage);
+    }
+
+    function _sellOnCurve(uint256 amount, uint256 slippage) private returns (uint256 bought) {
+        _resetAndApprove(IERC20(address(lido)), address(curve), amount);
+
+        bought = curve.exchange(CURVE_ETH_POOL_STETH_INDEX, CURVE_ETH_POOL_ETH_INDEX, amount, slippage);
+
+        wrapEth(bought);
+    }
+
+    function _getSharePrice() private view returns (uint256) {
+        return lido.getPooledEthByShares(1 ether);
+    }
+}
