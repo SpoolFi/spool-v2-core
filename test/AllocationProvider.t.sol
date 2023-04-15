@@ -89,7 +89,7 @@ contract AllocationProviderTest is Test {
         AllocationCalculationInput memory input =
             AllocationCalculationInput(strategies, apys, rm.getRiskScores(riskProvider, strategies), riskTolerance);
 
-        IAllocationProvider ap = new AllocationProviderLinear();
+        IAllocationProvider ap = new LinearAllocationProvider();
 
         uint256[] memory results = ap.calculateAllocation(input);
 

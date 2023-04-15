@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
-import "@solmate/utils/SSTORE2.sol";
 import "../interfaces/IAction.sol";
 import "../interfaces/Constants.sol";
 import "../access/SpoolAccessControllable.sol";
@@ -14,9 +13,6 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
 
     /// @notice Action address whitelist
     mapping(address => bool) public actionWhitelisted;
-
-    /// @notice Does vault have any actions
-    mapping(address => mapping(RequestType => bool)) private actionsExist;
 
     /// @notice Action registry
     mapping(address => mapping(RequestType => address[])) public actions;
@@ -46,8 +42,6 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
                 revert TooManyActions();
             }
 
-            actionsExist[smartVault][requestTypes[i]] = actions_.length > 0;
-
             emit ActionSet(smartVault, address(action), requestTypes[i]);
         }
 
@@ -59,7 +53,7 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
      * @param actionCtx action execution context
      */
     function runActions(ActionContext calldata actionCtx) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
-        if (!actionsExist[actionCtx.smartVault][actionCtx.requestType]) {
+        if (!_actionsExist(actionCtx.smartVault, actionCtx.requestType)) {
             return;
         }
 
@@ -83,6 +77,10 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
     }
 
     /* ========== PRIVATE FUNCTIONS ========== */
+
+    function _actionsExist(address smartVault, RequestType requestType) private view returns (bool) {
+        return actions[smartVault][requestType].length > 0;
+    }
 
     function _executeAction(address action_, ActionContext memory actionCtx) private {
         IAction(action_).executeAction(actionCtx);

@@ -98,7 +98,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
             strategyWithdrawals[i] = strategyShares * withdrawals / totalVaultShares;
         }
 
-        ISmartVault(smartVault).burn(smartVault, withdrawals, strategies, strategyWithdrawals);
+        ISmartVault(smartVault).burnVaultShares(smartVault, withdrawals, strategies, strategyWithdrawals);
 
         for (uint256 i; i < strategyWithdrawals.length; ++i) {
             _withdrawnStrategyShares[smartVault][flushIndex][i / 2] =
@@ -214,7 +214,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
             }
 
             // redeem from strategies and burn
-            smartVault.burn(bag2.redeemer, bag.shares, bag2.strategies, strategySharesToRedeem);
+            smartVault.burnVaultShares(bag2.redeemer, bag.shares, bag2.strategies, strategySharesToRedeem);
         }
 
         uint256[] memory assetsWithdrawn = _strategyRegistry.redeemFast(

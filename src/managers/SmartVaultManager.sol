@@ -471,11 +471,11 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _lastDhwTimestampSynced[smartVault] = syncResult.dhwTimestamp;
 
         if (syncResult.mintedSVTs > 0) {
-            ISmartVault(smartVault).mint(smartVault, syncResult.mintedSVTs);
+            ISmartVault(smartVault).mintVaultShares(smartVault, syncResult.mintedSVTs);
         }
 
         if (syncResult.feeSVTs > 0) {
-            ISmartVault(smartVault).mint(vaultOwner, syncResult.feeSVTs);
+            ISmartVault(smartVault).mintVaultShares(vaultOwner, syncResult.feeSVTs);
         }
     }
 

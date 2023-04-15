@@ -339,7 +339,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
         totalUsdValue = _getUsdWorth(exchangeRates, priceFeedManager);
 
-        // transfer assets to master wallet
+        // transfer assets to recipient (master wallet in case of redeemFast)
         for (uint256 i; i < assetGroup.length; ++i) {
             IERC20(assetGroup[i]).safeTransfer(recipient, assetsWithdrawn[i]);
         }

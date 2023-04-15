@@ -152,6 +152,10 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
     ) external returns (uint256) {
         _checkRole(ROLE_SMART_VAULT_MANAGER, msg.sender);
 
+        if (nftIds.length != nftAmounts.length) {
+            revert InvalidNftArrayLength();
+        }
+
         // NOTE:
         // - here we are passing ids into the request context instead of amounts
         // - here we passing empty array as tokens
@@ -628,7 +632,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
     /**
      * @dev Calculated deposit ratio from flush factors.
      * @param flushFactors Flush factors.
-     * @return Deposit ratio, with first index running over strategies and second index running over assets.
+     * @return Deposit ratio, with first index running over strategies (same length as flush factors) and second index running over assets.
      */
     function _calculateDepositRatioFromFlushFactors(uint256[][] memory flushFactors)
         private

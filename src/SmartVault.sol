@@ -127,7 +127,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         bytes[] memory metadata = new bytes[](nftIds.length);
 
         for (uint256 i; i < nftIds.length; ++i) {
-            metadata[i] = nftIds[i] >= MAXIMAL_DEPOSIT_ID
+            metadata[i] = nftIds[i] > MAXIMAL_DEPOSIT_ID
                 ? abi.encode(_withdrawalMetadata[nftIds[i]])
                 : abi.encode(_depositMetadata[nftIds[i]]);
         }
@@ -137,14 +137,19 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
-    function mint(address receiver, uint256 vaultShares) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
-        _mint(receiver, vaultShares);
-    }
-
-    function burn(address owner, uint256 vaultShares, address[] calldata strategies, uint256[] calldata shares)
+    function mintVaultShares(address receiver, uint256 vaultShares)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
     {
+        _mint(receiver, vaultShares);
+    }
+
+    function burnVaultShares(
+        address owner,
+        uint256 vaultShares,
+        address[] calldata strategies,
+        uint256[] calldata shares
+    ) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
         // burn withdrawn vault shares
         _burn(owner, vaultShares);
 

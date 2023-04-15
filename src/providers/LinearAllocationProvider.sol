@@ -5,7 +5,7 @@ import "../interfaces/IAllocationProvider.sol";
 import "../interfaces/IRiskManager.sol";
 import "../interfaces/Constants.sol";
 
-contract AllocationProviderLinear is IAllocationProvider {
+contract LinearAllocationProvider is IAllocationProvider {
     function calculateAllocation(AllocationCalculationInput calldata data) external pure returns (uint256[] memory) {
         uint256 resSum = 0;
         uint256 apySum = 0;

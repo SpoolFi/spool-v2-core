@@ -10,6 +10,11 @@ import "./IStrategyRegistry.sol";
 error InvalidAssetLengths();
 
 /**
+ * @notice Used when lengths of NFT id and amount arrays when claiming NFTs don't match.
+ */
+error InvalidNftArrayLength();
+
+/**
  * @notice Gathers input for depositing assets.
  * @custom:member smartVault Smart vault for which the deposit is made.
  * @custom:member assets Amounts of assets being deposited.

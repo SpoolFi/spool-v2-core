@@ -22,7 +22,7 @@ contract NotionalFinanceStrategy is Strategy {
 
     /* ========== STATE VARIABLES ========== */
 
-    /// @notice Comptroller implementaiton
+    /// @notice Swapper contract
     ISwapper public immutable swapper;
 
     /// @notice Notional proxy contract

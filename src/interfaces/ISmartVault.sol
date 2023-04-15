@@ -130,7 +130,7 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
      * @param receiver REceiver of minted tokens.
      * @param vaultShares Amount of tokens to mint.
      */
-    function mint(address receiver, uint256 vaultShares) external;
+    function mintVaultShares(address receiver, uint256 vaultShares) external;
 
     /**
      * @notice Burns smart vault tokens and releases strategy shares back to strategies.
@@ -141,8 +141,12 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
      * @param strategies Strategies for which to release the strategy shares.
      * @param shares Amounts of strategy shares to release.
      */
-    function burn(address owner, uint256 vaultShares, address[] calldata strategies, uint256[] calldata shares)
-        external;
+    function burnVaultShares(
+        address owner,
+        uint256 vaultShares,
+        address[] calldata strategies,
+        uint256[] calldata shares
+    ) external;
 
     /**
      * @notice Mints a new withdrawal NFT.
