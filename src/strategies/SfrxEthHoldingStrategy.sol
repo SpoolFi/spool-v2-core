@@ -3,15 +3,16 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import "../external/interfaces/strategies/stEth/ILido.sol";
+import "../external/interfaces/strategies/frxEth/IFrxEthMinter.sol";
+import "../external/interfaces/strategies/frxEth/ISfrxEthToken.sol";
 import "../external/interfaces/strategies/curve/ICurvePool.sol";
 import "./Strategy.sol";
 import "./WethHelper.sol";
 
-error StEthHoldingBeforeDepositCheckFailed();
-error StEthHoldingBeforeRedeemalCheckFailed();
-error StEthHoldingDepositSlippagesFailed();
-error StEthHoldingRedeemSlippagesFailed();
+error SfrxEthHoldingBeforeDepositCheckFailed();
+error SfrxEthHoldingBeforeRedeemalCheckFailed();
+error SfrxEthHoldingDepositSlippagesFailed();
+error SfrxEthHoldingRedeemSlippagesFailed();
 
 // one asset
 // no rewards
@@ -36,23 +37,30 @@ error StEthHoldingRedeemSlippagesFailed();
 //   - if slippage == uint256 max -> stake
 //     else -> buy on curve
 // Description:
-// This is a liquid staking derivative strategy where eth is staked with Lido
-// to be used for spinning up validators. Users staking share is represented by
-// stETH that is minted 1:1 when staking eth.
-// The strategy supports two ways to obtain the stETH
-// - stake eth directly with Lido
-// - buy stETH with eth on the curve steth pool
+// This is a liquid staking derivative strategy where eth is staked with Frax
+// to be used for spinning up validators.
+// Frax has two tokens, frxETH and sfrxETH. The frxETH token is minted 1:1 when
+// submiting eth to Frax. It cannot be redeemed back for eth and just holding
+// it is not enough to be eligible for staking yield. The sfrxETH token is
+// minted when depositing frxETH. The price of sfrxETH compared to frxETH is
+// increasing over time based on rewards accrued by validators.
+// The strategy supports two ways to obtain sfrxETH
+// - mint frxETH with Frax and deposit it to get sfrxETH
+// - buy frxETH on Curve frxeth pool and deposit it to get sfrxETH with Frax
 // The do-hard-worker can decide which way to use based on profitability by
 // setting appropriate slippages (see slippages above).
-// Since staked eth is used to spin-up validators, it cannot be unstaked. To
-// exit the protocol, the strategy sells stETH for eth on the curve steth pool.
-contract StEthHoldingStrategy is Strategy, WethHelper {
+// Since frxETH is used to spin-up validators, it cannot be redeemed back for
+// eth directly. To exit the protocol, the strategy redeems the frxETH from
+// sfrxETH and then sells the frxETH for eth on the Curve frxeth pool.
+contract SfrxEthHoldingStrategy is Strategy, WethHelper {
     using SafeERC20 for IERC20;
 
     int128 public constant CURVE_ETH_POOL_ETH_INDEX = 0;
-    int128 public constant CURVE_ETH_POOL_STETH_INDEX = 1;
+    int128 public constant CURVE_ETH_POOL_SFRXETH_INDEX = 1;
 
-    ILido public immutable lido;
+    IERC20 public immutable frxEthToken;
+    ISfrxEthToken public immutable sfrxEthToken;
+    IFrxEthMinter public immutable frxEthMinter;
     ICurveEthPool public immutable curve;
 
     uint256 private _lastSharePrice;
@@ -61,18 +69,28 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         uint256 assetGroupId_,
-        ILido lido_,
+        IERC20 frxEthToken_,
+        ISfrxEthToken sfrxEthToken_,
+        IFrxEthMinter frxEthMinter_,
         ICurveEthPool curve_,
         address weth_
     ) Strategy(assetGroupRegistry_, accessControl_, assetGroupId_) WethHelper(weth_) {
-        if (address(lido_) == address(0)) {
+        if (address(frxEthToken_) == address(0)) {
+            revert ConfigurationAddressZero();
+        }
+        if (address(sfrxEthToken_) == address(0)) {
+            revert ConfigurationAddressZero();
+        }
+        if (address(frxEthMinter_) == address(0)) {
             revert ConfigurationAddressZero();
         }
         if (address(curve_) == address(0)) {
             revert ConfigurationAddressZero();
         }
 
-        lido = lido_;
+        frxEthToken = frxEthToken_;
+        sfrxEthToken = sfrxEthToken_;
+        frxEthMinter = frxEthMinter_;
         curve = curve_;
     }
 
@@ -96,7 +114,7 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public pure override {
         if (amounts[0] < slippages[1] || amounts[1] > slippages[2]) {
-            revert StEthHoldingBeforeDepositCheckFailed();
+            revert SfrxEthHoldingBeforeDepositCheckFailed();
         }
     }
 
@@ -105,7 +123,7 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
             (slippages[0] < 2 && (ssts < slippages[3] || ssts > slippages[4]))
                 || (ssts < slippages[1] || ssts > slippages[2])
         ) {
-            revert StEthHoldingBeforeRedeemalCheckFailed();
+            revert SfrxEthHoldingBeforeRedeemalCheckFailed();
         }
     }
 
@@ -119,7 +137,7 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
         } else if (slippages[0] == 2) {
             slippage = slippages[3];
         } else {
-            revert StEthHoldingDepositSlippagesFailed();
+            revert SfrxEthHoldingDepositSlippagesFailed();
         }
 
         if (slippage == type(uint256).max) {
@@ -130,7 +148,7 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
     }
 
     function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
-        uint256 stEthToSell = lido.balanceOf(address(this)) * ssts / totalSupply();
+        uint256 sharesToRedeem = sfrxEthToken.balanceOf(address(this)) * ssts / totalSupply();
         uint256 slippage;
 
         if (slippages[0] == 1) {
@@ -140,18 +158,18 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
         } else if (slippages[0] == 3) {
             slippage = slippages[1];
         } else {
-            revert StEthHoldingRedeemSlippagesFailed();
+            revert SfrxEthHoldingRedeemSlippagesFailed();
         }
 
-        _sellOnCurve(stEthToSell, slippage);
+        _sellOnCurve(sharesToRedeem, slippage);
     }
 
     function _emergencyWithdrawImpl(uint256[] calldata slippages, address recipient) internal override {
         if (slippages[0] != 3) {
-            revert StEthHoldingRedeemSlippagesFailed();
+            revert SfrxEthHoldingRedeemSlippagesFailed();
         }
 
-        uint256 bought = _sellOnCurve(lido.balanceOf(address(this)), slippages[1]);
+        uint256 bought = _sellOnCurve(sfrxEthToken.balanceOf(address(this)), slippages[1]);
 
         IERC20(weth).safeTransfer(recipient, bought);
     }
@@ -171,7 +189,7 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
         _lastSharePrice = currentSharePrice;
     }
 
-    function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
+    function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal pure override {}
 
     function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
         internal
@@ -179,29 +197,37 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
         override
         returns (uint256)
     {
-        return priceFeedManager.assetToUsdCustomPrice(weth, lido.balanceOf(address(this)), exchangeRates[0]);
+        uint256 assets = sfrxEthToken.convertToAssets(sfrxEthToken.balanceOf(address(this)));
+
+        return priceFeedManager.assetToUsdCustomPrice(weth, assets, exchangeRates[0]);
     }
 
     function _stake(uint256 amount) private {
         unwrapEth(amount);
 
-        lido.submit{value: amount}(address(0));
+        frxEthMinter.submitAndDeposit{value: amount}(address(this));
     }
 
     function _buyOnCurve(uint256 amount, uint256 slippage) private {
         unwrapEth(amount);
 
-        curve.exchange{value: amount}(CURVE_ETH_POOL_ETH_INDEX, CURVE_ETH_POOL_STETH_INDEX, amount, slippage);
+        uint256 bought =
+            curve.exchange{value: amount}(CURVE_ETH_POOL_ETH_INDEX, CURVE_ETH_POOL_SFRXETH_INDEX, amount, slippage);
+
+        _resetAndApprove(frxEthToken, address(sfrxEthToken), bought);
+        sfrxEthToken.deposit(bought, address(this));
     }
 
     function _sellOnCurve(uint256 amount, uint256 slippage) private returns (uint256 bought) {
-        _resetAndApprove(IERC20(address(lido)), address(curve), amount);
-        bought = curve.exchange(CURVE_ETH_POOL_STETH_INDEX, CURVE_ETH_POOL_ETH_INDEX, amount, slippage);
+        uint256 withdrawn = sfrxEthToken.redeem(amount, address(this), address(this));
+
+        _resetAndApprove(IERC20(address(frxEthToken)), address(curve), withdrawn);
+        bought = curve.exchange(CURVE_ETH_POOL_SFRXETH_INDEX, CURVE_ETH_POOL_ETH_INDEX, withdrawn, slippage);
 
         wrapEth(bought);
     }
 
     function _getSharePrice() private view returns (uint256) {
-        return lido.getPooledEthByShares(1 ether);
+        return sfrxEthToken.convertToAssets(1 ether);
     }
 }

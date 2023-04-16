@@ -153,11 +153,10 @@ contract StEthHoldingStrategyTest is TestFixture, ForkTestFixture {
         stEthHoldingStrategy.exposed_emergencyWithdrawImpl(slippages, emergencyWithdrawalRecipient);
 
         // assert
-        uint256 wethTokenWithdrawnExpected = toDeposit;
         uint256 wethTokenBalanceOfWithdrawalRecipient = tokenWeth.balanceOf(emergencyWithdrawalRecipient);
         uint256 stEthBalanceOfStrategyAfter = lido.balanceOf(address(stEthHoldingStrategy));
 
-        assertApproxEqRel(wethTokenBalanceOfWithdrawalRecipient, wethTokenWithdrawnExpected, 2e15); // 2 permil
+        assertApproxEqRel(wethTokenBalanceOfWithdrawalRecipient, toDeposit, 2e15); // 2 permil
         assertApproxEqAbs(stEthBalanceOfStrategyAfter, 0, 10);
     }
 
