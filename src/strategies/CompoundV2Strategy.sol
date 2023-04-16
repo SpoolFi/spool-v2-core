@@ -23,7 +23,7 @@ contract CompoundV2Strategy is Strategy {
     /// @notice Comptroller implementaiton
     ISwapper public immutable swapper;
 
-    /// @notice Comptroller implementaiton
+    /// @notice Comptroller implementation
     IComptroller public immutable comptroller;
 
     /// @notice COMP token
@@ -40,9 +40,8 @@ contract CompoundV2Strategy is Strategy {
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         ISwapper swapper_,
-        IComptroller comptroller_,
-        uint256 assetGroupId_
-    ) Strategy(assetGroupRegistry_, accessControl_, assetGroupId_) {
+        IComptroller comptroller_
+    ) Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID) {
         if (address(swapper_) == address(0)) revert ConfigurationAddressZero();
         if (address(comptroller_) == address(0)) revert ConfigurationAddressZero();
 
@@ -55,8 +54,8 @@ contract CompoundV2Strategy is Strategy {
         comp = IERC20(comptroller_.getCompAddress());
     }
 
-    function initialize(string memory strategyName_, ICErc20 cToken_) external initializer {
-        __Strategy_init(strategyName_);
+    function initialize(string memory strategyName_, uint256 assetGroupId_, ICErc20 cToken_) external initializer {
+        __Strategy_init(strategyName_, assetGroupId_);
 
         if (address(cToken_) == address(0)) {
             revert ConfigurationAddressZero();
@@ -65,7 +64,7 @@ contract CompoundV2Strategy is Strategy {
         address[] memory tokens = assets();
 
         if (tokens.length != 1 || tokens[0] != cToken_.underlying()) {
-            revert InvalidAssetGroup(_assetGroupId);
+            revert InvalidAssetGroup(assetGroupId());
         }
 
         address[] memory markets = new address[](1);
@@ -184,7 +183,7 @@ contract CompoundV2Strategy is Strategy {
         if (cTokenBalance > 0) {
             uint256 tokenValue = _getcTokenValue(cTokenBalance);
 
-            address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+            address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId());
             usdValue = priceFeedManager.assetToUsdCustomPrice(assetGroup[0], tokenValue, exchangeRates[0]);
         }
     }

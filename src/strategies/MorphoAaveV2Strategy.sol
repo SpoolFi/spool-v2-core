@@ -16,19 +16,21 @@ contract MorphoAaveV2Strategy is MorphoStrategyBase {
         IMorpho morpho_,
         IERC20 poolRewardToken_,
         ISwapper swapper_,
-        uint256 assetGroupId_,
         ILens lens_
-    ) MorphoStrategyBase(assetGroupRegistry_, accessControl_, morpho_, poolRewardToken_, swapper_, assetGroupId_) {
+    ) MorphoStrategyBase(assetGroupRegistry_, accessControl_, morpho_, poolRewardToken_, swapper_) {
         lens = lens_;
     }
 
     function initialize(
         string memory strategyName_,
+        uint256 assetGroupId_,
         address poolTokenAddress_,
         int128 positiveYieldLimit_,
         int128 negativeYieldLimit_
     ) external initializer {
-        __MorphoStrategyBase_init(strategyName_, poolTokenAddress_, positiveYieldLimit_, negativeYieldLimit_);
+        __MorphoStrategyBase_init(
+            strategyName_, assetGroupId_, poolTokenAddress_, positiveYieldLimit_, negativeYieldLimit_
+        );
     }
 
     function _compound(address[] calldata, SwapInfo[] calldata, uint256[] calldata)

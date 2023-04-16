@@ -77,12 +77,12 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
     }
 
     function initialize(string memory strategyName_) external initializer {
-        __Strategy_init(strategyName_);
+        __Strategy_init(strategyName_, NULL_ASSET_GROUP_ID);
 
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
         if (tokens.length != 1 || tokens[0] != weth) {
-            revert InvalidAssetGroup(_assetGroupId);
+            revert InvalidAssetGroup(assetGroupId());
         }
 
         _lastSharePrice = _getSharePrice();

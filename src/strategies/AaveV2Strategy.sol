@@ -23,9 +23,8 @@ contract AaveV2Strategy is Strategy {
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
-        uint256 assetGroupId_,
         ILendingPoolAddressesProvider provider_
-    ) Strategy(assetGroupRegistry_, accessControl_, assetGroupId_) {
+    ) Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID) {
         if (address(provider_) == address(0)) {
             revert ConfigurationAddressZero();
         }
@@ -33,13 +32,13 @@ contract AaveV2Strategy is Strategy {
         provider = provider_;
     }
 
-    function initialize(string memory strategyName_) external initializer {
-        __Strategy_init(strategyName_);
+    function initialize(string memory strategyName_, uint256 assetGroupId_) external initializer {
+        __Strategy_init(strategyName_, assetGroupId_);
 
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
 
         if (tokens.length != 1) {
-            revert InvalidAssetGroup(_assetGroupId);
+            revert InvalidAssetGroup(assetGroupId_);
         }
 
         aToken = IERC20(provider.getLendingPool().getReserveData(tokens[0]).aTokenAddress);
@@ -90,7 +89,7 @@ contract AaveV2Strategy is Strategy {
     {}
 
     function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
         uint256 currentNormalizedIncome = provider.getLendingPool().getReserveNormalizedIncome(tokens[0]);
 
@@ -110,7 +109,7 @@ contract AaveV2Strategy is Strategy {
         returns (uint256)
     {
         uint256 aTokenBalance = aToken.balanceOf(address(this));
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
         return priceFeedManager.assetToUsdCustomPrice(tokens[0], aTokenBalance, exchangeRates[0]);
     }

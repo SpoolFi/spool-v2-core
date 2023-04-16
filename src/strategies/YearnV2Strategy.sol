@@ -45,9 +45,8 @@ contract YearnV2Strategy is Strategy {
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
-        uint256 assetGroupId_,
         IYearnTokenVault yTokenVault_
-    ) Strategy(assetGroupRegistry_, accessControl_, assetGroupId_) {
+    ) Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID) {
         if (address(yTokenVault_) == address(0)) {
             revert ConfigurationAddressZero();
         }
@@ -56,13 +55,13 @@ contract YearnV2Strategy is Strategy {
         oneShare = 10 ** (yTokenVault_.decimals());
     }
 
-    function initialize(string memory name_) external initializer {
-        __Strategy_init(name_);
+    function initialize(string memory name_, uint256 assetGroupId_) external initializer {
+        __Strategy_init(name_, assetGroupId_);
 
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
 
         if (tokens.length != 1 || tokens[0] != yTokenVault.token()) {
-            revert InvalidAssetGroup(_assetGroupId);
+            revert InvalidAssetGroup(assetGroupId_);
         }
 
         _lastPricePerShare = yTokenVault.pricePerShare();
@@ -165,7 +164,7 @@ contract YearnV2Strategy is Strategy {
         returns (uint256)
     {
         uint256 assetBalance = yTokenVault.balanceOf(address(this)) * yTokenVault.pricePerShare() / oneShare;
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
         return priceFeedManager.assetToUsdCustomPrice(tokens[0], assetBalance, exchangeRates[0]);
     }

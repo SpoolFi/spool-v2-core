@@ -70,6 +70,11 @@ error IsGhostStrategy();
  */
 error NotFastRedeemer(address user);
 
+/**
+ * @notice Used when asset group ID is not correctly initialized.
+ */
+error InvalidAssetGroupIdInitialization();
+
 interface IStrategy is IERC20Upgradeable {
     /* ========== EVENTS ========== */
 

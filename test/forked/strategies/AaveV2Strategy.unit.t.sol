@@ -45,10 +45,9 @@ contract AaveV2StrategyTest is TestFixture, ForkTestFixture {
         aaveStrategy = new AaveV2StrategyHarness(
             assetGroupRegistry,
             accessControl,
-            assetGroupId,
             lendingPoolAddressesProvider
         );
-        aaveStrategy.initialize("aave-v2-strategy");
+        aaveStrategy.initialize("aave-v2-strategy", assetGroupId);
     }
 
     function test_depositToProtocol() public {
@@ -167,7 +166,6 @@ contract AaveV2StrategyHarness is AaveV2Strategy, StrategyHarness {
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
-        uint256 assetGroupId_,
         ILendingPoolAddressesProvider provider_
-    ) AaveV2Strategy(assetGroupRegistry_, accessControl_, assetGroupId_, provider_) {}
+    ) AaveV2Strategy(assetGroupRegistry_, accessControl_, provider_) {}
 }

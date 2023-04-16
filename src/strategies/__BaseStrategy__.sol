@@ -12,8 +12,8 @@ contract __BaseStrategy__ is Strategy {
         Strategy(assetGroupRegistry_, accessControl_, assetGroupId_)
     {}
 
-    function initialize(string memory strategyName_) external initializer {
-        __Strategy_init(strategyName_);
+    function initialize(string memory strategyName_, uint256 assetGroupId_) external initializer {
+        __Strategy_init(strategyName_, assetGroupId_);
         // TODO
     }
 

@@ -49,12 +49,11 @@ contract MorphoAaveV2StrategyTest is TestFixture, ForkTestFixture {
             IMorpho(MORPHO_AAVE_V2),
             IERC20(stkAAVE),
             swapper,
-            assetGroupId,
             lens
         );
 
         morphoAaveV2Strategy.initialize(
-            "MorphoAaveV2Strategy", aUSDC, int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT)
+            "MorphoAaveV2Strategy", assetGroupId, aUSDC, int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT)
         );
     }
 
@@ -184,9 +183,6 @@ contract MorphoAaveV2StrategyHarness is MorphoAaveV2Strategy, StrategyHarness {
         IMorpho morpho_,
         IERC20 poolRewardToken_,
         ISwapper swapper_,
-        uint256 assetGroupId_,
         ILens lens_
-    )
-        MorphoAaveV2Strategy(assetGroupRegistry_, accessControl_, morpho_, poolRewardToken_, swapper_, assetGroupId_, lens_)
-    {}
+    ) MorphoAaveV2Strategy(assetGroupRegistry_, accessControl_, morpho_, poolRewardToken_, swapper_, lens_) {}
 }

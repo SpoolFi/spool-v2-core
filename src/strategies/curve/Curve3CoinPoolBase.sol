@@ -43,6 +43,7 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
 
     function __Curve3CoinPoolBase_init(
         string memory strategyName_,
+        uint256 assetGroupId_,
         IERC20 lpToken_,
         uint16a16 assetMapping_,
         ICurve3CoinPool pool_,
@@ -51,7 +52,9 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
     ) internal onlyInitializing {
         pool = pool_;
 
-        __CurvePoolBase_init(strategyName_, lpToken_, assetMapping_, positiveYieldLimit_, negativeYieldLimit_);
+        __CurvePoolBase_init(
+            strategyName_, assetGroupId_, lpToken_, assetMapping_, positiveYieldLimit_, negativeYieldLimit_
+        );
     }
 
     function assetRatio() external view override returns (uint256[] memory) {
@@ -134,7 +137,7 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
 
         _redeemFromCurve(lpTokensToRedeem, slippageOffset, slippages);
 
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
         for (uint256 i; i < N_COINS; ++i) {
             IERC20(tokens[i]).safeTransfer(recipient, IERC20(tokens[i]).balanceOf(address(this)));
@@ -147,7 +150,7 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
         override
         returns (uint256)
     {
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
         uint256 usdWorth;
         uint256 lpTokenBalance = _lpTokenBalance();

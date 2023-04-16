@@ -5,6 +5,7 @@ import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/utils/math/Math.sol";
 import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "../interfaces/Constants.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/IStrategy.sol";
@@ -23,8 +24,12 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
     /// @notice Name of the strategy
     string private _strategyName;
 
-    /// @notice ID of the asset group used by the strategy.
-    uint256 internal immutable _assetGroupId;
+    /// @dev ID of the asset group used by the strategy.
+    uint256 private immutable _assetGroupId;
+    /// @dev ID of the asset group used by the strategy.
+    uint256 private _assetGroupIdStorage;
+    // Only one of the above can be set. Use the `assetGroupId` function to read
+    // the correct one.
 
     /// @notice Total value (in USD) of assets managed by the strategy.
     /// @dev Should be updated in DHW with deposits, withdrawals and yields.
@@ -33,15 +38,30 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
     constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, uint256 assetGroupId_)
         SpoolAccessControllable(accessControl_)
     {
-        if (address(assetGroupRegistry_) == address(0)) revert ConfigurationAddressZero();
+        if (address(assetGroupRegistry_) == address(0)) {
+            revert ConfigurationAddressZero();
+        }
 
         _assetGroupRegistry = assetGroupRegistry_;
         _assetGroupId = assetGroupId_;
-        _assetGroupRegistry.validateAssetGroup(assetGroupId_);
     }
 
-    function __Strategy_init(string memory strategyName_) internal onlyInitializing {
+    function __Strategy_init(string memory strategyName_, uint256 assetGroupId_) internal onlyInitializing {
         if (bytes(strategyName_).length == 0) revert InvalidConfiguration();
+
+        // asset group ID needs to be set exactly once,
+        // either in constructor or initializer
+        if (_assetGroupId == NULL_ASSET_GROUP_ID) {
+            if (assetGroupId_ == NULL_ASSET_GROUP_ID) {
+                revert InvalidAssetGroupIdInitialization();
+            }
+            _assetGroupIdStorage = assetGroupId_;
+        } else {
+            if (assetGroupId_ != NULL_ASSET_GROUP_ID) {
+                revert InvalidAssetGroupIdInitialization();
+            }
+        }
+        _assetGroupRegistry.validateAssetGroup(assetGroupId());
 
         _strategyName = strategyName_;
 
@@ -50,12 +70,12 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
-    function assetGroupId() external view returns (uint256) {
-        return _assetGroupId;
+    function assetGroupId() public view returns (uint256) {
+        return _assetGroupId > 0 ? _assetGroupId : _assetGroupIdStorage;
     }
 
     function assets() public view returns (address[] memory) {
-        return _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        return _assetGroupRegistry.listAssetGroup(assetGroupId());
     }
 
     function assetRatio() external view virtual returns (uint256[] memory);

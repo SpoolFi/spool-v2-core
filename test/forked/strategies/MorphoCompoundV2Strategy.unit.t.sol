@@ -49,12 +49,15 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
             IMorpho(MORPHO_COMPOUND_V2),
             IERC20(COMP),
             swapper,
-            assetGroupId,
             lens
         );
 
         morphoCompoundV2Strategy.initialize(
-            "MorphoCompoundV2Strategy", cUSDC, int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT)
+            "MorphoCompoundV2Strategy",
+            assetGroupId,
+            cUSDC,
+            int128(YIELD_FULL_PERCENT_INT),
+            int128(-YIELD_FULL_PERCENT_INT)
         );
     }
 
@@ -240,17 +243,6 @@ contract MorphoCompoundV2StrategyHarness is MorphoCompoundV2Strategy, StrategyHa
         IMorpho morpho_,
         IERC20 poolRewardToken_,
         ISwapper swapper_,
-        uint256 assetGroupId_,
         ILens lens_
-    )
-        MorphoCompoundV2Strategy(
-            assetGroupRegistry_,
-            accessControl_,
-            morpho_,
-            poolRewardToken_,
-            swapper_,
-            assetGroupId_,
-            lens_
-        )
-    {}
+    ) MorphoCompoundV2Strategy(assetGroupRegistry_, accessControl_, morpho_, poolRewardToken_, swapper_, lens_) {}
 }

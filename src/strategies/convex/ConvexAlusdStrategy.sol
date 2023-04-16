@@ -86,7 +86,7 @@ contract ConvexAlusdStrategy is
         int128 positiveYieldLimit_,
         int128 negativeYieldLimit_
     ) external initializer {
-        __Strategy_init(strategyName_);
+        __Strategy_init(strategyName_, NULL_ASSET_GROUP_ID);
 
         if (pool_ == address(0)) {
             revert ConfigurationAddressZero();
@@ -102,13 +102,13 @@ contract ConvexAlusdStrategy is
         _lpToken = lpToken_;
         _assetMapping = assetMapping_;
 
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
         if (tokens.length != N_COINS) {
-            revert InvalidAssetGroup(_assetGroupId);
+            revert InvalidAssetGroup(assetGroupId());
         }
         for (uint256 i; i < tokens.length; ++i) {
             if (tokens[i] != _coins(i)) {
-                revert InvalidAssetGroup(_assetGroupId);
+                revert InvalidAssetGroup(assetGroupId());
             }
         }
         tokenLength = tokens.length;
@@ -220,7 +220,7 @@ contract ConvexAlusdStrategy is
 
         _redeemInner(totalSupply(), slippages, slippageOffset);
 
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
         for (uint256 i; i < tokenLength; ++i) {
             IERC20(tokens[i]).safeTransfer(recipient, IERC20(tokens[i]).balanceOf(address(this)));
@@ -271,7 +271,7 @@ contract ConvexAlusdStrategy is
         override
         returns (uint256)
     {
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
         uint256[] memory tokenWorth = _getTokenWorth(tokens);
 
         return priceFeedManager.assetToUsdCustomPriceBulk(tokens, tokenWorth, exchangeRates);

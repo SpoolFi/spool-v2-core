@@ -26,7 +26,13 @@ contract Curve3poolStrategy is Curve3CoinPoolBase {
         int128 negativeYieldLimit_
     ) external initializer {
         __Curve3CoinPoolBase_init(
-            strategyName_, IERC20(gauge_.lp_token()), assetMapping_, pool_, positiveYieldLimit_, negativeYieldLimit_
+            strategyName_,
+            NULL_ASSET_GROUP_ID,
+            IERC20(gauge_.lp_token()),
+            assetMapping_,
+            pool_,
+            positiveYieldLimit_,
+            negativeYieldLimit_
         );
 
         if (address(gauge_) == address(0)) {
