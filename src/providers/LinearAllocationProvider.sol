@@ -42,14 +42,6 @@ contract LinearAllocationProvider is IAllocationProvider {
             riskSum += data.riskScores[i];
         }
 
-        if (apySum <= 0) {
-            for (uint256 i; i < allocations.length; ++i) {
-                allocations[i] = 1;
-            }
-
-            return allocations;
-        }
-
         uint256 riskt = uint8(data.riskTolerance + 10); // from 0 to 20
         uint256 riskWeight = riskArray[riskt];
         uint256 apyWeight = riskArray[20 - riskt];
@@ -60,11 +52,20 @@ contract LinearAllocationProvider is IAllocationProvider {
                 normalizedApy = (uint256(data.apys[i]) * MULTIPLIER) / apySum;
             }
 
+            // riskSum should never be 0 by system design
             uint256 normalizedRisk = (MULTIPLIER - (data.riskScores[i] * MULTIPLIER) / riskSum) / (data.apys.length - 1);
 
             allocations[i] = normalizedApy * apyWeight + normalizedRisk * riskWeight;
 
             allocationSum += allocations[i];
+        }
+
+        if (allocationSum <= 0) {
+            for (uint256 i; i < allocations.length; ++i) {
+                allocations[i] = 1;
+            }
+
+            return allocations;
         }
 
         return allocations;
