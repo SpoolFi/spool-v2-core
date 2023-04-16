@@ -53,11 +53,10 @@ contract NotionalFinanceStrategyTest is TestFixture, ForkTestFixture {
             accessControl,
             swapper,
             INotional(NOTIONAL_FINANCE_PROXY),
-            IERC20(NOTE),
-            assetGroupId
+            IERC20(NOTE)
         );
 
-        notionalFinanceStrategy.initialize("CompoundV2Strategy", INToken(NOTIONAL_FINANCE_NUSDC));
+        notionalFinanceStrategy.initialize("CompoundV2Strategy", assetGroupId, INToken(NOTIONAL_FINANCE_NUSDC));
     }
 
     function test_depositToProtocol() public {
@@ -254,7 +253,6 @@ contract NotionalFinanceStrategyHarness is NotionalFinanceStrategy, StrategyHarn
         ISpoolAccessControl accessControl_,
         ISwapper swapper_,
         INotional notional_,
-        IERC20 note_,
-        uint256 assetGroupId_
-    ) NotionalFinanceStrategy(assetGroupRegistry_, accessControl_, swapper_, notional_, note_, assetGroupId_) {}
+        IERC20 note_
+    ) NotionalFinanceStrategy(assetGroupRegistry_, accessControl_, swapper_, notional_, note_) {}
 }

@@ -43,11 +43,10 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
             assetGroupRegistry,
             accessControl,
             swapper,
-            IComptroller(COMPTROLLER),
-            assetGroupId
+            IComptroller(COMPTROLLER)
         );
 
-        compoundV2Strategy.initialize("CompoundV2Strategy", ICErc20(cUSDC));
+        compoundV2Strategy.initialize("CompoundV2Strategy", assetGroupId, ICErc20(cUSDC));
     }
 
     function test_depositToProtocol() public {
@@ -229,7 +228,6 @@ contract CompoundV2StrategyHarness is CompoundV2Strategy, StrategyHarness {
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         ISwapper swapper_,
-        IComptroller comptroller_,
-        uint256 assetGroupId_
-    ) CompoundV2Strategy(assetGroupRegistry_, accessControl_, swapper_, comptroller_, assetGroupId_) {}
+        IComptroller comptroller_
+    ) CompoundV2Strategy(assetGroupRegistry_, accessControl_, swapper_, comptroller_) {}
 }

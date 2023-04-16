@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
+import "../interfaces/Constants.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
 import "../access/Roles.sol";
 import "../access/SpoolAccessControllable.sol";
@@ -69,7 +70,9 @@ contract AssetGroupRegistry is IAssetGroupRegistry, SpoolAccessControllable, Ini
     }
 
     function checkAssetGroupExists(address[] calldata assets) external view returns (uint256) {
-        return _findAssetGroup(assets);
+        bytes32 assetGroupHash = _getAssetGroupHash(assets);
+
+        return _assetGroupHashes[assetGroupHash];
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
@@ -89,21 +92,8 @@ contract AssetGroupRegistry is IAssetGroupRegistry, SpoolAccessControllable, Ini
         onlyRole(ROLE_SPOOL_ADMIN, msg.sender)
         returns (uint256)
     {
-        if (assets.length == 0) {
-            revert NoAssetsProvided();
-        }
+        bytes32 assetGroupHash = _getAssetGroupHash(assets);
 
-        for (uint256 i; i < assets.length; ++i) {
-            if (i > 0 && assets[i] <= assets[i - 1]) {
-                revert UnsortedArray();
-            }
-
-            if (!_assetAllowlist[assets[i]]) {
-                revert TokenNotAllowed(assets[i]);
-            }
-        }
-
-        bytes32 assetGroupHash = keccak256(abi.encode(assets));
         if (_assetGroupHashes[assetGroupHash] > 0) {
             revert AssetGroupAlreadyExists(_assetGroupHashes[assetGroupHash]);
         }
@@ -133,12 +123,27 @@ contract AssetGroupRegistry is IAssetGroupRegistry, SpoolAccessControllable, Ini
     }
 
     /**
-     * @dev Finds asset group composed of assets, if such a group exists.
-     * @param assets Assets composing the asset group.
-     * @return Asset group ID if such asset group exists, 0 otherwise.
+     * @dev Finds key of the asset group based on provided assets.
+     * Reverts if assets cannot form an asset group.
+     * @param assets Assets forming asset group.
+     * @return Key of the asset group.
      */
-    function _findAssetGroup(address[] calldata assets) private view returns (uint256) {
-        return _assetGroupHashes[keccak256(abi.encode(assets))];
+    function _getAssetGroupHash(address[] calldata assets) private view returns (bytes32) {
+        if (assets.length == 0) {
+            revert NoAssetsProvided();
+        }
+
+        for (uint256 i; i < assets.length; ++i) {
+            if (i > 0 && assets[i] <= assets[i - 1]) {
+                revert UnsortedArray();
+            }
+
+            if (!_assetAllowlist[assets[i]]) {
+                revert TokenNotAllowed(assets[i]);
+            }
+        }
+
+        return keccak256(abi.encode(assets));
     }
 
     /**
@@ -146,7 +151,7 @@ contract AssetGroupRegistry is IAssetGroupRegistry, SpoolAccessControllable, Ini
      * Reverts if provided asset group ID does not belong to any asset group.
      */
     function _checkIsValidAssetGroup(uint256 assetGroupId) private view {
-        if (assetGroupId == 0 || assetGroupId >= _assetGroups.length) {
+        if (assetGroupId == NULL_ASSET_GROUP_ID || assetGroupId >= _assetGroups.length) {
             revert InvalidAssetGroup(assetGroupId);
         }
     }

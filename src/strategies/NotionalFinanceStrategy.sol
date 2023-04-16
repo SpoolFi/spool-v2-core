@@ -48,9 +48,8 @@ contract NotionalFinanceStrategy is Strategy {
         ISpoolAccessControl accessControl_,
         ISwapper swapper_,
         INotional notional_,
-        IERC20 note_,
-        uint256 assetGroupId_
-    ) Strategy(assetGroupRegistry_, accessControl_, assetGroupId_) {
+        IERC20 note_
+    ) Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID) {
         if (address(swapper_) == address(0)) revert ConfigurationAddressZero();
         if (address(notional_) == address(0)) revert ConfigurationAddressZero();
         if (address(note_) == address(0)) revert ConfigurationAddressZero();
@@ -60,8 +59,8 @@ contract NotionalFinanceStrategy is Strategy {
         note = note_;
     }
 
-    function initialize(string memory strategyName_, INToken nToken_) external initializer {
-        __Strategy_init(strategyName_);
+    function initialize(string memory strategyName_, uint256 assetGroupId_, INToken nToken_) external initializer {
+        __Strategy_init(strategyName_, assetGroupId_);
 
         if (address(nToken_) == address(0)) {
             revert ConfigurationAddressZero();
@@ -71,7 +70,7 @@ contract NotionalFinanceStrategy is Strategy {
         (, Token memory underlyingToken) = notional.getCurrency(nToken_.currencyId());
 
         if (tokens.length != 1 || tokens[0] != underlyingToken.tokenAddress) {
-            revert InvalidAssetGroup(_assetGroupId);
+            revert InvalidAssetGroup(assetGroupId_);
         }
 
         nToken = nToken_;
@@ -187,7 +186,7 @@ contract NotionalFinanceStrategy is Strategy {
         if (nTokenBalance > 0) {
             uint256 tokenValue = _getNTokenValue(nTokenBalance);
 
-            address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+            address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId());
             usdValue = priceFeedManager.assetToUsdCustomPrice(assetGroup[0], tokenValue, exchangeRates[0]);
         }
     }

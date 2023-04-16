@@ -46,10 +46,9 @@ contract IdleStrategy is Strategy {
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
-        uint256 assetGroupId_,
         ISwapper swapper_,
         IIdleToken idleToken_
-    ) Strategy(assetGroupRegistry_, accessControl_, assetGroupId_) {
+    ) Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID) {
         if (address(idleToken_) == address(0)) {
             revert ConfigurationAddressZero();
         }
@@ -60,13 +59,13 @@ contract IdleStrategy is Strategy {
         oneShare = 10 ** idleToken_.decimals();
     }
 
-    function initialize(string memory strategyName_) external initializer {
-        __Strategy_init(strategyName_);
+    function initialize(string memory strategyName_, uint256 assetGroupId_) external initializer {
+        __Strategy_init(strategyName_, assetGroupId_);
 
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
 
         if (tokens.length != 1 || tokens[0] != idleToken.token()) {
-            revert InvalidAssetGroup(_assetGroupId);
+            revert InvalidAssetGroup(assetGroupId_);
         }
 
         _lastIdleTokenPrice = idleToken.tokenPriceWithFee(address(this));
@@ -129,7 +128,7 @@ contract IdleStrategy is Strategy {
     function _emergencyWithdrawImpl(uint256[] calldata slippages, address recipient) internal override {
         uint256 assetsWithdrawn = _redeemFromIdle(idleToken.balanceOf((address(this))), slippages[1]);
 
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
         IERC20(tokens[0]).safeTransfer(recipient, assetsWithdrawn);
     }
@@ -183,7 +182,7 @@ contract IdleStrategy is Strategy {
         returns (uint256)
     {
         uint256 assetWorth = idleToken.tokenPriceWithFee(address(this)) * idleToken.balanceOf(address(this)) / oneShare;
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
         return priceFeedManager.assetToUsdCustomPrice(tokens[0], assetWorth, exchangeRates[0]);
     }

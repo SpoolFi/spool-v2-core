@@ -29,27 +29,28 @@ abstract contract CurvePoolBase is StrategyManualYieldVerifier, Strategy {
 
     function __CurvePoolBase_init(
         string memory strategyName_,
+        uint256 assetGroupId_,
         IERC20 lpToken_,
         uint16a16 assetMapping_,
         int128 positiveYieldLimit_,
         int128 negativeYieldLimit_
     ) internal onlyInitializing {
-        __Strategy_init(strategyName_);
+        __Strategy_init(strategyName_, assetGroupId_);
 
         if (address(lpToken_) == address(0)) {
             revert ConfigurationAddressZero();
         }
 
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
         lpToken = lpToken_;
 
         if (tokens.length != _ncoins()) {
-            revert InvalidAssetGroup(_assetGroupId);
+            revert InvalidAssetGroup(assetGroupId());
         }
         for (uint256 i; i < _ncoins(); ++i) {
             if (tokens[i] != _coins(assetMapping_.get(i))) {
-                revert InvalidAssetGroup(_assetGroupId);
+                revert InvalidAssetGroup(assetGroupId());
             }
         }
 

@@ -90,6 +90,7 @@ interface IAssetGroupRegistry {
 
     /**
      * @notice Checks if asset group composed of assets already exists.
+     * Will revert if provided assets cannot form an asset group.
      * @param assets Assets composing the asset group.
      * @return Asset group ID if such asset group exists, 0 otherwise.
      */
@@ -118,6 +119,8 @@ interface IAssetGroupRegistry {
      * @dev Requirements:
      * - must provide at least one asset
      * - all assets must be allowed
+     * - assets must be sorted
+     * - such asset group should not exist yet
      * - can only be called by the ROLE_SPOOL_ADMIN
      * @param assets Array of assets in the asset group.
      * @return id Sequential ID assigned to the asset group.

@@ -28,9 +28,8 @@ abstract contract MorphoStrategyBase is StrategyManualYieldVerifier, Strategy {
         ISpoolAccessControl accessControl_,
         IMorpho morpho_,
         IERC20 poolRewardToken_,
-        ISwapper swapper_,
-        uint256 assetGroupId_
-    ) Strategy(assetGroupRegistry_, accessControl_, assetGroupId_) {
+        ISwapper swapper_
+    ) Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID) {
         if (address(swapper_) == address(0)) revert ConfigurationAddressZero();
         if (address(morpho_) == address(0)) revert ConfigurationAddressZero();
         if (address(poolRewardToken_) == address(0)) revert ConfigurationAddressZero();
@@ -42,11 +41,12 @@ abstract contract MorphoStrategyBase is StrategyManualYieldVerifier, Strategy {
 
     function __MorphoStrategyBase_init(
         string memory strategyName_,
+        uint256 assetGroupId,
         address poolTokenAddress_,
         int128 positiveYieldLimit_,
         int128 negativeYieldLimit_
     ) internal onlyInitializing {
-        __Strategy_init(strategyName_);
+        __Strategy_init(strategyName_, assetGroupId);
 
         if (poolTokenAddress_ == address(0)) revert ConfigurationAddressZero();
 
@@ -144,7 +144,7 @@ abstract contract MorphoStrategyBase is StrategyManualYieldVerifier, Strategy {
     {
         uint256 assetBalance = _getTotalBalance();
         if (assetBalance > 0) {
-            address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+            address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId());
             usdValue = priceFeedManager.assetToUsdCustomPrice(assetGroup[0], assetBalance, exchangeRates[0]);
         }
     }

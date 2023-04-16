@@ -45,10 +45,9 @@ contract YearnV2StrategyTest is TestFixture, ForkTestFixture {
         yearnStrategy = new YearnV2StrategyHarness(
             assetGroupRegistry,
             accessControl,
-            assetGroupId,
             yTokenVault
         );
-        yearnStrategy.initialize("yearn-v2-strategy");
+        yearnStrategy.initialize("yearn-v2-strategy", assetGroupId);
     }
 
     function test_depositToProtocol() public {
@@ -200,7 +199,6 @@ contract YearnV2StrategyHarness is YearnV2Strategy, StrategyHarness {
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
-        uint256 assetGroupId_,
         IYearnTokenVault yTokenVault_
-    ) YearnV2Strategy(assetGroupRegistry_, accessControl_, assetGroupId_, yTokenVault_) {}
+    ) YearnV2Strategy(assetGroupRegistry_, accessControl_, yTokenVault_) {}
 }

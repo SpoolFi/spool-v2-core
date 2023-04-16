@@ -190,14 +190,15 @@ contract AssetGroupRegistryTest is Test {
         assertEq(assetGroupRegistry.checkAssetGroupExists(assetGroup), 0);
     }
 
-    function test_checkAssetGroupExists_willReturnZeroWhenProvidedWithSameTokensInDifferentOrder() public {
+    function test_checkAssetGroupExists_willRevertWhenProvidedWithSameTokensInDifferentOrder() public {
         address[] memory assetGroup1 = Arrays.toArray(address(tokenA), address(tokenB));
         address[] memory assetGroup2 = Arrays.toArray(address(tokenB), address(tokenA));
 
         vm.prank(spoolAdmin);
         assetGroupRegistry.registerAssetGroup(assetGroup1);
 
-        assertEq(assetGroupRegistry.checkAssetGroupExists(assetGroup2), 0);
+        vm.expectRevert(UnsortedArray.selector);
+        assetGroupRegistry.checkAssetGroupExists(assetGroup2);
     }
 
     function test_numberOfAssetGroups_shouldReturnZeroWhenNoAssetGroupIsRegistered() public {

@@ -31,7 +31,7 @@ contract MockStrategy is Strategy {
     }
 
     function initialize(string memory strategyName_, uint256[] memory ratios_) external initializer {
-        __Strategy_init(strategyName_);
+        __Strategy_init(strategyName_, NULL_ASSET_GROUP_ID);
         ratios = ratios_;
     }
 
@@ -82,7 +82,7 @@ contract MockStrategy is Strategy {
         override
         returns (uint256)
     {
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
         uint256 usdWorth = 0;
         for (uint256 i = 0; i < assetGroup.length; i++) {

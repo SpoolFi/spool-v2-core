@@ -24,7 +24,7 @@ contract MockStrategy2 is Strategy {
     }
 
     function initialize(string memory strategyName_) external initializer {
-        __Strategy_init(strategyName_);
+        __Strategy_init(strategyName_, NULL_ASSET_GROUP_ID);
 
         _lastSharePrice = protocol.sharePrice();
     }
@@ -52,7 +52,7 @@ contract MockStrategy2 is Strategy {
     function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
         uint256 assetsWithdrawn = _withdrawInner(totalSupply());
 
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
         IERC20(tokens[0]).safeTransfer(recipient, assetsWithdrawn);
     }
@@ -93,7 +93,7 @@ contract MockStrategy2 is Strategy {
 
         if (protocolShares > 0) {
             uint256 assetWorth = protocol.totalUnderlying() * protocol.shares(address(this)) / protocol.totalShares();
-            address[] memory tokens = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+            address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
             usdWorth = priceFeedManager.assetToUsdCustomPrice(tokens[0], assetWorth, exchangeRates[0]);
         }

@@ -17,20 +17,19 @@ To run tests execute
 forge test
 ```
 
-To run tests that require forking execute first set `RPC_URL` in the `.env` file and source it by executing
-
-```
-source .env     (Linux and Mac)
-
-.\source.ps1    (Windows)
+This will only execute tests can run locally. To run tests that require forking, first set `NETWORK` and `<NETWORK>_RPC_URL` in `.env` file. See `.env.sample`.
 ```
 
 then run the tests by executing
 
 ```
-forge test --no-match-path "." --match-path "./test/forked/**" --fork-url $RPC_URL        (Linux and Mac)
+forge test --no-match-path "." --match-path "./test/forked/**"
+```
 
-forge test --no-match-path "." --match-path "./test/forked/**" --fork-url $Env:RPC_URL    (Windows)
+or to run all tests
+
+```
+forge test --no-match-path "."
 ```
 
 To generate the full test coverage report, both local and fork tests need to be analyzed. Setup the `RPC_URL` environment variable as described above, and then run

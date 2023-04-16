@@ -39,14 +39,14 @@ contract MockUniswapV2Strategy is Strategy {
     function test_mock() external pure {}
 
     function initialize(string memory strategyName_) external initializer {
-        __Strategy_init(strategyName_);
+        __Strategy_init(strategyName_, NULL_ASSET_GROUP_ID);
     }
 
     function assetRatio() external view override returns (uint256[] memory) {
         // NOTE: NOT OK, NEEDS SOME SLIPPAGES/CONSTRAINTS
         (uint112 reserve0, uint112 reserve1,) = uniswapPair.getReserves();
 
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId());
         (address tokenA,) = UniswapV2Library.sortTokens(assetGroup[0], assetGroup[1]);
 
         if (tokenA != assetGroup[0]) {
@@ -100,7 +100,7 @@ contract MockUniswapV2Strategy is Strategy {
             return 0;
         }
 
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId());
         (address tokenA,) = UniswapV2Library.sortTokens(assetGroup[0], assetGroup[1]);
 
         (uint256 reserveA, uint256 reserveB,) = uniswapPair.getReserves();

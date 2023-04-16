@@ -75,3 +75,6 @@ uint256 constant MAX_GUARD_COUNT = 10;
 
 /// @dev Maximum number of actions a smart vault can be configured with
 uint256 constant MAX_ACTION_COUNT = 10;
+
+/// @dev ID of null asset group. Should not be used by any strategy or smart vault.
+uint256 constant NULL_ASSET_GROUP_ID = 0;

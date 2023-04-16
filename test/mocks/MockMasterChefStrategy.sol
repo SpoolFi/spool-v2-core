@@ -25,7 +25,7 @@ contract MockMasterChefStrategy is Strategy {
     }
 
     function initialize(string memory strategyName_) external initializer {
-        __Strategy_init(strategyName_);
+        __Strategy_init(strategyName_, NULL_ASSET_GROUP_ID);
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {
@@ -80,7 +80,7 @@ contract MockMasterChefStrategy is Strategy {
         override
         returns (uint256)
     {
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId());
         (uint256 balance,) = masterChef.userInfo(pid, address(this));
 
         uint256 usdWorth = priceFeedManager.assetToUsdCustomPrice(assetGroup[0], balance, exchangeRates[0]);
@@ -101,13 +101,13 @@ contract MockMasterChefStrategy is Strategy {
     }
 
     function _getAssetBalanceBefore() private view returns (uint256) {
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
         return IERC20(assetGroup[0]).balanceOf(address(this));
     }
 
     function _getAssetBalanceDiff(uint256 assetBalanceBefore) private view returns (uint256) {
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(_assetGroupId);
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
         uint256 assetBalanceAfter = IERC20(assetGroup[0]).balanceOf(address(this));
 
