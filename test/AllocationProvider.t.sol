@@ -45,9 +45,9 @@ contract AllocationProviderTest is Test {
     address strategy2 = address(102);
     address strategy3 = address(103);
 
-    int256 apy_strategy1 = 124; // 1.24%
-    int256 apy_strategy2 = 220; // 2.20%
-    int256 apy_strategy3 = 400; // 4.0%
+    int256 constant apy_strategy1 = 124 * YIELD_FULL_PERCENT_INT / 10000; // 1.24%
+    int256 constant apy_strategy2 = 220 * YIELD_FULL_PERCENT_INT / 10000; // 2.20%
+    int256 constant apy_strategy3 = 400 * YIELD_FULL_PERCENT_INT / 10000; // 4.0%
 
     address riskProvider = address(100);
 
@@ -98,10 +98,10 @@ contract AllocationProviderTest is Test {
             sum += results[i];
         }
 
-        assertEq(sum, 100_00);
-        assertEq(results[0], 2269);
-        assertEq(results[1], 2720);
-        assertEq(results[2], 5011);
+        assertEq(sum, 999999999925000);
+        assertEq(results[0], 226902173875000);
+        assertEq(results[1], 272045932650000);
+        assertEq(results[2], 501051893400000);
     }
 
     function test_exponentialAllocationProvider() public {
@@ -133,9 +133,9 @@ contract AllocationProviderTest is Test {
             sum += results[i];
         }
 
-        assertEq(sum, 100_00);
-        assertEq(results[0], 167);
-        assertEq(results[1], 174);
-        assertEq(results[2], 9659);
+        assertEq(sum, 84311692496127106548);
+        assertEq(results[0], 1398485451107810117);
+        assertEq(results[1], 1475212508608769296);
+        assertEq(results[2], 81437994536410527135);
     }
 }

@@ -6,15 +6,65 @@ import "../interfaces/IRiskManager.sol";
 import "../interfaces/Constants.sol";
 
 contract ExponentialAllocationProvider is IAllocationProvider {
-    /*
-    * Minimum value signed 64.64-bit fixed point number may have.
-    */
+    /// @notice APY threshold to assign allocation, 0.1%.
+    /// @dev If the threshold is not met, strategy will have 0 allocation.
+    int256 public constant APY_ALLOCATION_THRESHOLD = YIELD_FULL_PERCENT_INT / 1000;
+
+    /// @notice Apy multiplier.
+    int256 public constant APY_MULTIPLIER = YIELD_FULL_PERCENT_INT / 100;
+
+    /// @notice Minimum value signed 64.64-bit fixed point number may have.
     int256 private constant MIN_64x64 = -0x80000000000000000000000000000000;
 
-    /*
-    * Maximum value signed 64.64-bit fixed point number may have.
-    */
+    /// @notice Maximum value signed 64.64-bit fixed point number may have.
     int256 private constant MAX_64x64 = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+
+    function calculateAllocation(AllocationCalculationInput calldata data) external pure returns (uint256[] memory) {
+        if (data.apys.length != data.riskScores.length) {
+            revert ApysOrRiskScoresLengthMismatch(data.apys.length, data.riskScores.length);
+        }
+
+        uint256[] memory allocations = new uint256[](data.apys.length);
+
+        uint8[21] memory riskArray =
+            [10, 19, 28, 37, 46, 55, 64, 73, 82, 91, 100, 109, 118, 127, 136, 145, 154, 163, 172, 181, 190];
+
+        // NOTE: minumum data.riskTolerance value is 10
+        uint256 riskt = uint8(data.riskTolerance + 10); // from 0 - 20
+        int256 _100 = fromInt(100);
+
+        int256 apyMultiplier = fromInt(APY_MULTIPLIER);
+
+        int256 partRiskTolerance = div(fromUint(riskArray[riskt]), _100);
+
+        uint256 allocationSum;
+        for (uint256 i; i < data.apys.length; ++i) {
+            if (data.apys[i] < APY_ALLOCATION_THRESHOLD) {
+                continue;
+            }
+
+            int256 partApy = fromInt(data.apys[i]);
+
+            partApy = div(partApy, apyMultiplier);
+
+            int256 apy = exp_2(mul(partRiskTolerance, log_2(partApy)));
+            int256 apy2 = exp_2(apy);
+
+            int256 risk = fromUint(data.riskScores[i]);
+
+            allocations[i] = uint256(div(apy2, risk));
+
+            allocationSum += allocations[i];
+        }
+
+        if (allocationSum <= 0) {
+            for (uint256 i; i < allocations.length; ++i) {
+                allocations[i] = 1;
+            }
+        }
+
+        return allocations;
+    }
 
     function fromInt(int256 x) internal pure returns (int256) {
         unchecked {
@@ -62,7 +112,7 @@ contract ExponentialAllocationProvider is IAllocationProvider {
             if (xc >= 0x2) msb += 1; // No need to shift xc anymore
 
             int256 result = msb - 64 << 64;
-            uint256 ux = uint256(int256(x)) << uint256(127 - msb);
+            uint256 ux = uint256(x) << uint256(127 - msb);
             for (int256 bit = 0x8000000000000000; bit > 0; bit >>= 1) {
                 ux *= ux;
                 uint256 b = ux >> 255;
@@ -70,13 +120,13 @@ contract ExponentialAllocationProvider is IAllocationProvider {
                 result += bit * int256(b);
             }
 
-            return int256(result);
+            return result;
         }
     }
 
     function exp_2(int256 x) internal pure returns (int256) {
         unchecked {
-            require(x < 0x400000000000000000); // Overflow
+            require(x < 0x400000000000000000, "Overflow"); // Overflow
 
             if (x < -0x400000000000000000) return 0; // Underflow
 
@@ -304,49 +354,5 @@ contract ExponentialAllocationProvider is IAllocationProvider {
             require(result >= MIN_64x64 && result <= MAX_64x64);
             return int256(result);
         }
-    }
-
-    function calculateAllocation(AllocationCalculationInput calldata data) external pure returns (uint256[] memory) {
-        if (data.apys.length != data.riskScores.length) {
-            revert ApysOrRiskScoresLengthMismatch(data.apys.length, data.riskScores.length);
-        }
-
-        uint256 resultSum = 0;
-
-        uint256[] memory results = new uint256[](data.apys.length);
-
-        uint8[21] memory riskArray =
-            [190, 181, 172, 163, 154, 145, 136, 127, 118, 109, 100, 91, 82, 73, 64, 55, 46, 37, 28, 19, 10];
-
-        uint8 riskt = uint8(data.riskTolerance + 10); // from 0 - 20
-        int256 _100 = fromInt(100);
-        for (uint8 i; i < data.apys.length; ++i) {
-            uint256 uintApy = (data.apys[i] > 0 ? uint256(data.apys[i]) : 0);
-            int256 partRiskTolerance = fromUint(uint256(riskArray[uint8(20 - riskt)]));
-
-            partRiskTolerance = div(partRiskTolerance, _100);
-            int256 partApy = fromUint(uintApy);
-            partApy = div(partApy, _100);
-
-            int256 apy = exp_2(mul(partRiskTolerance, log_2(partApy)));
-
-            apy = exp_2(apy);
-
-            int256 risk = fromUint(data.riskScores[i]);
-
-            results[i] = uint256(div(apy, risk));
-
-            resultSum += results[i];
-        }
-
-        uint256 residual = FULL_PERCENT;
-        for (uint8 i; i < results.length; ++i) {
-            results[i] = FULL_PERCENT * results[i] / resultSum;
-            residual -= results[i];
-        }
-
-        results[0] += residual;
-
-        return results;
     }
 }
