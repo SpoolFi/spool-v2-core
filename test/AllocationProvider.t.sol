@@ -9,37 +9,6 @@ import "../src/providers/UniformAllocationProvider.sol";
 import "../src/providers/LinearAllocationProvider.sol";
 import "../src/providers/ExponentialAllocationProvider.sol";
 
-contract FixedRM is MockRiskManager {
-    function test_mock_() external pure {}
-
-    function getRiskScores(address riskProvider, address[] calldata strategies)
-        external
-        pure
-        override
-        returns (uint8[] memory)
-    {
-        uint8[] memory results = new uint8[](strategies.length);
-
-        if (riskProvider == address(100)) {
-            for (uint8 i = 0; i < strategies.length; i++) {
-                address str = strategies[i];
-                if (str == address(101)) {
-                    results[0] = 3_4;
-                }
-                if (str == address(102)) {
-                    results[1] = 11_0;
-                }
-                if (str == address(103)) {
-                    results[2] = 4_0;
-                }
-            }
-        } else {
-            revert("FixedRM::getRiskScore");
-        }
-        return results;
-    }
-}
-
 contract AllocationProviderTest is Test {
     address strategy1 = address(101);
     address strategy2 = address(102);
@@ -98,10 +67,37 @@ contract AllocationProviderTest is Test {
             sum += results[i];
         }
 
-        assertEq(sum, 999999999925000);
-        assertEq(results[0], 226902173875000);
-        assertEq(results[1], 272045932650000);
-        assertEq(results[2], 501051893400000);
+        assertEq(sum, 999999999950000);
+        assertEq(results[0], 225574712600000);
+        assertEq(results[1], 274935113075000);
+        assertEq(results[2], 499490174275000);
+    }
+
+    function test_linearAllocationProvider_apysEqualZero() public {
+        address[] memory strategies = new address[](3);
+        strategies[0] = strategy1;
+        strategies[1] = strategy2;
+        strategies[2] = strategy3;
+
+        int256[] memory apys = new int256[](3);
+
+        FixedRM rm = new FixedRM();
+        AllocationCalculationInput memory input =
+            AllocationCalculationInput(strategies, apys, rm.getRiskScores(riskProvider, strategies), 10);
+
+        IAllocationProvider ap = new LinearAllocationProvider();
+
+        uint256[] memory results = ap.calculateAllocation(input);
+
+        uint256 sum;
+        for (uint256 i; i < results.length; i++) {
+            sum += results[i];
+        }
+
+        assertEq(sum, 3);
+        assertEq(results[0], 1);
+        assertEq(results[1], 1);
+        assertEq(results[2], 1);
     }
 
     function test_exponentialAllocationProvider() public {
@@ -133,9 +129,67 @@ contract AllocationProviderTest is Test {
             sum += results[i];
         }
 
-        assertEq(sum, 84311692496127106548);
+        assertEq(sum, 84459213746987983478);
         assertEq(results[0], 1398485451107810117);
-        assertEq(results[1], 1475212508608769296);
+        assertEq(results[1], 1622733759469646226);
         assertEq(results[2], 81437994536410527135);
+    }
+
+    function test_exponentialAllocationProvider_apysEqualZero() public {
+        address[] memory strategies = new address[](3);
+        strategies[0] = strategy1;
+        strategies[1] = strategy2;
+        strategies[2] = strategy3;
+
+        int256[] memory apys = new int256[](3);
+
+        FixedRM rm = new FixedRM();
+        AllocationCalculationInput memory input =
+            AllocationCalculationInput(strategies, apys, rm.getRiskScores(riskProvider, strategies), riskTolerance);
+
+        IAllocationProvider ap = new ExponentialAllocationProvider();
+
+        uint256[] memory results = ap.calculateAllocation(input);
+
+        uint256 sum;
+        for (uint256 i; i < results.length; i++) {
+            sum += results[i];
+        }
+
+        assertEq(sum, 3);
+        assertEq(results[0], 1);
+        assertEq(results[1], 1);
+        assertEq(results[2], 1);
+    }
+}
+
+contract FixedRM is MockRiskManager {
+    function test_mock_() external pure {}
+
+    function getRiskScores(address riskProvider, address[] calldata strategies)
+        external
+        pure
+        override
+        returns (uint8[] memory)
+    {
+        uint8[] memory results = new uint8[](strategies.length);
+
+        if (riskProvider == address(100)) {
+            for (uint8 i = 0; i < strategies.length; i++) {
+                address str = strategies[i];
+                if (str == address(101)) {
+                    results[0] = 3_4;
+                }
+                if (str == address(102)) {
+                    results[1] = 10_0;
+                }
+                if (str == address(103)) {
+                    results[2] = 4_0;
+                }
+            }
+        } else {
+            revert("FixedRM::getRiskScore");
+        }
+        return results;
     }
 }
