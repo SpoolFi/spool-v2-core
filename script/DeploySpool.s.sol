@@ -27,38 +27,48 @@ import "../src/strategies/GhostStrategy.sol";
 import "./helper/JsonHelper.sol";
 
 contract DeploySpool is Script {
-    string network;
+    string public network;
 
-    JsonReader constantsJson;
-    JsonWriter contractsJson;
+    JsonReader public constantsJson;
+    JsonWriter public contractsJson;
 
-    ProxyAdmin proxyAdmin;
-    SpoolAccessControl spoolAccessControl;
-    Swapper swapper;
-    MasterWallet masterWallet;
-    ActionManager actionManager;
-    AssetGroupRegistry assetGroupRegistry;
-    GuardManager guardManager;
-    RewardManager rewardManager;
-    RiskManager riskManager;
-    UsdPriceFeedManager usdPriceFeedManager;
-    StrategyRegistry strategyRegistry;
-    SmartVaultManager smartVaultManager;
-    DepositSwap depositSwap;
-    SmartVaultFactory smartVaultFactory;
-    AllowlistGuard allowlistGuard;
-    DepositManager depositManager;
-    WithdrawalManager withdrawalManager;
-    IStrategy ghostStrategy;
+    ProxyAdmin public proxyAdmin;
+    SpoolAccessControl public spoolAccessControl;
+    Swapper public swapper;
+    MasterWallet public masterWallet;
+    ActionManager public actionManager;
+    AssetGroupRegistry public assetGroupRegistry;
+    GuardManager public guardManager;
+    RewardManager public rewardManager;
+    RiskManager public riskManager;
+    UsdPriceFeedManager public usdPriceFeedManager;
+    StrategyRegistry public strategyRegistry;
+    SmartVaultManager public smartVaultManager;
+    DepositSwap public depositSwap;
+    SmartVaultFactory public smartVaultFactory;
+    AllowlistGuard public allowlistGuard;
+    DepositManager public depositManager;
+    WithdrawalManager public withdrawalManager;
+    IStrategy public ghostStrategy;
 
     function run() public {
-        network = vm.envString("NETWORK");
-        constantsJson = new JsonReader(vm, string.concat("deploy/", network, ".constants.json"));
-        contractsJson = new JsonWriter(string.concat("deploy/", network, ".contracts.json"));
-
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
+        setNetwork(vm.envString("NETWORK"));
         vm.startBroadcast(deployerPrivateKey);
+
+        deploy();
+
+        spoolAccessControl.renounceRole(ROLE_SPOOL_ADMIN, deployerAddress);
+    }
+
+    function setNetwork(string memory _network) public {
+        network = _network;
+    }
+
+    function deploy() public {
+        constantsJson = new JsonReader(vm, string.concat("deploy/", network, ".constants.json"));
+        contractsJson = new JsonWriter(string.concat("deploy/", network, ".contracts.json"));
 
         TransparentUpgradeableProxy proxy;
 
@@ -171,6 +181,7 @@ contract DeploySpool is Script {
             depositManager = DepositManager(address(proxy));
 
             spoolAccessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(depositManager));
+            spoolAccessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(depositManager));
 
             contractsJson.addProxy("DepositManager", address(implementation), address(proxy));
         }
@@ -182,6 +193,7 @@ contract DeploySpool is Script {
             withdrawalManager = WithdrawalManager(address(proxy));
 
             spoolAccessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(withdrawalManager));
+            spoolAccessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(withdrawalManager));
 
             contractsJson.addProxy("WithdrawalManager", address(implementation), address(proxy));
         }
@@ -262,7 +274,6 @@ contract DeploySpool is Script {
             // transfer ROLE_SPOOL_ADMIN
             address spoolAdmin = constantsJson.getAddress(".spoolAdmin");
             spoolAccessControl.grantRole(ROLE_SPOOL_ADMIN, spoolAdmin);
-            spoolAccessControl.renounceRole(ROLE_SPOOL_ADMIN, deployerAddress);
         }
     }
 
