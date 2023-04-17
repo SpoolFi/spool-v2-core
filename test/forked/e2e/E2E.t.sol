@@ -17,9 +17,7 @@ contract E2E is ForkTestFixtureDeployment {
     function test_deploySpool() public {
         vm.startPrank(_spoolAdmin);
 
-        address[] memory assetGroupUSDC = Arrays.toArray(USDC);
-        _deploySpool.assetGroupRegistry().allowTokenBatch(assetGroupUSDC);
-        uint256 assetGroupIdUSDC = _deploySpool.assetGroupRegistry().registerAssetGroup(assetGroupUSDC);
+        uint256 assetGroupIdUSDC = _deploySpool.assetGroups("usdc");
 
         ILendingPoolAddressesProvider lendingPoolAddressesProvider =
             ILendingPoolAddressesProvider(AAVE_V2_LENDING_POOL_ADDRESSES_PROVIDER);

@@ -18,7 +18,6 @@ forge test
 ```
 
 This will only execute tests can run locally. To run tests that require forking, first set `NETWORK` and `<NETWORK>_RPC_URL` in `.env` file. See `.env.sample`.
-```
 
 then run the tests by executing
 
@@ -43,21 +42,20 @@ The html report is then available at `./coverage/src/index.html`.
 
 The `genhtml` tool is not available for Windows, but WSL can be used to bypass this limitation.
 
-To locally test deployment, set `PRIVATE_KEY` and `NETWORK` in the `.env` file. Use `.env.sample` as a guide. Then set `deploy/<NETWORK>.constants.json` file. Use `deploy/sample.constants.json` as a guide.
+To locally test mainnet deployment, set `PRIVATE_KEY` in the `.env` file. Use `.env.sample` as a guide.
 
-Then run anvil in one terminal:
-
-```
-anvil
-```
-
-Finally you can execute deployment script by
+Then run anvil in one terminal set to fork the mainnet:
 
 ```
-forge script script/DeploySpool.s.sol:DeploySpool --fork-url http://localhost:8545 --broadcast
+anvil --fork-url <MAINNET_FORK_URL>
+```
+where you have to provide your fork url. Finally you can execute deployment script by
+
+```
+forge script script/LocalMainnetInitialSetup.s.sol --fork-url http://localhost:8545 --broadcast
 ```
 
-The addresses of deployed contracts will be listed in the `deploy/<NETWORK>.contracts.json` file.
+The addresses of deployed contracts will be listed in the `deploy/local-mainnet.contracts.json` file, and the detailed broadcast in the `broadcast/LocalMainnetInitialSetup.s.sol/` folder.
 
 ## Smart Contract Overview
 

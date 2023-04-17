@@ -3,6 +3,7 @@
 /.idea/**
 /ffline/**
 /broadcast/*/31337/**
+/broadcast/LocalMainnetInitialSetup.s.sol/**
 /deploy/local-mainnet.*
 /.env
 /lcov.info

@@ -13,5 +13,6 @@ no_match_path = "./test/forked/**"
 
 [rpc_endpoints]
 mainnet = "${MAINNET_RPC_URL}"
+local-mainnet = "http://localhost:8545"
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

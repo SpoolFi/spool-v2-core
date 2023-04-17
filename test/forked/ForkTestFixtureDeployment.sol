@@ -5,9 +5,35 @@ import "@openzeppelin/utils/Strings.sol";
 import "../../src/interfaces/Constants.sol";
 import "../../src/SmartVaultFactory.sol";
 import "../../src/external/interfaces/chainlink/AggregatorV3Interface.sol";
-import "../../script/DeploySpool.s.sol";
+import "../../script/MainnetInitialSetup.s.sol";
 import "../libraries/Arrays.sol";
 import "./ForkTestFixture.sol";
+
+string constant TEST_CONSTANTS_PATH = "deploy/fork-test.constants.json";
+string constant TEST_CONTRACTS_PATH = "deploy/fork-test.contracts.json";
+
+contract TestMainnetInitialSetup is MainnetInitialSetup {
+    function init() public virtual override {
+        super.init();
+
+        _constantsJson = new JsonReader(vm, TEST_CONSTANTS_PATH);
+        _contractsJson = new JsonWriter(TEST_CONTRACTS_PATH);
+    }
+
+    function postDeploySpool(address deployerAddress) public override {
+        {
+            // transfer ownership of ProxyAdmin
+            address proxyAdminOwner = constantsJson().getAddress(".proxyAdminOwner");
+            proxyAdmin.transferOwnership(proxyAdminOwner);
+
+            // transfer ROLE_SPOOL_ADMIN
+            address spoolAdmin = constantsJson().getAddress(".spoolAdmin");
+            spoolAccessControl.grantRole(ROLE_SPOOL_ADMIN, spoolAdmin);
+        }
+
+        spoolAccessControl.renounceRole(ROLE_SPOOL_ADMIN, deployerAddress);
+    }
+}
 
 contract ForkTestFixtureDeployment is ForkTestFixture {
     address internal constant _deployer = address(0xdeee);
@@ -15,34 +41,32 @@ contract ForkTestFixtureDeployment is ForkTestFixture {
     address internal constant _doHardWorker = address(0xdddd);
     address internal constant _emergencyWallet = address(0xeeee);
     address internal constant _feeRecipient = address(0xffff);
-    DeploySpool internal _deploySpool;
+
+    TestMainnetInitialSetup internal _deploySpool;
 
     SmartVaultManager private smartVaultManager;
-    IERC20 internal constant usdc = IERC20(USDC);
+    IERC20 internal usdc;
 
     function _deploy() internal {
-        string memory _network = "fork-test";
-        string memory path = string.concat("deploy/", _network, ".constants.json");
-
         setUpForkTestFixture();
-        vm.selectFork(mainnetForkId);
 
-        string memory config = "{" '    "tokens": {' '        "weth": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"'
-            "    }," '    "proxyAdminOwner": "OVERRIDE",' '    "spoolAdmin": "OVERRIDE",' '    "fees": {'
-            '        "ecosystemFeePct": 1000,' '        "treasuryFeePct": 500,'
-            '        "ecosystemFeeReceiver": "OVERRIDE",' '        "treasuryFeeReceiver": "OVERRIDE"' "    },"
-            '    "emergencyWithdrawalWallet": "OVERRIDE"' "}";
+        string memory config = vm.readFile("deploy/sample.constants.json");
 
-        vm.writeJson(config, path);
-        vm.writeJson(Strings.toHexString(_spoolAdmin), path, ".proxyAdminOwner");
-        vm.writeJson(Strings.toHexString(_spoolAdmin), path, ".spoolAdmin");
-        vm.writeJson(Strings.toHexString(_emergencyWallet), path, ".emergencyWithdrawalWallet");
-        vm.writeJson(Strings.toHexString(_feeRecipient), path, ".fees.ecosystemFeeReceiver");
-        vm.writeJson(Strings.toHexString(_feeRecipient), path, ".fees.treasuryFeeReceiver");
+        vm.writeJson(config, TEST_CONSTANTS_PATH);
+        vm.writeJson(Strings.toHexString(_spoolAdmin), TEST_CONSTANTS_PATH, ".proxyAdminOwner");
+        vm.writeJson(Strings.toHexString(_spoolAdmin), TEST_CONSTANTS_PATH, ".spoolAdmin");
+        vm.writeJson(Strings.toHexString(_emergencyWallet), TEST_CONSTANTS_PATH, ".emergencyWithdrawalWallet");
+        vm.writeJson(Strings.toHexString(_feeRecipient), TEST_CONSTANTS_PATH, ".fees.ecosystemFeeReceiver");
+        vm.writeJson(Strings.toHexString(_feeRecipient), TEST_CONSTANTS_PATH, ".fees.treasuryFeeReceiver");
 
-        _deploySpool = new DeploySpool();
-        _deploySpool.setNetwork(_network);
-        _deploySpool.deploy();
+        _deploySpool = new TestMainnetInitialSetup();
+        _deploySpool.init();
+        _deploySpool.doSetup(address(_deploySpool));
+
+        uint256 assetGroupIdUSDC = _deploySpool.assetGroups("usdc");
+        address[] memory assetGroupUSDC = _deploySpool.assetGroupRegistry().listAssetGroup(assetGroupIdUSDC);
+        usdc = IERC20(assetGroupUSDC[0]);
+
         smartVaultManager = _deploySpool.smartVaultManager();
 
         vm.allowCheatcodes(_spoolAdmin);
@@ -50,7 +74,7 @@ contract ForkTestFixtureDeployment is ForkTestFixture {
         _deploySpool.spoolAccessControl().grantRole(ROLE_DO_HARD_WORKER, _doHardWorker);
 
         _deploySpool.usdPriceFeedManager().setAsset(
-            USDC, 6, AggregatorV3Interface(0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6), true
+            address(usdc), 6, AggregatorV3Interface(0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6), true
         );
 
         vm.stopPrank();
