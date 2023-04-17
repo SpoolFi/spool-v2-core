@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
-import {MAINNET_FORK_BLOCK} from "./EthereumForkConstants.sol";
+import "./EthereumForkConstants.sol";
 
 contract ForkTestFixture is Test {
     uint256 internal mainnetForkId;

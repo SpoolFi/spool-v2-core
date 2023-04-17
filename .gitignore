@@ -7,3 +7,10 @@
 /.env
 /lcov.info
 /lcov/**
+
+/deploy/*.constants.json
+/deploy/*.contracts.json
+
+!/deploy/sample.constants.json
+!/deploy/mainnet.constants.json
+!/deploy/mainnet.contracts.json
