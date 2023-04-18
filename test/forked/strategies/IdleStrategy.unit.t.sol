@@ -48,10 +48,9 @@ contract IdleStrategyTest is TestFixture, ForkTestFixture {
         idleStrategy = new IdleStrategyHarness(
             assetGroupRegistry,
             accessControl,
-            swapper,
-            idleToken
+            swapper
         );
-        idleStrategy.initialize("idle-strategy", assetGroupId);
+        idleStrategy.initialize("idle-strategy", assetGroupId, idleToken);
     }
 
     function test_depositToProtocol() public {
@@ -295,10 +294,7 @@ contract IdleStrategyTest is TestFixture, ForkTestFixture {
 
 // Exposes protocol-specific functions for unit-testing.
 contract IdleStrategyHarness is IdleStrategy, StrategyHarness {
-    constructor(
-        IAssetGroupRegistry assetGroupRegistry_,
-        ISpoolAccessControl accessControl_,
-        ISwapper swapper_,
-        IIdleToken idleToken_
-    ) IdleStrategy(assetGroupRegistry_, accessControl_, swapper_, idleToken_) {}
+    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, ISwapper swapper_)
+        IdleStrategy(assetGroupRegistry_, accessControl_, swapper_)
+    {}
 }
