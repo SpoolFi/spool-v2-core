@@ -41,12 +41,12 @@ abstract contract MorphoStrategyBase is StrategyManualYieldVerifier, Strategy {
 
     function __MorphoStrategyBase_init(
         string memory strategyName_,
-        uint256 assetGroupId,
+        uint256 assetGroupId_,
         address poolTokenAddress_,
         int128 positiveYieldLimit_,
         int128 negativeYieldLimit_
     ) internal onlyInitializing {
-        __Strategy_init(strategyName_, assetGroupId);
+        __Strategy_init(strategyName_, assetGroupId_);
 
         if (poolTokenAddress_ == address(0)) revert ConfigurationAddressZero();
 

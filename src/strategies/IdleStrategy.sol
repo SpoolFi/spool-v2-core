@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/utils/math/SafeCast.sol";
 import "../external/interfaces/strategies/idle/IIdleToken.sol";
 import "./Strategy.sol";
 
@@ -37,30 +38,29 @@ contract IdleStrategy is Strategy {
 
     ISwapper public immutable swapper;
 
-    IIdleToken public immutable idleToken;
-
-    uint256 public immutable oneShare;
+    IIdleToken public idleToken;
+    uint96 public oneShare;
 
     uint256 private _lastIdleTokenPrice;
 
-    constructor(
-        IAssetGroupRegistry assetGroupRegistry_,
-        ISpoolAccessControl accessControl_,
-        ISwapper swapper_,
-        IIdleToken idleToken_
-    ) Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID) {
+    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, ISwapper swapper_)
+        Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID)
+    {
+        swapper = swapper_;
+    }
+
+    function initialize(string memory strategyName_, uint256 assetGroupId_, IIdleToken idleToken_)
+        external
+        initializer
+    {
+        __Strategy_init(strategyName_, assetGroupId_);
+
         if (address(idleToken_) == address(0)) {
             revert ConfigurationAddressZero();
         }
 
-        swapper = swapper_;
-
         idleToken = idleToken_;
-        oneShare = 10 ** idleToken_.decimals();
-    }
-
-    function initialize(string memory strategyName_, uint256 assetGroupId_) external initializer {
-        __Strategy_init(strategyName_, assetGroupId_);
+        oneShare = SafeCast.toUint96(10 ** idleToken_.decimals());
 
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
 

@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/utils/math/SafeCast.sol";
 import "../external/interfaces/strategies/yearn/v2/IYearnTokenVault.sol";
 import "./Strategy.sol";
 
@@ -36,27 +37,27 @@ error YearnV2RedeemSlippagesFailed();
 contract YearnV2Strategy is Strategy {
     using SafeERC20 for IERC20;
 
-    IYearnTokenVault public immutable yTokenVault;
-
-    uint256 public immutable oneShare;
+    IYearnTokenVault public yTokenVault;
+    uint96 public oneShare;
 
     uint256 private _lastPricePerShare;
 
-    constructor(
-        IAssetGroupRegistry assetGroupRegistry_,
-        ISpoolAccessControl accessControl_,
-        IYearnTokenVault yTokenVault_
-    ) Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID) {
+    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_)
+        Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID)
+    {}
+
+    function initialize(string memory name_, uint256 assetGroupId_, IYearnTokenVault yTokenVault_)
+        external
+        initializer
+    {
+        __Strategy_init(name_, assetGroupId_);
+
         if (address(yTokenVault_) == address(0)) {
             revert ConfigurationAddressZero();
         }
 
         yTokenVault = yTokenVault_;
-        oneShare = 10 ** (yTokenVault_.decimals());
-    }
-
-    function initialize(string memory name_, uint256 assetGroupId_) external initializer {
-        __Strategy_init(name_, assetGroupId_);
+        oneShare = SafeCast.toUint96(10 ** (yTokenVault_.decimals()));
 
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
 
