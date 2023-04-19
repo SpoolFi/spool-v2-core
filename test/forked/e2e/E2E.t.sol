@@ -17,19 +17,7 @@ contract E2E is ForkTestFixtureDeployment {
     function test_deploySpool() public {
         vm.startPrank(_spoolAdmin);
 
-        uint256 assetGroupIdUSDC = _deploySpool.assetGroups("usdc");
-
-        ILendingPoolAddressesProvider lendingPoolAddressesProvider =
-            ILendingPoolAddressesProvider(AAVE_V2_LENDING_POOL_ADDRESSES_PROVIDER);
-
-        AaveV2Strategy aaveStrategy = new AaveV2Strategy(
-            _deploySpool.assetGroupRegistry(),
-            _deploySpool.spoolAccessControl(),
-            lendingPoolAddressesProvider
-        );
-
-        aaveStrategy.initialize("AAVE-v2-USDC-strategy", assetGroupIdUSDC);
-        _deploySpool.strategyRegistry().registerStrategy(address(aaveStrategy), 1);
+        uint256 assetGroupIdUSDC = _getAssetGroupId("usdc");
 
         CompoundV2Strategy compoundV2Strategy = new CompoundV2Strategy(
             _deploySpool.assetGroupRegistry(),
@@ -43,7 +31,9 @@ contract E2E is ForkTestFixtureDeployment {
 
         vm.stopPrank();
 
-        address[] memory strategies = Arrays.toArray(address(aaveStrategy), address(compoundV2Strategy));
+        address aaveStrategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupIdUSDC);
+
+        address[] memory strategies = Arrays.toArray(aaveStrategy, address(compoundV2Strategy));
 
         uint16a16 allocations = uint16a16Lib.set(uint16a16.wrap(0), Arrays.toArray(1, 2));
         ISmartVault vault = _createVault(0, 0, assetGroupIdUSDC, strategies, allocations);

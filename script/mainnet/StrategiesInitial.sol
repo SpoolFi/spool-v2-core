@@ -6,12 +6,16 @@ import "../../src/strategies/AaveV2Strategy.sol";
 import "../../src/strategies/YearnV2Strategy.sol";
 import "../helper/JsonHelper.sol";
 
+string constant AAVE_V2_KEY = "aave-v2";
+string constant YEARN_V2_KEY = "yearn-v2";
+
 contract StrategiesInitial {
     function assetGroups(string memory) public view virtual returns (uint256) {}
     function constantsJson() internal view virtual returns (JsonReader) {}
     function contractsJson() internal view virtual returns (JsonWriter) {}
 
-    mapping(string => address) public strategies;
+    // strategy key => asset group id => strategy address
+    mapping(string => mapping(uint256 => address)) public strategies;
 
     function deployStrategies(
         ISpoolAccessControl accessControl,
@@ -30,11 +34,9 @@ contract StrategiesInitial {
         address proxyAdmin,
         IStrategyRegistry strategyRegistry
     ) public {
-        string memory strategyKey = "aave-v2";
-
         // create implementation contract
         ILendingPoolAddressesProvider provider = ILendingPoolAddressesProvider(
-            constantsJson().getAddress(string.concat(".strategies.", strategyKey, ".lendingPoolAddressesProvider"))
+            constantsJson().getAddress(string.concat(".strategies.", AAVE_V2_KEY, ".lendingPoolAddressesProvider"))
         );
 
         AaveV2Strategy implementation = new AaveV2Strategy(
@@ -43,7 +45,7 @@ contract StrategiesInitial {
             provider
         );
 
-        contractsJson().addVariantStrategyImplementation(strategyKey, address(implementation));
+        contractsJson().addVariantStrategyImplementation(AAVE_V2_KEY, address(implementation));
 
         // create variant proxies
         string[] memory variants = new string[](3);
@@ -52,11 +54,12 @@ contract StrategiesInitial {
         variants[2] = "usdt";
 
         for (uint256 i; i < variants.length; ++i) {
-            string memory variantName = string.concat(strategyKey, "-", variants[i]);
+            string memory variantName = _getVariantName(AAVE_V2_KEY, variants[i]);
 
             address variant = _newProxy(address(implementation), proxyAdmin);
-            AaveV2Strategy(variant).initialize(variantName, assetGroups(variants[i]));
-            _registerStrategyVariant(strategyKey, variants[i], variant, strategyRegistry);
+            uint256 assetGroupId = assetGroups(variants[i]);
+            AaveV2Strategy(variant).initialize(variantName, assetGroupId);
+            _registerStrategyVariant(AAVE_V2_KEY, variants[i], variant, assetGroupId, strategyRegistry);
         }
     }
 
@@ -66,15 +69,13 @@ contract StrategiesInitial {
         address proxyAdmin,
         IStrategyRegistry strategyRegistry
     ) public {
-        string memory strategyKey = "yearn-v2";
-
         // create implementation contract
         YearnV2Strategy implementation = new YearnV2Strategy(
             assetGroupRegistry,
             accessControl
         );
 
-        contractsJson().addVariantStrategyImplementation(strategyKey, address(implementation));
+        contractsJson().addVariantStrategyImplementation(YEARN_V2_KEY, address(implementation));
 
         // create variant proxies
         string[] memory variants = new string[](3);
@@ -83,15 +84,16 @@ contract StrategiesInitial {
         variants[2] = "usdt";
 
         for (uint256 i; i < variants.length; ++i) {
-            string memory variantName = _getVariantName(strategyKey, variants[i]);
+            string memory variantName = _getVariantName(YEARN_V2_KEY, variants[i]);
 
             IYearnTokenVault yTokenVault = IYearnTokenVault(
-                constantsJson().getAddress(string.concat(".strategies.", strategyKey, ".", variants[i], ".tokenVault"))
+                constantsJson().getAddress(string.concat(".strategies.", YEARN_V2_KEY, ".", variants[i], ".tokenVault"))
             );
 
             address variant = _newProxy(address(implementation), proxyAdmin);
-            YearnV2Strategy(variant).initialize(variantName, assetGroups(variants[i]), yTokenVault);
-            _registerStrategyVariant(strategyKey, variants[i], variant, strategyRegistry);
+            uint256 assetGroupId = assetGroups(variants[i]);
+            YearnV2Strategy(variant).initialize(variantName, assetGroupId, yTokenVault);
+            _registerStrategyVariant(YEARN_V2_KEY, variants[i], variant, assetGroupId, strategyRegistry);
         }
     }
 
@@ -101,18 +103,11 @@ contract StrategiesInitial {
         return address(proxy);
     }
 
-    function _getVariantName(string memory strategyKey, string memory variantKey)
-        private
-        pure
-        returns (string memory)
-    {
-        return string.concat(strategyKey, "-", variantKey);
-    }
-
     function _registerStrategyVariant(
         string memory strategyKey,
         string memory variantKey,
         address variant,
+        uint256 assetGroupId,
         IStrategyRegistry strategyRegistry
     ) private {
         int256 apy = constantsJson().getInt256(string.concat(".strategies.", strategyKey, ".", variantKey, ".apy"));
@@ -120,7 +115,15 @@ contract StrategiesInitial {
 
         strategyRegistry.registerStrategy(variant, apy);
 
-        strategies[variantName] = variant;
+        strategies[strategyKey][assetGroupId] = variant;
         contractsJson().addVariantStrategyVariant(strategyKey, variantName, address(variant));
+    }
+
+    function _getVariantName(string memory strategyKey, string memory variantKey)
+        private
+        pure
+        returns (string memory)
+    {
+        return string.concat(strategyKey, "-", variantKey);
     }
 }

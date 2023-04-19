@@ -50,7 +50,7 @@ contract ForkTestFixtureDeployment is ForkTestFixture {
     function _deploy() internal {
         setUpForkTestFixture();
 
-        string memory config = vm.readFile("deploy/sample.constants.json");
+        string memory config = vm.readFile("deploy/mainnet.constants.json");
 
         vm.writeJson(config, TEST_CONSTANTS_PATH);
         vm.writeJson(Strings.toHexString(_spoolAdmin), TEST_CONSTANTS_PATH, ".proxyAdminOwner");
@@ -78,6 +78,18 @@ contract ForkTestFixtureDeployment is ForkTestFixture {
         );
 
         vm.stopPrank();
+    }
+
+    function _getStrategyAddress(string memory strategyKey, uint256 assetGroupId) internal view returns (address) {
+        return _deploySpool.strategies(strategyKey, assetGroupId);
+    }
+
+    function _getStrategyAddress(string memory strategyKey, string memory assetGroupKey) internal view returns (address) {
+        return _getStrategyAddress(strategyKey, _getAssetGroupId(assetGroupKey));
+    }
+
+    function _getAssetGroupId(string memory assetGroupKey) internal view returns (uint256) {
+        return _deploySpool.assetGroups(assetGroupKey);
     }
 
     function _generateDhwParameterBag(address[] memory strategies)
