@@ -84,7 +84,11 @@ contract ForkTestFixtureDeployment is ForkTestFixture {
         return _deploySpool.strategies(strategyKey, assetGroupId);
     }
 
-    function _getStrategyAddress(string memory strategyKey, string memory assetGroupKey) internal view returns (address) {
+    function _getStrategyAddress(string memory strategyKey, string memory assetGroupKey)
+        internal
+        view
+        returns (address)
+    {
         return _getStrategyAddress(strategyKey, _getAssetGroupId(assetGroupKey));
     }
 
