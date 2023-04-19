@@ -3,9 +3,9 @@ pragma solidity 0.8.17;
 
 import "forge-std/Script.sol";
 import "./helper/JsonHelper.sol";
-import "./DeploySpool.sol";
-import "./mainnet/AssetsInitial.sol";
-import "./mainnet/StrategiesInitial.sol";
+import "./DeploySpool.s.sol";
+import "./mainnet/AssetsInitial.s.sol";
+import "./mainnet/StrategiesInitial.s.sol";
 
 contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesInitial {
     JsonReader internal _constantsJson;
