@@ -73,4 +73,6 @@ contract AssetsInitial {
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         _assetGroups["dai-usdc-usdt"] = assetGroupId;
     }
+
+    function test_mock_AssetsInitial() external pure {}
 }

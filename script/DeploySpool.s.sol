@@ -260,5 +260,5 @@ contract DeploySpool {
         spoolAccessControl.renounceRole(ROLE_SPOOL_ADMIN, deployerAddress);
     }
 
-    function test_mock() external pure {}
+    function test_mock_DeploySpool() external pure {}
 }

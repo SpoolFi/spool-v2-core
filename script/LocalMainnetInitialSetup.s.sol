@@ -10,4 +10,6 @@ contract LocalMainnetInitialSetup is MainnetInitialSetup {
 
         _contractsJson = new JsonWriter(string.concat("deploy/local-mainnet.contracts.json"));
     }
+
+    function test_mock_LocalMainnetInitialSetup() external pure {}
 }

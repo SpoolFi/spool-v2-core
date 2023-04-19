@@ -110,6 +110,8 @@ contract MockStrategy2 is Strategy {
 
         return (protocol.divest(protocolShares));
     }
+
+    function test_mock() external pure {}
 }
 
 contract MockProtocol2 {
@@ -180,4 +182,6 @@ contract MockProtocol2 {
             price = PRICE_MULTIPLIER * totalUnderlying / totalShares;
         }
     }
+
+    function test_mock() external pure {}
 }

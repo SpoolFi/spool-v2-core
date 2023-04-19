@@ -54,4 +54,6 @@ contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
     function contractsJson() internal view virtual override(DeploySpool, StrategiesInitial) returns (JsonWriter) {
         return _contractsJson;
     }
+
+    function test_mock_MainnetInitialSetup() external pure {}
 }

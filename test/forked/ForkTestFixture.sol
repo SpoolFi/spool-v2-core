@@ -10,4 +10,6 @@ contract ForkTestFixture is Test {
     function setUpForkTestFixture() internal {
         mainnetForkId = vm.createFork(vm.rpcUrl("mainnet"), MAINNET_FORK_BLOCK);
     }
+
+    function test_mock_ForkTestFixture() external pure {}
 }

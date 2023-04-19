@@ -33,9 +33,11 @@ contract TestMainnetInitialSetup is MainnetInitialSetup {
 
         spoolAccessControl.renounceRole(ROLE_SPOOL_ADMIN, deployerAddress);
     }
+
+    function test_mock_TestMainnetInitialSetup() external pure {}
 }
 
-contract ForkTestFixtureDeployment is ForkTestFixture {
+abstract contract ForkTestFixtureDeployment is ForkTestFixture {
     address internal constant _deployer = address(0xdeee);
     address internal constant _spoolAdmin = address(0xad1);
     address internal constant _doHardWorker = address(0xdddd);
@@ -274,4 +276,7 @@ contract ForkTestFixtureDeployment is ForkTestFixture {
         _;
         vm.stopPrank();
     }
+
+    function test_mock() external pure {}
+    function test_mock_() external pure {}
 }

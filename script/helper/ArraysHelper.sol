@@ -19,4 +19,6 @@ library ArraysHelper {
 
         return array;
     }
+
+    function test_mock() external pure {}
 }

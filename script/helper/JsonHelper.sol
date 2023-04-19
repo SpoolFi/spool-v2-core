@@ -62,6 +62,8 @@ contract JsonWriter {
         string memory content = json.serialize("strategies", strategiesJson);
         content.write(path);
     }
+
+    function test_mock() external pure {}
 }
 
 contract JsonReader {
@@ -84,4 +86,6 @@ contract JsonReader {
     function getInt256(string memory key) public view returns (int256) {
         return json.readInt(key);
     }
+
+    function test_mock() external pure {}
 }

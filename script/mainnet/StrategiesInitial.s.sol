@@ -126,4 +126,6 @@ contract StrategiesInitial {
     {
         return string.concat(strategyKey, "-", variantKey);
     }
+
+    function test_mock_StrategiesInitial() external pure {}
 }
