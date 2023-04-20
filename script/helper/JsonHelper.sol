@@ -30,7 +30,7 @@ contract JsonWriter {
     }
 
     function addProxy(string memory key, address implementation, address proxy) public {
-        string memory proxyJson;
+        string memory proxyJson = key;
         proxyJson.serialize("implementation", implementation);
         proxyJson = proxyJson.serialize("proxy", proxy);
 
@@ -38,6 +38,32 @@ contract JsonWriter {
 
         content.write(path);
     }
+
+    function addVariantStrategyImplementation(string memory strategyKey, address implementation) public {
+        string memory variantStrategyJson = strategyKey;
+        variantStrategyJson = variantStrategyJson.serialize("implementation", implementation);
+
+        string memory strategiesJson = "strategies";
+        strategiesJson = strategiesJson.serialize(strategyKey, variantStrategyJson);
+
+        string memory content = json.serialize("strategies", strategiesJson);
+        content.write(path);
+    }
+
+    function addVariantStrategyVariant(string memory strategyKey, string memory variantName, address variantAddress)
+        public
+    {
+        string memory variantStrategyJson = strategyKey;
+        variantStrategyJson = variantStrategyJson.serialize(variantName, variantAddress);
+
+        string memory strategiesJson = "strategies";
+        strategiesJson = strategiesJson.serialize(strategyKey, variantStrategyJson);
+
+        string memory content = json.serialize("strategies", strategiesJson);
+        content.write(path);
+    }
+
+    function test_mock() external pure {}
 }
 
 contract JsonReader {
@@ -56,4 +82,10 @@ contract JsonReader {
     function getUint256(string memory key) public view returns (uint256) {
         return json.readUint(key);
     }
+
+    function getInt256(string memory key) public view returns (int256) {
+        return json.readInt(key);
+    }
+
+    function test_mock() external pure {}
 }

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
-import "forge-std/Script.sol";
 import "@openzeppelin/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "../src/access/Roles.sol";
@@ -26,11 +25,9 @@ import "../src/managers/WithdrawalManager.sol";
 import "../src/strategies/GhostStrategy.sol";
 import "./helper/JsonHelper.sol";
 
-contract DeploySpool is Script {
-    string public network;
-
-    JsonReader public constantsJson;
-    JsonWriter public contractsJson;
+contract DeploySpool {
+    function constantsJson() internal view virtual returns (JsonReader) {}
+    function contractsJson() internal view virtual returns (JsonWriter) {}
 
     ProxyAdmin public proxyAdmin;
     SpoolAccessControl public spoolAccessControl;
@@ -51,37 +48,19 @@ contract DeploySpool is Script {
     WithdrawalManager public withdrawalManager;
     IStrategy public ghostStrategy;
 
-    function run() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address deployerAddress = vm.addr(deployerPrivateKey);
-        setNetwork(vm.envString("NETWORK"));
-        vm.startBroadcast(deployerPrivateKey);
-
-        deploy();
-
-        spoolAccessControl.renounceRole(ROLE_SPOOL_ADMIN, deployerAddress);
-    }
-
-    function setNetwork(string memory _network) public {
-        network = _network;
-    }
-
-    function deploy() public {
-        constantsJson = new JsonReader(vm, string.concat("deploy/", network, ".constants.json"));
-        contractsJson = new JsonWriter(string.concat("deploy/", network, ".contracts.json"));
-
+    function deploySpool() public {
         TransparentUpgradeableProxy proxy;
 
         {
             proxyAdmin = new ProxyAdmin();
 
-            contractsJson.add("ProxyAdmin", address(proxyAdmin));
+            contractsJson().add("ProxyAdmin", address(proxyAdmin));
         }
 
         {
             ghostStrategy = new GhostStrategy();
 
-            contractsJson.add("GhostStrategy", address(ghostStrategy));
+            contractsJson().add("GhostStrategy", address(ghostStrategy));
         }
 
         {
@@ -90,7 +69,7 @@ contract DeploySpool is Script {
             spoolAccessControl = SpoolAccessControl(address(proxy));
             spoolAccessControl.initialize();
 
-            contractsJson.addProxy("SpoolAccessControl", address(implementation), address(proxy));
+            contractsJson().addProxy("SpoolAccessControl", address(implementation), address(proxy));
         }
 
         {
@@ -98,7 +77,7 @@ contract DeploySpool is Script {
             proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
             swapper = Swapper(address(proxy));
 
-            contractsJson.addProxy("Swapper", address(implementation), address(proxy));
+            contractsJson().addProxy("Swapper", address(implementation), address(proxy));
         }
 
         {
@@ -106,7 +85,7 @@ contract DeploySpool is Script {
             proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
             masterWallet = MasterWallet(address(proxy));
 
-            contractsJson.addProxy("MasterWallet", address(implementation), address(proxy));
+            contractsJson().addProxy("MasterWallet", address(implementation), address(proxy));
         }
 
         {
@@ -114,7 +93,7 @@ contract DeploySpool is Script {
             proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
             actionManager = ActionManager(address(proxy));
 
-            contractsJson.addProxy("ActionManager", address(implementation), address(proxy));
+            contractsJson().addProxy("ActionManager", address(implementation), address(proxy));
         }
 
         {
@@ -122,7 +101,7 @@ contract DeploySpool is Script {
             proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
             guardManager = GuardManager(address(proxy));
 
-            contractsJson.addProxy("GuardManager", address(implementation), address(proxy));
+            contractsJson().addProxy("GuardManager", address(implementation), address(proxy));
         }
 
         {
@@ -131,7 +110,7 @@ contract DeploySpool is Script {
             assetGroupRegistry = AssetGroupRegistry(address(proxy));
             assetGroupRegistry.initialize(new address[](0));
 
-            contractsJson.addProxy("AssetGroupRegistry", address(implementation), address(proxy));
+            contractsJson().addProxy("AssetGroupRegistry", address(implementation), address(proxy));
         }
 
         {
@@ -139,7 +118,7 @@ contract DeploySpool is Script {
             proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
             usdPriceFeedManager = UsdPriceFeedManager(address(proxy));
 
-            contractsJson.addProxy("UsdPriceFeedManager", address(implementation), address(proxy));
+            contractsJson().addProxy("UsdPriceFeedManager", address(implementation), address(proxy));
         }
 
         {
@@ -152,18 +131,18 @@ contract DeploySpool is Script {
             proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
             strategyRegistry = StrategyRegistry(address(proxy));
             strategyRegistry.initialize(
-                uint96(constantsJson.getUint256(".fees.ecosystemFeePct")),
-                uint96(constantsJson.getUint256(".fees.treasuryFeePct")),
-                constantsJson.getAddress(".fees.ecosystemFeeReceiver"),
-                constantsJson.getAddress(".fees.treasuryFeeReceiver"),
-                constantsJson.getAddress(".emergencyWithdrawalWallet")
+                uint96(constantsJson().getUint256(".fees.ecosystemFeePct")),
+                uint96(constantsJson().getUint256(".fees.treasuryFeePct")),
+                constantsJson().getAddress(".fees.ecosystemFeeReceiver"),
+                constantsJson().getAddress(".fees.treasuryFeeReceiver"),
+                constantsJson().getAddress(".emergencyWithdrawalWallet")
             );
 
             spoolAccessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
             spoolAccessControl.grantRole(ADMIN_ROLE_STRATEGY, address(strategyRegistry));
             spoolAccessControl.grantRole(ROLE_STRATEGY_REGISTRY, address(strategyRegistry));
 
-            contractsJson.addProxy("StrategyRegistry", address(implementation), address(proxy));
+            contractsJson().addProxy("StrategyRegistry", address(implementation), address(proxy));
         }
 
         {
@@ -171,7 +150,7 @@ contract DeploySpool is Script {
             proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
             riskManager = RiskManager(address(proxy));
 
-            contractsJson.addProxy("RiskManager", address(implementation), address(proxy));
+            contractsJson().addProxy("RiskManager", address(implementation), address(proxy));
         }
 
         {
@@ -183,7 +162,7 @@ contract DeploySpool is Script {
             spoolAccessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(depositManager));
             spoolAccessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(depositManager));
 
-            contractsJson.addProxy("DepositManager", address(implementation), address(proxy));
+            contractsJson().addProxy("DepositManager", address(implementation), address(proxy));
         }
 
         {
@@ -195,7 +174,7 @@ contract DeploySpool is Script {
             spoolAccessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(withdrawalManager));
             spoolAccessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(withdrawalManager));
 
-            contractsJson.addProxy("WithdrawalManager", address(implementation), address(proxy));
+            contractsJson().addProxy("WithdrawalManager", address(implementation), address(proxy));
         }
 
         {
@@ -216,7 +195,7 @@ contract DeploySpool is Script {
             spoolAccessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(smartVaultManager));
             spoolAccessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(smartVaultManager));
 
-            contractsJson.addProxy("SmartVaultManager", address(implementation), address(proxy));
+            contractsJson().addProxy("SmartVaultManager", address(implementation), address(proxy));
         }
 
         {
@@ -225,12 +204,12 @@ contract DeploySpool is Script {
             rewardManager = RewardManager(address(proxy));
             rewardManager.initialize();
 
-            contractsJson.addProxy("RewardManager", address(implementation), address(proxy));
+            contractsJson().addProxy("RewardManager", address(implementation), address(proxy));
         }
 
         {
             DepositSwap implementation = new DepositSwap(
-                IWETH9(constantsJson.getAddress(".tokens/weth")),
+                IWETH9(constantsJson().getAddress(".assets/weth")),
                 assetGroupRegistry,
                 smartVaultManager,
                 swapper
@@ -238,7 +217,7 @@ contract DeploySpool is Script {
             proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
             depositSwap = DepositSwap(address(proxy));
 
-            contractsJson.addProxy("DepositSwap", address(implementation), address(proxy));
+            contractsJson().addProxy("DepositSwap", address(implementation), address(proxy));
         }
 
         {
@@ -257,25 +236,29 @@ contract DeploySpool is Script {
             spoolAccessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
             spoolAccessControl.grantRole(ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM, address(smartVaultFactory));
 
-            contractsJson.add("SmartVaultFactory", address(smartVaultFactory));
+            contractsJson().add("SmartVaultFactory", address(smartVaultFactory));
         }
 
         {
             allowlistGuard = new AllowlistGuard(spoolAccessControl);
 
-            contractsJson.add("AllowlistGuard", address(allowlistGuard));
-        }
-
-        {
-            // transfer ownership of ProxyAdmin
-            address proxyAdminOwner = constantsJson.getAddress(".proxyAdminOwner");
-            proxyAdmin.transferOwnership(proxyAdminOwner);
-
-            // transfer ROLE_SPOOL_ADMIN
-            address spoolAdmin = constantsJson.getAddress(".spoolAdmin");
-            spoolAccessControl.grantRole(ROLE_SPOOL_ADMIN, spoolAdmin);
+            contractsJson().add("AllowlistGuard", address(allowlistGuard));
         }
     }
 
-    function test_mock() external pure {}
+    function postDeploySpool(address deployerAddress) public virtual {
+        {
+            // transfer ownership of ProxyAdmin
+            address proxyAdminOwner = constantsJson().getAddress(".proxyAdminOwner");
+            proxyAdmin.transferOwnership(proxyAdminOwner);
+
+            // transfer ROLE_SPOOL_ADMIN
+            address spoolAdmin = constantsJson().getAddress(".spoolAdmin");
+            spoolAccessControl.grantRole(ROLE_SPOOL_ADMIN, spoolAdmin);
+        }
+
+        spoolAccessControl.renounceRole(ROLE_SPOOL_ADMIN, deployerAddress);
+    }
+
+    function test_mock_DeploySpool() external pure {}
 }

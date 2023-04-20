@@ -139,6 +139,8 @@ contract MockStrategy is Strategy {
             protocol.withdrawTo(assetGroup[i], IERC20(assetGroup[i]).balanceOf(address(protocol)), recipient);
         }
     }
+
+    function test_mock() external pure {}
 }
 
 contract MockProtocol {

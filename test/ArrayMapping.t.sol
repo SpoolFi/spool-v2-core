@@ -20,6 +20,8 @@ contract LibHelper {
         uint128 result = MathUtils.getProportion128Unchecked(mul1, mul2, div);
         return result;
     }
+
+    function test_mock() external pure {}
 }
 
 contract MathUtilsTest is Test {

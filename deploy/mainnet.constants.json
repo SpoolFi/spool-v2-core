@@ -1,0 +1,76 @@
+{
+    "assets": {
+        "dai": {
+            "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+            "decimals": 18,
+            "priceAggregator": "0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9"
+        },
+        "usdc": {
+            "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+            "decimals": 6,
+            "priceAggregator": "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6"
+        },
+        "usdt": {
+            "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+            "decimals": 6,
+            "priceAggregator": "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D"
+        },
+        "weth": {
+            "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+            "decimals": 18,
+            "priceAggregator": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"
+        }
+    },
+    "strategies": {
+        "aave-v2": {
+            "lendingPoolAddressesProvider": "0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5",
+            "dai": {
+                "apy": 21900000000
+            },
+            "usdc": {
+                "apy": 22900000000
+            },
+            "usdt": {
+                "apy": 34500000000
+            }
+        },
+        "compound-v2": {
+            "comptroller": "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B",
+            "dai": {
+                "cToken": "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643",
+                "apy": 15300000000
+            },
+            "usdc": {
+                "cToken": "0x39AA39c021dfbaE8faC545936693aC917d5E7563",
+                "apy": 20400000000
+            },
+            "usdt": {
+                "cToken": "0xf650C3d88D12dB855b8bf7D11Be6C55A4e07dCC9",
+                "apy": 27200000000
+            }
+        },
+        "yearn-v2": {
+            "dai": {
+                "tokenVault": "0xdA816459F1AB5631232FE5e97a05BBBb94970c95",
+                "apy": 67400000000
+            },
+            "usdc": {
+                "tokenVault": "0xa354F35829Ae975e850e23e9615b11Da1B3dC4DE",
+                "apy": 31700000000
+            },
+            "usdt": {
+                "tokenVault": "0x3B27F92C0e212C671EA351827EDF93DB27cc0c65",
+                "apy": 15300000000
+            }
+        }
+    },
+    "proxyAdminOwner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "spoolAdmin": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+    "fees": {
+        "ecosystemFeePct": 800,
+        "treasuryFeePct": 200,
+        "ecosystemFeeReceiver": "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+        "treasuryFeeReceiver": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
+    },
+    "emergencyWithdrawalWallet": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc"
+}
