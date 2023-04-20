@@ -54,26 +54,26 @@ contract AssetsInitial {
         address[] memory assetGroup = new address[](1);
         uint256 assetGroupId;
 
-        assetGroup[0] = assets["weth"];
+        assetGroup[0] = assets[WETH_KEY];
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-        _assetGroups["weth"] = assetGroupId;
+        _assetGroups[WETH_KEY] = assetGroupId;
 
-        assetGroup[0] = assets["usdc"];
+        assetGroup[0] = assets[USDC_KEY];
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-        _assetGroups["usdc"] = assetGroupId;
+        _assetGroups[USDC_KEY] = assetGroupId;
 
-        assetGroup[0] = assets["usdt"];
+        assetGroup[0] = assets[USDT_KEY];
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-        _assetGroups["usdt"] = assetGroupId;
+        _assetGroups[USDT_KEY] = assetGroupId;
 
-        assetGroup[0] = assets["dai"];
+        assetGroup[0] = assets[DAI_KEY];
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-        _assetGroups["dai"] = assetGroupId;
+        _assetGroups[DAI_KEY] = assetGroupId;
 
         assetGroup = new address[](3);
-        assetGroup[0] = assets["dai"];
-        assetGroup[1] = assets["usdc"];
-        assetGroup[2] = assets["usdt"];
+        assetGroup[0] = assets[DAI_KEY];
+        assetGroup[1] = assets[USDC_KEY];
+        assetGroup[2] = assets[USDT_KEY];
         assetGroup = ArraysHelper.sort(assetGroup);
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         _assetGroups["dai-usdc-usdt"] = assetGroupId;

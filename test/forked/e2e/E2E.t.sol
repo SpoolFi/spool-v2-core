@@ -15,25 +15,12 @@ contract E2E is ForkTestFixtureDeployment {
     }
 
     function test_deploySpool() public {
-        vm.startPrank(_spoolAdmin);
-
-        uint256 assetGroupIdUSDC = _getAssetGroupId("usdc");
-
-        CompoundV2Strategy compoundV2Strategy = new CompoundV2Strategy(
-            _deploySpool.assetGroupRegistry(),
-            _deploySpool.spoolAccessControl(),
-            _deploySpool.swapper(),
-            IComptroller(COMPTROLLER)
-        );
-
-        compoundV2Strategy.initialize("Compound-v2-USDC-strategy", assetGroupIdUSDC, ICErc20(cUSDC));
-        _deploySpool.strategyRegistry().registerStrategy(address(compoundV2Strategy), 2);
-
-        vm.stopPrank();
+        uint256 assetGroupIdUSDC = _getAssetGroupId(USDC_KEY);
 
         address aaveStrategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupIdUSDC);
+        address compoundV2Strategy = _getStrategyAddress(COMPOUND_V2_KEY, assetGroupIdUSDC);
 
-        address[] memory strategies = Arrays.toArray(aaveStrategy, address(compoundV2Strategy));
+        address[] memory strategies = Arrays.toArray(aaveStrategy, compoundV2Strategy);
 
         uint16a16 allocations = uint16a16Lib.set(uint16a16.wrap(0), Arrays.toArray(1, 2));
         ISmartVault vault = _createVault(0, 0, assetGroupIdUSDC, strategies, allocations);

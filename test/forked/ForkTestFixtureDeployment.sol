@@ -65,7 +65,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         _deploySpool.init();
         _deploySpool.doSetup(address(_deploySpool));
 
-        uint256 assetGroupIdUSDC = _deploySpool.assetGroups("usdc");
+        uint256 assetGroupIdUSDC = _deploySpool.assetGroups(USDC_KEY);
         address[] memory assetGroupUSDC = _deploySpool.assetGroupRegistry().listAssetGroup(assetGroupIdUSDC);
         usdc = IERC20(assetGroupUSDC[0]);
 
@@ -74,10 +74,6 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         vm.allowCheatcodes(_spoolAdmin);
         startHoax(_spoolAdmin);
         _deploySpool.spoolAccessControl().grantRole(ROLE_DO_HARD_WORKER, _doHardWorker);
-
-        _deploySpool.usdPriceFeedManager().setAsset(
-            address(usdc), 6, AggregatorV3Interface(0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6), true
-        );
 
         vm.stopPrank();
     }
@@ -278,5 +274,4 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
     }
 
     function test_mock() external pure {}
-    function test_mock_() external pure {}
 }
