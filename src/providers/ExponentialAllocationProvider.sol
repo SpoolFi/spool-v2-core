@@ -61,6 +61,23 @@ contract ExponentialAllocationProvider is IAllocationProvider {
             for (uint256 i; i < allocations.length; ++i) {
                 allocations[i] = 1;
             }
+
+            allocationSum = allocations.length;
+        }
+
+        uint256 residual = FULL_PERCENT;
+        for (uint256 i; i < allocations.length; ++i) {
+            allocations[i] = FULL_PERCENT * allocations[i] / allocationSum;
+            residual -= allocations[i];
+        }
+
+        if (residual > 0) {
+            for (uint256 i; i < allocations.length; ++i) {
+                if (allocations[i] > 0) {
+                    allocations[i] += residual;
+                    break;
+                }
+            }
         }
 
         return allocations;

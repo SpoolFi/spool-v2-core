@@ -37,10 +37,10 @@ contract AllocationProviderTest is Test {
             sum += results[i];
         }
 
-        assertEq(sum, 100_00);
-        assertEq(3334, results[0]);
-        assertEq(3333, results[1]);
-        assertEq(3333, results[2]);
+        assertEq(sum, FULL_PERCENT);
+        assertEq(results[0], 3334);
+        assertEq(results[1], 3333);
+        assertEq(results[2], 3333);
     }
 
     function test_linearAllocationProvider() public {
@@ -67,10 +67,10 @@ contract AllocationProviderTest is Test {
             sum += results[i];
         }
 
-        assertEq(sum, 999999999950000);
-        assertEq(results[0], 225574712600000);
-        assertEq(results[1], 274935113075000);
-        assertEq(results[2], 499490174275000);
+        assertEq(sum, FULL_PERCENT);
+        assertEq(results[0], 2257);
+        assertEq(results[1], 2749);
+        assertEq(results[2], 4994);
     }
 
     function test_linearAllocationProvider_apysEqualZero() public {
@@ -94,10 +94,10 @@ contract AllocationProviderTest is Test {
             sum += results[i];
         }
 
-        assertEq(sum, 3);
-        assertEq(results[0], 1);
-        assertEq(results[1], 1);
-        assertEq(results[2], 1);
+        assertEq(sum, FULL_PERCENT);
+        assertEq(results[0], 3334);
+        assertEq(results[1], 3333);
+        assertEq(results[2], 3333);
     }
 
     function test_exponentialAllocationProvider() public {
@@ -129,10 +129,10 @@ contract AllocationProviderTest is Test {
             sum += results[i];
         }
 
-        assertEq(sum, 84459213746987983478);
-        assertEq(results[0], 1398485451107810117);
-        assertEq(results[1], 1622733759469646226);
-        assertEq(results[2], 81437994536410527135);
+        assertEq(sum, FULL_PERCENT);
+        assertEq(results[0], 166);
+        assertEq(results[1], 192);
+        assertEq(results[2], 9642);
     }
 
     function test_exponentialAllocationProvider_apysEqualZero() public {
@@ -156,10 +156,10 @@ contract AllocationProviderTest is Test {
             sum += results[i];
         }
 
-        assertEq(sum, 3);
-        assertEq(results[0], 1);
-        assertEq(results[1], 1);
-        assertEq(results[2], 1);
+        assertEq(sum, FULL_PERCENT);
+        assertEq(results[0], 3334);
+        assertEq(results[1], 3333);
+        assertEq(results[2], 3333);
     }
 }
 

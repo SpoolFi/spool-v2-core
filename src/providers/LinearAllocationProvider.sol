@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "../interfaces/IAllocationProvider.sol";
 import "../interfaces/IRiskManager.sol";
+import "../interfaces/Constants.sol";
 
 contract LinearAllocationProvider is IAllocationProvider {
     uint256 private constant MULTIPLIER = 1e10;
@@ -65,7 +66,22 @@ contract LinearAllocationProvider is IAllocationProvider {
                 allocations[i] = 1;
             }
 
-            return allocations;
+            allocationSum = allocations.length;
+        }
+
+        uint256 residual = FULL_PERCENT;
+        for (uint256 i; i < allocations.length; ++i) {
+            allocations[i] = FULL_PERCENT * allocations[i] / allocationSum;
+            residual -= allocations[i];
+        }
+
+        if (residual > 0) {
+            for (uint256 i; i < allocations.length; ++i) {
+                if (allocations[i] > 0) {
+                    allocations[i] += residual;
+                    break;
+                }
+            }
         }
 
         return allocations;
