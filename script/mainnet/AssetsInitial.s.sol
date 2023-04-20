@@ -6,6 +6,11 @@ import "../../src/managers/UsdPriceFeedManager.sol";
 import "../helper/ArraysHelper.sol";
 import "../helper/JsonHelper.sol";
 
+string constant DAI_KEY = "dai";
+string constant USDC_KEY = "usdc";
+string constant USDT_KEY = "usdt";
+string constant WETH_KEY = "weth";
+
 contract AssetsInitial {
     function constantsJson() internal view virtual returns (JsonReader) {}
 
@@ -19,10 +24,10 @@ contract AssetsInitial {
 
     function setAssets(IAssetGroupRegistry assetGroupRegistry, UsdPriceFeedManager priceFeedManager) public {
         string[] memory assetNames = new string[](4);
-        assetNames[0] = "dai";
-        assetNames[1] = "usdc";
-        assetNames[2] = "usdt";
-        assetNames[3] = "weth";
+        assetNames[0] = DAI_KEY;
+        assetNames[1] = USDC_KEY;
+        assetNames[2] = USDT_KEY;
+        assetNames[3] = WETH_KEY;
 
         address[] memory assetAddresses = new address[](assetNames.length);
         uint256[] memory assetDecimals = new uint256[](assetNames.length);

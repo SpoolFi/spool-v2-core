@@ -34,6 +34,21 @@
                 "apy": 34500000000
             }
         },
+        "compound-v2": {
+            "comptroller": "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B",
+            "dai": {
+                "cToken": "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643",
+                "apy": 15300000000
+            },
+            "usdc": {
+                "cToken": "0x39AA39c021dfbaE8faC545936693aC917d5E7563",
+                "apy": 20400000000
+            },
+            "usdt": {
+                "cToken": "0xf650C3d88D12dB855b8bf7D11Be6C55A4e07dCC9",
+                "apy": 27200000000
+            }
+        },
         "yearn-v2": {
             "dai": {
                 "tokenVault": "0xdA816459F1AB5631232FE5e97a05BBBb94970c95",
