@@ -39,6 +39,18 @@ contract JsonWriter {
         content.write(path);
     }
 
+    function addProxyStrategy(string memory strategyKey, address implementation, address proxy) public {
+        string memory strategyJson = strategyKey;
+        strategyJson.serialize("implementation", implementation);
+        strategyJson = strategyJson.serialize("proxy", proxy);
+
+        string memory strategiesJson = "strategies";
+        strategiesJson = strategiesJson.serialize(strategyKey, strategyJson);
+
+        string memory content = json.serialize("strategies", strategiesJson);
+        content.write(path);
+    }
+
     function addVariantStrategyImplementation(string memory strategyKey, address implementation) public {
         string memory variantStrategyJson = strategyKey;
         variantStrategyJson = variantStrategyJson.serialize("implementation", implementation);
@@ -79,12 +91,20 @@ contract JsonReader {
         return json.readAddress(key);
     }
 
+    function getBool(string memory key) public view returns (bool) {
+        return json.readBool(key);
+    }
+
     function getUint256(string memory key) public view returns (uint256) {
         return json.readUint(key);
     }
 
     function getInt256(string memory key) public view returns (int256) {
         return json.readInt(key);
+    }
+
+    function getUint256Array(string memory key) public view returns (uint256[] memory) {
+        return json.readUintArray(key);
     }
 
     function test_mock() external pure {}

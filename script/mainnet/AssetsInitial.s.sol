@@ -10,11 +10,12 @@ string constant DAI_KEY = "dai";
 string constant USDC_KEY = "usdc";
 string constant USDT_KEY = "usdt";
 string constant WETH_KEY = "weth";
+string constant DAI_USDC_USDT_KEY = "dai-usdc-usdt";
 
 contract AssetsInitial {
     function constantsJson() internal view virtual returns (JsonReader) {}
 
-    mapping(string => address) public assets;
+    mapping(string => address) internal _assets;
     mapping(string => uint256) internal _assetGroups;
 
     function setupAssets(IAssetGroupRegistry assetGroupRegistry, UsdPriceFeedManager priceFeedManager) public {
@@ -42,7 +43,7 @@ contract AssetsInitial {
         assetGroupRegistry.allowTokenBatch(assetAddresses);
 
         for (uint256 i; i < assetNames.length; ++i) {
-            assets[assetNames[i]] = assetAddresses[i];
+            _assets[assetNames[i]] = assetAddresses[i];
 
             priceFeedManager.setAsset(
                 assetAddresses[i], assetDecimals[i], AggregatorV3Interface(assetPriceAggregators[i]), true
@@ -54,29 +55,29 @@ contract AssetsInitial {
         address[] memory assetGroup = new address[](1);
         uint256 assetGroupId;
 
-        assetGroup[0] = assets[WETH_KEY];
+        assetGroup[0] = _assets[WETH_KEY];
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         _assetGroups[WETH_KEY] = assetGroupId;
 
-        assetGroup[0] = assets[USDC_KEY];
+        assetGroup[0] = _assets[USDC_KEY];
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         _assetGroups[USDC_KEY] = assetGroupId;
 
-        assetGroup[0] = assets[USDT_KEY];
+        assetGroup[0] = _assets[USDT_KEY];
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         _assetGroups[USDT_KEY] = assetGroupId;
 
-        assetGroup[0] = assets[DAI_KEY];
+        assetGroup[0] = _assets[DAI_KEY];
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         _assetGroups[DAI_KEY] = assetGroupId;
 
         assetGroup = new address[](3);
-        assetGroup[0] = assets[DAI_KEY];
-        assetGroup[1] = assets[USDC_KEY];
-        assetGroup[2] = assets[USDT_KEY];
+        assetGroup[0] = _assets[DAI_KEY];
+        assetGroup[1] = _assets[USDC_KEY];
+        assetGroup[2] = _assets[USDT_KEY];
         assetGroup = ArraysHelper.sort(assetGroup);
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-        _assetGroups["dai-usdc-usdt"] = assetGroupId;
+        _assetGroups[DAI_USDC_USDT_KEY] = assetGroupId;
     }
 
     function test_mock_AssetsInitial() external pure {}

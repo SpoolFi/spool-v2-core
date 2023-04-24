@@ -37,8 +37,12 @@ contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
         postDeploySpool(deployerAddress);
     }
 
-    function assetGroups(string memory assetGroup) public view virtual override returns (uint256) {
-        return _assetGroups[assetGroup];
+    function assets(string memory assetKey) public view virtual override returns (address) {
+        return _assets[assetKey];
+    }
+
+    function assetGroups(string memory assetGroupKey) public view virtual override returns (uint256) {
+        return _assetGroups[assetGroupKey];
     }
 
     function constantsJson()
