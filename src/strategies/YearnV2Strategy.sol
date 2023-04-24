@@ -20,13 +20,11 @@ error YearnV2RedeemSlippagesFailed();
 // - DHW with deposit: slippages[0] == 0
 //   - beforeDepositCheck: slippages[1..2]
 //   - beforeRedeemalCheck: slippages[3..4]
-//   - compound: slippages[5]
-//   - _depositToProtocol: slippages[6]
+//   - _depositToProtocol: slippages[5]
 // - DHW with withdrawal: slippages[0] == 1
 //   - beforeDepositCheck: slippages[1..2]
 //   - beforeRedeemalCheck: slippages[3..4]
-//   - compound: slippages[5]
-//   - _redeemFromProtocol: slippages[6]
+//   - _redeemFromProtocol: slippages[5]
 // - reallocate: slippages[0] == 2
 //   - beforeDepositCheck: depositSlippages[1..2]
 //   - _depositToProtocol: depositSlippages[3]
@@ -99,7 +97,7 @@ contract YearnV2Strategy is Strategy {
 
         if (
             !(
-                (slippages[0] == 0 && (mintedYearnTokens >= slippages[6]))
+                (slippages[0] == 0 && (mintedYearnTokens >= slippages[5]))
                     || (slippages[0] == 2 && (mintedYearnTokens >= slippages[3]))
             )
         ) {
@@ -112,7 +110,7 @@ contract YearnV2Strategy is Strategy {
 
         uint256 slippage;
         if (slippages[0] == 1) {
-            slippage = slippages[6];
+            slippage = slippages[5];
         } else if (slippages[0] == 2) {
             slippage = slippages[3];
         } else if (slippages[0] == 3) {
