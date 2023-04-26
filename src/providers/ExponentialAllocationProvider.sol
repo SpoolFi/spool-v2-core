@@ -26,6 +26,12 @@ contract ExponentialAllocationProvider is IAllocationProvider {
 
         uint256[] memory allocations = new uint256[](data.apys.length);
 
+        if (allocations.length == 1) {
+            // if there is only one strategy, is should get full allocation
+            allocations[0] = FULL_PERCENT;
+            return allocations;
+        }
+
         uint8[21] memory riskArray =
             [10, 19, 28, 37, 46, 55, 64, 73, 82, 91, 100, 109, 118, 127, 136, 145, 154, 163, 172, 181, 190];
 

@@ -9,10 +9,17 @@ contract LinearAllocationProvider is IAllocationProvider {
     uint256 private constant MULTIPLIER = 1e10;
 
     function calculateAllocation(AllocationCalculationInput calldata data) external pure returns (uint256[] memory) {
+        uint256[] memory allocations = new uint256[](data.apys.length);
+
+        if (allocations.length == 1) {
+            // if there is only one strategy, is should get full allocation
+            allocations[0] = FULL_PERCENT;
+            return allocations;
+        }
+
         uint256 allocationSum;
         uint256 apySum;
         uint256 riskSum;
-        uint256[] memory allocations = new uint256[](data.apys.length);
 
         uint24[21] memory riskArray = [
             100000,

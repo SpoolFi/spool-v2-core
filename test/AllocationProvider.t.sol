@@ -43,6 +43,19 @@ contract AllocationProviderTest is Test {
         assertEq(results[2], 3333);
     }
 
+    function test_uniformAllocationProvider_singleStrategy() public {
+        address[] memory strategies = new address[](1);
+        FixedRM rm = new FixedRM();
+        AllocationCalculationInput memory input = AllocationCalculationInput(
+            strategies, new int256[](1), rm.getRiskScores(riskProvider, strategies), riskTolerance
+        );
+
+        IAllocationProvider ap = new UniformAllocationProvider();
+
+        uint256[] memory results = ap.calculateAllocation(input);
+        assertEq(results[0], FULL_PERCENT);
+    }
+
     function test_linearAllocationProvider() public {
         address[] memory strategies = new address[](3);
         strategies[0] = strategy1;
@@ -71,6 +84,24 @@ contract AllocationProviderTest is Test {
         assertEq(results[0], 2257);
         assertEq(results[1], 2749);
         assertEq(results[2], 4994);
+    }
+
+    function test_linearAllocationProvider_singleStrategy() public {
+        address[] memory strategies = new address[](1);
+        strategies[0] = strategy1;
+
+        int256[] memory apys = new int256[](1);
+        apys[0] = apy_strategy1;
+
+        FixedRM rm = new FixedRM();
+        AllocationCalculationInput memory input =
+            AllocationCalculationInput(strategies, apys, rm.getRiskScores(riskProvider, strategies), riskTolerance);
+
+        IAllocationProvider ap = new LinearAllocationProvider();
+
+        uint256[] memory results = ap.calculateAllocation(input);
+
+        assertEq(results[0], FULL_PERCENT);
     }
 
     function test_linearAllocationProvider_apysEqualZero() public {
@@ -133,6 +164,24 @@ contract AllocationProviderTest is Test {
         assertEq(results[0], 166);
         assertEq(results[1], 192);
         assertEq(results[2], 9642);
+    }
+
+    function test_exponentialAllocationProvider_singleStrategy() public {
+        address[] memory strategies = new address[](1);
+        strategies[0] = strategy1;
+
+        int256[] memory apys = new int256[](1);
+        apys[0] = apy_strategy1;
+
+        FixedRM rm = new FixedRM();
+        AllocationCalculationInput memory input =
+            AllocationCalculationInput(strategies, apys, rm.getRiskScores(riskProvider, strategies), riskTolerance);
+
+        IAllocationProvider ap = new ExponentialAllocationProvider();
+
+        uint256[] memory results = ap.calculateAllocation(input);
+
+        assertEq(results[0], FULL_PERCENT);
     }
 
     function test_exponentialAllocationProvider_apysEqualZero() public {
