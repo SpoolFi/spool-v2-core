@@ -31,14 +31,11 @@ contract DepositIntegrationTest is IntegrationTestFixture {
     }
 
     function test_deposit_revertNothingToFlushAndSync() public {
-        // Alice deposits
         vm.expectRevert(abi.encodeWithSelector(NothingToFlush.selector));
         smartVaultManager.flushSmartVault(address(smartVault));
 
         vm.expectRevert(abi.encodeWithSelector(NothingToSync.selector));
         smartVaultManager.syncSmartVault(address(smartVault), true);
-
-        vm.stopPrank();
     }
 
     function test_shouldBeAbleToDeposit() public {

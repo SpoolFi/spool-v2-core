@@ -153,6 +153,33 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
         morphoCompoundV2Strategy.exposed_getYieldPercentage(tooSmallYield);
     }
 
+    function test_getProtocolRewards() public {
+        // arrange
+        IERC20 rewardToken = morphoCompoundV2Strategy.poolRewardToken();
+
+        uint256 toDeposit = 100000 * 10 ** tokenUsdc.decimals();
+        deal(address(tokenUsdc), address(morphoCompoundV2Strategy), toDeposit, true);
+
+        // - need to deposit into the protocol
+        morphoCompoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+
+        // - mint some reward tokens by skipping blocks (should be 41792137860151927 COMP, depends on the forked block number)
+        vm.roll(block.number + 7200);
+        skip(60 * 60 * 24);
+
+        // act
+        vm.startPrank(address(0), address(0));
+        (address[] memory rewardAddresses, uint256[] memory rewardAmounts) =
+            morphoCompoundV2Strategy.getProtocolRewards();
+        vm.stopPrank();
+
+        // assert
+        assertEq(rewardAddresses.length, 1);
+        assertEq(rewardAddresses[0], address(rewardToken));
+        assertEq(rewardAmounts.length, rewardAddresses.length);
+        assertEq(rewardAmounts[0], 41792137860151928);
+    }
+
     function test_compound() public {
         // arrange
         IERC20 rewardToken = morphoCompoundV2Strategy.poolRewardToken();
@@ -177,7 +204,7 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
         // - need to deposit into the protocol
         morphoCompoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
 
-        // - mint some reward tokens by skipping blocks (should be 41792137860151927 COMP, depends on the forked block number)
+        // - mint some reward tokens by skipping blocks (should be 41792137860151928 COMP, depends on the forked block number)
         vm.roll(block.number + 7200);
         skip(60 * 60 * 24);
 
@@ -188,8 +215,8 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
         compoundSwapInfo[0] = SwapInfo({
             swapTarget: address(exchange),
             token: address(rewardToken),
-            amountIn: 41792137860151927,
-            swapCallData: abi.encodeCall(exchange.swap, (address(rewardToken), 41792137860151927, address(swapper)))
+            amountIn: 41792137860151928,
+            swapCallData: abi.encodeCall(exchange.swap, (address(rewardToken), 41792137860151928, address(swapper)))
         });
 
         uint256[] memory slippages = new uint256[](1);

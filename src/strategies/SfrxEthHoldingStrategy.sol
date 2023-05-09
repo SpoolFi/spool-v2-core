@@ -230,4 +230,11 @@ contract SfrxEthHoldingStrategy is Strategy, WethHelper {
     function _getSharePrice() private view returns (uint256) {
         return sfrxEthToken.convertToAssets(1 ether);
     }
+
+    function _getProtocolRewardsInternal()
+        internal
+        virtual
+        override
+        returns (address[] memory tokens, uint256[] memory amounts)
+    {}
 }

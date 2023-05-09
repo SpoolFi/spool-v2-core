@@ -234,6 +234,40 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
         assertEq(usdtBalanceOfEmergencyWithdrawalRecipient, usdtBalanceOfCurvePoolBefore - usdtBalanceOfCurvePoolAfter);
     }
 
+    function test_getProtocolRewards() public {
+        // arrange
+        address rewardToken = curveGauge.crv_token();
+
+        uint256 toDepositDai = 1000 * tokenDaiMultiplier;
+        uint256 toDepositUsdc = 1000 * tokenUsdcMultiplier;
+        uint256 toDepositUsdt = 1000 * tokenUsdtMultiplier;
+        deal(address(tokenDai), address(curveStrategy), toDepositDai, true);
+        deal(address(tokenUsdc), address(curveStrategy), toDepositUsdc, true);
+        deal(address(tokenUsdt), address(curveStrategy), toDepositUsdt, true);
+
+        // - need to deposit into the protocol
+        uint256[] memory slippages = new uint256[](11);
+        slippages[0] = 0;
+        slippages[10] = 1;
+        curveStrategy.exposed_depositToProtocol(
+            assetGroup, Arrays.toArray(toDepositDai, toDepositUsdc, toDepositUsdt), slippages
+        );
+
+        // - yield is gathered over time
+        skip(3600 * 24 * 30); // ~ 1 month
+
+        // act
+        vm.startPrank(address(0), address(0));
+        (address[] memory rewardAddresses, uint256[] memory rewardAmounts) = curveStrategy.getProtocolRewards();
+        vm.stopPrank();
+
+        // assert
+        assertEq(rewardAddresses.length, 1);
+        assertEq(rewardAddresses[0], rewardToken);
+        assertEq(rewardAmounts.length, rewardAddresses.length);
+        assertEq(rewardAmounts[0], 1832285496982225999);
+    }
+
     function test_compound() public {
         // arrange
         address rewardToken = curveGauge.crv_token();

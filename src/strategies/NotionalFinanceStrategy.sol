@@ -99,9 +99,7 @@ contract NotionalFinanceStrategy is Strategy {
         returns (int256 compoundedYieldPercentage)
     {
         if (swapInfo.length > 0) {
-            notional.nTokenClaimIncentives();
-
-            uint256 noteBalance = note.balanceOf(address(this));
+            uint256 noteBalance = _getNotionalFinanceReward();
 
             if (noteBalance > 0) {
                 note.safeTransfer(address(swapper), noteBalance);
@@ -222,4 +220,20 @@ contract NotionalFinanceStrategy is Strategy {
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public view override {}
 
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
+
+    function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {
+        address[] memory tokens = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        tokens[0] = address(note);
+        amounts[0] = _getNotionalFinanceReward();
+
+        return (tokens, amounts);
+    }
+
+    function _getNotionalFinanceReward() internal returns (uint256) {
+        notional.nTokenClaimIncentives();
+
+        return note.balanceOf(address(this));
+    }
 }

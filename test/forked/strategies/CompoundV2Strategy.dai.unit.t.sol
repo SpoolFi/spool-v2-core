@@ -13,8 +13,8 @@ import "../StrategyHarness.sol";
 import "../EthereumForkConstants.sol";
 import "../../mocks/MockExchange.sol";
 
-contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
-    IERC20Metadata private tokenUsdc;
+contract CompoundV2StrategyDaiTest is TestFixture, ForkTestFixture {
+    IERC20Metadata private tokenDai;
 
     address[] private assetGroup;
     uint256 private assetGroupId;
@@ -30,11 +30,11 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
         vm.selectFork(mainnetForkId);
         setUpBase();
 
-        tokenUsdc = IERC20Metadata(USDC);
+        tokenDai = IERC20Metadata(DAI);
 
-        priceFeedManager.setExchangeRate(address(tokenUsdc), USD_DECIMALS_MULTIPLIER * 1001 / 1000);
+        priceFeedManager.setExchangeRate(address(tokenDai), USD_DECIMALS_MULTIPLIER * 1001 / 1000);
 
-        assetGroup = Arrays.toArray(address(tokenUsdc));
+        assetGroup = Arrays.toArray(address(tokenDai));
         assetGroupRegistry.allowTokenBatch(assetGroup);
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         assetGroupExchangeRates = SpoolUtils.getExchangeRates(assetGroup, priceFeedManager);
@@ -46,33 +46,33 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
             IComptroller(COMPTROLLER)
         );
 
-        compoundV2Strategy.initialize("CompoundV2Strategy", assetGroupId, ICErc20(cUSDC));
+        compoundV2Strategy.initialize("CompoundV2Strategy", assetGroupId, ICErc20(cDAI));
     }
 
     function test_depositToProtocol() public {
         // arrange
-        uint256 toDeposit = 1000 * 10 ** tokenUsdc.decimals();
-        deal(address(tokenUsdc), address(compoundV2Strategy), toDeposit, true);
+        uint256 toDeposit = 1000 * 10 ** tokenDai.decimals();
+        deal(address(tokenDai), address(compoundV2Strategy), toDeposit, true);
 
-        uint256 usdcBalanceOfCTokenBefore = tokenUsdc.balanceOf(address(compoundV2Strategy.cToken()));
+        uint256 daiBalanceOfCTokenBefore = tokenDai.balanceOf(address(compoundV2Strategy.cToken()));
 
         // act
         compoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
 
         // assert
-        uint256 usdcBalanceOfCTokenAfter = tokenUsdc.balanceOf(address(compoundV2Strategy.cToken()));
+        uint256 daiBalanceOfCTokenAfter = tokenDai.balanceOf(address(compoundV2Strategy.cToken()));
 
-        assertEq(usdcBalanceOfCTokenAfter - usdcBalanceOfCTokenBefore, toDeposit);
-        assertApproxEqAbs(compoundV2Strategy.cToken().balanceOfUnderlying(address(compoundV2Strategy)), toDeposit, 1);
+        assertEq(daiBalanceOfCTokenAfter - daiBalanceOfCTokenBefore, toDeposit);
+        assertApproxEqRel(compoundV2Strategy.cToken().balanceOfUnderlying(address(compoundV2Strategy)), toDeposit, 1e10);
     }
 
     function test_redeemFromProtocol() public {
         // arrange
-        uint256 toDeposit = 1000 * 10 ** tokenUsdc.decimals();
+        uint256 toDeposit = 1000 * 10 ** tokenDai.decimals();
         uint256 mintedShares = 100;
         uint256 withdrawnShares = 60;
 
-        deal(address(tokenUsdc), address(compoundV2Strategy), toDeposit, true);
+        deal(address(tokenDai), address(compoundV2Strategy), toDeposit, true);
 
         // - need to deposit into the protocol
         compoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
@@ -87,22 +87,24 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
         compoundV2Strategy.exposed_redeemFromProtocol(assetGroup, withdrawnShares, new uint256[](0));
 
         // assert
-        uint256 usdcBalanceOfStrategy = tokenUsdc.balanceOf(address(compoundV2Strategy));
+        uint256 daiBalanceOfStrategy = tokenDai.balanceOf(address(compoundV2Strategy));
         uint256 strategyDepositBalanceAfter =
             compoundV2Strategy.cToken().balanceOfUnderlying(address(compoundV2Strategy));
 
-        assertApproxEqAbs(
-            strategyDepositBalanceBefore - strategyDepositBalanceAfter, toDeposit * withdrawnShares / mintedShares, 1
+        assertApproxEqRel(
+            strategyDepositBalanceBefore - strategyDepositBalanceAfter, toDeposit * withdrawnShares / mintedShares, 1e10
         );
-        assertApproxEqAbs(usdcBalanceOfStrategy, toDeposit * withdrawnShares / mintedShares, 1);
-        assertApproxEqAbs(strategyDepositBalanceAfter, toDeposit * (mintedShares - withdrawnShares) / mintedShares, 1);
+        assertApproxEqRel(daiBalanceOfStrategy, toDeposit * withdrawnShares / mintedShares, 1e10);
+        assertApproxEqRel(
+            strategyDepositBalanceAfter, toDeposit * (mintedShares - withdrawnShares) / mintedShares, 1e10
+        );
     }
 
     function test_emergencyWithdrawImpl() public {
         // arrange
-        uint256 toDeposit = 1000 * 10 ** tokenUsdc.decimals();
+        uint256 toDeposit = 1000 * 10 ** tokenDai.decimals();
         uint256 mintedShares = 100;
-        deal(address(tokenUsdc), address(compoundV2Strategy), toDeposit, true);
+        deal(address(tokenDai), address(compoundV2Strategy), toDeposit, true);
 
         // - need to deposit into the protocol
         compoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
@@ -110,27 +112,27 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
         //   which are needed when determining how much to redeem
         compoundV2Strategy.exposed_mint(mintedShares);
 
-        uint256 usdcBalanceOfCTokenBefore = tokenUsdc.balanceOf(address(compoundV2Strategy.cToken()));
+        uint256 daiBalanceOfCTokenBefore = tokenDai.balanceOf(address(compoundV2Strategy.cToken()));
 
         // act
         compoundV2Strategy.exposed_emergencyWithdrawImpl(new uint256[](0), emergencyWithdrawalRecipient);
 
         // assert
-        uint256 usdcBalanceOfCTokenAfter = tokenUsdc.balanceOf(address(compoundV2Strategy.cToken()));
-        uint256 usdcBalanceOfEmergencyWithdrawalRecipient = tokenUsdc.balanceOf(emergencyWithdrawalRecipient);
+        uint256 daiBalanceOfCTokenAfter = tokenDai.balanceOf(address(compoundV2Strategy.cToken()));
+        uint256 daiBalanceOfEmergencyWithdrawalRecipient = tokenDai.balanceOf(emergencyWithdrawalRecipient);
 
         uint256 cTokenBalanceOfStrategy = compoundV2Strategy.cToken().balanceOf(address(compoundV2Strategy));
 
-        assertApproxEqAbs(usdcBalanceOfCTokenBefore - usdcBalanceOfCTokenAfter, toDeposit, 1);
-        assertApproxEqAbs(usdcBalanceOfEmergencyWithdrawalRecipient, toDeposit, 1);
+        assertApproxEqRel(daiBalanceOfCTokenBefore - daiBalanceOfCTokenAfter, toDeposit, 1e10);
+        assertApproxEqRel(daiBalanceOfEmergencyWithdrawalRecipient, toDeposit, 1e10);
         assertEq(cTokenBalanceOfStrategy, 0);
     }
 
     // base yield
     function test_getYieldPercentage() public {
         // arrange
-        uint256 toDeposit = 1000 * 10 ** tokenUsdc.decimals();
-        deal(address(tokenUsdc), address(compoundV2Strategy), toDeposit, true);
+        uint256 toDeposit = 1000 * 10 ** tokenDai.decimals();
+        deal(address(tokenDai), address(compoundV2Strategy), toDeposit, true);
 
         // - need to deposit into the protocol
         compoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
@@ -149,20 +151,20 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
         uint256 expectedYield = balanceOfStrategyAfter - balanceOfStrategyBefore;
 
         assertGt(yieldPercentage, 0);
-        assertApproxEqAbs(calculatedYield, expectedYield, 1);
+        assertApproxEqRel(calculatedYield, expectedYield, 1e10);
     }
 
     function test_getProtocolRewards() public {
         // arrange
         IERC20 compToken = compoundV2Strategy.comp();
 
-        uint256 toDeposit = 100000 * 10 ** tokenUsdc.decimals();
-        deal(address(tokenUsdc), address(compoundV2Strategy), toDeposit, true);
+        uint256 toDeposit = 100000 * 10 ** tokenDai.decimals();
+        deal(address(tokenDai), address(compoundV2Strategy), toDeposit, true);
 
         // - need to deposit into the protocol
         compoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
 
-        // - mint some reward tokens by skipping blocks (should be 41792137860151928 COMP, depends on the forked block number)
+        // - mint some reward tokens by skipping blocks (should be 45672443008463367 COMP, depends on the forked block number)
         vm.roll(block.number + 7200);
 
         // act
@@ -174,7 +176,7 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
         assertEq(rewardAddresses.length, 1);
         assertEq(rewardAddresses[0], address(compToken));
         assertEq(rewardAmounts.length, rewardAddresses.length);
-        assertEq(rewardAmounts[0], 41792137860151928);
+        assertEq(rewardAmounts[0], 45672443008463367);
     }
 
     function test_compound() public {
@@ -183,7 +185,7 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
 
         priceFeedManager.setExchangeRate(address(compToken), USD_DECIMALS_MULTIPLIER * 50); // COMP
 
-        MockExchange exchange = new MockExchange(compToken, tokenUsdc, priceFeedManager);
+        MockExchange exchange = new MockExchange(compToken, tokenDai, priceFeedManager);
 
         deal(
             address(compToken),
@@ -191,17 +193,17 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
             1_000_000 * 10 ** IERC20Metadata(address(compToken)).decimals(),
             false
         );
-        deal(address(tokenUsdc), address(exchange), 1_000_000 * 10 ** tokenUsdc.decimals(), true);
+        deal(address(tokenDai), address(exchange), 1_000_000 * 10 ** tokenDai.decimals(), true);
 
         swapper.updateExchangeAllowlist(Arrays.toArray(address(exchange)), Arrays.toArray(true));
 
-        uint256 toDeposit = 100000 * 10 ** tokenUsdc.decimals();
-        deal(address(tokenUsdc), address(compoundV2Strategy), toDeposit, true);
+        uint256 toDeposit = 100000 * 10 ** tokenDai.decimals();
+        deal(address(tokenDai), address(compoundV2Strategy), toDeposit, true);
 
         // - need to deposit into the protocol
         compoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
 
-        // - mint some reward tokens by skipping blocks (should be 41792137860151928 COMP, depends on the forked block number)
+        // - mint some reward tokens by skipping blocks (should be 45672443008463367 COMP, depends on the forked block number)
         vm.roll(block.number + 7200);
 
         uint256 balanceOfStrategyBefore = compoundV2Strategy.cToken().balanceOfUnderlying(address(compoundV2Strategy));
@@ -211,8 +213,8 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
         compoundSwapInfo[0] = SwapInfo({
             swapTarget: address(exchange),
             token: address(compToken),
-            amountIn: 41792137860151928,
-            swapCallData: abi.encodeCall(exchange.swap, (address(compToken), 41792137860151928, address(swapper)))
+            amountIn: 45672443008463367,
+            swapCallData: abi.encodeCall(exchange.swap, (address(compToken), 45672443008463367, address(swapper)))
         });
 
         uint256[] memory slippages = new uint256[](1);
@@ -233,8 +235,8 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
 
     function test_getUsdWorth() public {
         // arrange
-        uint256 toDeposit = 1000 * 10 ** tokenUsdc.decimals();
-        deal(address(tokenUsdc), address(compoundV2Strategy), toDeposit, true);
+        uint256 toDeposit = 1000 * 10 ** tokenDai.decimals();
+        deal(address(tokenDai), address(compoundV2Strategy), toDeposit, true);
 
         // - need to deposit into the protocol
         compoundV2Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
@@ -243,7 +245,7 @@ contract CompoundV2StrategyTest is TestFixture, ForkTestFixture {
         uint256 usdWorth = compoundV2Strategy.exposed_getUsdWorth(assetGroupExchangeRates, priceFeedManager);
 
         // assert
-        assertApproxEqRel(usdWorth, priceFeedManager.assetToUsd(address(tokenUsdc), toDeposit), 10 ** 15);
+        assertApproxEqRel(usdWorth, priceFeedManager.assetToUsd(address(tokenDai), toDeposit), 10 ** 15);
     }
 }
 

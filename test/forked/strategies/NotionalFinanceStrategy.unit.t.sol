@@ -161,6 +161,33 @@ contract NotionalFinanceStrategyTest is TestFixture, ForkTestFixture {
         assertApproxEqAbs(calculatedYield, expectedYield, 1);
     }
 
+    function test_getProtocolRewards() public {
+        // arrange
+        IERC20 noteToken = notionalFinanceStrategy.note();
+
+        uint256 toDeposit = 100000 * 10 ** tokenUsdc.decimals();
+        deal(address(tokenUsdc), address(notionalFinanceStrategy), toDeposit, true);
+
+        // - need to deposit into the protocol
+        notionalFinanceStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+
+        // - mint some reward tokens by skipping blocks (should be 7454639134 NOTEtoken, depends on the forked block number)
+        vm.roll(block.number + 7200);
+        skip(60 * 60 * 24);
+
+        // act
+        vm.startPrank(address(0), address(0));
+        (address[] memory rewardAddresses, uint256[] memory rewardAmounts) =
+            notionalFinanceStrategy.getProtocolRewards();
+        vm.stopPrank();
+
+        // assert
+        assertEq(rewardAddresses.length, 1);
+        assertEq(rewardAddresses[0], address(noteToken));
+        assertEq(rewardAmounts.length, rewardAddresses.length);
+        assertEq(rewardAmounts[0], 7454639134);
+    }
+
     function test_compound() public {
         // arrange
         IERC20 noteToken = notionalFinanceStrategy.note();
@@ -186,7 +213,7 @@ contract NotionalFinanceStrategyTest is TestFixture, ForkTestFixture {
         // - need to deposit into the protocol
         notionalFinanceStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
 
-        // - mint some reward tokens by skipping blocks (should be 7454639133 NOTEtoken, depends on the forked block number)
+        // - mint some reward tokens by skipping blocks (should be 7454639134 NOTEtoken, depends on the forked block number)
         vm.roll(block.number + 7200);
         skip(60 * 60 * 24);
 
@@ -197,8 +224,8 @@ contract NotionalFinanceStrategyTest is TestFixture, ForkTestFixture {
         compoundSwapInfo[0] = SwapInfo({
             swapTarget: address(exchange),
             token: address(noteToken),
-            amountIn: 7454639133,
-            swapCallData: abi.encodeCall(exchange.swap, (address(noteToken), 7454639133, address(swapper)))
+            amountIn: 7454639134,
+            swapCallData: abi.encodeCall(exchange.swap, (address(noteToken), 7454639134, address(swapper)))
         });
 
         uint256[] memory slippages = new uint256[](1);

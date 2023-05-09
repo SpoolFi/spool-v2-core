@@ -127,4 +127,11 @@ contract MockMasterChefStrategy is Strategy {
     function _emergencyWithdrawImpl(uint256[] calldata slippages, address recipient) internal pure override {}
 
     function test_mock() external pure {}
+
+    function _getProtocolRewardsInternal()
+        internal
+        virtual
+        override
+        returns (address[] memory tokens, uint256[] memory amounts)
+    {}
 }

@@ -149,6 +149,10 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         return _assetsDeposited[strategy][index].toArray(assetGroupLength);
     }
 
+    function sharesRedeemed(address strategy, uint256 index) external view returns (uint256) {
+        return _sharesRedeemed[strategy][index];
+    }
+
     function currentIndex(address[] calldata strategies) external view returns (uint256[] memory) {
         uint256[] memory indexes = new uint256[](strategies.length);
         for (uint256 i; i < strategies.length; ++i) {
@@ -246,7 +250,10 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     function doHardWork(DoHardWorkParameterBag calldata dhwParams) external whenNotPaused {
         unchecked {
             // Can only be run by do-hard-worker.
-            _checkRole(ROLE_DO_HARD_WORKER, msg.sender);
+
+            if (!_isViewExecution()) {
+                _checkRole(ROLE_DO_HARD_WORKER, msg.sender);
+            }
 
             if (
                 dhwParams.tokens.length != dhwParams.exchangeRateSlippages.length
@@ -684,5 +691,9 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         _removedStrategies[strategy] = true;
 
         emit StrategyRemoved(strategy);
+    }
+
+    function _isViewExecution() private view returns (bool) {
+        return tx.origin == address(0);
     }
 }

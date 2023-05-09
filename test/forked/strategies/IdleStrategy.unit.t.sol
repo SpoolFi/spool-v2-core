@@ -153,6 +153,40 @@ contract IdleStrategyTest is TestFixture, ForkTestFixture {
         assertEq(idleTokenBalanceOfStrategyAfter, 0);
     }
 
+    function test_getProtocolRewards() public {
+        // arrange
+        address[] memory rewardTokens = idleToken.getGovTokens();
+
+        uint256 toDeposit = 1000 * tokenUsdcMultiplier;
+        deal(address(tokenUsdc), address(idleStrategy), toDeposit, true);
+
+        // - need to deposit into the protocol
+        uint256[] memory slippages = new uint256[](7);
+        slippages[0] = 0;
+        slippages[6] = 1;
+        idleStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
+
+        // - advance block number to gather rewards for reward tokens 0 and 2
+        vm.roll(block.number + 200000); // ~1 month
+        // - mint some reward tokens 1
+        deal(
+            rewardTokens[1],
+            address(idleToken),
+            IERC20Metadata(rewardTokens[1]).balanceOf(address(idleToken))
+                + 1_000 * 10 ** IERC20Metadata(rewardTokens[1]).decimals()
+        );
+
+        // act
+        vm.startPrank(address(0), address(0));
+        (address[] memory rewardAddresses, uint256[] memory rewardAmounts) = idleStrategy.getProtocolRewards();
+        vm.stopPrank();
+
+        // assert
+        assertEq(rewardAddresses, rewardTokens);
+        assertEq(rewardAmounts.length, rewardAddresses.length);
+        assertEq(rewardAmounts, Arrays.toArray(6008767417759680, 84903624193661186, 312239863552643167));
+    }
+
     function test_compound() public {
         // arrange
         address[] memory rewardTokens = idleToken.getGovTokens();

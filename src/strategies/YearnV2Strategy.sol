@@ -35,6 +35,8 @@ error YearnV2RedeemSlippagesFailed();
 contract YearnV2Strategy is Strategy {
     using SafeERC20 for IERC20;
 
+    uint256 constant MAX_BPS = 100_00;
+
     IYearnTokenVault public yTokenVault;
     uint96 public oneShare;
 
@@ -73,7 +75,7 @@ contract YearnV2Strategy is Strategy {
     }
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public pure override {
-        if (amounts[0] < slippages[1] || amounts[1] > slippages[2]) {
+        if (amounts[0] < slippages[1] || amounts[0] > slippages[2]) {
             revert YearnV2BeforeDepositCheckFailed();
         }
     }
@@ -81,7 +83,7 @@ contract YearnV2Strategy is Strategy {
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public pure override {
         if (
             (slippages[0] < 2 && (ssts < slippages[3] || ssts > slippages[4]))
-                || (ssts < slippages[1] || ssts > slippages[2])
+                || (slippages[0] == 2 && (ssts < slippages[1] || ssts > slippages[2]))
         ) {
             revert YearnV2BeforeRedeemalCheckFailed();
         }
@@ -98,11 +100,13 @@ contract YearnV2Strategy is Strategy {
         if (
             !(
                 (slippages[0] == 0 && (mintedYearnTokens >= slippages[5]))
-                    || (slippages[0] == 2 && (mintedYearnTokens >= slippages[3]))
+                    || (slippages[0] == 2 && (mintedYearnTokens >= slippages[3])) || _isViewExecution()
             )
         ) {
             revert YearnV2DepositToProtocolSlippagesFailed();
         }
+
+        emit Slippages(true, mintedYearnTokens, "");
     }
 
     function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
@@ -115,7 +119,7 @@ contract YearnV2Strategy is Strategy {
             slippage = slippages[3];
         } else if (slippages[0] == 3) {
             slippage = slippages[1];
-        } else {
+        } else if (_isViewExecution()) {} else {
             revert YearnV2RedeemSlippagesFailed();
         }
 
@@ -130,7 +134,7 @@ contract YearnV2Strategy is Strategy {
             slippage = slippages[3];
         } else if (slippages[0] == 3) {
             slippage = slippages[1];
-        } else {
+        } else if (_isViewExecution()) {} else {
             revert YearnV2RedeemSlippagesFailed();
         }
 
@@ -169,10 +173,20 @@ contract YearnV2Strategy is Strategy {
     }
 
     function _redeemFromYearn(uint256 yTokens, address recipient, uint256 slippage) private {
-        uint256 redeemedAssets = yTokenVault.withdraw(yTokens, recipient, slippage);
+        // we allow for total loss here, since we check slippage ourselves
+        uint256 redeemedAssets = yTokenVault.withdraw(yTokens, recipient, MAX_BPS);
 
         if (redeemedAssets < slippage) {
             revert YearnV2RedeemSlippagesFailed();
         }
+
+        emit Slippages(false, redeemedAssets, "");
     }
+
+    function _getProtocolRewardsInternal()
+        internal
+        virtual
+        override
+        returns (address[] memory tokens, uint256[] memory amounts)
+    {}
 }

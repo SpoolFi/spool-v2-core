@@ -110,7 +110,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
         // usdWorth[0]: usd worth before deposit / withdrawal
         // usdWorth[1]: usd worth after deposit / withdrawal
-        uint256[] memory usdWorth = new uint256[](2);
+        uint256[2] memory usdWorth;
 
         // Compound and get USD value.
         {
@@ -342,6 +342,10 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         _emergencyWithdrawImpl(slippages, recipient);
     }
 
+    function getProtocolRewards() external onlyViewExecution returns (address[] memory, uint256[] memory) {
+        return _getProtocolRewardsInternal();
+    }
+
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
     function _redeemShares(
@@ -442,6 +446,10 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         }
     }
 
+    function _isViewExecution() internal view returns (bool) {
+        return tx.origin == address(0);
+    }
+
     function _compound(address[] calldata tokens, SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
         internal
         virtual
@@ -486,5 +494,20 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         virtual
         returns (uint256);
 
+    /**
+     * @dev Gets protocol rewards.
+     * @return tokens Addresses of reward tokens.
+     * @return amounts Amount of each reward token.
+     */
+    function _getProtocolRewardsInternal()
+        internal
+        virtual
+        returns (address[] memory tokens, uint256[] memory amounts);
+
     /* ========== MODIFIERS ========== */
+
+    modifier onlyViewExecution() {
+        require(_isViewExecution());
+        _;
+    }
 }

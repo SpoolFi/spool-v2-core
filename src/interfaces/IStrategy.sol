@@ -86,6 +86,8 @@ interface IStrategy is IERC20Upgradeable {
 
     event PlatformFeesCollected(address indexed strategy, uint256 sharesMinted);
 
+    event Slippages(bool isDeposit, uint256 slippage, bytes data);
+
     /* ========== VIEW FUNCTIONS ========== */
 
     /**

@@ -113,4 +113,11 @@ contract AaveV2Strategy is Strategy {
 
         return priceFeedManager.assetToUsdCustomPrice(tokens[0], aTokenBalance, exchangeRates[0]);
     }
+
+    function _getProtocolRewardsInternal()
+        internal
+        virtual
+        override
+        returns (address[] memory tokens, uint256[] memory amounts)
+    {}
 }

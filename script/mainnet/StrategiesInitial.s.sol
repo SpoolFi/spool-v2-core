@@ -56,6 +56,7 @@ contract StrategiesInitial {
 
     // strategy key => asset group id => strategy address
     mapping(string => mapping(uint256 => address)) public strategies;
+    mapping(address => mapping(uint256 => string)) public addressToStrategyKey;
 
     function deployStrategies(
         ISpoolAccessControl accessControl,
@@ -695,6 +696,7 @@ contract StrategiesInitial {
         strategyRegistry.registerStrategy(variant, apy);
 
         strategies[strategyKey][assetGroupId] = variant;
+        addressToStrategyKey[variant][assetGroupId] = strategyKey;
         contractsJson().addVariantStrategyVariant(strategyKey, variantName, variant);
     }
 

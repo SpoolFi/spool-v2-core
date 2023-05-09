@@ -21,6 +21,7 @@ address constant aUSDC = address(0xBcca60bB61934080951369a648Fb03DF4F96263C);
 // Compound V2
 address constant COMPTROLLER = address(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 address constant cUSDC = address(0x39AA39c021dfbaE8faC545936693aC917d5E7563);
+address constant cDAI = address(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643);
 
 // Morpho
 //   Compound V2

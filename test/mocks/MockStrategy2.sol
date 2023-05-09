@@ -112,6 +112,13 @@ contract MockStrategy2 is Strategy {
     }
 
     function test_mock() external pure {}
+
+    function _getProtocolRewardsInternal()
+        internal
+        virtual
+        override
+        returns (address[] memory tokens, uint256[] memory amounts)
+    {}
 }
 
 contract MockProtocol2 {
