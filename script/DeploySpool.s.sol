@@ -24,6 +24,9 @@ import "../src/managers/DepositManager.sol";
 import "../src/managers/WithdrawalManager.sol";
 import "../src/strategies/GhostStrategy.sol";
 import "./helper/JsonHelper.sol";
+import {ExponentialAllocationProvider} from "../src/providers/ExponentialAllocationProvider.sol";
+import {LinearAllocationProvider} from "../src/providers/LinearAllocationProvider.sol";
+import {UniformAllocationProvider} from "../src/providers/UniformAllocationProvider.sol";
 
 contract DeploySpool {
     function constantsJson() internal view virtual returns (JsonReader) {}
@@ -47,6 +50,9 @@ contract DeploySpool {
     DepositManager public depositManager;
     WithdrawalManager public withdrawalManager;
     IStrategy public ghostStrategy;
+    ExponentialAllocationProvider public exponentialAllocationProvider;
+    LinearAllocationProvider public linearAllocationProvider;
+    UniformAllocationProvider public uniformAllocationProvider;
 
     function deploySpool() public {
         TransparentUpgradeableProxy proxy;
@@ -237,6 +243,36 @@ contract DeploySpool {
             spoolAccessControl.grantRole(ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM, address(smartVaultFactory));
 
             contractsJson().add("SmartVaultFactory", address(smartVaultFactory));
+        }
+
+        {
+            ExponentialAllocationProvider implementation = new ExponentialAllocationProvider();
+            proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
+            exponentialAllocationProvider = ExponentialAllocationProvider(address(proxy));
+
+            contractsJson().addProxy("ExponentialAllocationProvider", address(implementation), address(proxy));
+
+            spoolAccessControl.grantRole(ROLE_ALLOCATION_PROVIDER, address(exponentialAllocationProvider));
+        }
+
+        {
+            LinearAllocationProvider implementation = new LinearAllocationProvider();
+            proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
+            linearAllocationProvider = LinearAllocationProvider(address(proxy));
+
+            contractsJson().addProxy("LinearAllocationProvider", address(implementation), address(proxy));
+
+            spoolAccessControl.grantRole(ROLE_ALLOCATION_PROVIDER, address(linearAllocationProvider));
+        }
+
+        {
+            UniformAllocationProvider implementation = new UniformAllocationProvider();
+            proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
+            uniformAllocationProvider = UniformAllocationProvider(address(proxy));
+
+            contractsJson().addProxy("UniformAllocationProvider", address(implementation), address(proxy));
+
+            spoolAccessControl.grantRole(ROLE_ALLOCATION_PROVIDER, address(uniformAllocationProvider));
         }
 
         {

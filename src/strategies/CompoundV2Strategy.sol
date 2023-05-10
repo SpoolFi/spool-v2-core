@@ -96,11 +96,7 @@ contract CompoundV2Strategy is Strategy {
         returns (int256 compoundedYieldPercentage)
     {
         if (swapInfo.length > 0) {
-            address[] memory markets = new address[](1);
-            markets[0] = address(cToken);
-            comptroller.claimComp(address(this), markets);
-
-            uint256 compBalance = comp.balanceOf(address(this));
+            uint256 compBalance = _getCompoundReward();
 
             if (compBalance > 0) {
                 comp.safeTransfer(address(swapper), compBalance);
@@ -205,4 +201,22 @@ contract CompoundV2Strategy is Strategy {
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public view override {}
 
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
+
+    function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {
+        address[] memory tokens = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        tokens[0] = address(comp);
+        amounts[0] = _getCompoundReward();
+
+        return (tokens, amounts);
+    }
+
+    function _getCompoundReward() internal returns (uint256) {
+        address[] memory markets = new address[](1);
+        markets[0] = address(cToken);
+        comptroller.claimComp(address(this), markets);
+
+        return comp.balanceOf(address(this));
+    }
 }

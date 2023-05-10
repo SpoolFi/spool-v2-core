@@ -59,6 +59,60 @@ library Arrays {
         return result;
     }
 
+    function toArray(address x1, address x2, address x3, address x4) public pure returns (address[] memory) {
+        address[] memory result = new address[](4);
+        result[0] = x1;
+        result[1] = x2;
+        result[2] = x3;
+        result[3] = x4;
+        return result;
+    }
+
+    function toArray(address x1, address x2, address x3, address x4, address x5)
+        public
+        pure
+        returns (address[] memory)
+    {
+        address[] memory result = new address[](5);
+        result[0] = x1;
+        result[1] = x2;
+        result[2] = x3;
+        result[3] = x4;
+        result[4] = x5;
+        return result;
+    }
+
+    function toArray(address x1, address x2, address x3, address x4, address x5, address x6)
+        public
+        pure
+        returns (address[] memory)
+    {
+        address[] memory result = new address[](6);
+        result[0] = x1;
+        result[1] = x2;
+        result[2] = x3;
+        result[3] = x4;
+        result[4] = x5;
+        result[5] = x6;
+        return result;
+    }
+
+    function toArray(address x1, address x2, address x3, address x4, address x5, address x6, address x7)
+        public
+        pure
+        returns (address[] memory)
+    {
+        address[] memory result = new address[](7);
+        result[0] = x1;
+        result[1] = x2;
+        result[2] = x3;
+        result[3] = x4;
+        result[4] = x5;
+        result[5] = x6;
+        result[6] = x7;
+        return result;
+    }
+
     function toArray(bool x1) public pure returns (bool[] memory) {
         bool[] memory result = new bool[](1);
         result[0] = x1;

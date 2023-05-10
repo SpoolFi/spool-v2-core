@@ -236,14 +236,7 @@ contract ConvexAlusdStrategy is
             return compoundYield;
         }
 
-        address[] memory rewardTokens = _getRewards();
-
-        for (uint256 i; i < rewardTokens.length; ++i) {
-            uint256 balance = IERC20(rewardTokens[i]).balanceOf(address(this));
-            if (balance > 0) {
-                IERC20(rewardTokens[i]).safeTransfer(address(swapper), balance);
-            }
-        }
+        (address[] memory rewardTokens,) = _getProtocolRewardsInternal();
 
         uint256[] memory swapped = swapper.swap(rewardTokens, compoundSwapInfo, tokens, address(this));
 
@@ -353,5 +346,21 @@ contract ConvexAlusdStrategy is
         }
 
         return tokenWorth;
+    }
+
+    function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {
+        address[] memory rewardTokens = _getRewards();
+        uint256[] memory balances = new uint256[](rewardTokens.length);
+
+        for (uint256 i; i < rewardTokens.length; ++i) {
+            uint256 balance = IERC20(rewardTokens[i]).balanceOf(address(this));
+            if (balance > 0) {
+                IERC20(rewardTokens[i]).safeTransfer(address(swapper), balance);
+
+                balances[i] = balance;
+            }
+        }
+
+        return (rewardTokens, balances);
     }
 }

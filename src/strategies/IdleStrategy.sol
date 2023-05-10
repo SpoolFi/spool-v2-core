@@ -78,7 +78,7 @@ contract IdleStrategy is Strategy {
     }
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public pure override {
-        if (amounts[0] < slippages[1] || amounts[1] > slippages[2]) {
+        if (amounts[0] < slippages[1] || amounts[0] > slippages[2]) {
             revert IdleBeforeDepositCheckFailed();
         }
     }
@@ -86,7 +86,7 @@ contract IdleStrategy is Strategy {
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public pure override {
         if (
             (slippages[0] < 2 && (ssts < slippages[3] || ssts > slippages[4]))
-                || (ssts < slippages[1] || ssts > slippages[2])
+                || (slippages[0] == 2 && (ssts < slippages[1] || ssts > slippages[2]))
         ) {
             revert IdleBeforeRedeemalCheckFailed();
         }
@@ -118,7 +118,7 @@ contract IdleStrategy is Strategy {
             slippage = slippages[2];
         } else if (slippages[0] == 3) {
             slippage = slippages[1];
-        } else {
+        } else if (_isViewExecution()) {} else {
             revert IdleRedeemSlippagesFailed();
         }
 
@@ -142,16 +142,7 @@ contract IdleStrategy is Strategy {
             return compoundYield;
         }
 
-        address[] memory govTokens = idleToken.getGovTokens();
-        idleToken.redeemIdleToken(0);
-
-        for (uint256 i; i < govTokens.length; ++i) {
-            uint256 balance = IERC20(govTokens[i]).balanceOf(address(this));
-
-            if (balance > 0) {
-                IERC20(govTokens[i]).safeTransfer(address(swapper), balance);
-            }
-        }
+        (address[] memory govTokens,) = _getProtocolRewardsInternal();
 
         uint256 swappedAmount = swapper.swap(govTokens, compoundSwapInfo, tokens, address(this))[0];
 
@@ -200,6 +191,8 @@ contract IdleStrategy is Strategy {
             revert IdleDepositSlippagesFailed();
         }
 
+        emit Slippages(true, mintedIdleTokens, "");
+
         return mintedIdleTokens;
     }
 
@@ -210,6 +203,27 @@ contract IdleStrategy is Strategy {
             revert IdleRedeemSlippagesFailed();
         }
 
+        emit Slippages(false, redeemedAssets, "");
+
         return redeemedAssets;
+    }
+
+    function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {
+        address[] memory govTokens = idleToken.getGovTokens();
+        uint256[] memory balances = new uint256[](govTokens.length);
+
+        idleToken.redeemIdleToken(0);
+
+        for (uint256 i; i < govTokens.length; ++i) {
+            uint256 balance = IERC20(govTokens[i]).balanceOf(address(this));
+
+            if (balance > 0) {
+                IERC20(govTokens[i]).safeTransfer(address(swapper), balance);
+            }
+
+            balances[i] = balance;
+        }
+
+        return (govTokens, balances);
     }
 }

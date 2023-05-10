@@ -154,6 +154,14 @@ interface IStrategyRegistry {
     function depositedAssets(address strategy, uint256 dhwIndex) external view returns (uint256[] memory assets);
 
     /**
+     * @notice Returns shares redeemed in a do-hard-work index for a strategy.
+     * @param strategy Strategy.
+     * @param dhwIndex Do-hard-work index.
+     * @return shares Shares redeemed in a do-hard-work index for the strategy.
+     */
+    function sharesRedeemed(address strategy, uint256 dhwIndex) external view returns (uint256 shares);
+
+    /**
      * @notice Gets timestamps when do-hard-works were performed.
      * @param strategies Strategies.
      * @param dhwIndexes Do-hard-work indexes.

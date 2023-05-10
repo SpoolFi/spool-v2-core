@@ -73,4 +73,13 @@ contract __BaseStrategy__ is Strategy {
     {
         // TODO
     }
+
+    function _getProtocolRewardsInternal()
+        internal
+        virtual
+        override
+        returns (address[] memory tokens, uint256[] memory amounts)
+    {
+        // TODO
+    }
 }

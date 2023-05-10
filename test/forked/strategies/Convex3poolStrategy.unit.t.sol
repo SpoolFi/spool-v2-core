@@ -244,6 +244,59 @@ contract Convex3poolStrategyTest is TestFixture, ForkTestFixture {
         assertEq(usdtBalanceOfEmergencyWithdrawalRecipient, usdtBalanceOfCurvePoolBefore - usdtBalanceOfCurvePoolAfter);
     }
 
+    function test_getProtocolRewards() public {
+        // arrange
+        address crvRewardToken = crvRewards.rewardToken();
+        address cvxRewardToken = booster.minter();
+
+        MockExchange crvExchange = new MockExchange(IERC20(crvRewardToken), tokenUsdt, priceFeedManager);
+        deal(crvRewardToken, address(crvExchange), 1_000_000 * 10 ** IERC20Metadata(crvRewardToken).decimals(), true);
+        deal(address(tokenUsdt), address(crvExchange), 1_000_000 * tokenUsdtMultiplier, true);
+        MockExchange cvxExchange = new MockExchange(IERC20(cvxRewardToken), tokenUsdt, priceFeedManager);
+        deal(cvxRewardToken, address(cvxExchange), 1_000_000 * 10 ** IERC20Metadata(cvxRewardToken).decimals(), true);
+        deal(address(tokenUsdt), address(cvxExchange), 1_000_000 * tokenUsdtMultiplier, true);
+
+        uint256 toDepositDai = 1000 * tokenDaiMultiplier;
+        uint256 toDepositUsdc = 1000 * tokenUsdcMultiplier;
+        uint256 toDepositUsdt = 1000 * tokenUsdtMultiplier;
+        deal(address(tokenDai), address(convexStrategy), toDepositDai, true);
+        deal(address(tokenUsdc), address(convexStrategy), toDepositUsdc, true);
+        deal(address(tokenUsdt), address(convexStrategy), toDepositUsdt, true);
+
+        // - need to deposit into the protocol
+        uint256[] memory slippages = new uint256[](11);
+        slippages[0] = 0;
+        slippages[10] = 1;
+        convexStrategy.exposed_depositToProtocol(
+            assetGroup, Arrays.toArray(toDepositDai, toDepositUsdc, toDepositUsdt), slippages
+        );
+        // - normal deposit into protocol would mint SSTs
+        //   which are needed when determining how much to redeem
+        convexStrategy.exposed_mint(100);
+
+        // - add new rewards
+        vm.startPrank(crvRewards.operator());
+        uint256 rewardsToAdd = 1_000_000 * 10 ** IERC20Metadata(crvRewards.rewardToken()).decimals();
+        crvRewards.queueNewRewards(rewardsToAdd);
+        vm.stopPrank();
+
+        // - yield is gathered over time
+        skip(3600 * 24 * 30); // ~ 1 month
+
+        // act
+        vm.startPrank(address(0), address(0));
+        (address[] memory rewardAddresses, uint256[] memory rewardAmounts) = convexStrategy.getProtocolRewards();
+        vm.stopPrank();
+
+        // assert
+        assertEq(rewardAddresses.length, 2);
+        assertEq(rewardAddresses[0], address(crvRewardToken));
+        assertEq(rewardAddresses[1], address(cvxRewardToken));
+        assertEq(rewardAmounts.length, rewardAddresses.length);
+        assertEq(rewardAmounts[0], 102524279220335671371);
+        assertEq(rewardAmounts[1], 1640388467525370741);
+    }
+
     function test_compound() public {
         // arrange
         address crvRewardToken = crvRewards.rewardToken();

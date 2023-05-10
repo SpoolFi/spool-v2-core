@@ -74,11 +74,7 @@ abstract contract MorphoStrategyBase is StrategyManualYieldVerifier, Strategy {
         returns (int256 compoundedYieldPercentage)
     {
         if (swapInfo.length > 0) {
-            address[] memory cTokens = new address[](1);
-            cTokens[0] = poolTokenAddress;
-            morpho.claimRewards(cTokens, false);
-
-            uint256 compBalance = poolRewardToken.balanceOf(address(this));
+            uint256 compBalance = _getMorphoReward();
 
             if (compBalance > 0) {
                 poolRewardToken.safeTransfer(address(swapper), compBalance);
@@ -154,4 +150,22 @@ abstract contract MorphoStrategyBase is StrategyManualYieldVerifier, Strategy {
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
 
     function _getTotalBalance() internal view virtual returns (uint256);
+
+    function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {
+        address[] memory tokens = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        tokens[0] = address(poolRewardToken);
+        amounts[0] = _getMorphoReward();
+
+        return (tokens, amounts);
+    }
+
+    function _getMorphoReward() internal returns (uint256) {
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = poolTokenAddress;
+        morpho.claimRewards(cTokens, false);
+
+        return poolRewardToken.balanceOf(address(this));
+    }
 }
