@@ -62,6 +62,8 @@ contract Curve3poolStrategy is Curve3CoinPoolBase {
         _resetAndApprove(lpToken, address(gauge), lpTokens);
 
         gauge.deposit(lpTokens);
+
+        emit Slippages(true, lpTokens, "");
     }
 
     function _handleWithdrawal(uint256 lpTokens) internal override {

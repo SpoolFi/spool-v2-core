@@ -61,10 +61,18 @@ contract E2E is ForkTestFixtureDeployment {
             address compoundV2Strategy = _getStrategyAddress(COMPOUND_V2_KEY, assetGroupId);
             address idleBysStrategy = _getStrategyAddress(IDLE_BEST_YIELD_SENIOR_KEY, assetGroupId);
             address morphoAaveV2Strategy = _getStrategyAddress(MORPHO_AAVE_V2_KEY, assetGroupId);
+            address morphoCompoundV2Strategy = _getStrategyAddress(MORPHO_COMPOUND_V2_KEY, assetGroupId);
+            address notionalStrategy = _getStrategyAddress(NOTIONAL_FINANCE_KEY, assetGroupId);
             address yearnV2Strategy = _getStrategyAddress(YEARN_V2_KEY, assetGroupId);
 
             strategies = Arrays.toArray(
-                aaveV2Strategy, compoundV2Strategy, idleBysStrategy, morphoAaveV2Strategy, yearnV2Strategy
+                aaveV2Strategy,
+                compoundV2Strategy,
+                idleBysStrategy,
+                morphoAaveV2Strategy,
+                morphoCompoundV2Strategy,
+                notionalStrategy,
+                yearnV2Strategy
             );
         }
 
@@ -116,7 +124,7 @@ contract E2E is ForkTestFixtureDeployment {
 
         // ASSERT
         uint256[] memory balancesAfter = _getBalances(users, asset);
-        _batchBalanceDiffRel(balancesBefore, balancesAfter, depositAmounts, 1e10);
+        _batchBalanceDiffRel(balancesBefore, balancesAfter, depositAmounts, 1e14);
     }
 
     function test_depositAndWithdraw_usdc() public {
@@ -129,10 +137,18 @@ contract E2E is ForkTestFixtureDeployment {
             address compoundV2Strategy = _getStrategyAddress(COMPOUND_V2_KEY, assetGroupId);
             address idleBysStrategy = _getStrategyAddress(IDLE_BEST_YIELD_SENIOR_KEY, assetGroupId);
             address morphoAaveV2Strategy = _getStrategyAddress(MORPHO_AAVE_V2_KEY, assetGroupId);
+            address morphoCompoundV2Strategy = _getStrategyAddress(MORPHO_COMPOUND_V2_KEY, assetGroupId);
+            address notionalStrategy = _getStrategyAddress(NOTIONAL_FINANCE_KEY, assetGroupId);
             address yearnV2Strategy = _getStrategyAddress(YEARN_V2_KEY, assetGroupId);
 
             strategies = Arrays.toArray(
-                aaveV2Strategy, compoundV2Strategy, idleBysStrategy, morphoAaveV2Strategy, yearnV2Strategy
+                aaveV2Strategy,
+                compoundV2Strategy,
+                idleBysStrategy,
+                morphoAaveV2Strategy,
+                morphoCompoundV2Strategy,
+                notionalStrategy,
+                yearnV2Strategy
             );
         }
 
@@ -184,7 +200,7 @@ contract E2E is ForkTestFixtureDeployment {
 
         // ASSERT
         uint256[] memory balancesAfter = _getBalances(users, asset);
-        _batchBalanceDiffAbs(balancesBefore, balancesAfter, depositAmounts, 100);
+        _batchBalanceDiffRel(balancesBefore, balancesAfter, depositAmounts, 1e14);
     }
 
     function test_depositAndWithdraw_usdt() public {
@@ -197,10 +213,16 @@ contract E2E is ForkTestFixtureDeployment {
             address compoundV2Strategy = _getStrategyAddress(COMPOUND_V2_KEY, assetGroupId);
             address idleBysStrategy = _getStrategyAddress(IDLE_BEST_YIELD_SENIOR_KEY, assetGroupId);
             address morphoAaveV2Strategy = _getStrategyAddress(MORPHO_AAVE_V2_KEY, assetGroupId);
+            address morphoCompoundV2Strategy = _getStrategyAddress(MORPHO_COMPOUND_V2_KEY, assetGroupId);
             address yearnV2Strategy = _getStrategyAddress(YEARN_V2_KEY, assetGroupId);
 
             strategies = Arrays.toArray(
-                aaveV2Strategy, compoundV2Strategy, idleBysStrategy, morphoAaveV2Strategy, yearnV2Strategy
+                aaveV2Strategy,
+                compoundV2Strategy,
+                idleBysStrategy,
+                morphoAaveV2Strategy,
+                morphoCompoundV2Strategy,
+                yearnV2Strategy
             );
         }
 
@@ -252,6 +274,134 @@ contract E2E is ForkTestFixtureDeployment {
 
         // ASSERT
         uint256[] memory balancesAfter = _getBalances(users, asset);
-        _batchBalanceDiffAbs(balancesBefore, balancesAfter, depositAmounts, 100);
+        _batchBalanceDiffRel(balancesBefore, balancesAfter, depositAmounts, 1e14);
+    }
+
+    function test_depositAndWithdraw_weth() public {
+        uint256 assetGroupId = _getAssetGroupId(WETH_KEY);
+        IERC20 asset = weth;
+
+        address[] memory strategies;
+        {
+            address rEthHoldingStrategy = _getStrategyAddress(RETH_HOLDING_KEY, assetGroupId);
+            address sfrxEthHoldingStrategy = _getStrategyAddress(SFRXETH_HOLDING_KEY, assetGroupId);
+            address stEthHoldingStrategy = _getStrategyAddress(STETH_HOLDING_KEY, assetGroupId);
+
+            strategies = Arrays.toArray(rEthHoldingStrategy, sfrxEthHoldingStrategy, stEthHoldingStrategy);
+        }
+
+        _setRandomRiskScores(strategies);
+
+        ISmartVault vault = _createVault(
+            0, 0, assetGroupId, strategies, uint16a16.wrap(0), address(_deploySpool.uniformAllocationProvider())
+        );
+
+        address[] memory users;
+        address carol;
+        {
+            address alice = address(0xa);
+            address bob = address(0xb);
+            carol = address(0xc);
+
+            users = Arrays.toArray(alice, bob, carol);
+            _verifyUniqueAddresses(users);
+        }
+
+        _dealTokens(users);
+
+        // DEPOSIT
+        uint256[] memory depositAmounts = Arrays.toArray(1e19, 2e19, 3e19);
+        uint256[] memory depositIds = _deposit(vault, users, depositAmounts);
+        _flushVaults(vault);
+
+        // DHW
+        _dhw(strategies);
+
+        // advance block number between deposit and withdrawal
+        vm.roll(block.number + 1);
+
+        // WITHDRAWAL
+        address[] memory withdrawalUsers = Arrays.toArray(users[0], users[1]);
+        uint256[] memory withdrawalIds =
+            _redeemNfts(vault, withdrawalUsers, Arrays.toArray(depositIds[0], depositIds[1]));
+        _flushVaults(vault);
+
+        // DHW
+        _dhw(strategies);
+
+        // CLAIM
+        uint256[] memory balancesBefore = _getBalances(users, asset);
+        _claimWithdrawals(vault, withdrawalUsers, withdrawalIds);
+
+        // REDEEM FAST
+        _redeemFast(vault, carol, depositIds[2]);
+
+        // ASSERT
+        uint256[] memory balancesAfter = _getBalances(users, asset);
+        _batchBalanceDiffRel(balancesBefore, balancesAfter, depositAmounts, 1e15);
+    }
+
+    function test_depositAndWithdraw_multi_daiUsdcUsdt() public {
+        uint256 assetGroupId = _getAssetGroupId(DAI_USDC_USDT_KEY);
+        address[] memory assets = _deploySpool.assetGroupRegistry().listAssetGroup(assetGroupId);
+
+        address[] memory strategies;
+        {
+            address convex3poolStrategy = _getStrategyAddress(CONVEX_3POOL_KEY, assetGroupId);
+            address convexAlusdStrategy = _getStrategyAddress(CONVEX_ALUSD_KEY, assetGroupId);
+            address curve3poolStrategy = _getStrategyAddress(CURVE_3POOL_KEY, assetGroupId);
+
+            strategies = Arrays.toArray(convex3poolStrategy, convexAlusdStrategy, curve3poolStrategy);
+        }
+
+        _setRandomRiskScores(strategies);
+
+        ISmartVault vault = _createVault(
+            0, 0, assetGroupId, strategies, uint16a16.wrap(0), address(_deploySpool.uniformAllocationProvider())
+        );
+
+        address[] memory users;
+        address carol;
+        {
+            address alice = address(0xa);
+            address bob = address(0xb);
+            carol = address(0xc);
+
+            users = Arrays.toArray(alice, bob, carol);
+            _verifyUniqueAddresses(users);
+        }
+
+        _dealTokens(users);
+
+        // DEPOSIT
+        (uint256[] memory depositIds, uint256[][] memory depositAmounts) =
+            _depositInRatio(vault, users, Arrays.toArray(1e21, 2e21, 3e21));
+        _flushVaults(vault);
+
+        // DHW
+        _dhw(strategies);
+
+        // advance block number between deposit and withdrawal
+        vm.roll(block.number + 1);
+
+        // WITHDRAWAL
+        address[] memory withdrawalUsers = Arrays.toArray(users[0], users[1]);
+        uint256[] memory withdrawalIds =
+            _redeemNfts(vault, withdrawalUsers, Arrays.toArray(depositIds[0], depositIds[1]));
+        _flushVaults(vault);
+
+        // DHW
+        _dhw(strategies);
+
+        // CLAIM
+        uint256[][] memory balancesBefore = _getBalances(users, assets);
+        _claimWithdrawals(vault, withdrawalUsers, withdrawalIds);
+
+        // REDEEM FAST
+        _redeemFast(vault, carol, depositIds[2]);
+
+        // ASSERT
+        uint256[][] memory balancesAfter = _getBalances(users, assets);
+        _batchBalanceDiffRel(balancesBefore, balancesAfter, depositAmounts, 2e14);
     }
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
+import "forge-std/console.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../external/interfaces/strategies/rEth/IREthToken.sol";
@@ -95,7 +96,7 @@ contract REthHoldingStrategy is Strategy, WethHelper {
     }
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public pure override {
-        if (amounts[0] < slippages[1] || amounts[1] > slippages[2]) {
+        if (amounts[0] < slippages[1] || amounts[0] > slippages[2]) {
             revert REthHoldingBeforeDepositCheckFailed();
         }
     }
@@ -103,7 +104,7 @@ contract REthHoldingStrategy is Strategy, WethHelper {
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public pure override {
         if (
             (slippages[0] < 2 && (ssts < slippages[3] || ssts > slippages[4]))
-                || (ssts < slippages[1] || ssts > slippages[2])
+                || (slippages[0] == 2 && (ssts < slippages[1] || ssts > slippages[2]))
         ) {
             revert REthHoldingBeforeRedeemalCheckFailed();
         }
@@ -122,14 +123,7 @@ contract REthHoldingStrategy is Strategy, WethHelper {
             revert REthHoldingDepositSlippagesFailed();
         }
 
-        unwrapEth(amounts[0]);
-
-        rocketSwapRouter.swapTo{value: amounts[0]}(
-            slippages[startingSlippage],
-            slippages[startingSlippage + 1],
-            slippages[startingSlippage + 2],
-            slippages[startingSlippage + 3]
-        );
+        _depositInternal(amounts[0], slippages, startingSlippage);
     }
 
     function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
@@ -142,6 +136,8 @@ contract REthHoldingStrategy is Strategy, WethHelper {
             startingSlippage = 3;
         } else if (slippages[0] == 3) {
             startingSlippage = 1;
+        } else if (slippages[0] == 0 && _isViewExecution()) {
+            startingSlippage = 5;
         } else {
             revert REthHoldingRedeemSlippagesFailed();
         }
@@ -190,10 +186,52 @@ contract REthHoldingStrategy is Strategy, WethHelper {
         return priceFeedManager.assetToUsdCustomPrice(weth, assets, exchangeRates[0]);
     }
 
+    function _depositInternal(uint256 amount, uint256[] memory slippages, uint256 startingSlippage)
+        private
+        returns (uint256 bought)
+    {
+        if (_isViewExecution()) {
+            // optimize first
+            (uint256[2] memory portions, uint256 amountOut) = rocketSwapRouter.optimiseSwapTo(amount, 10);
+
+            slippages[startingSlippage] = portions[0];
+            slippages[startingSlippage + 1] = portions[1];
+            slippages[startingSlippage + 2] = amountOut;
+            slippages[startingSlippage + 3] = amountOut;
+
+            emit Slippages(true, 0, abi.encode(portions, amountOut));
+        }
+
+        unwrapEth(amount);
+
+        bought = rEthToken.balanceOf(address(this));
+
+        rocketSwapRouter.swapTo{value: amount}(
+            slippages[startingSlippage],
+            slippages[startingSlippage + 1],
+            slippages[startingSlippage + 2],
+            slippages[startingSlippage + 3]
+        );
+
+        bought = rEthToken.balanceOf(address(this)) - bought;
+    }
+
     function _redeemInternal(uint256 amount, uint256[] memory slippages, uint256 startingSlippage)
         private
         returns (uint256 bought)
     {
+        if (_isViewExecution()) {
+            // optimize first
+            (uint256[2] memory portions, uint256 amountOut) = rocketSwapRouter.optimiseSwapFrom(amount, 10);
+
+            slippages[startingSlippage] = portions[0];
+            slippages[startingSlippage + 1] = portions[1];
+            slippages[startingSlippage + 2] = amountOut;
+            slippages[startingSlippage + 3] = amountOut;
+
+            emit Slippages(false, 0, abi.encode(portions, amountOut));
+        }
+
         _resetAndApprove(IERC20(address(rEthToken)), address(rocketSwapRouter), amount);
         rocketSwapRouter.swapFrom(
             slippages[startingSlippage],
@@ -206,6 +244,8 @@ contract REthHoldingStrategy is Strategy, WethHelper {
         bought = address(this).balance;
         wrapEth(bought);
     }
+
+    function _redeemOptimize(uint256 amount) private {}
 
     function _getSharePrice() private view returns (uint256) {
         return rEthToken.getEthValue(1 ether);

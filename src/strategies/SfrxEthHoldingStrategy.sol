@@ -113,7 +113,7 @@ contract SfrxEthHoldingStrategy is Strategy, WethHelper {
     }
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public pure override {
-        if (amounts[0] < slippages[1] || amounts[1] > slippages[2]) {
+        if (amounts[0] < slippages[1] || amounts[0] > slippages[2]) {
             revert SfrxEthHoldingBeforeDepositCheckFailed();
         }
     }
@@ -121,7 +121,7 @@ contract SfrxEthHoldingStrategy is Strategy, WethHelper {
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public pure override {
         if (
             (slippages[0] < 2 && (ssts < slippages[3] || ssts > slippages[4]))
-                || (ssts < slippages[1] || ssts > slippages[2])
+                || (slippages[0] == 2 && (ssts < slippages[1] || ssts > slippages[2]))
         ) {
             revert SfrxEthHoldingBeforeRedeemalCheckFailed();
         }
@@ -157,7 +157,7 @@ contract SfrxEthHoldingStrategy is Strategy, WethHelper {
             slippage = slippages[3];
         } else if (slippages[0] == 3) {
             slippage = slippages[1];
-        } else {
+        } else if (_isViewExecution()) {} else {
             revert SfrxEthHoldingRedeemSlippagesFailed();
         }
 
@@ -216,6 +216,8 @@ contract SfrxEthHoldingStrategy is Strategy, WethHelper {
 
         _resetAndApprove(frxEthToken, address(sfrxEthToken), bought);
         sfrxEthToken.deposit(bought, address(this));
+
+        emit Slippages(true, bought, "");
     }
 
     function _sellOnCurve(uint256 amount, uint256 slippage) private returns (uint256 bought) {
@@ -225,6 +227,8 @@ contract SfrxEthHoldingStrategy is Strategy, WethHelper {
         bought = curve.exchange(CURVE_ETH_POOL_SFRXETH_INDEX, CURVE_ETH_POOL_ETH_INDEX, withdrawn, slippage);
 
         wrapEth(bought);
+
+        emit Slippages(false, bought, "");
     }
 
     function _getSharePrice() private view returns (uint256) {

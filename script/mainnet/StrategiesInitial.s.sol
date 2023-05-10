@@ -56,7 +56,8 @@ contract StrategiesInitial {
 
     // strategy key => asset group id => strategy address
     mapping(string => mapping(uint256 => address)) public strategies;
-    mapping(address => mapping(uint256 => string)) public addressToStrategyKey;
+    // strategy address => strategy key
+    mapping(address => string) public addressToStrategyKey;
 
     function deployStrategies(
         ISpoolAccessControl accessControl,
@@ -680,6 +681,7 @@ contract StrategiesInitial {
         strategyRegistry.registerStrategy(proxy, apy);
 
         strategies[strategyKey][assetGroupId] = proxy;
+        addressToStrategyKey[proxy] = strategyKey;
         contractsJson().addProxyStrategy(strategyKey, implementation, proxy);
     }
 
@@ -696,7 +698,7 @@ contract StrategiesInitial {
         strategyRegistry.registerStrategy(variant, apy);
 
         strategies[strategyKey][assetGroupId] = variant;
-        addressToStrategyKey[variant][assetGroupId] = strategyKey;
+        addressToStrategyKey[variant] = strategyKey;
         contractsJson().addVariantStrategyVariant(strategyKey, variantName, variant);
     }
 

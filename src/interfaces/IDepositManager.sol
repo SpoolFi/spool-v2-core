@@ -232,4 +232,16 @@ interface IDepositManager {
         address executor,
         uint256 flushIndexToSync
     ) external returns (uint256 claimedTokens);
+
+    /**
+     * @notice Gets current required deposit ratio of a smart vault.
+     * @param tokens Asset tokens of the smart vault.
+     * @param allocations Allocation between strategies of the smart vault.
+     * @param strategies Strategies of the smart vault.
+     * @return ratio Required deposit ratio of the smart vault.
+     */
+    function getDepositRatio(address[] memory tokens, uint16a16 allocations, address[] memory strategies)
+        external
+        view
+        returns (uint256[] memory ratio);
 }

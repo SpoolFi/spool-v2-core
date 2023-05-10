@@ -175,6 +175,14 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return _smartVaultAssetGroups[smartVault];
     }
 
+    function depositRatio(address smartVault) external view returns (uint256[] memory) {
+        return _depositManager.getDepositRatio(
+            _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]),
+            _smartVaultAllocations[smartVault],
+            _smartVaultStrategies[smartVault]
+        );
+    }
+
     /**
      * @notice SmartVault latest flush index
      */

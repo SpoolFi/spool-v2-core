@@ -119,6 +119,8 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
             slippageOffset = 3;
         } else if (slippages[0] == 3) {
             slippageOffset = 1;
+        } else if (slippages[0] == 0 && _isViewExecution()) {
+            slippageOffset = 10;
         } else {
             revert CurveRedeemSlippagesFailed();
         }
@@ -193,6 +195,14 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
         }
 
         pool.remove_liquidity(lpTokens, minOuts);
+
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
+        uint256[] memory bought = new uint256[](tokens.length);
+        for (uint256 i; i < tokens.length; ++i) {
+            bought[i] = IERC20(tokens[i]).balanceOf(address(this));
+        }
+
+        emit Slippages(false, 0, abi.encode(bought));
     }
 
     function _ncoins() internal pure override returns (uint256) {

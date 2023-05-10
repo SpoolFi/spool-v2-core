@@ -537,6 +537,18 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         }
     }
 
+    function getDepositRatio(address[] memory tokens, uint16a16 allocations, address[] memory strategies)
+        external
+        view
+        returns (uint256[] memory ratio)
+    {
+        return calculateDepositRatio(
+            SpoolUtils.getExchangeRates(tokens, _priceFeedManager),
+            allocations,
+            SpoolUtils.getStrategyRatiosAtLastDhw(strategies, _strategyRegistry)
+        );
+    }
+
     /**
      * @notice Calculates ideal deposit ratio for a smart vault.
      * @param exchangeRates Asset -> USD exchange rates.
