@@ -80,6 +80,9 @@ contract SwapperTest is Test {
     }
 
     function test_updateExchangesAllowlist_shouldEmitExchangeAllowlistUpdatedEvent() public {
+        address[] memory exchanges = Arrays.toArray(address(0x1), address(0x2));
+        bool[] memory allowed = Arrays.toArray(false, true);
+
         vm.expectEmit(true, true, true, true, address(swapper));
         emit ExchangeAllowlistUpdated(address(0x1), false);
 
@@ -87,7 +90,7 @@ contract SwapperTest is Test {
         emit ExchangeAllowlistUpdated(address(0x2), true);
 
         vm.startPrank(swapperAdmin);
-        swapper.updateExchangeAllowlist(Arrays.toArray(address(0x1), address(0x2)), Arrays.toArray(false, true));
+        swapper.updateExchangeAllowlist(exchanges, allowed);
         vm.stopPrank();
     }
 

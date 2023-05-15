@@ -251,10 +251,12 @@ contract SmartVaultFactoryTest is Test {
     }
 
     function test_deploySmartVault_shouldEmitSmartVaultDeployed() public {
+        SmartVaultSpecification memory specification = _getSpecification();
+
         vm.expectEmit(false, false, false, false);
         emit SmartVaultDeployed(address(0x0), address(0x0));
 
-        factory.deploySmartVault(_getSpecification());
+        factory.deploySmartVault(specification);
     }
 
     /* ========== deploySmartVaultDeterministically ========== */
@@ -351,10 +353,12 @@ contract SmartVaultFactoryTest is Test {
     }
 
     function test_deploySmartVaultDeterministically_shouldEmitSmartVaultDeployed() public {
+        SmartVaultSpecification memory specification = _getSpecification();
+
         vm.expectEmit(false, false, false, false);
         emit SmartVaultDeployed(address(0x0), address(0x0));
 
-        factory.deploySmartVaultDeterministically(_getSpecification(), bytes32(uint256(123)));
+        factory.deploySmartVaultDeterministically(specification, bytes32(uint256(123)));
     }
 
     /* ========== predictDeterministicAddress ========== */
