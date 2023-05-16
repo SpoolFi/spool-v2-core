@@ -167,7 +167,8 @@ contract ReallocationIntegrationTest is Test {
             strategySlippages: strategySlippages,
             tokens: assetGroup,
             exchangeRateSlippages: exchangeRateSlippages,
-            baseYields: baseYields
+            baseYields: baseYields,
+            validUntil: type(uint256).max
         });
     }
 
