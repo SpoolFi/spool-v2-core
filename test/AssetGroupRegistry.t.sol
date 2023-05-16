@@ -58,11 +58,13 @@ contract AssetGroupRegistryTest is Test {
 
     function test_constructor_shouldEmitTokenAllowedEvents() public {
         AssetGroupRegistry registry = new AssetGroupRegistry(accessControl);
+        address[] memory tokens = Arrays.toArray(address(tokenA), address(tokenB));
+
         vm.expectEmit(true, true, true, true);
         emit TokenAllowed(address(tokenA));
         vm.expectEmit(true, true, true, true);
         emit TokenAllowed(address(tokenB));
-        registry.initialize(Arrays.toArray(address(tokenA), address(tokenB)));
+        registry.initialize(tokens);
     }
 
     function test_allowToken_shouldAllowToken() public {
