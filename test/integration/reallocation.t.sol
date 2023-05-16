@@ -24,6 +24,7 @@ import "../mocks/MockExchange.sol";
 import "../mocks/MockPriceFeedManager.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
+import "../libraries/TimeUtils.sol";
 
 contract ReallocationIntegrationTest is Test {
     address private alice;
@@ -168,7 +169,7 @@ contract ReallocationIntegrationTest is Test {
             tokens: assetGroup,
             exchangeRateSlippages: exchangeRateSlippages,
             baseYields: baseYields,
-            validUntil: type(uint256).max
+            validUntil: TimeUtils.getTimestampInInfiniteFuture()
         });
     }
 

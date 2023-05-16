@@ -23,6 +23,7 @@ import "../../src/managers/WithdrawalManager.sol";
 import "../../src/managers/DepositManager.sol";
 import "../../src/rewards/RewardManager.sol";
 import "../../src/strategies/GhostStrategy.sol";
+import "../libraries/TimeUtils.sol";
 
 contract WithdrawalIntegrationTest is Test {
     address private alice;
@@ -209,7 +210,7 @@ contract WithdrawalIntegrationTest is Test {
             tokens: assetGroup,
             exchangeRateSlippages: exchangeRateSlippages,
             baseYields: baseYields,
-            validUntil: type(uint256).max
+            validUntil: TimeUtils.getTimestampInInfiniteFuture()
         });
     }
 

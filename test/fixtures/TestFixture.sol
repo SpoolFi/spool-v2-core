@@ -20,6 +20,7 @@ import "../../src/strategies/GhostStrategy.sol";
 import "../../src/MasterWallet.sol";
 import "../../src/SmartVaultFactory.sol";
 import "../../src/Swapper.sol";
+import "../libraries/TimeUtils.sol";
 
 contract TestFixture is Test {
     using uint16a16Lib for uint16a16;
@@ -155,7 +156,7 @@ contract TestFixture is Test {
             tokens: assetGroup,
             exchangeRateSlippages: exchangeRateSlippages,
             baseYields: baseYields,
-            validUntil: type(uint256).max
+            validUntil: TimeUtils.getTimestampInInfiniteFuture()
         });
     }
 }
