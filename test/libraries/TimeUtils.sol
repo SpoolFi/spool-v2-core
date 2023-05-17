@@ -2,11 +2,6 @@
 pragma solidity 0.8.17;
 
 library TimeUtils {
-    function getTimestampInFuture(
-        uint secondsAfterNow
-    ) internal view returns (uint256) {
-        return block.timestamp + secondsAfterNow;
-    }
 
     function getTimestampInPast(
         uint secondsBeforeNow
