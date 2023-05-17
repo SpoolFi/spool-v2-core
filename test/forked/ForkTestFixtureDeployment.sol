@@ -483,7 +483,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
             tokens: tokens,
             exchangeRateSlippages: exchangeRateSlippages,
             baseYields: baseYields,
-            validUntil : TimeUtils.getTimestampInInfiniteFuture()
+            validUntil: TimeUtils.getTimestampInInfiniteFuture()
         });
     }
 
