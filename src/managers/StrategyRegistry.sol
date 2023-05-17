@@ -20,6 +20,11 @@ import "../libraries/SpoolUtils.sol";
 error BadStrategyApy(int256);
 
 /**
+ * @notice Used when doHardWord is run after its expiry time
+ */
+error DoHardWorkValidUntilExpired();
+
+/**
  * @dev Requires roles:
  * - ROLE_MASTER_WALLET_MANAGER
  * - ADMIN_ROLE_STRATEGY
@@ -249,11 +254,10 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
     function doHardWork(DoHardWorkParameterBag calldata dhwParams) external whenNotPaused {
         unchecked {
-            // Check if expired
-            require(block.timestamp <= dhwParams.validUntil, "DoHardWork expiration time reached");
+            // Check if is run after the expiry time
+            if (dhwParams.validUntil <= block.timestamp) revert DoHardWorkValidUntilExpired();
 
             // Can only be run by do-hard-worker.
-
             if (!_isViewExecution()) {
                 _checkRole(ROLE_DO_HARD_WORKER, msg.sender);
             }

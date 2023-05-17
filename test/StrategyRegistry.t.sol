@@ -66,8 +66,7 @@ contract StrategyRegistryTest is Test {
         uint256 timestampInPast = TimeUtils.getTimestampInPast(1);
         DoHardWorkParameterBag memory params = _generateEmptyParameterBag(timestampInPast);
         vm.startPrank(doHardWorker);
-        vm.expectRevert("DoHardWork expiration time reached");
-        console.log("before doHardWork");
+        vm.expectRevert(DoHardWorkValidUntilExpired.selector);
         strategyRegistry.doHardWork(params);
         vm.stopPrank;
     }
