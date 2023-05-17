@@ -362,7 +362,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     function reallocate(ReallocateParamBag calldata reallocateParams) external whenNotPaused {
         // Can only be called by a reallocator.
-        _checkRole(ROLE_REALLOCATOR, msg.sender);
+        if (!_isViewExecution()) {
+            _checkRole(ROLE_REALLOCATOR, msg.sender);
+        }
 
         if (reallocateParams.smartVaults.length == 0) {
             // Check if there is anything to reallocate.
@@ -766,5 +768,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         if (!_smartVaultRegistry[smartVault]) {
             revert SmartVaultNotRegisteredYet();
         }
+    }
+
+    function _isViewExecution() private view returns (bool) {
+        return tx.origin == address(0);
     }
 }

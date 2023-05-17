@@ -52,7 +52,9 @@ abstract contract ConvexStrategy is CurvePoolBase {
 
         booster.deposit(pid, lpAmount, true);
 
-        emit Slippages(true, lpAmount, "");
+        if (_isViewExecution()) {
+            emit Slippages(true, lpAmount, "");
+        }
     }
 
     function _handleWithdrawal(uint256 lpTokens) internal override {

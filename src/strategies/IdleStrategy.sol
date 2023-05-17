@@ -77,13 +77,21 @@ contract IdleStrategy is Strategy {
         return _assetRatio;
     }
 
-    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public pure override {
+    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
+        if (_isViewExecution()) {
+            emit BeforeDepositCheckSlippages(amounts);
+        }
+
         if (amounts[0] < slippages[1] || amounts[0] > slippages[2]) {
             revert IdleBeforeDepositCheckFailed();
         }
     }
 
-    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public pure override {
+    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public override {
+        if (_isViewExecution()) {
+            emit BeforeRedeemalCheckSlippages(ssts);
+        }
+
         if (
             (slippages[0] < 2 && (ssts < slippages[3] || ssts > slippages[4]))
                 || (slippages[0] == 2 && (ssts < slippages[1] || ssts > slippages[2]))
@@ -115,7 +123,7 @@ contract IdleStrategy is Strategy {
         if (slippages[0] == 1) {
             slippage = slippages[6];
         } else if (slippages[0] == 2) {
-            slippage = slippages[2];
+            slippage = slippages[3];
         } else if (slippages[0] == 3) {
             slippage = slippages[1];
         } else if (_isViewExecution()) {} else {
@@ -191,7 +199,9 @@ contract IdleStrategy is Strategy {
             revert IdleDepositSlippagesFailed();
         }
 
-        emit Slippages(true, mintedIdleTokens, "");
+        if (_isViewExecution()) {
+            emit Slippages(true, mintedIdleTokens, "");
+        }
 
         return mintedIdleTokens;
     }
@@ -203,7 +213,9 @@ contract IdleStrategy is Strategy {
             revert IdleRedeemSlippagesFailed();
         }
 
-        emit Slippages(false, redeemedAssets, "");
+        if (_isViewExecution()) {
+            emit Slippages(false, redeemedAssets, "");
+        }
 
         return redeemedAssets;
     }

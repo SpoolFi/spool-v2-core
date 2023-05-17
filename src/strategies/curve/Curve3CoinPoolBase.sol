@@ -67,7 +67,11 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
         return assetRatio_;
     }
 
-    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public pure override {
+    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
+        if (_isViewExecution()) {
+            emit BeforeDepositCheckSlippages(amounts);
+        }
+
         if (slippages[0] > 2) {
             revert CurveBeforeDepositCheckFailed();
         }
@@ -79,7 +83,11 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
         }
     }
 
-    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public pure override {
+    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public override {
+        if (_isViewExecution()) {
+            emit BeforeRedeemalCheckSlippages(ssts);
+        }
+
         uint256 offset;
         if (slippages[0] < 2) {
             offset = 7;
@@ -202,7 +210,9 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
             bought[i] = IERC20(tokens[i]).balanceOf(address(this));
         }
 
-        emit Slippages(false, 0, abi.encode(bought));
+        if (_isViewExecution()) {
+            emit Slippages(false, 0, abi.encode(bought));
+        }
     }
 
     function _ncoins() internal pure override returns (uint256) {
