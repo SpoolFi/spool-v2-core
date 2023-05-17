@@ -15,7 +15,7 @@ import "./mocks/MockPriceFeedManager.sol";
 import "../src/managers/StrategyRegistry.sol";
 import "./libraries/TimeUtils.sol";
 
-contract RegistryStrategyTest is Test {
+contract StrategyRegistryTest is Test {
     MockGuard internal guard;
     MockToken internal token;
     GuardManager internal guardManager;
