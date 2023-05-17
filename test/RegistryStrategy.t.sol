@@ -35,13 +35,12 @@ contract RegistryStrategyTest is Test {
 	address internal treasuryFeeRecipient = address(0xfab);
 	address internal emergencyWithdrawalRecipient = address(0xfee);
 
-	function setUpBase() public {
+	function setUp() public {
 		token = new MockToken("Token", "T");
 		guard = new MockGuard();
 
 		accessControl = new SpoolAccessControl();
 		accessControl.initialize();
-
 
 		ghostStrategy = new GhostStrategy();
 		swapper = new Swapper(accessControl);
@@ -71,9 +70,8 @@ contract RegistryStrategyTest is Test {
 		uint256 timestampInPast = TimeUtils.getTimestampInPast(1);
 		DoHardWorkParameterBag memory params = _generateEmptyParameterBag(timestampInPast);
 		vm.startPrank(doHardWorker);
-		// TODO: reverts for the wrong reason
 		vm.expectRevert("DoHardWork expiration time reached");
-		vm.expectRevert();
+		console.log("before doHardWork");
 		strategyRegistry.doHardWork(params);
 		vm.stopPrank;
 	}
