@@ -180,6 +180,13 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
      */
     function assetGroupId(address smartVault) external view returns (uint256 assetGroupId);
 
+    /**
+     * @notice Gets required deposit ratio for a smart vault.
+     * @param smartVault Smart vault.
+     * @return ratio Required deposit ratio for the smart vault.
+     */
+    function depositRatio(address smartVault) external view returns (uint256[] memory ratio);
+
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     /**

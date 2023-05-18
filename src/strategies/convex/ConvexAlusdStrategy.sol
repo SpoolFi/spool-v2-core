@@ -27,7 +27,7 @@ error StratRedeemSlippagesFailed();
 //   - beforeDepositCheck: slippages[1..2*tokenLength]
 //   - beforeRedeemalCheck: slippages[2*tokenLength+1..2*tokenLength+2]
 //   - compound: slippages[2*tokenLength+3]
-//   - _redeemFromProtocol: slippages[2*tokenLength+4..2*tokenLength+5]
+//   - _redeemFromProtocol: slippages[4+2*tokenLength..4+3*tokenLength-1]
 // - reallocate: slippages[0] == 2
 //   - beforeDepositCheck: depositSlippages[1..2*tokenLength]
 //   - _depositToProtocol: depositSlippages[2*tokenLength+1]
@@ -203,6 +203,8 @@ contract ConvexAlusdStrategy is
             slippageOffset = 3;
         } else if (slippages[0] == 3) {
             slippageOffset = 1;
+        } else if (slippages[0] == 0 && _isViewExecution()) {
+            slippageOffset = 2 * tokenLength + 4;
         } else {
             revert StratRedeemSlippagesFailed();
         }
@@ -288,6 +290,8 @@ contract ConvexAlusdStrategy is
         lpTokenAmount = IERC20(_poolMeta).balanceOf(address(this));
         _resetAndApprove(IERC20(_poolMeta), address(booster), lpTokenAmount);
         booster.deposit(pid, lpTokenAmount, true);
+
+        emit Slippages(true, lpTokenAmount, "");
     }
 
     function _redeemInner(uint256 ssts, uint256[] calldata slippages, uint256 slippageOffset) private {
@@ -302,6 +306,14 @@ contract ConvexAlusdStrategy is
         // from curve base
         lpTokenAmount = IERC20(_lpToken).balanceOf(address(this));
         _removeLiquidity(lpTokenAmount, slippages, slippageOffset);
+
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
+        uint256[] memory bought = new uint256[](tokens.length);
+        for (uint256 i; i < tokens.length; ++i) {
+            bought[i] = IERC20(tokens[i]).balanceOf(address(this));
+        }
+
+        emit Slippages(false, 0, abi.encode(bought));
     }
 
     function _getRewards() private returns (address[] memory) {

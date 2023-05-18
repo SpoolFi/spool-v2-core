@@ -204,6 +204,26 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         return _deposit(vault, users, amountsDouble);
     }
 
+    function _depositInRatio(ISmartVault vault, address[] memory users, uint256[] memory amounts)
+        internal
+        returns (uint256[] memory depositIds, uint256[][] memory amountsDouble)
+    {
+        uint256[] memory assetRatio = _smartVaultManager.depositRatio(address(vault));
+
+        amountsDouble = new uint256[][](amounts.length);
+        for (uint256 i; i < amounts.length; ++i) {
+            amountsDouble[i] = new uint256[](assetRatio.length);
+
+            for (uint256 j; j < assetRatio.length; ++j) {
+                amountsDouble[i][j] = amounts[i] * assetRatio[j] / assetRatio[0];
+            }
+        }
+
+        depositIds = _deposit(vault, users, amountsDouble);
+
+        return (depositIds, amountsDouble);
+    }
+
     function _deposit(ISmartVault vault, address user, uint256[] memory amounts)
         internal
         prank(user)
@@ -298,6 +318,22 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         }
     }
 
+    function _getBalances(address[] memory users, address[] memory tokens)
+        internal
+        view
+        returns (uint256[][] memory balances)
+    {
+        balances = new uint256[][](users.length);
+
+        for (uint256 i; i < users.length; ++i) {
+            balances[i] = new uint256[](tokens.length);
+
+            for (uint256 j; j < tokens.length; ++j) {
+                balances[i][j] = IERC20(tokens[j]).balanceOf(users[i]);
+            }
+        }
+    }
+
     function _verifyUniqueAddresses(address[] memory addresses) internal pure {
         for (uint256 i; i < addresses.length; ++i) {
             for (uint256 j = i + 1; j < addresses.length; ++j) {
@@ -316,17 +352,32 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         strategySlippages = new uint256[][](strategies.length);
 
         for (uint256 i; i < strategies.length; ++i) {
-            uint256 assetGroupId = IStrategy(strategies[i]).assetGroupId();
-            string memory strategyKey = _deploySpool.addressToStrategyKey(strategies[i], assetGroupId);
+            string memory strategyKey = _deploySpool.addressToStrategyKey(strategies[i]);
 
             if (Strings.equal(strategyKey, AAVE_V2_KEY)) {
-                strategySlippages[i] = _getRedeemFastSlippagesEmpty(strategies[i]);
+                // continue
+            } else if (Strings.equal(strategyKey, CONVEX_3POOL_KEY)) {
+                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
+            } else if (Strings.equal(strategyKey, CONVEX_ALUSD_KEY)) {
+                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
+            } else if (Strings.equal(strategyKey, CURVE_3POOL_KEY)) {
+                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else if (Strings.equal(strategyKey, COMPOUND_V2_KEY)) {
-                strategySlippages[i] = _getRedeemFastSlippagesEmpty(strategies[i]);
+                // continue
             } else if (Strings.equal(strategyKey, IDLE_BEST_YIELD_SENIOR_KEY)) {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else if (Strings.equal(strategyKey, MORPHO_AAVE_V2_KEY)) {
-                strategySlippages[i] = _getRedeemFastSlippagesEmpty(strategies[i]);
+                // continue
+            } else if (Strings.equal(strategyKey, MORPHO_COMPOUND_V2_KEY)) {
+                // continue
+            } else if (Strings.equal(strategyKey, NOTIONAL_FINANCE_KEY)) {
+                // continue
+            } else if (Strings.equal(strategyKey, RETH_HOLDING_KEY)) {
+                strategySlippages[i] = _getRedeemFastSlippagesREthHoldingStrategy(strategies[i]);
+            } else if (Strings.equal(strategyKey, SFRXETH_HOLDING_KEY)) {
+                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
+            } else if (Strings.equal(strategyKey, STETH_HOLDING_KEY)) {
+                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else {
@@ -335,13 +386,22 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         }
     }
 
-    function _getRedeemFastSlippagesEmpty(address) private pure returns (uint256[] memory slippages) {
-        slippages = new uint256[](0);
+    function _getRedeemFastSlippagesSimple(address strategy) private view returns (uint256[] memory slippages) {
+        address[] memory assets = IStrategy(strategy).assets();
+
+        slippages = new uint256[](2 + assets.length);
+        slippages[0] = 3;
     }
 
-    function _getRedeemFastSlippagesSimple(address) private pure returns (uint256[] memory slippages) {
-        slippages = new uint256[](2);
+    function _getRedeemFastSlippagesREthHoldingStrategy(address) private pure returns (uint256[] memory slippages) {
+        slippages = new uint256[](5);
         slippages[0] = 3;
+
+        // - set to swap everything via uniswap
+        slippages[1] = 100; // uniswap portion
+        slippages[2] = 0; // balancer portion
+        slippages[3] = 0; // min tokens out
+        slippages[4] = type(uint256).max; // ideal tokens out - set to max to prevent internal swapping
     }
 
     function _batchBalanceDiffAbs(
@@ -378,6 +438,36 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         _batchAssertApproxEqRel(diff, b, maxDelta);
     }
 
+    function _batchBalanceDiffRel(
+        uint256[][] memory balanceBefore,
+        uint256[][] memory balanceAfter,
+        uint256[][] memory b,
+        uint256 maxDelta
+    ) internal {
+        require(
+            balanceBefore.length == balanceAfter.length && balanceBefore.length == b.length,
+            "_batchBalanceDiffRel: Array are not of the same length"
+        );
+
+        for (uint256 i; i < balanceBefore.length; ++i) {
+            require(
+                balanceBefore[i].length == balanceAfter[i].length && balanceBefore[i].length == b[i].length,
+                "_batchBalanceDiffRel: Array are not of the same length"
+            );
+
+            for (uint256 j; j < balanceBefore[i].length; ++j) {
+                assertApproxEqRel(
+                    balanceAfter[i][j] - balanceBefore[i][j],
+                    b[i][j],
+                    maxDelta,
+                    string.concat(
+                        "_batchAssertApproxEqAbs:: user ", Strings.toString(i), " asset ", Strings.toString(j)
+                    )
+                );
+            }
+        }
+    }
+
     function _batchAssertApproxEqAbs(uint256[] memory a, uint256[] memory b, uint256 maxDelta) internal {
         require(a.length == b.length, "_batchAssertApproxEqAbs: Array are not of the same length");
 
@@ -411,17 +501,32 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
             for (uint256 j; j < parameters.strategies[i].length; ++j) {
                 address strategy = parameters.strategies[i][j];
 
-                uint256 assetGroupId = IStrategy(strategy).assetGroupId();
-                string memory strategyKey = _deploySpool.addressToStrategyKey(strategy, assetGroupId);
+                string memory strategyKey = _deploySpool.addressToStrategyKey(strategy);
 
                 if (Strings.equal(strategyKey, AAVE_V2_KEY)) {
-                    _setInitialDhwParametersNoop(parameters, i, j, strategy);
+                    // continue
+                } else if (Strings.equal(strategyKey, CONVEX_3POOL_KEY)) {
+                    _setInitialDhwParametersWithBeforeChecks(parameters, i, j, strategy, 13);
+                } else if (Strings.equal(strategyKey, CONVEX_ALUSD_KEY)) {
+                    _setInitialDhwParametersWithBeforeChecks(parameters, i, j, strategy, 13);
+                } else if (Strings.equal(strategyKey, CURVE_3POOL_KEY)) {
+                    _setInitialDhwParametersWithBeforeChecks(parameters, i, j, strategy, 13);
                 } else if (Strings.equal(strategyKey, COMPOUND_V2_KEY)) {
-                    _setInitialDhwParametersNoop(parameters, i, j, strategy);
+                    // continue
                 } else if (Strings.equal(strategyKey, IDLE_BEST_YIELD_SENIOR_KEY)) {
                     _setInitialDhwParametersWithBeforeChecks(parameters, i, j, strategy, 7);
                 } else if (Strings.equal(strategyKey, MORPHO_AAVE_V2_KEY)) {
-                    _setInitialDhwParametersNoop(parameters, i, j, strategy);
+                    // continue
+                } else if (Strings.equal(strategyKey, MORPHO_COMPOUND_V2_KEY)) {
+                    // continue
+                } else if (Strings.equal(strategyKey, NOTIONAL_FINANCE_KEY)) {
+                    // continue
+                } else if (Strings.equal(strategyKey, RETH_HOLDING_KEY)) {
+                    _setInitialDhwParametersREthHoldingStrategy(parameters, i, j, strategy);
+                } else if (Strings.equal(strategyKey, SFRXETH_HOLDING_KEY)) {
+                    _setInitialDhwParametersWithBeforeChecks(parameters, i, j, strategy, 6);
+                } else if (Strings.equal(strategyKey, STETH_HOLDING_KEY)) {
+                    _setInitialDhwParametersWithBeforeChecks(parameters, i, j, strategy, 6);
                 } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                     _setInitialDhwParametersWithBeforeChecks(parameters, i, j, strategy, 6);
                 } else {
@@ -485,10 +590,6 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         });
     }
 
-    function _setInitialDhwParametersNoop(DoHardWorkParameterBag memory, uint256, uint256, address) internal pure {
-        // no setting needed
-    }
-
     function _setInitialDhwParametersWithBeforeChecks(
         DoHardWorkParameterBag memory parameters,
         uint256 strategyGroupIdx,
@@ -509,12 +610,50 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         uint256 sharesRedeemed = _deploySpool.strategyRegistry().sharesRedeemed(strategy, dhwIndex);
 
         // - beforeDepositCheck
+        for (uint256 i; i < depositedAssets.length; ++i) {
+            slippages[1 + 2 * i] = depositedAssets[i];
+            slippages[2 + 2 * i] = depositedAssets[i];
+        }
+
+        // - beforeRedeemalCheck
+        slippages[1 + 2 * depositedAssets.length] = sharesRedeemed;
+        slippages[2 + 2 * depositedAssets.length] = sharesRedeemed;
+        parameters.strategySlippages[strategyGroupIdx][strategyIdx] = slippages;
+    }
+
+    function _setInitialDhwParametersREthHoldingStrategy(
+        DoHardWorkParameterBag memory parameters,
+        uint256 strategyGroupIdx,
+        uint256 strategyIdx,
+        address strategy
+    ) internal view {
+        // TODO: need to figure out how to get best price between uniswap and balancer
+
+        // get current dhw index for the strategy
+        address[] memory strategies = new address[](1);
+        strategies[0] = strategy;
+
+        uint256 dhwIndex = _deploySpool.strategyRegistry().currentIndex(strategies)[0];
+
+        // get slippages
+        uint256[] memory slippages = new uint256[](9);
+
+        uint256[] memory depositedAssets = _deploySpool.strategyRegistry().depositedAssets(strategy, dhwIndex);
+        uint256 sharesRedeemed = _deploySpool.strategyRegistry().sharesRedeemed(strategy, dhwIndex);
+
+        // - beforeDepositCheck
         slippages[1] = depositedAssets[0];
         slippages[2] = depositedAssets[0];
 
         // - beforeRedeemalCheck
         slippages[3] = sharesRedeemed;
         slippages[4] = sharesRedeemed;
+
+        // - set to swap everything via uniswap
+        slippages[5] = 100; // uniswap portion
+        slippages[6] = 0; // balancer portion
+        slippages[7] = 0; // min tokens out
+        slippages[8] = type(uint256).max; // ideal tokens out - set to max to prevent internal swapping
 
         parameters.strategySlippages[strategyGroupIdx][strategyIdx] = slippages;
     }
@@ -526,17 +665,32 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
             for (uint256 j; j < parameters.strategies[i].length; ++j) {
                 address strategy = parameters.strategies[i][j];
 
-                uint256 assetGroupId = IStrategy(strategy).assetGroupId();
-                string memory strategyKey = _deploySpool.addressToStrategyKey(strategy, assetGroupId);
+                string memory strategyKey = _deploySpool.addressToStrategyKey(strategy);
 
                 if (Strings.equal(strategyKey, AAVE_V2_KEY)) {
-                    _updateDhwParametersNoop(parameters, i, j, strategy, logs);
+                    // continue
+                } else if (Strings.equal(strategyKey, CONVEX_3POOL_KEY)) {
+                    _updateDhwParametersSlippageMulti(parameters, i, j, strategy, logs, 10);
+                } else if (Strings.equal(strategyKey, CONVEX_ALUSD_KEY)) {
+                    _updateDhwParametersSlippageMulti(parameters, i, j, strategy, logs, 10);
+                } else if (Strings.equal(strategyKey, CURVE_3POOL_KEY)) {
+                    _updateDhwParametersSlippageMulti(parameters, i, j, strategy, logs, 10);
                 } else if (Strings.equal(strategyKey, COMPOUND_V2_KEY)) {
-                    _updateDhwParametersNoop(parameters, i, j, strategy, logs);
+                    // continue
                 } else if (Strings.equal(strategyKey, IDLE_BEST_YIELD_SENIOR_KEY)) {
                     _updateDhwParametersSlippageSimple(parameters, i, j, strategy, logs, 6);
                 } else if (Strings.equal(strategyKey, MORPHO_AAVE_V2_KEY)) {
-                    _updateDhwParametersNoop(parameters, i, j, strategy, logs);
+                    // continue
+                } else if (Strings.equal(strategyKey, MORPHO_COMPOUND_V2_KEY)) {
+                    // continue
+                } else if (Strings.equal(strategyKey, NOTIONAL_FINANCE_KEY)) {
+                    // continue
+                } else if (Strings.equal(strategyKey, RETH_HOLDING_KEY)) {
+                    _updateDhwParametersREthHoldingStrategy(parameters, i, j, strategy, logs);
+                } else if (Strings.equal(strategyKey, SFRXETH_HOLDING_KEY)) {
+                    _updateDhwParametersSfrxEthHoldingStrategy(parameters, i, j, strategy, logs);
+                } else if (Strings.equal(strategyKey, STETH_HOLDING_KEY)) {
+                    _updateDhwParametersStEthHoldingStrategy(parameters, i, j, strategy, logs);
                 } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                     _updateDhwParametersSlippageSimple(parameters, i, j, strategy, logs, 5);
                 } else {
@@ -544,13 +698,6 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 }
             }
         }
-    }
-
-    function _updateDhwParametersNoop(DoHardWorkParameterBag memory, uint256, uint256, address, Vm.Log[] memory)
-        internal
-        pure
-    {
-        // no updates needed
     }
 
     function _updateDhwParametersSlippageSimple(
@@ -574,6 +721,129 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 parameters.strategySlippages[strategyGroupIdx][strategyIdx][0] = 1;
             }
             parameters.strategySlippages[strategyGroupIdx][strategyIdx][slippagePosition] = slippage;
+        }
+    }
+
+    function _updateDhwParametersSlippageMulti(
+        DoHardWorkParameterBag memory parameters,
+        uint256 strategyGroupIdx,
+        uint256 strategyIdx,
+        address strategy,
+        Vm.Log[] memory logs,
+        uint256 slippagePosition
+    ) internal pure {
+        for (uint256 i; i < logs.length; ++i) {
+            // find all Slippages events emitted by the strategy
+            if (logs[i].emitter != strategy || logs[i].topics[0] != keccak256("Slippages(bool,uint256,bytes)")) {
+                continue;
+            }
+
+            (bool isDeposit, uint256 slippage, bytes memory data) = abi.decode(logs[i].data, (bool, uint256, bytes));
+
+            // update slippages
+            if (isDeposit) {
+                parameters.strategySlippages[strategyGroupIdx][strategyIdx][slippagePosition] = slippage;
+            } else {
+                parameters.strategySlippages[strategyGroupIdx][strategyIdx][0] = 1;
+
+                (uint256[] memory slippages) = abi.decode(data, (uint256[]));
+                for (uint256 j; j < slippages.length; ++j) {
+                    parameters.strategySlippages[strategyGroupIdx][strategyIdx][slippagePosition + j] = slippages[j];
+                }
+            }
+        }
+    }
+
+    function _updateDhwParametersREthHoldingStrategy(
+        DoHardWorkParameterBag memory parameters,
+        uint256 strategyGroupIdx,
+        uint256 strategyIdx,
+        address strategy,
+        Vm.Log[] memory logs
+    ) internal pure {
+        for (uint256 i; i < logs.length; ++i) {
+            // find all Slippages events emitted by the strategy
+            if (logs[i].emitter != strategy || logs[i].topics[0] != keccak256("Slippages(bool,uint256,bytes)")) {
+                continue;
+            }
+
+            (bool isDeposit,, bytes memory data) = abi.decode(logs[i].data, (bool, uint256, bytes));
+            (uint256[2] memory portions, uint256 amountOut) = abi.decode(data, (uint256[2], uint256));
+
+            // update slippages
+            if (!isDeposit) {
+                parameters.strategySlippages[strategyGroupIdx][strategyIdx][0] = 1;
+            }
+            parameters.strategySlippages[strategyGroupIdx][strategyIdx][5] = portions[0]; // uniswap portion
+            parameters.strategySlippages[strategyGroupIdx][strategyIdx][6] = portions[1]; // balancer portion
+            parameters.strategySlippages[strategyGroupIdx][strategyIdx][7] = amountOut; // min tokens out
+            parameters.strategySlippages[strategyGroupIdx][strategyIdx][8] = amountOut; // ideal tokens out
+        }
+    }
+
+    function _updateDhwParametersSfrxEthHoldingStrategy(
+        DoHardWorkParameterBag memory parameters,
+        uint256 strategyGroupIdx,
+        uint256 strategyIdx,
+        address strategy,
+        Vm.Log[] memory logs
+    ) internal view {
+        for (uint256 i; i < logs.length; ++i) {
+            // find all Slippages events emitted by the strategy
+            if (logs[i].emitter != strategy || logs[i].topics[0] != keccak256("Slippages(bool,uint256,bytes)")) {
+                continue;
+            }
+
+            (bool isDeposit, uint256 slippage,) = abi.decode(logs[i].data, (bool, uint256, bytes));
+
+            // update slippages
+            if (isDeposit) {
+                uint256 assets = parameters.strategySlippages[strategyGroupIdx][strategyIdx][1];
+                uint256 expectedShares =
+                    SfrxEthHoldingStrategy(payable(strategy)).sfrxEthToken().convertToShares(assets);
+
+                if (slippage < expectedShares) {
+                    // stake
+                    parameters.strategySlippages[strategyGroupIdx][strategyIdx][5] = type(uint256).max;
+                }
+                // buy on curve
+                parameters.strategySlippages[strategyGroupIdx][strategyIdx][5] = slippage;
+            } else {
+                parameters.strategySlippages[strategyGroupIdx][strategyIdx][0] = 1;
+                parameters.strategySlippages[strategyGroupIdx][strategyIdx][5] = slippage;
+            }
+        }
+    }
+
+    function _updateDhwParametersStEthHoldingStrategy(
+        DoHardWorkParameterBag memory parameters,
+        uint256 strategyGroupIdx,
+        uint256 strategyIdx,
+        address strategy,
+        Vm.Log[] memory logs
+    ) internal pure {
+        for (uint256 i; i < logs.length; ++i) {
+            // find all Slippages events emitted by the strategy
+            if (logs[i].emitter != strategy || logs[i].topics[0] != keccak256("Slippages(bool,uint256,bytes)")) {
+                continue;
+            }
+
+            (bool isDeposit, uint256 slippage,) = abi.decode(logs[i].data, (bool, uint256, bytes));
+
+            // update slippages
+            if (isDeposit) {
+                uint256 expectedShares = parameters.strategySlippages[strategyGroupIdx][strategyIdx][1];
+
+                if (slippage < expectedShares) {
+                    // stake
+                    parameters.strategySlippages[strategyGroupIdx][strategyIdx][5] = type(uint256).max;
+                }
+                // buy on curve
+                parameters.strategySlippages[strategyGroupIdx][strategyIdx][5] = slippage;
+            } else {
+                parameters.strategySlippages[strategyGroupIdx][strategyIdx][0] = 1;
+                parameters.strategySlippages[strategyGroupIdx][strategyIdx][5] = slippage;
+            }
         }
     }
 

@@ -95,7 +95,7 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
     }
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public pure override {
-        if (amounts[0] < slippages[1] || amounts[1] > slippages[2]) {
+        if (amounts[0] < slippages[1] || amounts[0] > slippages[2]) {
             revert StEthHoldingBeforeDepositCheckFailed();
         }
     }
@@ -103,7 +103,7 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public pure override {
         if (
             (slippages[0] < 2 && (ssts < slippages[3] || ssts > slippages[4]))
-                || (ssts < slippages[1] || ssts > slippages[2])
+                || (slippages[0] == 2 && (ssts < slippages[1] || ssts > slippages[2]))
         ) {
             revert StEthHoldingBeforeRedeemalCheckFailed();
         }
@@ -139,7 +139,7 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
             slippage = slippages[3];
         } else if (slippages[0] == 3) {
             slippage = slippages[1];
-        } else {
+        } else if (_isViewExecution()) {} else {
             revert StEthHoldingRedeemSlippagesFailed();
         }
 
@@ -191,7 +191,10 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
     function _buyOnCurve(uint256 amount, uint256 slippage) private {
         unwrapEth(amount);
 
-        curve.exchange{value: amount}(CURVE_ETH_POOL_ETH_INDEX, CURVE_ETH_POOL_STETH_INDEX, amount, slippage);
+        uint256 bought =
+            curve.exchange{value: amount}(CURVE_ETH_POOL_ETH_INDEX, CURVE_ETH_POOL_STETH_INDEX, amount, slippage);
+
+        emit Slippages(true, bought, "");
     }
 
     function _sellOnCurve(uint256 amount, uint256 slippage) private returns (uint256 bought) {
@@ -199,6 +202,8 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
         bought = curve.exchange(CURVE_ETH_POOL_STETH_INDEX, CURVE_ETH_POOL_ETH_INDEX, amount, slippage);
 
         wrapEth(bought);
+
+        emit Slippages(false, bought, "");
     }
 
     function _getSharePrice() private view returns (uint256) {
