@@ -22,7 +22,7 @@ error BadStrategyApy(int256);
 /**
  * @notice Used when doHardWord is run after its expiry time
  */
-error DoHardWorkValidUntilExpired();
+error DoHardWorkParametersExpired();
 
 /**
  * @dev Requires roles:
@@ -255,7 +255,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     function doHardWork(DoHardWorkParameterBag calldata dhwParams) external whenNotPaused {
         unchecked {
             // Check if is run after the expiry time
-            if (dhwParams.validUntil <= block.timestamp) revert DoHardWorkValidUntilExpired();
+            if (dhwParams.validUntil <= block.timestamp) revert DoHardWorkParametersExpired();
 
             // Can only be run by do-hard-worker.
             if (!_isViewExecution()) {
