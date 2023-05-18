@@ -255,7 +255,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     function doHardWork(DoHardWorkParameterBag calldata dhwParams) external whenNotPaused {
         unchecked {
             // Check if is run after the expiry time
-            if (dhwParams.validUntil <= block.timestamp) revert DoHardWorkParametersExpired();
+            if (dhwParams.validUntil < block.timestamp) revert DoHardWorkParametersExpired();
 
             // Can only be run by do-hard-worker.
             if (!_isViewExecution()) {
