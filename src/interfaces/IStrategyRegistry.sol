@@ -80,6 +80,7 @@ struct StrategyAtIndex {
  * @custom:member baseYields Base yield percentage the strategy created in the DHW period (applicable only for some strategies).
  * @custom:member tokens List of all asset tokens involved in the do hard work.
  * @custom:member exchangeRateSlippages Slippages used to constrain exchange rates for asset tokens. uint256[2] for each token.
+ * @custom:member validUntil Sets the maximum timestamp the user is willing to wait to start executing 'do hard work'.
  */
 struct DoHardWorkParameterBag {
     address[][] strategies;
@@ -89,6 +90,7 @@ struct DoHardWorkParameterBag {
     int256[][] baseYields;
     address[] tokens;
     uint256[2][] exchangeRateSlippages;
+    uint256 validUntil;
 }
 
 /**

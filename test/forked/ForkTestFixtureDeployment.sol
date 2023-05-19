@@ -9,6 +9,7 @@ import "../../src/external/interfaces/chainlink/AggregatorV3Interface.sol";
 import "../../script/MainnetInitialSetup.s.sol";
 import "../libraries/Arrays.sol";
 import "./ForkTestFixture.sol";
+import "../libraries/TimeUtils.sol";
 
 string constant TEST_CONSTANTS_PATH = "deploy/fork-test.constants.json";
 string constant TEST_CONTRACTS_PATH = "deploy/fork-test.contracts.json";
@@ -586,7 +587,8 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
             strategySlippages: strategySlippages,
             tokens: tokens,
             exchangeRateSlippages: exchangeRateSlippages,
-            baseYields: baseYields
+            baseYields: baseYields,
+            validUntil: TimeUtils.getTimestampInInfiniteFuture()
         });
     }
 
