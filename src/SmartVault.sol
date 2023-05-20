@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/utils/Strings.sol";
 import "@openzeppelin-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
 import "./interfaces/IGuardManager.sol";
@@ -53,11 +54,16 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         _disableInitializers();
     }
 
-    function initialize(string memory vaultName_, uint256 assetGroupId_) external initializer {
+    function initialize(
+        string memory vaultName_,
+        string memory svtSymbol,
+        string memory baseURI_,
+        uint256 assetGroupId_
+    ) external initializer {
         if (bytes(vaultName_).length == 0) revert InvalidConfiguration();
 
-        __ERC1155_init("");
-        __ERC20_init("", "");
+        __ERC1155_init(baseURI_);
+        __ERC20_init(vaultName_, svtSymbol);
 
         _vaultName = vaultName_;
         assetGroupId = assetGroupId_;
@@ -67,6 +73,20 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
+
+    /**
+     * @dev Returns the URI for token type `id`.
+     * Base functionality is used to hold the base URI string.
+     * We override and append the token ID.
+     */
+    function uri(uint256 tokenId)
+        public
+        view
+        override(ERC1155Upgradeable, IERC1155MetadataURIUpgradeable)
+        returns (string memory)
+    {
+        return string(abi.encodePacked(super.uri(0), Strings.toString(tokenId), ".json"));
+    }
 
     /**
      * @dev See {IERC1155-balanceOf}.
@@ -136,6 +156,15 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
+
+    /**
+     * @notice Set a new base URI for ERC1155 metadata and emits an event.
+     * @param uri_ new base URI value
+     */
+    function setBaseURI(string memory uri_) external onlyAdminOrVaultAdmin(address(this), msg.sender) {
+        _setURI(uri_);
+        emit BaseURIChanged(uri_);
+    }
 
     function mintVaultShares(address receiver, uint256 vaultShares)
         external

@@ -52,6 +52,8 @@ contract TimelockGuardDemoTest is Test, TestFixture {
             smartVault = smartVaultFactory.deploySmartVault(
                 SmartVaultSpecification({
                     smartVaultName: "SmartVault",
+                    svtSymbol: "SV",
+                    baseURI: "https://token-cdn-domain/",
                     assetGroupId: assetGroupId,
                     actions: new IAction[](0),
                     actionRequestTypes: new RequestType[](0),

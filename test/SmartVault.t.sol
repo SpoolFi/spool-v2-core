@@ -40,7 +40,7 @@ contract SmartVaultTest is Test {
 
         SmartVault smartVaultImplementation = new SmartVault(accessControl, IGuardManager(address(guardManager)));
         smartVault = SmartVault(Clones.clone(address(smartVaultImplementation)));
-        smartVault.initialize("SmartVault", 1);
+        smartVault.initialize("SmartVault", "SV", "https://token-cdn-domain/", 1);
     }
 
     function test_burnNft_shouldBurnFullNft() public {

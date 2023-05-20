@@ -95,6 +95,8 @@ contract IntegrationTestFixture is TestFixture {
         smartVault = smartVaultFactory.deploySmartVault(
             SmartVaultSpecification({
                 smartVaultName: "MySmartVault",
+                svtSymbol: "MSV",
+                baseURI: "https://token-cdn-domain/",
                 assetGroupId: assetGroupId,
                 actions: new IAction[](0),
                 actionRequestTypes: new RequestType[](0),

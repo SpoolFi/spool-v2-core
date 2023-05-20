@@ -43,7 +43,7 @@ contract RewardManagerTests is Test {
 
         address smartVaultImplementation = address(new SmartVault(sac, new GuardManager(sac)));
         SmartVault smartVault_ = SmartVault(Clones.clone(smartVaultImplementation));
-        smartVault_.initialize("SmartVault", assetGroupId);
+        smartVault_.initialize("SmartVault", "SV", "https://token-cdn-domain/", assetGroupId);
 
         rewardManager = new RewardManager(sac, assetGroupRegistry, false);
         rewardManager.initialize();

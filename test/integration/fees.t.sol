@@ -61,6 +61,8 @@ contract PlatformFeesTest is TestFixture {
         {
             SmartVaultSpecification memory specification = SmartVaultSpecification({
                 smartVaultName: "SmartVaultA",
+                svtSymbol: "SVA",
+                baseURI: "https://token-cdn-domain/",
                 assetGroupId: assetGroupId,
                 actions: new IAction[](0),
                 actionRequestTypes: new RequestType[](0),
@@ -603,6 +605,8 @@ contract SmartVaultFeesTest is TestFixture {
         {
             SmartVaultSpecification memory specification = SmartVaultSpecification({
                 smartVaultName: "SmartVaultA",
+                svtSymbol: "SVA",
+                baseURI: "https://token-cdn-domain/",
                 assetGroupId: assetGroupId,
                 actions: new IAction[](0),
                 actionRequestTypes: new RequestType[](0),
@@ -2577,6 +2581,8 @@ contract AllFeesTest is TestFixture {
         {
             SmartVaultSpecification memory specification = SmartVaultSpecification({
                 smartVaultName: "SmartVaultA",
+                svtSymbol: "SVA",
+                baseURI: "https://token-cdn-domain/",
                 assetGroupId: assetGroupId,
                 actions: new IAction[](0),
                 actionRequestTypes: new RequestType[](0),

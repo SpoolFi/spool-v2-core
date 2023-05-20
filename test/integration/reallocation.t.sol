@@ -208,6 +208,8 @@ contract ReallocationIntegrationTest is Test {
     function _getSmartVaultSpecification() private view returns (SmartVaultSpecification memory) {
         return SmartVaultSpecification({
             smartVaultName: "",
+            svtSymbol: "MSV",
+            baseURI: "https://token-cdn-domain/",
             assetGroupId: 0,
             actions: new IAction[](0),
             actionRequestTypes: new RequestType[](0),

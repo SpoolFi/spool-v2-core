@@ -237,6 +237,8 @@ contract VaultSyncTest is IntegrationTestFixture {
             smartVault = smartVaultFactory.deploySmartVault(
                 SmartVaultSpecification({
                     smartVaultName: "MySmartVault",
+                    svtSymbol: "MSV",
+                    baseURI: "https://token-cdn-domain/",
                     assetGroupId: assetGroupDId,
                     actions: new IAction[](0),
                     actionRequestTypes: new RequestType[](0),

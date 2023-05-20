@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin-upgradeable/token/ERC1155/extensions/IERC1155MetadataURIUpgradeable.sol";
 import "./Constants.sol";
 import "./RequestType.sol";
 
@@ -81,7 +82,7 @@ struct SmartVaultFees {
 
 /* ========== INTERFACES ========== */
 
-interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
+interface ISmartVault is IERC20Upgradeable, IERC1155MetadataURIUpgradeable {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /**
@@ -122,6 +123,12 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
     function getMetadata(uint256[] calldata nftIds) external view returns (bytes[] memory metadata);
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
+
+    /**
+     * @notice Set a new base URI for ERC1155 metadata.
+     * @param uri_ new base URI value
+     */
+    function setBaseURI(string memory uri_) external;
 
     /**
      * @notice Mints smart vault tokens for receiver.
@@ -207,4 +214,7 @@ interface ISmartVault is IERC20Upgradeable, IERC1155Upgradeable {
      * @param amount Amount of shares to transfer.
      */
     function claimShares(address claimer, uint256 amount) external;
+
+    /// @notice Emitted when base URI is changed.
+    event BaseURIChanged(string baseUri);
 }

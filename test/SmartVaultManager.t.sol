@@ -276,7 +276,7 @@ contract SmartVaultManagerTest is TestFixture {
 
         address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
         SmartVault smartVault_ = SmartVault(Clones.clone(smartVaultImplementation));
-        smartVault_.initialize("SmartVault", assetGroupId);
+        smartVault_.initialize("SmartVault", "SV", "https://token-cdn-domain/", assetGroupId);
 
         SmartVaultRegistrationForm memory registrationForm = SmartVaultRegistrationForm({
             assetGroupId: assetGroupId,

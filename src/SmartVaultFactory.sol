@@ -60,6 +60,8 @@ error InvalidStrategyAllocationsLength();
  */
 struct SmartVaultSpecification {
     string smartVaultName;
+    string svtSymbol;
+    string baseURI;
     uint256 assetGroupId;
     address[] strategies;
     uint16a16 strategyAllocation;
@@ -299,7 +301,11 @@ contract SmartVaultFactory is UpgradeableBeacon {
         returns (bytes memory)
     {
         return abi.encodeWithSignature(
-            "initialize(string,uint256)", specification.smartVaultName, specification.assetGroupId
+            "initialize(string,string,string,uint256)",
+            specification.smartVaultName,
+            specification.svtSymbol,
+            specification.baseURI,
+            specification.assetGroupId
         );
     }
 

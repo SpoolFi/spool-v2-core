@@ -37,6 +37,7 @@ contract SmartVaultFactoryTest is Test {
     using uint16a16Lib for uint16a16;
 
     event SmartVaultDeployed(address indexed smartVault, address indexed deployer);
+    event BaseURIChanged(string baseURI);
 
     address strategy = address(0x1);
     address riskProvider = address(0x7);
@@ -259,6 +260,42 @@ contract SmartVaultFactoryTest is Test {
         factory.deploySmartVault(specification);
     }
 
+    function test_deploySmartVault_shouldReturnCorrectURI() public {
+        SmartVaultSpecification memory specification = _getSpecification();
+
+        ISmartVault vault = factory.deploySmartVault(specification);
+        string memory uri = vault.uri(5123);
+        assertEq(uri, "https://token-cdn-domain/5123.json");
+    }
+
+    function test_deploySmartVault_setBaseURI_shouldRevertMissingRole() public {
+        SmartVaultSpecification memory specification = _getSpecification();
+
+        ISmartVault vault = factory.deploySmartVault(specification);
+
+        vm.startPrank(address(0xa));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MissingRole.selector, keccak256(abi.encode(address(vault), ROLE_SMART_VAULT_ADMIN)), address(0xa)
+            )
+        );
+        vault.setBaseURI("https://token-cdn-domain/new/");
+        vm.stopPrank();
+    }
+
+    function test_deploySmartVault__setBaseURI_ok() public {
+        SmartVaultSpecification memory specification = _getSpecification();
+
+        ISmartVault vault = factory.deploySmartVault(specification);
+
+        vm.expectEmit(true, true, true, true, address(vault));
+        emit BaseURIChanged("https://token-cdn-domain/new/");
+        vault.setBaseURI("https://token-cdn-domain/new/");
+
+        string memory uri = vault.uri(5123);
+        assertEq(uri, "https://token-cdn-domain/new/5123.json");
+    }
+
     /* ========== deploySmartVaultDeterministically ========== */
 
     function test_deploySmartVaultDeterministically_shouldDeploySmartVault() public {
@@ -463,6 +500,8 @@ contract SmartVaultFactoryTest is Test {
     function _getSpecification() private view returns (SmartVaultSpecification memory) {
         return SmartVaultSpecification({
             smartVaultName: "MySmartVault",
+            svtSymbol: "MSV",
+            baseURI: "https://token-cdn-domain/",
             assetGroupId: 1,
             strategies: Arrays.toArray(strategy),
             strategyAllocation: uint16a16.wrap(0),
