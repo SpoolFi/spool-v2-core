@@ -95,13 +95,21 @@ contract REthHoldingStrategy is Strategy, WethHelper {
         return _assetRatio;
     }
 
-    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public pure override {
+    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
+        if (_isViewExecution()) {
+            emit BeforeDepositCheckSlippages(amounts);
+        }
+
         if (amounts[0] < slippages[1] || amounts[0] > slippages[2]) {
             revert REthHoldingBeforeDepositCheckFailed();
         }
     }
 
-    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public pure override {
+    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public override {
+        if (_isViewExecution()) {
+            emit BeforeRedeemalCheckSlippages(ssts);
+        }
+
         if (
             (slippages[0] < 2 && (ssts < slippages[3] || ssts > slippages[4]))
                 || (slippages[0] == 2 && (ssts < slippages[1] || ssts > slippages[2]))

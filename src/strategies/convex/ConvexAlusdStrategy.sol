@@ -19,22 +19,22 @@ error StratRedeemSlippagesFailed();
 // slippages
 // - mode selection: slippages[0]
 // - DHW with deposit: slippages[0] == 0
-//   - beforeDepositCheck: slippages[1..2*tokenLength]
-//   - beforeRedeemalCheck: slippages[2*tokenLength+1..2*tokenLength+2]
-//   - compound: slippages[2*tokenLength+3]
-//   - _depositToProtocol: slippages[2*tokenLength+4]
+//   - beforeDepositCheck: slippages[1..2*tokenLength] --> [1..6]
+//   - beforeRedeemalCheck: slippages[2*tokenLength+1..2*tokenLength+2] --> [7..8]
+//   - compound: slippages[2*tokenLength+3] --> [9]
+//   - _depositToProtocol: slippages[2*tokenLength+4] --> 10
 // - DHW with withdrawal: slippages[0] == 1
-//   - beforeDepositCheck: slippages[1..2*tokenLength]
-//   - beforeRedeemalCheck: slippages[2*tokenLength+1..2*tokenLength+2]
-//   - compound: slippages[2*tokenLength+3]
-//   - _redeemFromProtocol: slippages[4+2*tokenLength..4+3*tokenLength-1]
+//   - beforeDepositCheck: slippages[1..2*tokenLength] --> [1..6]
+//   - beforeRedeemalCheck: slippages[2*tokenLength+1..2*tokenLength+2] --> [7..8]
+//   - compound: slippages[2*tokenLength+3] --> [9]
+//   - _redeemFromProtocol: slippages[4+2*tokenLength..4+3*tokenLength-1] --> [10..12]
 // - reallocate: slippages[0] == 2
-//   - beforeDepositCheck: depositSlippages[1..2*tokenLength]
-//   - _depositToProtocol: depositSlippages[2*tokenLength+1]
+//   - beforeDepositCheck: depositSlippages[1..2*tokenLength] --> [1..6]
+//   - _depositToProtocol: depositSlippages[2*tokenLength+1] --> [7]
 //   - beforeRedeemalCheck: withdrawalSlippages[1..2]
-//   - _redeemFromProtocol: withdrawalSlippages[3..tokenLength+2]
+//   - _redeemFromProtocol: withdrawalSlippages[3..tokenLength+2] --> [3..5]
 // - redeemFast or emergencyWithdraw: slippages[0] == 3
-//   - _redeemFromProtocol or _emergencyWithdrawImpl: slippages[1..tokenLength]
+//   - _redeemFromProtocol or _emergencyWithdrawImpl: slippages[1..tokenLength] --> [1..3]
 contract ConvexAlusdStrategy is
     StrategyManualYieldVerifier,
     Strategy,
@@ -152,7 +152,11 @@ contract ConvexAlusdStrategy is
         return assetRatio_;
     }
 
-    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public view override {
+    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
+        if (_isViewExecution()) {
+            emit BeforeDepositCheckSlippages(amounts);
+        }
+
         if (slippages[0] > 2) {
             revert StratBeforeDepositCheckFailed();
         }
@@ -164,7 +168,11 @@ contract ConvexAlusdStrategy is
         }
     }
 
-    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {
+    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public override {
+        if (_isViewExecution()) {
+            emit BeforeRedeemalCheckSlippages(ssts);
+        }
+
         uint256 offset;
         if (slippages[0] < 2) {
             offset = 2 * tokenLength + 1;
@@ -291,7 +299,9 @@ contract ConvexAlusdStrategy is
         _resetAndApprove(IERC20(_poolMeta), address(booster), lpTokenAmount);
         booster.deposit(pid, lpTokenAmount, true);
 
-        emit Slippages(true, lpTokenAmount, "");
+        if (_isViewExecution()) {
+            emit Slippages(true, lpTokenAmount, "");
+        }
     }
 
     function _redeemInner(uint256 ssts, uint256[] calldata slippages, uint256 slippageOffset) private {
@@ -313,7 +323,9 @@ contract ConvexAlusdStrategy is
             bought[i] = IERC20(tokens[i]).balanceOf(address(this));
         }
 
-        emit Slippages(false, 0, abi.encode(bought));
+        if (_isViewExecution()) {
+            emit Slippages(false, 0, abi.encode(bought));
+        }
     }
 
     function _getRewards() private returns (address[] memory) {

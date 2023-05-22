@@ -84,9 +84,9 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         return _strategyName;
     }
 
-    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public view virtual;
+    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public virtual;
 
-    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view virtual;
+    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public virtual;
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 

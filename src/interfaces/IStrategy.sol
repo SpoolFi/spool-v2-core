@@ -88,6 +88,10 @@ interface IStrategy is IERC20Upgradeable {
 
     event Slippages(bool isDeposit, uint256 slippage, bytes data);
 
+    event BeforeDepositCheckSlippages(uint256[] amounts);
+
+    event BeforeRedeemalCheckSlippages(uint256 ssts);
+
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
@@ -125,14 +129,14 @@ interface IStrategy is IERC20Upgradeable {
      * @param amounts Amounts to be deposited.
      * @param slippages Slippages to check against.
      */
-    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) external view;
+    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) external;
 
     /**
      * @dev Performs slippages check before redeemal.
      * @param ssts Amount of strategy tokens to be redeemed.
      * @param slippages Slippages to check against.
      */
-    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) external view;
+    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) external;
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
