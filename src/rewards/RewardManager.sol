@@ -122,7 +122,7 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuardUpgradeable
 
         if (block.timestamp >= config.periodFinish) {
             config.rewardRate = SafeCast.toUint192((reward * REWARD_ACCURACY) / config.rewardsDuration);
-            emit RewardAdded(smartVault, token, reward, config.rewardsDuration);
+            emit RewardAdded(smartVault, token, reward, config.rewardsDuration, config.periodFinish, config.rewardRate);
         } else {
             // If extending or adding additional rewards,
             // cannot set new finish time to be less than previously configured
@@ -137,7 +137,7 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuardUpgradeable
             }
 
             config.rewardRate = newRewardRate;
-            emit RewardExtended(smartVault, token, reward, leftover, config.rewardsDuration, newPeriodFinish);
+            emit RewardExtended(smartVault, token, reward, leftover, config.rewardsDuration, newPeriodFinish, config.rewardRate);
         }
 
         config.tokenAdded = uint32(block.timestamp);

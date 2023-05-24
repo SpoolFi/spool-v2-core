@@ -65,14 +65,17 @@ interface IRewardManager {
 
     /* ========== EVENTS ========== */
 
-    event RewardAdded(address smartVault, IERC20 indexed token, uint256 amount, uint256 duration);
+    event RewardAdded(address indexed smartVault, IERC20 indexed token, uint256 amount, uint256 duration, uint256 periodFinish, uint256 rewardRate);
+
     event RewardExtended(
-        address smartVault,
+        address indexed smartVault,
         IERC20 indexed token,
         uint256 amount,
         uint256 leftover,
         uint256 duration,
-        uint32 periodFinish
+        uint256 periodFinish,
+        uint256 rewardRate
     );
-    event RewardRemoved(address smartVault, IERC20 indexed token);
+    
+    event RewardRemoved(address indexed smartVault, IERC20 indexed token);
 }
