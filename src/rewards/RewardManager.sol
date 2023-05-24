@@ -137,7 +137,9 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuardUpgradeable
             }
 
             config.rewardRate = newRewardRate;
-            emit RewardExtended(smartVault, token, reward, leftover, config.rewardsDuration, newPeriodFinish, config.rewardRate);
+            emit RewardExtended(
+                smartVault, token, reward, leftover, config.rewardsDuration, newPeriodFinish, config.rewardRate
+            );
         }
 
         config.tokenAdded = uint32(block.timestamp);
