@@ -129,6 +129,30 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
         assertGt(gaugeBalanceOfStrategy, 0);
     }
 
+    function test_depositToProtocol_shouldRevertWhenSlippageTooHigh() public {
+        // arrange
+        uint256 toDepositDai = 1000 * tokenDaiMultiplier;
+        uint256 toDepositUsdc = 1000 * tokenUsdcMultiplier;
+        uint256 toDepositUsdt = 1000 * tokenUsdtMultiplier;
+        deal(address(tokenDai), address(curveStrategy), toDepositDai, true);
+        deal(address(tokenUsdc), address(curveStrategy), toDepositUsdc, true);
+        deal(address(tokenUsdt), address(curveStrategy), toDepositUsdt, true);
+
+        uint256 daiBalanceOfCurvePoolBefore = tokenDai.balanceOf(address(curvePool));
+        uint256 usdcBalanceOfCurvePoolBefore = tokenUsdc.balanceOf(address(curvePool));
+        uint256 usdtBalanceOfCurvePoolBefore = tokenUsdt.balanceOf(address(curvePool));
+
+        // act and assert
+        uint256[] memory slippages = new uint256[](11);
+        slippages[0] = 0;
+        slippages[10] = type(uint256).max;
+
+        uint256[] memory amounts = Arrays.toArray(toDepositDai, toDepositUsdc, toDepositUsdt);
+
+        vm.expectRevert("Slippage screwed you");
+        curveStrategy.exposed_depositToProtocol(assetGroup, amounts, slippages);
+    }
+
     function test_redeemFromProtocol() public {
         // arrange
         uint256 toDepositDai = 1000 * tokenDaiMultiplier;

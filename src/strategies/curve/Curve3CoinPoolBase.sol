@@ -108,9 +108,9 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
     {
         uint256 slippage;
         if (slippages[0] == 0) {
-            slippage = 10;
+            slippage = slippages[10];
         } else if (slippages[0] == 2) {
-            slippage = 7;
+            slippage = slippages[7];
         } else {
             revert CurveDepositSlippagesFailed();
         }
