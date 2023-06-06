@@ -492,6 +492,10 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                 totalWithdrawnAssets = new uint256[](assetGroup.length);
             }
 
+            if (strategyShares[i] == 0) {
+                continue;
+            }
+
             uint256 dhwIndex = dhwIndexes.get(i);
 
             if (dhwIndex == _currentIndexes[strategy]) {
@@ -499,7 +503,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
             }
 
             for (uint256 j = 0; j < totalWithdrawnAssets.length; j++) {
-                // NOTE: can _sharesRedeemed[strategy][dhwIndex] be 0?
                 uint256 withdrawnAssets =
                     _assetsWithdrawn[strategy][dhwIndex][j] * strategyShares[i] / _sharesRedeemed[strategy][dhwIndex];
                 totalWithdrawnAssets[j] += withdrawnAssets;

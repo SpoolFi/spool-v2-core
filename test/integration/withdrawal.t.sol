@@ -323,6 +323,72 @@ contract WithdrawalIntegrationTest is Test {
         assertEq(mySmartVault.balanceOf(bob, bobWithdrawalNftId), 0, "28.2");
     }
 
+    function test_should_not_revert_when_withdrawing_one_SVT_wei() public {
+        // set initial state
+        deal(address(mySmartVault), alice, 50_000_000, true);
+        deal(address(strategyA), address(mySmartVault), 40_000_000, true);
+        deal(address(strategyB), address(mySmartVault), 10_000_000, true);
+        deal(address(tokenA), address(strategyA.protocol()), 40 ether, true);
+        deal(address(tokenB), address(strategyA.protocol()), 2.72 ether, true);
+        deal(address(tokenA), address(strategyB.protocol()), 10 ether, true);
+        deal(address(tokenB), address(strategyB.protocol()), 0.67 ether, true);
+
+        // request withdrawal
+        vm.prank(alice);
+        uint256 aliceWithdrawalNftId = smartVaultManager.redeem(
+            RedeemBag(address(mySmartVault), 1, new uint256[](0), new uint256[](0)), alice, false
+        );
+
+        // check state
+        // - vault tokens are returned to vault
+        assertEq(mySmartVault.balanceOf(alice), 49_999_999);
+        assertEq(mySmartVault.balanceOf(address(mySmartVault)), 1);
+
+        // flush
+        smartVaultManager.flushSmartVault(address(mySmartVault));
+
+        // check state
+        // - vault tokens are burned
+        assertEq(mySmartVault.balanceOf(address(mySmartVault)), 0);
+        // - strategy tokens are returned to strategies
+        //   but since there only 1 SVT wei was withdrawn, there should be no changes here
+        assertEq(strategyA.balanceOf(address(mySmartVault)), 40_000_000);
+        assertEq(strategyB.balanceOf(address(mySmartVault)), 10_000_000);
+        assertEq(strategyA.balanceOf(address(strategyA)), 0);
+        assertEq(strategyB.balanceOf(address(strategyB)), 0);
+
+        // DHW
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(mySmartVaultStrategies, assetGroup));
+        vm.stopPrank();
+
+        // check state
+        // - assets are withdrawn from protocol masteet
+        //   but there should be nothing withdrawn
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenB.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenA.balanceOf(address(strategyA)), 0);
+        assertEq(tokenB.balanceOf(address(strategyA)), 0);
+        assertEq(tokenA.balanceOf(address(strategyB)), 0);
+        assertEq(tokenB.balanceOf(address(strategyB)), 0);
+
+        // sync vault
+        smartVaultManager.syncSmartVault(address(mySmartVault), true);
+
+        // check state
+        // nothing to check
+
+        // claim withdrawal
+        uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
+        uint256[] memory ids = Arrays.toArray(aliceWithdrawalNftId);
+        vm.prank(alice);
+        smartVaultManager.claimWithdrawal(address(mySmartVault), ids, amounts, alice);
+
+        // check state
+        // - withdrawal NFTs are burned
+        assertEq(mySmartVault.balanceOfFractional(alice, aliceWithdrawalNftId), 0);
+    }
+
     function test_redeemFor_revertIfNotAdmin() public {
         accessControl.grantRole(ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM, address(this));
         accessControl.grantRole(ROLE_SMART_VAULT_ALLOW_REDEEM, address(mySmartVault));
