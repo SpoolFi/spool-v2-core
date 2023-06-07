@@ -39,11 +39,6 @@ error ManagementFeeTooLarge(uint256 mgmtFeePct);
 error PerformanceFeeTooLarge(uint256 performanceFeePct);
 
 /**
- * @notice Used when strategies provided for reallocation are invalid.
- */
-error InvalidStrategies();
-
-/**
  * @notice Used when smart vault in reallocation has statically set allocation.
  */
 error StaticAllocationSmartVault();

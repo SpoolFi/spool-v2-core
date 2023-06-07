@@ -328,13 +328,17 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
                     atDhw.exchangeRates,
                     parameters.assetGroup
                 );
-                depositedUsd[1] = _priceFeedManager.assetToUsdCustomPriceBulk(
-                    parameters.assetGroup, atDhw.assetsDeposited, atDhw.exchangeRates
-                );
 
-                // get value of deposits
-                result.sstShares[i] = atDhw.sharesMinted * depositedUsd[0] / depositedUsd[1];
-                totalUsd[0] += result.sstShares[i] * atDhw.totalStrategyValue / atDhw.totalSSTs;
+                if (depositedUsd[0] > 0) {
+                    // can skip this if no value was deposited
+                    depositedUsd[1] = _priceFeedManager.assetToUsdCustomPriceBulk(
+                        parameters.assetGroup, atDhw.assetsDeposited, atDhw.exchangeRates
+                    );
+
+                    // get value of deposits
+                    result.sstShares[i] = atDhw.sharesMinted * depositedUsd[0] / depositedUsd[1];
+                    totalUsd[0] += result.sstShares[i] * atDhw.totalStrategyValue / atDhw.totalSSTs;
+                }
             }
 
             if (atDhw.totalStrategyValue == 0) {
@@ -635,6 +639,10 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             depositedUsd += _priceFeedManager.assetToUsdCustomPrice(tokens[i], data.assets[i], exchangeRates[i]);
             totalDepositedUsd +=
                 _priceFeedManager.assetToUsdCustomPrice(tokens[i], totalDepositedAssets[i], exchangeRates[i]);
+        }
+
+        if (depositedUsd == 0) {
+            return 0;
         }
         uint256 claimedVaultTokens = mintedSVTs * depositedUsd / totalDepositedUsd;
 

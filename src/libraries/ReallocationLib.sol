@@ -9,6 +9,15 @@ import "./ArrayMapping.sol";
 import "./SpoolUtils.sol";
 import "./uint16a16Lib.sol";
 
+/* ========== ERRORS ========== */
+
+/**
+ * @notice Used when strategies provided for reallocation are invalid.
+ */
+error InvalidStrategies();
+
+/* ========== STRUCTS ========== */
+
 /**
  * @notice Parameters for reallocation.
  * @custom:member assetGroupRegistry Asset group registry contract.
