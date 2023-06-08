@@ -405,7 +405,7 @@ contract WithdrawalIntegrationTest is Test {
         assertEq(mySmartVault.balanceOf(alice, redeemId), 0);
     }
 
-    function test_shouldBeAbleToWithdrawFast() public {
+    function test_withdrawFast_shouldBeAbleToWithdraw() public {
         // set initial state
         deal(address(mySmartVault), alice, 4_000_000, true);
         deal(address(mySmartVault), bob, 1_000_000, true);
@@ -433,6 +433,7 @@ contract WithdrawalIntegrationTest is Test {
             withdrawalSlippages,
             exchangeRateSlippages
         );
+        vm.stopPrank();
 
         // check return
         assertEq(withdrawnAssets, Arrays.toArray(30 ether, 2.034 ether));
@@ -453,6 +454,57 @@ contract WithdrawalIntegrationTest is Test {
         assertEq(tokenB.balanceOf(address(strategyA.protocol())), 1.088 ether);
         assertEq(tokenA.balanceOf(address(strategyB.protocol())), 4 ether);
         assertEq(tokenB.balanceOf(address(strategyB.protocol())), 0.268 ether);
+    }
+
+    function test_redeemFast_shouldSkipGhostStrategies() public {
+        // set initial state
+        deal(address(mySmartVault), alice, 4_000_000, true);
+        deal(address(mySmartVault), bob, 1_000_000, true);
+        deal(address(strategyA), address(mySmartVault), 40_000_000, true);
+        deal(address(strategyB), address(mySmartVault), 10_000_000, true);
+        deal(address(tokenA), address(strategyA.protocol()), 40 ether, true);
+        deal(address(tokenB), address(strategyA.protocol()), 2.72 ether, true);
+        deal(address(tokenA), address(strategyB.protocol()), 10 ether, true);
+        deal(address(tokenB), address(strategyB.protocol()), 0.67 ether, true);
+
+        // remove strategy A
+        smartVaultManager.removeStrategyFromVaults(address(strategyA), Arrays.toArray(address(mySmartVault)), true);
+
+        // Alice withdraws fast
+        uint256[][] memory withdrawalSlippages = new uint256[][](2);
+        withdrawalSlippages[0] = new uint256[](0);
+        withdrawalSlippages[1] = new uint256[](0);
+
+        uint256[2][] memory exchangeRateSlippages = new uint256[2][](2);
+        exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(address(tokenA));
+        exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(address(tokenA));
+        exchangeRateSlippages[1][0] = priceFeedManager.exchangeRates(address(tokenB));
+        exchangeRateSlippages[1][1] = priceFeedManager.exchangeRates(address(tokenB));
+
+        vm.startPrank(alice);
+        smartVaultManager.redeemFast(
+            RedeemBag(address(mySmartVault), 4_000_000, new uint256[](0), new uint256[](0)),
+            withdrawalSlippages,
+            exchangeRateSlippages
+        );
+        vm.stopPrank();
+
+        // check state
+        // - vault tokens were burned
+        assertEq(mySmartVault.balanceOf(alice), 0);
+        assertEq(mySmartVault.totalSupply(), 1_000_000);
+        // - strategy tokens were burned
+        assertEq(strategyA.balanceOf(address(mySmartVault)), 40_000_000); // replaced with ghost
+        assertEq(strategyB.balanceOf(address(mySmartVault)), 2_000_000);
+        assertEq(strategyA.totalSupply(), 40_000_000); // replaced with ghost
+        assertEq(strategyB.totalSupply(), 2_000_000);
+        // - assets were transferred to Alice
+        assertEq(tokenA.balanceOf(alice), 8 ether);
+        assertEq(tokenB.balanceOf(alice), 0.536 ether);
+        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 40 ether); // replaced with ghost
+        assertEq(tokenB.balanceOf(address(strategyA.protocol())), 2.72 ether); // replaced with ghost
+        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 2 ether);
+        assertEq(tokenB.balanceOf(address(strategyB.protocol())), 0.134 ether);
     }
 
     function test_emergencyWithdraw_revertMissingRole() public {

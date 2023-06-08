@@ -446,6 +446,11 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         }
 
         for (uint256 i; i < redeemFastParams.strategies.length; ++i) {
+            if (redeemFastParams.strategies[i] == _ghostStrategy) {
+                // skip ghost strategies
+                continue;
+            }
+
             uint256[] memory strategyWithdrawnAssets = IStrategy(redeemFastParams.strategies[i]).redeemFast(
                 redeemFastParams.strategyShares[i],
                 address(_masterWallet),
