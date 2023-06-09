@@ -217,9 +217,9 @@ contract NotionalFinanceStrategy is Strategy {
         });
     }
 
-    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public view override {}
+    function beforeDepositCheck(uint256[] memory, uint256[] calldata) public view override {}
 
-    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
+    function beforeRedeemalCheck(uint256, uint256[] calldata) public view override {}
 
     function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {
         address[] memory tokens = new address[](1);

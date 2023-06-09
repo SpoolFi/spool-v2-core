@@ -11,6 +11,7 @@ error IdleBeforeDepositCheckFailed();
 error IdleBeforeRedeemalCheckFailed();
 error IdleDepositSlippagesFailed();
 error IdleRedeemSlippagesFailed();
+error IdleCompoundSlippagesFailed();
 
 // one asset
 // multiple rewards
@@ -82,6 +83,10 @@ contract IdleStrategy is Strategy {
             emit BeforeDepositCheckSlippages(amounts);
         }
 
+        if (slippages[0] > 2) {
+            revert IdleBeforeDepositCheckFailed();
+        }
+
         if (amounts[0] < slippages[1] || amounts[0] > slippages[2]) {
             revert IdleBeforeDepositCheckFailed();
         }
@@ -92,10 +97,16 @@ contract IdleStrategy is Strategy {
             emit BeforeRedeemalCheckSlippages(ssts);
         }
 
-        if (
-            (slippages[0] < 2 && (ssts < slippages[3] || ssts > slippages[4]))
-                || (slippages[0] == 2 && (ssts < slippages[1] || ssts > slippages[2]))
-        ) {
+        uint256 slippageOffset;
+        if (slippages[0] < 2) {
+            slippageOffset = 3;
+        } else if (slippages[0] == 2) {
+            slippageOffset = 1;
+        } else {
+            revert IdleBeforeRedeemalCheckFailed();
+        }
+
+        if (ssts < slippages[slippageOffset] || ssts > slippages[slippageOffset + 1]) {
             revert IdleBeforeRedeemalCheckFailed();
         }
     }
@@ -117,9 +128,7 @@ contract IdleStrategy is Strategy {
     }
 
     function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
-        uint256 idleTokensToRedeem = idleToken.balanceOf(address(this)) * ssts / totalSupply();
         uint256 slippage;
-
         if (slippages[0] == 1) {
             slippage = slippages[6];
         } else if (slippages[0] == 2) {
@@ -130,14 +139,18 @@ contract IdleStrategy is Strategy {
             revert IdleRedeemSlippagesFailed();
         }
 
+        uint256 idleTokensToRedeem = idleToken.balanceOf(address(this)) * ssts / totalSupply();
         _redeemFromIdle(idleTokensToRedeem, slippage);
     }
 
     function _emergencyWithdrawImpl(uint256[] calldata slippages, address recipient) internal override {
+        if (slippages[0] != 3) {
+            revert IdleRedeemSlippagesFailed();
+        }
+
         uint256 assetsWithdrawn = _redeemFromIdle(idleToken.balanceOf((address(this))), slippages[1]);
 
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
-
         IERC20(tokens[0]).safeTransfer(recipient, assetsWithdrawn);
     }
 
@@ -148,6 +161,10 @@ contract IdleStrategy is Strategy {
     {
         if (compoundSwapInfo.length == 0) {
             return compoundYield;
+        }
+
+        if (slippages[0] > 1) {
+            revert IdleCompoundSlippagesFailed();
         }
 
         (address[] memory govTokens,) = _getProtocolRewardsInternal();
@@ -169,10 +186,7 @@ contract IdleStrategy is Strategy {
         _lastIdleTokenPrice = currentIdleTokenPrice;
     }
 
-    function _swapAssets(address[] memory tokens, uint256[] memory toSwap, SwapInfo[] calldata swapInfo)
-        internal
-        override
-    {}
+    function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
     function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
         internal

@@ -12,6 +12,7 @@ error CurveBeforeDepositCheckFailed();
 error CurveBeforeRedeemalCheckFailed();
 error CurveDepositSlippagesFailed();
 error CurveRedeemSlippagesFailed();
+error CurveCompoundSlippagesFailed();
 
 // multiple assets
 // slippages
@@ -88,16 +89,16 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
             emit BeforeRedeemalCheckSlippages(ssts);
         }
 
-        uint256 offset;
+        uint256 slippageOffset;
         if (slippages[0] < 2) {
-            offset = 7;
+            slippageOffset = 7;
         } else if (slippages[0] == 2) {
-            offset = 1;
+            slippageOffset = 1;
         } else {
             revert CurveBeforeRedeemalCheckFailed();
         }
 
-        if (ssts < slippages[offset] || ssts > slippages[offset + 1]) {
+        if (ssts < slippages[slippageOffset] || ssts > slippages[slippageOffset + 1]) {
             revert CurveBeforeRedeemalCheckFailed();
         }
     }
@@ -119,7 +120,6 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
     }
 
     function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
-        uint256 lpTokensToRedeem = _lpTokenBalance() * ssts / totalSupply();
         uint256 slippageOffset;
         if (slippages[0] == 1) {
             slippageOffset = 10;
@@ -133,19 +133,16 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
             revert CurveRedeemSlippagesFailed();
         }
 
+        uint256 lpTokensToRedeem = _lpTokenBalance() * ssts / totalSupply();
         _redeemFromCurve(lpTokensToRedeem, slippageOffset, slippages);
     }
 
     function _emergencyWithdrawImpl(uint256[] calldata slippages, address recipient) internal override {
-        uint256 lpTokensToRedeem = _lpTokenBalance();
-        uint256 slippageOffset;
-        if (slippages[0] == 3) {
-            slippageOffset = 1;
-        } else {
+        if (slippages[0] != 3) {
             revert CurveRedeemSlippagesFailed();
         }
 
-        _redeemFromCurve(lpTokensToRedeem, slippageOffset, slippages);
+        _redeemFromCurve(_lpTokenBalance(), 1, slippages);
 
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
@@ -178,6 +175,10 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
         internal
         override
     {
+        if (slippages[0] > 1) {
+            revert CurveCompoundSlippagesFailed();
+        }
+
         _depositToCurve(tokens, amounts, slippages[9]);
     }
 

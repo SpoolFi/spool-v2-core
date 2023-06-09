@@ -99,6 +99,10 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
             emit BeforeDepositCheckSlippages(amounts);
         }
 
+        if (slippages[0] > 2) {
+            revert StEthHoldingBeforeDepositCheckFailed();
+        }
+
         if (amounts[0] < slippages[1] || amounts[0] > slippages[2]) {
             revert StEthHoldingBeforeDepositCheckFailed();
         }
@@ -109,10 +113,16 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
             emit BeforeRedeemalCheckSlippages(ssts);
         }
 
-        if (
-            (slippages[0] < 2 && (ssts < slippages[3] || ssts > slippages[4]))
-                || (slippages[0] == 2 && (ssts < slippages[1] || ssts > slippages[2]))
-        ) {
+        uint256 slippageOffset;
+        if (slippages[0] < 2) {
+            slippageOffset = 3;
+        } else if (slippages[0] == 2) {
+            slippageOffset = 1;
+        } else {
+            revert StEthHoldingBeforeRedeemalCheckFailed();
+        }
+
+        if (ssts < slippages[slippageOffset] || ssts > slippages[slippageOffset + 1]) {
             revert StEthHoldingBeforeRedeemalCheckFailed();
         }
     }
@@ -138,9 +148,7 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
     }
 
     function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
-        uint256 stEthToSell = lido.balanceOf(address(this)) * ssts / totalSupply();
         uint256 slippage;
-
         if (slippages[0] == 1) {
             slippage = slippages[5];
         } else if (slippages[0] == 2) {
@@ -151,6 +159,7 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
             revert StEthHoldingRedeemSlippagesFailed();
         }
 
+        uint256 stEthToSell = lido.balanceOf(address(this)) * ssts / totalSupply();
         _sellOnCurve(stEthToSell, slippage);
     }
 

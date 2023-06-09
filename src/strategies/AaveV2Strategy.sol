@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
-import "forge-std/console.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../external/interfaces/strategies/aave/v2/ILendingPool.sol";
@@ -51,9 +50,9 @@ contract AaveV2Strategy is Strategy {
         return _assetRatio;
     }
 
-    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public view override {}
+    function beforeDepositCheck(uint256[] memory, uint256[] calldata) public view override {}
 
-    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
+    function beforeRedeemalCheck(uint256, uint256[] calldata) public view override {}
 
     function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
         internal
@@ -82,7 +81,7 @@ contract AaveV2Strategy is Strategy {
         provider.getLendingPool().withdraw(tokens[0], type(uint256).max, recipient);
     }
 
-    function _compound(address[] calldata tokens, SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
+    function _compound(address[] calldata, SwapInfo[] calldata, uint256[] calldata)
         internal
         override
         returns (int256 compoundYield)
@@ -97,10 +96,7 @@ contract AaveV2Strategy is Strategy {
         _lastNormalizedIncome = currentNormalizedIncome;
     }
 
-    function _swapAssets(address[] memory tokens, uint256[] memory toSwap, SwapInfo[] calldata swapInfo)
-        internal
-        override
-    {}
+    function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
     function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
         internal

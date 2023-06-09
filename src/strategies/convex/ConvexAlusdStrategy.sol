@@ -13,6 +13,7 @@ error StratBeforeDepositCheckFailed();
 error StratBeforeRedeemalCheckFailed();
 error StratDepositSlippagesFailed();
 error StratRedeemSlippagesFailed();
+error StratCompoundSlippagesFailed();
 
 // multiple assets
 // multiple rewards
@@ -173,16 +174,16 @@ contract ConvexAlusdStrategy is
             emit BeforeRedeemalCheckSlippages(ssts);
         }
 
-        uint256 offset;
+        uint256 slippageOffset;
         if (slippages[0] < 2) {
-            offset = 2 * tokenLength + 1;
+            slippageOffset = 2 * tokenLength + 1;
         } else if (slippages[0] == 2) {
-            offset = 1;
+            slippageOffset = 1;
         } else {
             revert StratBeforeRedeemalCheckFailed();
         }
 
-        if (ssts < slippages[offset] || ssts > slippages[offset + 1]) {
+        if (ssts < slippages[slippageOffset] || ssts > slippages[slippageOffset + 1]) {
             revert StratBeforeRedeemalCheckFailed();
         }
     }
@@ -221,14 +222,11 @@ contract ConvexAlusdStrategy is
     }
 
     function _emergencyWithdrawImpl(uint256[] calldata slippages, address recipient) internal override {
-        uint256 slippageOffset;
-        if (slippages[0] == 3) {
-            slippageOffset = 1;
-        } else {
+        if (slippages[0] != 3) {
             revert StratRedeemSlippagesFailed();
         }
 
-        _redeemInner(totalSupply(), slippages, slippageOffset);
+        _redeemInner(totalSupply(), slippages, 1);
 
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
@@ -244,6 +242,10 @@ contract ConvexAlusdStrategy is
     {
         if (compoundSwapInfo.length == 0) {
             return compoundYield;
+        }
+
+        if (slippages[0] > 1) {
+            revert StratCompoundSlippagesFailed();
         }
 
         (address[] memory rewardTokens,) = _getProtocolRewardsInternal();
@@ -262,11 +264,7 @@ contract ConvexAlusdStrategy is
         return manualYield;
     }
 
-    function _swapAssets(address[] memory tokens, uint256[] memory toSwap, SwapInfo[] calldata swapInfo)
-        internal
-        pure
-        override
-    {}
+    function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal pure override {}
 
     function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
         internal

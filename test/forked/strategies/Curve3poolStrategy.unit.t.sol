@@ -138,9 +138,9 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdc), address(curveStrategy), toDepositUsdc, true);
         deal(address(tokenUsdt), address(curveStrategy), toDepositUsdt, true);
 
-        uint256 daiBalanceOfCurvePoolBefore = tokenDai.balanceOf(address(curvePool));
-        uint256 usdcBalanceOfCurvePoolBefore = tokenUsdc.balanceOf(address(curvePool));
-        uint256 usdtBalanceOfCurvePoolBefore = tokenUsdt.balanceOf(address(curvePool));
+        tokenDai.balanceOf(address(curvePool));
+        tokenUsdc.balanceOf(address(curvePool));
+        tokenUsdt.balanceOf(address(curvePool));
 
         // act and assert
         uint256[] memory slippages = new uint256[](11);
