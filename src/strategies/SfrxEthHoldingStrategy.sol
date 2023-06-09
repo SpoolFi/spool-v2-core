@@ -56,7 +56,7 @@ contract SfrxEthHoldingStrategy is Strategy, WethHelper {
     using SafeERC20 for IERC20;
 
     int128 public constant CURVE_ETH_POOL_ETH_INDEX = 0;
-    int128 public constant CURVE_ETH_POOL_SFRXETH_INDEX = 1;
+    int128 public constant CURVE_ETH_POOL_FRXETH_INDEX = 1;
 
     IERC20 public immutable frxEthToken;
     ISfrxEthToken public immutable sfrxEthToken;
@@ -220,7 +220,7 @@ contract SfrxEthHoldingStrategy is Strategy, WethHelper {
         unwrapEth(amount);
 
         uint256 bought =
-            curve.exchange{value: amount}(CURVE_ETH_POOL_ETH_INDEX, CURVE_ETH_POOL_SFRXETH_INDEX, amount, slippage);
+            curve.exchange{value: amount}(CURVE_ETH_POOL_ETH_INDEX, CURVE_ETH_POOL_FRXETH_INDEX, amount, slippage);
 
         _resetAndApprove(frxEthToken, address(sfrxEthToken), bought);
         sfrxEthToken.deposit(bought, address(this));
@@ -234,7 +234,7 @@ contract SfrxEthHoldingStrategy is Strategy, WethHelper {
         uint256 withdrawn = sfrxEthToken.redeem(amount, address(this), address(this));
 
         _resetAndApprove(IERC20(address(frxEthToken)), address(curve), withdrawn);
-        bought = curve.exchange(CURVE_ETH_POOL_SFRXETH_INDEX, CURVE_ETH_POOL_ETH_INDEX, withdrawn, slippage);
+        bought = curve.exchange(CURVE_ETH_POOL_FRXETH_INDEX, CURVE_ETH_POOL_ETH_INDEX, withdrawn, slippage);
 
         wrapEth(bought);
 
