@@ -31,11 +31,9 @@ contract AssetsInitial {
         assetNames[3] = WETH_KEY;
 
         address[] memory assetAddresses = new address[](assetNames.length);
-        uint256[] memory assetDecimals = new uint256[](assetNames.length);
         address[] memory assetPriceAggregators = new address[](assetNames.length);
         for (uint256 i; i < assetNames.length; ++i) {
             assetAddresses[i] = constantsJson().getAddress(string.concat(".assets.", assetNames[i], ".address"));
-            assetDecimals[i] = constantsJson().getUint256(string.concat(".assets.", assetNames[i], ".decimals"));
             assetPriceAggregators[i] =
                 constantsJson().getAddress(string.concat(".assets.", assetNames[i], ".priceAggregator"));
         }
@@ -45,9 +43,7 @@ contract AssetsInitial {
         for (uint256 i; i < assetNames.length; ++i) {
             _assets[assetNames[i]] = assetAddresses[i];
 
-            priceFeedManager.setAsset(
-                assetAddresses[i], assetDecimals[i], AggregatorV3Interface(assetPriceAggregators[i]), true
-            );
+            priceFeedManager.setAsset(assetAddresses[i], AggregatorV3Interface(assetPriceAggregators[i]), true);
         }
     }
 

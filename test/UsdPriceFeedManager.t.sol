@@ -30,13 +30,16 @@ contract UsdPriceFeedManagerTest is Test {
     }
 
     function _setAssets() public {
-        usdPriceFeedManager.setAsset(daiAddress, 18, daiUsdPriceAggregator, true);
+        vm.mockCall(daiAddress, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(18));
+        usdPriceFeedManager.setAsset(daiAddress, daiUsdPriceAggregator, true);
         daiUsdPriceAggregator.pushAnswer(1_00007408);
 
-        usdPriceFeedManager.setAsset(usdcAddress, 6, usdcUsdPriceAggregator, true);
+        vm.mockCall(usdcAddress, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(6));
+        usdPriceFeedManager.setAsset(usdcAddress, usdcUsdPriceAggregator, true);
         usdcUsdPriceAggregator.pushAnswer(1_00012625);
 
-        usdPriceFeedManager.setAsset(amplAddress, 9, amplUsdPriceAggregator, true);
+        vm.mockCall(amplAddress, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(9));
+        usdPriceFeedManager.setAsset(amplAddress, amplUsdPriceAggregator, true);
         amplUsdPriceAggregator.pushAnswer(1_369957781322723900);
     }
 
@@ -67,9 +70,11 @@ contract UsdPriceFeedManagerTest is Test {
     }
 
     function test_setAsset_shouldRevertWhenNotCalledByAdmin() public {
+        vm.mockCall(daiAddress, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(18));
+
         vm.prank(address(0x123));
         vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SPOOL_ADMIN, address(0x123)));
-        usdPriceFeedManager.setAsset(daiAddress, 18, daiUsdPriceAggregator, true);
+        usdPriceFeedManager.setAsset(daiAddress, daiUsdPriceAggregator, true);
     }
 
     function test_assetToUsd_shouldConvert() public {
@@ -191,8 +196,9 @@ contract UsdPriceFeedManagerTest is Test {
 
         // token A
         address tokenA = address(0xa);
+        vm.mockCall(tokenA, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(8));
         MockAggregatorV3 aUsdPriceAggregator = new MockAggregatorV3(8, "A-Usd", 1);
-        usdPriceFeedManager.setAsset(tokenA, 8, aUsdPriceAggregator, true);
+        usdPriceFeedManager.setAsset(tokenA, aUsdPriceAggregator, true);
         initialAmount = 1_11111111;
 
         aUsdPriceAggregator.pushAnswer(11111_11111111);
@@ -212,8 +218,9 @@ contract UsdPriceFeedManagerTest is Test {
 
         // token B
         address tokenB = address(0xb);
+        vm.mockCall(tokenB, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(18));
         MockAggregatorV3 bUsdPriceAggregator = new MockAggregatorV3(8, "B-Usd", 1);
-        usdPriceFeedManager.setAsset(tokenB, 18, bUsdPriceAggregator, true);
+        usdPriceFeedManager.setAsset(tokenB, bUsdPriceAggregator, true);
         initialAmount = 1_111111111111111111;
 
         bUsdPriceAggregator.pushAnswer(11111_11111111);
@@ -233,8 +240,9 @@ contract UsdPriceFeedManagerTest is Test {
 
         // token C
         address tokenC = address(0xc);
+        vm.mockCall(tokenC, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(8));
         MockAggregatorV3 cUsdPriceAggregator = new MockAggregatorV3(18, "C-Usd", 1);
-        usdPriceFeedManager.setAsset(tokenC, 8, cUsdPriceAggregator, true);
+        usdPriceFeedManager.setAsset(tokenC, cUsdPriceAggregator, true);
         initialAmount = 1_11111111;
 
         cUsdPriceAggregator.pushAnswer(11111_111111111111111111);
@@ -253,9 +261,10 @@ contract UsdPriceFeedManagerTest is Test {
         assertEq(finalAmount, initialAmount - 1);
 
         // token D
-        address tokenD = address(0xc);
+        address tokenD = address(0xd);
+        vm.mockCall(tokenD, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(18));
         MockAggregatorV3 dUsdPriceAggregator = new MockAggregatorV3(18, "D-Usd", 1);
-        usdPriceFeedManager.setAsset(tokenD, 18, dUsdPriceAggregator, true);
+        usdPriceFeedManager.setAsset(tokenD, dUsdPriceAggregator, true);
         initialAmount = 1_111111111111111111;
 
         dUsdPriceAggregator.pushAnswer(11111_111111111111111111);

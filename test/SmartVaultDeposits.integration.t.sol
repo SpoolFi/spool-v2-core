@@ -41,10 +41,12 @@ contract depositManagerIntegrationTest is Test {
         daiUsdPriceAggregator = new MockAggregatorV3(8, "Dai-Usd", 1);
         usdcUsdPriceAggregator = new MockAggregatorV3(8, "Usdc-Usd", 1);
 
-        usdPriceFeedManager.setAsset(daiAddress, daiDecimals, daiUsdPriceAggregator, true);
+        vm.mockCall(daiAddress, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(daiDecimals));
+        usdPriceFeedManager.setAsset(daiAddress, daiUsdPriceAggregator, true);
         daiUsdPriceAggregator.pushAnswer(1_00000000);
 
-        usdPriceFeedManager.setAsset(usdcAddress, usdcDecimals, usdcUsdPriceAggregator, true);
+        vm.mockCall(usdcAddress, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(usdcDecimals));
+        usdPriceFeedManager.setAsset(usdcAddress, usdcUsdPriceAggregator, true);
         usdcUsdPriceAggregator.pushAnswer(1_00000000);
     }
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
+import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "../external/interfaces/chainlink/AggregatorV3Interface.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../access/Roles.sol";
@@ -33,10 +34,12 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager, SpoolAccessControllable {
 
     /* ========== ADMIN FUNCTIONS ========== */
 
-    function setAsset(address asset, uint256 decimals, AggregatorV3Interface priceAggregator, bool validity)
+    function setAsset(address asset, AggregatorV3Interface priceAggregator, bool validity)
         external
         onlyRole(ROLE_SPOOL_ADMIN, msg.sender)
     {
+        uint256 decimals = IERC20Metadata(asset).decimals();
+
         assetDecimals[asset] = decimals;
         assetMultiplier[asset] = 10 ** decimals;
         assetPriceAggregator[asset] = priceAggregator;
