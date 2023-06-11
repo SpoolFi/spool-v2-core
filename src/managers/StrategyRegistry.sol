@@ -465,7 +465,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
             }
 
             emit StrategySharesFastRedeemed(
-                redeemFastParams.strategies[i], redeemFastParams.strategyShares[i], withdrawnAssets
+                redeemFastParams.strategies[i], redeemFastParams.strategyShares[i], strategyWithdrawnAssets
             );
         }
 
