@@ -30,35 +30,6 @@ contract MasterWalletTest is Test {
         masterWallet = new MasterWallet(accessControl);
     }
 
-    function test_approve_shouldApprove() public {
-        vm.prank(manager);
-        masterWallet.approve(token, user, 1 ether);
-
-        assertEq(token.allowance(address(masterWallet), user), 1 ether);
-    }
-
-    function test_approve_shouldRevertWhenCalledByWrongActor() public {
-        vm.prank(user);
-        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_MASTER_WALLET_MANAGER, user));
-        masterWallet.approve(token, user, 1 ether);
-    }
-
-    function test_resetApprove_shouldResetApproval() public {
-        vm.prank(manager);
-        masterWallet.approve(token, user, 1 ether);
-
-        vm.prank(manager);
-        masterWallet.resetApprove(token, user);
-
-        assertEq(token.allowance(address(masterWallet), user), 0);
-    }
-
-    function test_resetApprove_shouldRevertWhenCalledByWrongActor() public {
-        vm.prank(user);
-        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_MASTER_WALLET_MANAGER, user));
-        masterWallet.resetApprove(token, user);
-    }
-
     function test_transfer_shouldTransfer() public {
         deal(address(token), address(masterWallet), 1 ether, true);
 

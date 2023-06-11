@@ -10,17 +10,6 @@ contract MasterWallet is IMasterWallet, SpoolAccessControllable {
 
     constructor(ISpoolAccessControl accessControl_) SpoolAccessControllable(accessControl_) {}
 
-    function approve(IERC20 token, address spender, uint256 amount)
-        external
-        onlyRole(ROLE_MASTER_WALLET_MANAGER, msg.sender)
-    {
-        token.safeApprove(spender, amount);
-    }
-
-    function resetApprove(IERC20 token, address spender) external onlyRole(ROLE_MASTER_WALLET_MANAGER, msg.sender) {
-        token.safeApprove(spender, 0);
-    }
-
     function transfer(IERC20 token, address recipient, uint256 amount)
         external
         onlyRole(ROLE_MASTER_WALLET_MANAGER, msg.sender)
