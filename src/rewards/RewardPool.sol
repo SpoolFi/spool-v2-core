@@ -42,7 +42,7 @@ contract RewardPool is IRewardPool, Pausable {
         cycleCount++;
         roots[cycleCount] = root;
 
-        emit PoolRootAdded(cycleCount);
+        emit PoolRootAdded(cycleCount, root);
     }
 
     function updateTreeRoot(bytes32 root, uint256 cycle) external onlyRole(ROLE_REWARD_POOL_ADMIN, msg.sender) {
@@ -54,9 +54,10 @@ contract RewardPool is IRewardPool, Pausable {
             revert InvalidCycle();
         }
 
+        bytes32 previousRoot = roots[cycle];
         roots[cycle] = root;
 
-        emit PoolRootUpdated(cycle);
+        emit PoolRootUpdated(cycle, previousRoot, root);
     }
 
     function claim(ClaimRequest[] calldata data) public whenNotPaused {

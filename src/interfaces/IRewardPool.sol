@@ -21,12 +21,15 @@ interface IRewardPool {
     function claim(ClaimRequest[] calldata data) external;
 
     /**
-     * @notice Add a Merkle tree root
+     * @notice Add a Merkle tree root for a new cycle
+     * @param root Root to add
      */
     function addTreeRoot(bytes32 root) external;
 
     /**
      * @notice Update existing root for a given cycle
+     * @param root New root
+     * @param cycle Cycle to update
      */
     function updateTreeRoot(bytes32 root, uint256 cycle) external;
 
@@ -73,8 +76,21 @@ interface IRewardPool {
      */
     function rewardsClaimed(address user, address smartVault, address token) external view returns (uint256);
 
-    event PoolRootAdded(uint256 cycle);
-    event PoolRootUpdated(uint256 cycle);
+    /**
+     * @notice New root was added to the pool
+     * @param cycle Number of new cycle
+     * @param root Newly added root
+     */
+    event PoolRootAdded(uint256 indexed cycle, bytes32 root);
+
+    /**
+     * @notice Pool's root was updated
+     * @param cycle Number of cycle that was updated
+     * @param previousRoot Previous root for the cycle
+     * @param newRoot New root for the cycle
+     */
+    event PoolRootUpdated(uint256 indexed cycle, bytes32 previousRoot, bytes32 newRoot);
+
     event RewardsClaimed(
         address indexed user, address indexed smartVault, address indexed token, uint256 cycle, uint256 amount
     );

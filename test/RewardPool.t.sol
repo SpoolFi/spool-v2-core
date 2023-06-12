@@ -8,6 +8,9 @@ import "../src/access/SpoolAccessControl.sol";
 import "./mocks/MockToken.sol";
 
 contract RewardPoolTest is Test {
+    event PoolRootAdded(uint256 indexed cycle, bytes32 root);
+    event PoolRootUpdated(uint256 indexed cycle, bytes32 previousRoot, bytes32 newRoot);
+
     IRewardPool paymentPool;
     MockToken token;
     SpoolAccessControl accessControl;
@@ -29,13 +32,29 @@ contract RewardPoolTest is Test {
         deal(address(token), address(paymentPool), 4_000_000 ether, true);
     }
 
-    function test_addRoot() public {
+    function test_addRoot_success() public {
+        uint256 cycleBefore = paymentPool.cycleCount();
+
+        vm.expectEmit(true, true, true, true);
+        emit PoolRootAdded(cycleBefore + 1, treeRoot);
+
         paymentPool.addTreeRoot(treeRoot);
+
+        uint256 cycle = paymentPool.cycleCount();
+
+        assertEq(cycle, cycleBefore + 1);
+        assertEq(paymentPool.roots(cycle), treeRoot);
     }
 
     function test_updateRoot_success() public {
         bytes32 newRoot = 0x77e3bb058cf4f611bb9c8a2f5e920ff8b745f893c484b030b2c83106d0090000;
         paymentPool.addTreeRoot(treeRoot);
+
+        uint256 cycle = paymentPool.cycleCount();
+
+        vm.expectEmit(true, true, true, true);
+        emit PoolRootUpdated(cycle, treeRoot, newRoot);
+
         paymentPool.updateTreeRoot(newRoot, 1);
 
         assertEq(paymentPool.roots(1), newRoot);
