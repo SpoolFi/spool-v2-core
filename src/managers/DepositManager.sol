@@ -29,6 +29,11 @@ import "../libraries/uint128a2Lib.sol";
 error IncorrectDepositRatio();
 
 /**
+ * @notice Used when normalization for flush factors is zero.
+ */
+error InvalidNormalization();
+
+/**
  * @notice Used when trying to burn deposit NFT that was not synced yet.
  * @param id ID of the NFT.
  */
@@ -526,11 +531,25 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         }
 
         uint256[] memory idealDeposit = calculateDepositRatio(exchangeRates, allocation, strategyRatios);
+        // find first asset that has non-zero ideal weight and use it as a reference
+        uint256 ref;
+        for (uint256 i; i < idealDeposit.length; ++i) {
+            if (idealDeposit[i] > 0) {
+                ref = i;
+
+                break;
+            }
+        }
+        // all weights cannot be zero, since calculateDepositRatio would revert in that case
 
         // loop over assets
-        for (uint256 i = 1; i < deposit.length; ++i) {
-            uint256 valueA = deposit[i] * idealDeposit[i - 1];
-            uint256 valueB = deposit[i - 1] * idealDeposit[i];
+        for (uint256 i; i < deposit.length; ++i) {
+            if (i == ref) {
+                continue;
+            }
+
+            uint256 valueA = deposit[i] * idealDeposit[ref];
+            uint256 valueB = deposit[ref] * idealDeposit[i];
 
             if ( // check if valueA is within DEPOSIT_TOLERANCE of valueB
                 valueA < (valueB * (FULL_PERCENT - DEPOSIT_TOLERANCE) / FULL_PERCENT)
@@ -603,6 +622,10 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             // loop over assets
             for (uint256 j = 0; j < exchangeRates.length; ++j) {
                 normalization += strategyRatios[i][j] * exchangeRates[j];
+            }
+
+            if (normalization == 0) {
+                revert InvalidNormalization();
             }
 
             // loop over assets

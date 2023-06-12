@@ -152,6 +152,14 @@ library Arrays {
         return result.set(2, x3);
     }
 
+    function toUint16a16(uint256 x1, uint256 x2, uint256 x3, uint256 x4) public pure returns (uint16a16) {
+        uint16a16 result;
+        result = result.set(0, x1);
+        result = result.set(1, x2);
+        result = result.set(1, x3);
+        return result.set(2, x4);
+    }
+
     /// @dev based on https://gist.github.com/subhodi/b3b86cc13ad2636420963e692a4d896f
     function _quickSort(address[] memory arr, int256 left, int256 right) private pure {
         int256 i = left;

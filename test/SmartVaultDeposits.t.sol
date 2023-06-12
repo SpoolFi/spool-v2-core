@@ -309,3 +309,135 @@ contract depositManager1x2Test is Test {
         assertEq(distribution[1][0], 400000);
     }
 }
+
+contract depositManagerOtherTest is Test {
+    DepositManager depositManager;
+
+    function setUp() public {
+        depositManager = new DepositManager(
+            IStrategyRegistry(address(0x01)),
+            IUsdPriceFeedManager(address(0x02)),
+            IGuardManager(address(0x03)),
+            IActionManager(address(0x04)),
+            ISpoolAccessControl(address(0x5))
+        );
+    }
+
+    function test_checkDepositRatio_shouldRevertIfDepositsAreNotCloseEnough() public {
+        // 4 assets, 1 strategy
+
+        uint256[] memory deposits = Arrays.toArray(10000, 10049, 10098, 10147);
+        uint256[] memory exchangeRates = Arrays.toArray(
+            USD_DECIMALS_MULTIPLIER, USD_DECIMALS_MULTIPLIER, USD_DECIMALS_MULTIPLIER, USD_DECIMALS_MULTIPLIER
+        );
+        uint16a16 allocation = Arrays.toUint16a16(2500, 2500, 2500, 2500);
+        uint256[][] memory strategyRatios = new uint256[][](1);
+        strategyRatios[0] = Arrays.toArray(1, 1, 1, 1);
+
+        vm.expectRevert(IncorrectDepositRatio.selector);
+        depositManager.checkDepositRatio(deposits, exchangeRates, allocation, strategyRatios);
+    }
+
+    function test_checkDepositRatio_zeroIdealWeightForFirstOfThree() public view {
+        // 3 assets, 1 strategy
+
+        uint256[] memory deposits = Arrays.toArray(0, 10000, 10049);
+        uint256[] memory exchangeRates =
+            Arrays.toArray(USD_DECIMALS_MULTIPLIER, USD_DECIMALS_MULTIPLIER, USD_DECIMALS_MULTIPLIER);
+        uint16a16 allocation = Arrays.toUint16a16(3333, 3333, 3336);
+        uint256[][] memory strategyRatios = new uint256[][](1);
+        strategyRatios[0] = Arrays.toArray(0, 100, 100);
+
+        depositManager.checkDepositRatio(deposits, exchangeRates, allocation, strategyRatios);
+    }
+
+    function test_checkDepositRatio_zeroIdealWeightForFirstOfThree_shouldRevert() public {
+        // 3 assets, 1 strategy
+
+        uint256[] memory deposits = Arrays.toArray(0, 10000, 10051);
+        uint256[] memory exchangeRates =
+            Arrays.toArray(USD_DECIMALS_MULTIPLIER, USD_DECIMALS_MULTIPLIER, USD_DECIMALS_MULTIPLIER);
+        uint16a16 allocation = Arrays.toUint16a16(3333, 3333, 3336);
+        uint256[][] memory strategyRatios = new uint256[][](1);
+        strategyRatios[0] = Arrays.toArray(0, 100, 100);
+
+        vm.expectRevert(IncorrectDepositRatio.selector);
+        depositManager.checkDepositRatio(deposits, exchangeRates, allocation, strategyRatios);
+    }
+
+    function test_checkDepositRatio_zeroIdealWeightForSecondOfThree() public view {
+        // 3 assets, 1 strategy
+
+        uint256[] memory deposits = Arrays.toArray(10000, 0, 10049);
+        uint256[] memory exchangeRates =
+            Arrays.toArray(USD_DECIMALS_MULTIPLIER, USD_DECIMALS_MULTIPLIER, USD_DECIMALS_MULTIPLIER);
+        uint16a16 allocation = Arrays.toUint16a16(3333, 3333, 3336);
+        uint256[][] memory strategyRatios = new uint256[][](1);
+        strategyRatios[0] = Arrays.toArray(1, 0, 1);
+
+        depositManager.checkDepositRatio(deposits, exchangeRates, allocation, strategyRatios);
+    }
+
+    function test_checkDepositRatio_zeroIdealWeightForThirdOfThree() public view {
+        // 3 assets, 1 strategy
+
+        uint256[] memory deposits = Arrays.toArray(10000, 10049, 0);
+        uint256[] memory exchangeRates =
+            Arrays.toArray(USD_DECIMALS_MULTIPLIER, USD_DECIMALS_MULTIPLIER, USD_DECIMALS_MULTIPLIER);
+        uint16a16 allocation = Arrays.toUint16a16(3333, 3333, 3336);
+        uint256[][] memory strategyRatios = new uint256[][](1);
+        strategyRatios[0] = Arrays.toArray(1, 1, 0);
+
+        depositManager.checkDepositRatio(deposits, exchangeRates, allocation, strategyRatios);
+    }
+
+    function test_checkDepositRatio_zeroIdealWeightForFirstOfTwo() public view {
+        // 2 assets, 1 strategy
+
+        uint256[] memory deposits = Arrays.toArray(0, 1000);
+        uint256[] memory exchangeRates = Arrays.toArray(USD_DECIMALS_MULTIPLIER, USD_DECIMALS_MULTIPLIER);
+        uint16a16 allocation = Arrays.toUint16a16(5000, 5000);
+        uint256[][] memory strategyRatios = new uint256[][](1);
+        strategyRatios[0] = Arrays.toArray(0, 1);
+
+        depositManager.checkDepositRatio(deposits, exchangeRates, allocation, strategyRatios);
+    }
+
+    function test_checkDepositRatio_zeroIdealWeightForSecondOfTwo() public view {
+        // 2 assets, 1 strategy
+
+        uint256[] memory deposits = Arrays.toArray(1000, 0);
+        uint256[] memory exchangeRates = Arrays.toArray(USD_DECIMALS_MULTIPLIER, USD_DECIMALS_MULTIPLIER);
+        uint16a16 allocation = Arrays.toUint16a16(5000, 5000);
+        uint256[][] memory strategyRatios = new uint256[][](1);
+        strategyRatios[0] = Arrays.toArray(1, 0);
+
+        depositManager.checkDepositRatio(deposits, exchangeRates, allocation, strategyRatios);
+    }
+
+    function test_checkDepositRatio_zeroIdealWeightForSecondOfTwo_shouldRevert() public {
+        // 2 assets, 1 strategy
+
+        uint256[] memory deposits = Arrays.toArray(1000, 1);
+        uint256[] memory exchangeRates = Arrays.toArray(USD_DECIMALS_MULTIPLIER, USD_DECIMALS_MULTIPLIER);
+        uint16a16 allocation = Arrays.toUint16a16(5000, 5000);
+        uint256[][] memory strategyRatios = new uint256[][](1);
+        strategyRatios[0] = Arrays.toArray(1, 0);
+
+        vm.expectRevert(IncorrectDepositRatio.selector);
+        depositManager.checkDepositRatio(deposits, exchangeRates, allocation, strategyRatios);
+    }
+
+    function test_checkDepositRatio_zeroIdealWeightForAll_shouldRevert() public {
+        // 2 assets, 1 strategy
+
+        uint256[] memory deposits = Arrays.toArray(0, 0);
+        uint256[] memory exchangeRates = Arrays.toArray(USD_DECIMALS_MULTIPLIER, USD_DECIMALS_MULTIPLIER);
+        uint16a16 allocation = Arrays.toUint16a16(5000, 5000);
+        uint256[][] memory strategyRatios = new uint256[][](1);
+        strategyRatios[0] = Arrays.toArray(0, 0);
+
+        vm.expectRevert(InvalidNormalization.selector);
+        depositManager.checkDepositRatio(deposits, exchangeRates, allocation, strategyRatios);
+    }
+}
