@@ -51,6 +51,9 @@ contract IdleStrategyTest is TestFixture, ForkTestFixture {
             swapper
         );
         idleStrategy.initialize("idle-strategy", assetGroupId, idleToken);
+
+        vm.prank(address(strategyRegistry));
+        accessControl.grantRole(ROLE_STRATEGY, address(idleStrategy));
     }
 
     function test_depositToProtocol() public {

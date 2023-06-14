@@ -34,6 +34,8 @@ contract Swapper is ISwapper, SpoolAccessControllable {
         address[] calldata tokensOut,
         address receiver
     ) external returns (uint256[] memory tokenAmounts) {
+        _isAllowedToSwap();
+
         uint256[] memory amountsIn = new uint256[](tokensIn.length);
 
         for (uint256 i; i < tokensIn.length; ++i) {
@@ -93,6 +95,12 @@ contract Swapper is ISwapper, SpoolAccessControllable {
     function _approveMax(IERC20 token, address spender) private {
         if (token.allowance(address(this), spender) == 0) {
             token.safeApprove(spender, type(uint256).max);
+        }
+    }
+
+    function _isAllowedToSwap() private view {
+        if (!_accessControl.hasRole(ROLE_STRATEGY, msg.sender) && !_accessControl.hasRole(ROLE_SWAPPER, msg.sender)) {
+            revert NotSwapper(msg.sender);
         }
     }
 

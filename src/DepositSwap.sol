@@ -11,6 +11,10 @@ import "./interfaces/ISmartVaultManager.sol";
 import "./interfaces/ISwapper.sol";
 import "./interfaces/CommonErrors.sol";
 
+/**
+ * @dev Requires roles:
+ * - ROLE_SWAPPER
+ */
 contract DepositSwap is IDepositSwap {
     using SafeERC20 for IERC20;
 

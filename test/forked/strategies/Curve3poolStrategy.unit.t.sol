@@ -78,6 +78,9 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
             int128(YIELD_FULL_PERCENT_INT),
             int128(-YIELD_FULL_PERCENT_INT)
         );
+
+        vm.prank(address(strategyRegistry));
+        accessControl.grantRole(ROLE_STRATEGY, address(curveStrategy));
     }
 
     function test_assetRatio() public {

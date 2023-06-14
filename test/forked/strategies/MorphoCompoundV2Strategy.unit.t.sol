@@ -59,6 +59,9 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
             int128(YIELD_FULL_PERCENT_INT),
             int128(-YIELD_FULL_PERCENT_INT)
         );
+
+        vm.prank(address(strategyRegistry));
+        accessControl.grantRole(ROLE_STRATEGY, address(morphoCompoundV2Strategy));
     }
 
     function test_depositToProtocol() public {

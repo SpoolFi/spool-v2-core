@@ -57,6 +57,9 @@ contract NotionalFinanceStrategyTest is TestFixture, ForkTestFixture {
         );
 
         notionalFinanceStrategy.initialize("CompoundV2Strategy", assetGroupId, INToken(NOTIONAL_FINANCE_NUSDC));
+
+        vm.prank(address(strategyRegistry));
+        accessControl.grantRole(ROLE_STRATEGY, address(notionalFinanceStrategy));
     }
 
     function test_depositToProtocol() public {

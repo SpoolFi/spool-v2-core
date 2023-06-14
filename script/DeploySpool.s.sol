@@ -223,6 +223,8 @@ contract DeploySpool {
             proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
             depositSwap = DepositSwap(address(proxy));
 
+            spoolAccessControl.grantRole(ROLE_SWAPPER, address(depositSwap));
+
             contractsJson().addProxy("DepositSwap", address(implementation), address(proxy));
         }
 

@@ -115,6 +115,7 @@ contract DepositSwapIntegrationTest is TestFixture {
         priceFeedManager.setExchangeRate(address(tokenC), 2 * USD_DECIMALS_MULTIPLIER);
 
         depositSwap = new DepositSwap(weth, assetGroupRegistry, smartVaultManager, swapper);
+        accessControl.grantRole(ROLE_SWAPPER, address(depositSwap));
 
         SwapInfo[] memory swapInfo = new SwapInfo[](2);
         swapInfo[0] = SwapInfo(
@@ -166,6 +167,7 @@ contract DepositSwapIntegrationTest is TestFixture {
         priceFeedManager.setExchangeRate(address(tokenB), 1 * USD_DECIMALS_MULTIPLIER);
 
         depositSwap = new DepositSwap(weth, assetGroupRegistry, smartVaultManager, swapper);
+        accessControl.grantRole(ROLE_SWAPPER, address(depositSwap));
 
         SwapInfo[] memory swapInfo = new SwapInfo[](1);
         swapInfo[0] = SwapInfo(
@@ -218,6 +220,7 @@ contract DepositSwapIntegrationTest is TestFixture {
         priceFeedManager.setExchangeRate(address(weth), 1 * USD_DECIMALS_MULTIPLIER);
 
         depositSwap = new DepositSwap(weth, assetGroupRegistry, smartVaultManager, swapper);
+        accessControl.grantRole(ROLE_SWAPPER, address(depositSwap));
 
         SwapInfo[] memory swapInfo = new SwapInfo[](2);
         swapInfo[0] = SwapInfo(
@@ -263,6 +266,7 @@ contract DepositSwapIntegrationTest is TestFixture {
         priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
 
         depositSwap = new DepositSwap(weth, assetGroupRegistry, smartVaultManager, swapper);
+        accessControl.grantRole(ROLE_SWAPPER, address(depositSwap));
 
         SwapInfo[] memory swapInfo = new SwapInfo[](0);
 

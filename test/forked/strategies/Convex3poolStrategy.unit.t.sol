@@ -88,6 +88,9 @@ contract Convex3poolStrategyTest is TestFixture, ForkTestFixture {
             int128(YIELD_FULL_PERCENT_INT),
             int128(-YIELD_FULL_PERCENT_INT)
         );
+
+        vm.prank(address(strategyRegistry));
+        accessControl.grantRole(ROLE_STRATEGY, address(convexStrategy));
     }
 
     function test_assetRatio() public {

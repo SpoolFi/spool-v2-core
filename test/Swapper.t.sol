@@ -4,7 +4,17 @@ pragma solidity 0.8.17;
 import {Test} from "forge-std/Test.sol";
 import {SwapInfo} from "../src/interfaces/ISwapper.sol";
 import {SpoolAccessControl} from "../src/access/SpoolAccessControl.sol";
-import {Swapper, ExchangeNotAllowed, InvalidArrayLength, MissingRole, ROLE_SPOOL_ADMIN} from "../src/Swapper.sol";
+import {
+    Swapper,
+    ExchangeNotAllowed,
+    InvalidArrayLength,
+    MissingRole,
+    NotSwapper,
+    ADMIN_ROLE_STRATEGY,
+    ROLE_SPOOL_ADMIN,
+    ROLE_STRATEGY,
+    ROLE_SWAPPER
+} from "../src/Swapper.sol";
 import {Arrays} from "./libraries/Arrays.sol";
 import {USD_DECIMALS_MULTIPLIER} from "./libraries/Constants.sol";
 import {MockExchange} from "./mocks/MockExchange.sol";
@@ -37,6 +47,7 @@ contract SwapperTest is Test {
         accessControl.initialize();
 
         accessControl.grantRole(ROLE_SPOOL_ADMIN, swapperAdmin);
+        accessControl.grantRole(ROLE_SWAPPER, alice);
 
         swapper = new Swapper(accessControl);
 
@@ -229,6 +240,55 @@ contract SwapperTest is Test {
         vm.startPrank(alice);
         tokenA.transfer(address(swapper), 10 ether);
         vm.expectRevert(abi.encodeWithSelector(ExchangeNotAllowed.selector, address(exchangeAB)));
+        swapper.swap(tokens, swapInfo, tokens, bob);
+        vm.stopPrank();
+    }
+
+    function test_swap_shouldOnlySwapForAuthorizedAddresses() public {
+        address strategy = address(0xd);
+        accessControl.grantRole(ADMIN_ROLE_STRATEGY, address(this));
+        accessControl.grantRole(ROLE_STRATEGY, strategy);
+
+        deal(address(tokenA), strategy, 10 ether, true);
+        deal(address(tokenA), bob, 10 ether, true);
+
+        vm.startPrank(swapperAdmin);
+        swapper.updateExchangeAllowlist(Arrays.toArray(address(exchangeAB)), Arrays.toArray(true));
+        vm.stopPrank();
+
+        address[] memory tokens = Arrays.toArray(address(tokenA), address(tokenB));
+
+        SwapInfo[] memory swapInfo = new SwapInfo[](1);
+        swapInfo[0] = SwapInfo({
+            swapTarget: address(exchangeAB),
+            token: address(tokenA),
+            amountIn: 10 ether,
+            swapCallData: abi.encodeWithSelector(exchangeAB.swap.selector, address(tokenA), 10 ether, address(swapper))
+        });
+
+        // should swap for ROLE_SWAPPER
+        vm.startPrank(alice);
+        tokenA.transfer(address(swapper), 10 ether);
+        swapper.swap(tokens, swapInfo, tokens, alice);
+        vm.stopPrank();
+
+        assertEq(tokenA.balanceOf(alice), 0);
+        assertEq(tokenB.balanceOf(alice), 10 ether);
+
+        // should swap for ROLE_STRATEGY
+        vm.startPrank(strategy);
+        tokenA.transfer(address(swapper), 10 ether);
+        swapper.swap(tokens, swapInfo, tokens, strategy);
+        vm.stopPrank();
+
+        assertEq(tokenA.balanceOf(strategy), 0);
+        assertEq(tokenB.balanceOf(strategy), 10 ether);
+
+        // should not swap for others
+        vm.startPrank(bob);
+        tokenA.transfer(address(swapper), 10 ether);
+
+        vm.expectRevert(abi.encodeWithSelector(NotSwapper.selector, bob));
         swapper.swap(tokens, swapInfo, tokens, bob);
         vm.stopPrank();
     }

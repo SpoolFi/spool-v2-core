@@ -47,6 +47,9 @@ contract CompoundV2StrategyDaiTest is TestFixture, ForkTestFixture {
         );
 
         compoundV2Strategy.initialize("CompoundV2Strategy", assetGroupId, ICErc20(cDAI));
+
+        vm.prank(address(strategyRegistry));
+        accessControl.grantRole(ROLE_STRATEGY, address(compoundV2Strategy));
     }
 
     function test_depositToProtocol() public {

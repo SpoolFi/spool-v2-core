@@ -129,3 +129,10 @@ bytes32 constant ROLE_DO_HARD_WORKER = keccak256("DO_HARD_WORKER");
  * @dev Grants permission to immediately withdraw assets in case of emergency.
  */
 bytes32 constant ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR = keccak256("EMERGENCY_WITHDRAWAL_EXECUTOR");
+
+/**
+ * @dev Grants permission to swap with swapper.
+ *
+ * Should be granted to the DepositSwap contract.
+ */
+bytes32 constant ROLE_SWAPPER = keccak256("SWAPPER");

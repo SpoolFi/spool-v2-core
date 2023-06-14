@@ -27,6 +27,12 @@ struct SwapInfo {
  */
 error ExchangeNotAllowed(address exchange);
 
+/**
+ * @notice Used when trying to execute a swap but are not authorized.
+ * @param caller Caller of the swap method.
+ */
+error NotSwapper(address caller);
+
 /* ========== INTERFACES ========== */
 
 interface ISwapper {
