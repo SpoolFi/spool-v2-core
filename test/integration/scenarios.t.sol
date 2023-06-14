@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import "forge-std/Test.sol";
 import "../../src/access/SpoolAccessControl.sol";
 import "../../src/libraries/uint16a16Lib.sol";
-import "../../src/strategies/GhostStrategy.sol";
+import "../../src/guards/AllowlistGuard.sol";
 import "../../src/managers/ActionManager.sol";
 import "../../src/managers/AssetGroupRegistry.sol";
 import "../../src/managers/DepositManager.sol";
@@ -13,6 +13,7 @@ import "../../src/managers/RiskManager.sol";
 import "../../src/managers/SmartVaultManager.sol";
 import "../../src/managers/StrategyRegistry.sol";
 import "../../src/managers/WithdrawalManager.sol";
+import "../../src/strategies/GhostStrategy.sol";
 import "../../src/MasterWallet.sol";
 import "../../src/SmartVault.sol";
 import "../../src/SmartVaultFactory.sol";
@@ -169,6 +170,7 @@ contract ScenariosTest is Test {
                 riskManager
             );
             accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
+            accessControl.grantRole(ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM, address(smartVaultFactory));
         }
 
         {
@@ -425,6 +427,118 @@ contract ScenariosTest is Test {
         assertEq(smartVault.balanceOf(address(bob)), 0);
         // - deposit NFT was burned
         assertEq(smartVault.balanceOfFractional(bob, depositNftIdBob), 0);
+    }
+
+    function test_redeemFor_shouldRevertWhenExecutorNotOnAllowlist() public {
+        // set smart vault with allowlist guard checking executor of redeemal
+        AllowlistGuard allowlistGuard = new AllowlistGuard(accessControl);
+
+        GuardDefinition[][] memory guards = new GuardDefinition[][](1);
+        guards[0] = new GuardDefinition[](1);
+
+        GuardParamType[] memory guardParamTypes = new GuardParamType[](3);
+        guardParamTypes[0] = GuardParamType.VaultAddress; // address of the smart vault
+        guardParamTypes[1] = GuardParamType.CustomValue; // ID of the allowlist, set as method param value below
+        guardParamTypes[2] = GuardParamType.Executor; // address of the executor
+
+        bytes[] memory guardParamValues = new bytes[](1);
+        guardParamValues[0] = abi.encode(uint256(0));
+
+        guards[0][0] = GuardDefinition({
+            contractAddress: address(allowlistGuard),
+            methodSignature: "isAllowed(address,uint256,address)",
+            expectedValue: 0, // do not need this
+            methodParamTypes: guardParamTypes,
+            methodParamValues: guardParamValues,
+            operator: 0 // do not need this
+        });
+
+        RequestType[] memory guardRequestTypes = new RequestType[](1);
+        guardRequestTypes[0] = RequestType.Withdrawal;
+
+        address[] memory smartVaultStrategies = Arrays.toArray(address(strategyA1));
+
+        SmartVaultSpecification memory smartVaultSpecification =
+            getSmartVaultSpecification(assetGroupIdA, smartVaultStrategies);
+        smartVaultSpecification.guards = guards;
+        smartVaultSpecification.guardRequestTypes = guardRequestTypes;
+        smartVaultSpecification.allowRedeemFor = true;
+
+        vm.startPrank(bob);
+        // Bob creates the smart vault
+        ISmartVault smartVault = smartVaultFactory.deploySmartVault(smartVaultSpecification);
+        vm.stopPrank();
+
+        // add Alice to allowlist
+        accessControl.grantSmartVaultRole(address(smartVault), ROLE_GUARD_ALLOWLIST_MANAGER, address(this));
+        allowlistGuard.addToAllowlist(address(smartVault), 0, Arrays.toArray(alice));
+
+        // set initial state - Alice deposited 40 ether to the smart vault
+        deal(address(smartVault), alice, 4_000_000, true);
+        deal(address(strategyA1), address(smartVault), 4_000_000, true);
+        deal(address(tokenA), address(strategyA1), 40 ether, true);
+
+        // Alice can request withdrawal
+        vm.startPrank(alice);
+        uint256 withdrawalNftIdAlice = smartVaultManager.redeem(
+            RedeemBag({
+                smartVault: address(smartVault),
+                shares: 1_000_000,
+                nftIds: new uint256[](0),
+                nftAmounts: new uint256[](0)
+            }),
+            alice,
+            false
+        );
+        vm.stopPrank();
+
+        // check state
+        // - vault tokens are returned to vault
+        assertEq(smartVault.balanceOf(alice), 3_000_000);
+        assertEq(smartVault.balanceOf(address(smartVault)), 1_000_000);
+        // - withdrawal NFT is minted
+        assertEq(withdrawalNftIdAlice, 2 ** 255 + 1);
+        assertEq(smartVault.balanceOf(alice, withdrawalNftIdAlice), 1);
+
+        // Bob as smart vault owner cannnot request withdrawal for Alice
+        vm.startPrank(bob);
+        vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
+        smartVaultManager.redeemFor(
+            RedeemBag({
+                smartVault: address(smartVault),
+                shares: 2_000_000,
+                nftIds: new uint256[](0),
+                nftAmounts: new uint256[](0)
+            }),
+            alice,
+            false
+        );
+        vm.stopPrank();
+
+        // add Bob to allowlist
+        allowlistGuard.addToAllowlist(address(smartVault), 0, Arrays.toArray(bob));
+
+        // Bob as smart vault owner can request withdrawal for Alice
+        vm.startPrank(bob);
+        uint256 withdrawalNftIdBob = smartVaultManager.redeemFor(
+            RedeemBag({
+                smartVault: address(smartVault),
+                shares: 2_000_000,
+                nftIds: new uint256[](0),
+                nftAmounts: new uint256[](0)
+            }),
+            alice,
+            false
+        );
+        vm.stopPrank();
+
+        // check state
+        // - vault tokens are returned to vault
+        assertEq(smartVault.balanceOf(alice), 1_000_000);
+        assertEq(smartVault.balanceOf(address(smartVault)), 3_000_000);
+        // - withdrawal NFT is minted
+        assertEq(withdrawalNftIdBob, 2 ** 255 + 2);
+        assertEq(smartVault.balanceOf(alice, withdrawalNftIdBob), 1);
     }
 
     function getSmartVaultSpecification(uint256 assetGroupId, address[] memory strategies)

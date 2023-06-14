@@ -113,7 +113,7 @@ contract AllowlistGuardIntegrationTest is TestFixture {
         guardParamValues[0] = new bytes[](1);
         guardParamValues[0][0] = abi.encode(uint256(0)); // ID of the allowlist is set to 0
 
-        // second guard will check the person owning the assets being deposited
+        // second guard will check the person receiving the deposit NFT
         guardParamTypes[1] = new GuardParamType[](3);
         guardParamTypes[1][0] = GuardParamType.VaultAddress; // address of the smart vault
         guardParamTypes[1][1] = GuardParamType.CustomValue; // ID of the allowlist, set as method param value below
@@ -130,7 +130,7 @@ contract AllowlistGuardIntegrationTest is TestFixture {
             methodParamValues: guardParamValues[0],
             operator: 0 // do not need this
         });
-        guards[0][1] = GuardDefinition({ // guard checking the owner
+        guards[0][1] = GuardDefinition({ // guard checking the receiver
             contractAddress: address(allowlistGuard),
             methodSignature: "isAllowed(address,uint256,address)",
             expectedValue: 0, // do not need this

@@ -44,12 +44,14 @@ struct RedeemFastExtras {
 /**
  * @notice Extra information for redeemal.
  * @custom:member receiver Receiver of the withdraw NFT.
- * @custom:member redeemer Address that initiated the redeemal.
+ * @custom:member owner Address that owns the shares being redeemed.
+ * @custom:member executor Address that initiated the redeemal.
  * @custom:member flushIndex Current flush index of the smart vault.
  */
 struct RedeemExtras {
     address receiver;
-    address redeemer;
+    address owner;
+    address executor;
     uint256 flushIndex;
 }
 

@@ -182,15 +182,15 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         returns (uint256)
     {
         ISmartVault smartVault = ISmartVault(bag.smartVault);
-        _validateRedeem(smartVault, bag2.redeemer, bag2.receiver, bag.shares);
+        _validateRedeem(smartVault, bag2.owner, bag2.receiver, bag2.executor, bag.shares);
 
         // add withdrawal to be flushed
         _withdrawnVaultShares[bag.smartVault][bag2.flushIndex] += bag.shares;
 
         // transfer vault shares back to smart vault
-        smartVault.transferFromSpender(bag2.redeemer, bag.smartVault, bag.shares, bag2.redeemer);
+        smartVault.transferFromSpender(bag2.owner, bag.smartVault, bag.shares, bag2.owner);
         uint256 redeemId = smartVault.mintWithdrawalNFT(bag2.receiver, WithdrawalMetadata(bag.shares, bag2.flushIndex));
-        emit RedeemInitiated(bag.smartVault, bag2.redeemer, redeemId, bag2.flushIndex, bag.shares, bag2.receiver);
+        emit RedeemInitiated(bag.smartVault, bag2.owner, redeemId, bag2.flushIndex, bag.shares, bag2.receiver);
 
         return redeemId;
     }
@@ -201,7 +201,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         returns (uint256[] memory)
     {
         ISmartVault smartVault = ISmartVault(bag.smartVault);
-        _validateRedeem(smartVault, bag2.redeemer, bag2.redeemer, bag.shares);
+        _validateRedeem(smartVault, bag2.redeemer, bag2.redeemer, bag2.redeemer, bag.shares);
 
         // figure out how much to redeem from each strategy
         uint256[] memory strategySharesToRedeem = new uint256[](bag2.strategies.length);
@@ -237,9 +237,12 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         return assetsWithdrawn;
     }
 
-    function _validateRedeem(ISmartVault smartVault, address redeemer, address receiver, uint256 shares) private view {
-        if (smartVault.balanceOf(redeemer) < shares) {
-            revert InsufficientBalance(smartVault.balanceOf(redeemer), shares);
+    function _validateRedeem(ISmartVault smartVault, address owner, address receiver, address executor, uint256 shares)
+        private
+        view
+    {
+        if (smartVault.balanceOf(owner) < shares) {
+            revert InsufficientBalance(smartVault.balanceOf(owner), shares);
         }
 
         uint256[] memory assets = new uint256[](1);
@@ -250,8 +253,8 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
             address(smartVault),
             RequestContext({
                 receiver: receiver,
-                executor: redeemer,
-                owner: redeemer,
+                executor: executor,
+                owner: owner,
                 requestType: RequestType.Withdrawal,
                 assets: assets,
                 tokens: tokens

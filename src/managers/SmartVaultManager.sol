@@ -202,13 +202,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /* ========== DEPOSIT/WITHDRAW ========== */
 
     function redeem(RedeemBag calldata bag, address receiver, bool doFlush) external whenNotPaused returns (uint256) {
-        return _redeem(bag, receiver, msg.sender, doFlush);
+        return _redeem(bag, receiver, msg.sender, msg.sender, doFlush);
     }
 
     function redeemFor(RedeemBag calldata bag, address owner, bool doFlush) external whenNotPaused returns (uint256) {
         _checkRole(ROLE_SMART_VAULT_ALLOW_REDEEM, bag.smartVault);
         _checkSmartVaultRole(bag.smartVault, ROLE_SMART_VAULT_ADMIN, msg.sender);
-        return _redeem(bag, owner, owner, doFlush);
+        return _redeem(bag, owner, owner, msg.sender, doFlush);
     }
 
     function redeemFast(
@@ -669,7 +669,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return SVTs;
     }
 
-    function _redeem(RedeemBag calldata bag, address receiver, address redeemer, bool doFlush)
+    function _redeem(RedeemBag calldata bag, address receiver, address owner, address executor, bool doFlush)
         internal
         returns (uint256)
     {
@@ -680,10 +680,17 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         uint256 flushIndexToSync = _flushIndexes[bag.smartVault].toSync;
         _depositManager.claimSmartVaultTokens(
-            bag.smartVault, bag.nftIds, bag.nftAmounts, tokens, redeemer, flushIndexToSync
+            bag.smartVault, bag.nftIds, bag.nftAmounts, tokens, owner, flushIndexToSync
         );
-        uint256 nftId =
-            _withdrawalManager.redeem(bag, RedeemExtras(receiver, redeemer, _flushIndexes[bag.smartVault].current));
+        uint256 nftId = _withdrawalManager.redeem(
+            bag,
+            RedeemExtras({
+                receiver: receiver,
+                owner: owner,
+                executor: executor,
+                flushIndex: _flushIndexes[bag.smartVault].current
+            })
+        );
 
         if (doFlush) {
             flushSmartVault(bag.smartVault);
