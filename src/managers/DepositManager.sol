@@ -216,8 +216,18 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
     ) external returns (uint16a16) {
         _checkRole(ROLE_SMART_VAULT_MANAGER, msg.sender);
 
-        if (_vaultDeposits[smartVault][flushIndex][0] == 0) {
-            return uint16a16.wrap(0);
+        uint256[] memory deposits = new uint256[](tokens.length);
+        {
+            uint256 totalDeposits;
+            for (uint256 i; i < tokens.length; ++i) {
+                deposits[i] = _vaultDeposits[smartVault][flushIndex][i];
+                totalDeposits += deposits[i];
+            }
+
+            // check if there was a deposit made
+            if (totalDeposits == 0) {
+                return uint16a16.wrap(0);
+            }
         }
 
         // handle deposits
@@ -226,7 +236,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
 
         uint256[][] memory distribution = distributeDeposit(
             DepositQueryBag1({
-                deposit: _vaultDeposits[smartVault][flushIndex].toArray(tokens.length),
+                deposit: deposits,
                 exchangeRates: exchangeRates,
                 allocation: allocation,
                 strategyRatios: SpoolUtils.getStrategyRatiosAtLastDhw(strategies, _strategyRegistry)
@@ -279,7 +289,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         view
         returns (DepositSyncResult memory result)
     {
-        uint256 deposits;
+        bool depositsMade;
         {
             uint256[] memory dhwTimestamps =
                 _strategyRegistry.dhwTimestamps(parameters.strategies, parameters.dhwIndexes);
@@ -294,7 +304,14 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
                 }
             }
 
-            deposits = _vaultDeposits[parameters.smartVault][parameters.bag[0]][0];
+            for (uint256 i; i < parameters.assetGroup.length; ++i) {
+                // check if there was any amount deposited
+                depositsMade = _vaultDeposits[parameters.smartVault][parameters.bag[0]][i] > 0;
+
+                if (depositsMade) {
+                    break;
+                }
+            }
         }
 
         uint256[2] memory totalUsd;
@@ -322,7 +339,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         for (uint256 i; i < parameters.strategies.length; ++i) {
             StrategyAtIndex memory atDhw = strategyDhwStates[i];
 
-            if (deposits > 0 && atDhw.sharesMinted > 0) {
+            if (depositsMade && atDhw.sharesMinted > 0) {
                 uint256[2] memory depositedUsd;
                 // depositedUsd[0]: (vault) USD value deposited in the strategy by the smart vault
                 // depositedUsd[1]: (strategy) USD value deposited in the strategy
@@ -741,6 +758,10 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
 
             // loop over assets
             for (uint256 j = 0; j < bag.exchangeRates.length; j++) {
+                if (flushFactors[i][j] == 0) {
+                    // mitigate division by zero
+                    continue;
+                }
                 distribution[i][j] = bag.deposit[j] * flushFactors[i][j] / idealDepositRatio[j];
                 distributed[j] += distribution[i][j];
             }

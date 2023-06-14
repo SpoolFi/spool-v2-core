@@ -43,12 +43,15 @@ contract ScenariosTest is Test {
     MockToken tokenC;
 
     address[] assetGroupA;
+    address[] assetGroupAB;
     address[] assetGroupABC;
 
     uint256 assetGroupIdA;
+    uint256 assetGroupIdAB;
 
     MockStrategy strategyA1;
     MockStrategy strategyA2;
+    MockStrategy strategyAB1;
 
     SpoolAccessControl accessControl;
     ActionManager actionManager;
@@ -92,6 +95,7 @@ contract ScenariosTest is Test {
             tokenC = MockToken(address(assetGroupABC[2]));
 
             assetGroupA = Arrays.toArray(address(tokenA));
+            assetGroupAB = Arrays.toArray(address(tokenA), address(tokenB));
 
             tokenA.mint(alice, 100 ether);
             tokenB.mint(alice, 100 ether);
@@ -115,6 +119,7 @@ contract ScenariosTest is Test {
             assetGroupRegistry = new AssetGroupRegistry(accessControl);
             assetGroupRegistry.initialize(assetGroupABC);
             assetGroupIdA = assetGroupRegistry.registerAssetGroup(assetGroupA);
+            assetGroupIdAB = assetGroupRegistry.registerAssetGroup(assetGroupAB);
 
             ghostStrategy = new GhostStrategy();
 
@@ -181,6 +186,10 @@ contract ScenariosTest is Test {
             strategyA2 = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupIdA);
             strategyA2.initialize("StratA2", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA2), 0);
+
+            strategyAB1 = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupIdAB);
+            strategyAB1.initialize("StratAB1", Arrays.toArray(1, 1));
+            strategyRegistry.registerStrategy(address(strategyAB1), 0);
         }
     }
 
@@ -427,6 +436,150 @@ contract ScenariosTest is Test {
         assertEq(smartVault.balanceOf(address(bob)), 0);
         // - deposit NFT was burned
         assertEq(smartVault.balanceOfFractional(bob, depositNftIdBob), 0);
+    }
+
+    function test_depositAndWithdraw_shouldProcessEvenIfFirstAssetHasZeroIdealWeight() public {
+        address[] memory smartVaultStrategies = Arrays.toArray(address(strategyAB1));
+        ISmartVault smartVault =
+            smartVaultFactory.deploySmartVault(getSmartVaultSpecification(assetGroupIdAB, smartVaultStrategies));
+
+        // arrange
+        strategyAB1.setAssetRatio(Arrays.toArray(0, 1));
+        // - must DHW for new asset ratio to take effect
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroupAB));
+        vm.stopPrank();
+
+        // Alice deposits
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(0, 10 ether);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+
+        uint256 depositNftIdAlice = smartVaultManager.deposit(
+            DepositBag({
+                smartVault: address(smartVault),
+                assets: depositAmounts,
+                receiver: alice,
+                referral: address(0x0),
+                doFlush: false
+            })
+        );
+
+        vm.stopPrank();
+
+        // check state
+        // - tokens were transferred
+        assertEq(tokenA.balanceOf(alice), 100 ether);
+        assertEq(tokenB.balanceOf(alice), 90 ether);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenB.balanceOf(address(masterWallet)), 10 ether);
+        // - deposit NFT was minted
+        assertEq(depositNftIdAlice, 1);
+        assertEq(smartVault.balanceOfFractional(alice, depositNftIdAlice), NFT_MINTED_SHARES);
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // DHW
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroupAB));
+        vm.stopPrank();
+
+        // check state
+        // - tokens were routed to the protocol
+        assertEq(tokenA.balanceOf(address(strategyAB1.protocol())), 0);
+        assertEq(tokenB.balanceOf(address(strategyAB1.protocol())), 10 ether);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenB.balanceOf(address(masterWallet)), 0);
+        // - strategy tokens were minted
+        assertEq(strategyAB1.totalSupply(), 10000000000000000000000);
+
+        // sync vault
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        // check state
+        // - strategy tokens were claimed
+        assertEq(strategyAB1.balanceOf(address(smartVault)), 10000000000000000000000);
+        assertEq(strategyAB1.balanceOf(address(strategyAB1)), 0);
+        // - vault tokens were minted
+        assertEq(smartVault.totalSupply(), 10000000000000000000000);
+        assertEq(smartVault.balanceOf(address(smartVault)), 10000000000000000000000);
+
+        // claim deposit
+        uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
+        vm.startPrank(alice);
+        smartVaultManager.claimSmartVaultTokens(address(smartVault), Arrays.toArray(depositNftIdAlice), amounts);
+        vm.stopPrank();
+
+        // check state
+        // - vault tokens were claimed
+        assertEq(smartVault.balanceOf(alice), 10000000000000000000000);
+        assertEq(smartVault.balanceOf(address(smartVault)), 0);
+        // - deposit NFT was burned
+        assertEq(smartVault.balanceOfFractional(alice, depositNftIdAlice), 0);
+
+        // Alice requests withdrawal
+        vm.startPrank(alice);
+        uint256 withdrawalNftIdAlice = smartVaultManager.redeem(
+            RedeemBag(address(smartVault), smartVault.balanceOf(alice) / 2, new uint256[](0), new uint256[](0)),
+            alice,
+            false
+        );
+        vm.stopPrank();
+
+        // check state
+        // - vault tokens are returned to vault
+        assertEq(smartVault.balanceOf(alice), 5000000000000000000000);
+        assertEq(smartVault.balanceOf(address(smartVault)), 5000000000000000000000);
+        // - withdrawal NFTs are minted
+        assertEq(withdrawalNftIdAlice, 2 ** 255 + 1);
+        assertEq(smartVault.balanceOfFractional(alice, withdrawalNftIdAlice), NFT_MINTED_SHARES);
+        assertEq(smartVault.balanceOf(alice, withdrawalNftIdAlice), 1);
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // check state
+        // - vault tokens are burned
+        assertEq(smartVault.balanceOf(address(smartVault)), 0);
+        // - strategy tokens are returned to strategies
+        assertEq(strategyAB1.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertEq(strategyAB1.balanceOf(address(strategyAB1)), 5000000000000000000000);
+
+        // DHW
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroupAB));
+        vm.stopPrank();
+
+        // check state
+        // - strategy tokens are burned
+        assertEq(strategyAB1.balanceOf(address(strategyAB1)), 0);
+        // - assets are withdrawn from protocol master wallet
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenB.balanceOf(address(masterWallet)), 5 ether);
+        assertEq(tokenA.balanceOf(address(strategyAB1)), 0);
+        assertEq(tokenB.balanceOf(address(strategyAB1)), 0);
+
+        // sync vault
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        // claim withdrawal
+        vm.startPrank(alice);
+        smartVaultManager.claimWithdrawal(
+            address(smartVault), Arrays.toArray(withdrawalNftIdAlice), Arrays.toArray(NFT_MINTED_SHARES), alice
+        );
+        vm.stopPrank();
+
+        // check state
+        // - assets are transfered to withdrawers
+        assertEq(tokenA.balanceOf(alice), 100 ether);
+        assertEq(tokenB.balanceOf(alice), 95 ether);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenB.balanceOf(address(masterWallet)), 0);
+        // - withdrawal NFTs are burned
+        assertEq(smartVault.balanceOfFractional(alice, withdrawalNftIdAlice), 0);
+        assertEq(smartVault.balanceOf(alice, withdrawalNftIdAlice), 0);
     }
 
     function test_redeemFor_shouldRevertWhenExecutorNotOnAllowlist() public {
