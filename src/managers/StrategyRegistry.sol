@@ -252,7 +252,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         _removeStrategy(strategy);
     }
 
-    function doHardWork(DoHardWorkParameterBag calldata dhwParams) external whenNotPaused {
+    function doHardWork(DoHardWorkParameterBag calldata dhwParams) external whenNotPaused nonReentrant {
         unchecked {
             // Check if is run after the expiry time
             if (dhwParams.validUntil < block.timestamp) revert DoHardWorkParametersExpired();

@@ -201,11 +201,21 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== DEPOSIT/WITHDRAW ========== */
 
-    function redeem(RedeemBag calldata bag, address receiver, bool doFlush) external whenNotPaused returns (uint256) {
+    function redeem(RedeemBag calldata bag, address receiver, bool doFlush)
+        external
+        whenNotPaused
+        checkNonReentrant
+        returns (uint256)
+    {
         return _redeem(bag, receiver, msg.sender, msg.sender, doFlush);
     }
 
-    function redeemFor(RedeemBag calldata bag, address owner, bool doFlush) external whenNotPaused returns (uint256) {
+    function redeemFor(RedeemBag calldata bag, address owner, bool doFlush)
+        external
+        whenNotPaused
+        checkNonReentrant
+        returns (uint256)
+    {
         _checkRole(ROLE_SMART_VAULT_ALLOW_REDEEM, bag.smartVault);
         _checkSmartVaultRole(bag.smartVault, ROLE_SMART_VAULT_ADMIN, msg.sender);
         return _redeem(bag, owner, owner, msg.sender, doFlush);
@@ -215,7 +225,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         RedeemBag calldata bag,
         uint256[][] calldata withdrawalSlippages,
         uint256[2][] calldata exchangeRateSlippages
-    ) external whenNotPaused returns (uint256[] memory) {
+    ) external whenNotPaused nonReentrant returns (uint256[] memory) {
         _onlyRegisteredSmartVault(bag.smartVault);
 
         address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
@@ -240,7 +250,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         );
     }
 
-    function deposit(DepositBag calldata bag) external whenNotPaused returns (uint256) {
+    function deposit(DepositBag calldata bag) external whenNotPaused checkNonReentrant returns (uint256) {
         _onlyRegisteredSmartVault(bag.smartVault);
         return _depositAssets(bag);
     }
@@ -288,6 +298,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm)
         external
         whenNotPaused
+        checkNonReentrant
     {
         _checkRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender);
 
@@ -315,7 +326,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         emit SmartVaultRegistered(smartVault, registrationForm);
     }
 
-    function removeStrategyFromVaults(address strategy, address[] calldata vaults, bool disableStrategy) external {
+    function removeStrategyFromVaults(address strategy, address[] calldata vaults, bool disableStrategy)
+        external
+        checkNonReentrant
+    {
         _checkRole(ROLE_SPOOL_ADMIN, msg.sender);
 
         for (uint256 i; i < vaults.length; ++i) {
@@ -360,7 +374,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         );
     }
 
-    function reallocate(ReallocateParamBag calldata reallocateParams) external whenNotPaused {
+    function reallocate(ReallocateParamBag calldata reallocateParams) external whenNotPaused nonReentrant {
         // Can only be called by a reallocator.
         if (!_isViewExecution()) {
             _checkRole(ROLE_REALLOCATOR, msg.sender);

@@ -10,6 +10,11 @@ import "./Roles.sol";
  * @notice Spool access control management
  */
 contract SpoolAccessControl is AccessControlUpgradeable, PausableUpgradeable, ISpoolAccessControl {
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+
+    uint256 private _status;
+
     mapping(address => address) public smartVaultOwner;
 
     /* ========== CONSTRUCTOR ========== */
@@ -82,6 +87,25 @@ contract SpoolAccessControl is AccessControlUpgradeable, PausableUpgradeable, IS
         _unpause();
     }
 
+    function checkNonReentrant() public view {
+        if (_status == _ENTERED) {
+            revert ReentrantCall();
+        }
+    }
+
+    function nonReentrantBefore() external {
+        _checkRoleForReentrancy();
+        checkNonReentrant();
+
+        _status = _ENTERED;
+    }
+
+    function nonReentrantAfter() external {
+        _checkRoleForReentrancy();
+
+        _status = _NOT_ENTERED;
+    }
+
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _onlyAdminOrVaultAdmin(address smartVault, address account) private view {
@@ -98,6 +122,12 @@ contract SpoolAccessControl is AccessControlUpgradeable, PausableUpgradeable, IS
     function _checkRole(bytes32 role, address account) internal view override {
         if (!hasRole(role, account)) {
             revert MissingRole(role, account);
+        }
+    }
+
+    function _checkRoleForReentrancy() internal view {
+        if (!(hasRole(ROLE_STRATEGY_REGISTRY, msg.sender) || hasRole(ROLE_SMART_VAULT_MANAGER, msg.sender))) {
+            revert NoReentrantRole();
         }
     }
 

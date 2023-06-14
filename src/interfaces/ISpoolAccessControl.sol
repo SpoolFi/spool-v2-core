@@ -20,6 +20,16 @@ error SystemPaused();
  */
 error SmartVaultOwnerAlreadySet(address smartVault);
 
+/**
+ * @notice Used when a contract tries to enter in a non-reentrant state.
+ */
+error ReentrantCall();
+
+/**
+ * @notice Used when a contract tries to call in a non-reentrant function and doesn't have the correct role.
+ */
+error NoReentrantRole();
+
 interface ISpoolAccessControl is IAccessControlUpgradeable {
     /* ========== VIEW FUNCTIONS ========== */
 
@@ -106,6 +116,12 @@ interface ISpoolAccessControl is IAccessControlUpgradeable {
      * @param owner address to which grant ownership to
      */
     function grantSmartVaultOwnership(address smartVault, address owner) external;
+
+    function checkNonReentrant() external view;
+
+    function nonReentrantBefore() external;
+
+    function nonReentrantAfter() external;
 
     /**
      * @notice Emitted when ownership of a smart vault is granted to an address
