@@ -314,6 +314,83 @@ contract ScenariosTest is Test {
         assertEq(smartVault.balanceOfFractional(bob, depositNftIdBob), 0);
     }
 
+    function test_deposit_shouldRevertWhenOnlyGhostStrategies() public {
+        address[] memory smartVaultStrategies = Arrays.toArray(address(strategyA1), address(strategyA2));
+        ISmartVault smartVault =
+            smartVaultFactory.deploySmartVault(getSmartVaultSpecification(assetGroupIdA, smartVaultStrategies));
+
+        // Alice should be able to deposit
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(10 ether);
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+        uint256 depositNftIdAlice = smartVaultManager.deposit(
+            DepositBag({
+                smartVault: address(smartVault),
+                assets: depositAmounts,
+                receiver: alice,
+                referral: address(0x0),
+                doFlush: false
+            })
+        );
+
+        vm.stopPrank();
+
+        // check state
+        // - deposit NFTs were minted
+        assertEq(depositNftIdAlice, 1);
+        assertEq(smartVault.balanceOf(alice, depositNftIdAlice), 1);
+
+        // strategy A1 is removed
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
+
+        // Alice should be able to deposit
+        vm.startPrank(alice);
+
+        depositAmounts = Arrays.toArray(10 ether);
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+        depositNftIdAlice = smartVaultManager.deposit(
+            DepositBag({
+                smartVault: address(smartVault),
+                assets: depositAmounts,
+                receiver: alice,
+                referral: address(0x0),
+                doFlush: false
+            })
+        );
+
+        vm.stopPrank();
+
+        // check state
+        // - deposit NFTs were minted
+        assertEq(depositNftIdAlice, 2);
+        assertEq(smartVault.balanceOf(alice, depositNftIdAlice), 1);
+
+        // strategy A2 is removed
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[1], Arrays.toArray(address(smartVault)), true);
+
+        // Alice should not be able to deposit
+        vm.startPrank(alice);
+
+        depositAmounts = Arrays.toArray(10 ether);
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+        vm.expectRevert(GhostVault.selector);
+        smartVaultManager.deposit(
+            DepositBag({
+                smartVault: address(smartVault),
+                assets: depositAmounts,
+                receiver: alice,
+                referral: address(0x0),
+                doFlush: false
+            })
+        );
+
+        vm.stopPrank();
+    }
+
     function test_depositAndDonate_shouldNotRevertWhenDepositingVerySmallAmount() public {
         address[] memory smartVaultStrategies = Arrays.toArray(address(strategyA1));
         ISmartVault smartVault =

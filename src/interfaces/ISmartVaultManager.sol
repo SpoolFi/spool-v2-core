@@ -58,6 +58,11 @@ error RedeemForNotAllowed();
  */
 error VaultNotSynced();
 
+/**
+ * @notice Used when trying to deposit into a smart vault that has only ghost strategies.
+ */
+error GhostVault();
+
 /* ========== STRUCTS ========== */
 
 /**

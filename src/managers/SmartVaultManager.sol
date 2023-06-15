@@ -725,8 +725,24 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * - optionally trigger flush right after
      */
     function _depositAssets(DepositBag calldata bag) internal returns (uint256) {
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
         address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
+
+        {
+            // do not allow deposits if vault consists only of ghost strategies
+            bool nonGhostVault;
+            for (uint256 i; i < strategies_.length; ++i) {
+                if (strategies_[i] != _ghostStrategy) {
+                    nonGhostVault = true;
+                    break;
+                }
+            }
+
+            if (!nonGhostVault) {
+                revert GhostVault();
+            }
+        }
+
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
         uint16a16 allocations_ = _smartVaultAllocations[bag.smartVault];
 
         _syncSmartVault(bag.smartVault, strategies_, tokens, false);
