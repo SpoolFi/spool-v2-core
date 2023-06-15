@@ -182,7 +182,7 @@ contract SpoolUtilsTest is Test {
         assertFalse(success);
 
         string memory message = SpoolUtils.getRevertMsg(data);
-        vm.expectRevert("SmartVaultManager::_getRevertMsg: Transaction reverted silently.");
+        vm.expectRevert("SpoolUtils::_getRevertMsg: Transaction reverted silently.");
         revert(message);
     }
 

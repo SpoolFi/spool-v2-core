@@ -64,7 +64,7 @@ library SpoolUtils {
     function getRevertMsg(bytes memory returnData_) public pure returns (string memory) {
         // if the _res length is less than 68, then the transaction failed silently (without a revert message)
         if (returnData_.length < 68) {
-            return "SmartVaultManager::_getRevertMsg: Transaction reverted silently.";
+            return "SpoolUtils::_getRevertMsg: Transaction reverted silently.";
         }
 
         assembly {

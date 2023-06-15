@@ -179,10 +179,6 @@ contract DhwTest is TestFixture {
         smartVaultManager.flushSmartVault(address(smartVault));
 
         // DHW - WITHDRAW
-        SwapInfo[][] memory dhwSwapInfoWithdraw = new SwapInfo[][](3);
-        dhwSwapInfoWithdraw[0] = new SwapInfo[](0);
-        dhwSwapInfoWithdraw[1] = new SwapInfo[](0);
-        dhwSwapInfoWithdraw[2] = new SwapInfo[](0);
         console2.log("doHardWork");
         vm.startPrank(doHardWorker);
         strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
@@ -211,6 +207,110 @@ contract DhwTest is TestFixture {
         assertEq(tokenA.balanceOf(alice), tokenAInitialBalance);
         assertEq(tokenB.balanceOf(alice), tokenBInitialBalance);
         assertEq(tokenC.balanceOf(alice), tokenCInitialBalance);
+    }
+
+    function test_dhwReentrancyDepositRevert() public {
+        bool[] memory isAllowed = new bool[](1);
+        isAllowed[0] = true;
+        swapper.updateExchangeAllowlist(Arrays.toArray(address(smartVaultManager)), isAllowed);
+
+        uint256 tokenAInitialBalance = 100 ether;
+        uint256 tokenBInitialBalance = 10 ether;
+        uint256 tokenCInitialBalance = 500 ether;
+
+        // set initial state
+        deal(address(tokenA), alice, tokenAInitialBalance, true);
+        deal(address(tokenB), alice, tokenBInitialBalance, true);
+        deal(address(tokenC), alice, tokenCInitialBalance, true);
+
+        // Alice deposits
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
+        console2.log("smartVault.balanceOf(alice, aliceDepositNftId):", smartVault.balanceOf(alice, aliceDepositNftId));
+
+        vm.stopPrank();
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // DHW - DEPOSIT and expect error
+        bytes memory depositEncoded = abi.encodeCall(
+            smartVaultManager.deposit, (DepositBag(address(smartVault), depositAmounts, alice, address(0), true))
+        );
+
+        DoHardWorkParameterBag memory dhwBag = generateDhwParameterBag(smartVaultStrategies, assetGroup);
+
+        dhwBag.swapInfo[0][0] = new SwapInfo[](1);
+        dhwBag.swapInfo[0][0][0] = SwapInfo(address(smartVaultManager), address(tokenA), 1, depositEncoded);
+
+        vm.startPrank(doHardWorker);
+        vm.expectRevert("SpoolUtils::_getRevertMsg: Transaction reverted silently.");
+        strategyRegistry.doHardWork(dhwBag);
+        vm.stopPrank();
+    }
+
+    function test_dhwReentrancyFastRedeem() public {
+        bool[] memory isAllowed = new bool[](1);
+        isAllowed[0] = true;
+        swapper.updateExchangeAllowlist(Arrays.toArray(address(smartVaultManager)), isAllowed);
+
+        uint256 tokenAInitialBalance = 100 ether;
+        uint256 tokenBInitialBalance = 10 ether;
+        uint256 tokenCInitialBalance = 500 ether;
+
+        // set initial state
+        deal(address(tokenA), alice, tokenAInitialBalance, true);
+        deal(address(tokenB), alice, tokenBInitialBalance, true);
+        deal(address(tokenC), alice, tokenCInitialBalance, true);
+
+        // Alice deposits
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
+        console2.log("smartVault.balanceOf(alice, aliceDepositNftId):", smartVault.balanceOf(alice, aliceDepositNftId));
+
+        vm.stopPrank();
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // DHW - DEPOSIT and expect error
+        uint256[2][] memory exchangeRateSlippages = new uint256[2][](1);
+        exchangeRateSlippages[0][0] = 0;
+        exchangeRateSlippages[0][1] = type(uint256).max;
+        bytes memory redeemFastEncoded = abi.encodeCall(
+            smartVaultManager.redeemFast,
+            (
+                RedeemBag(address(smartVault), 1, new uint256[](0), new uint256[](0)),
+                new uint256[][](3),
+                exchangeRateSlippages
+            )
+        );
+
+        DoHardWorkParameterBag memory dhwBag = generateDhwParameterBag(smartVaultStrategies, assetGroup);
+
+        dhwBag.swapInfo[0][0] = new SwapInfo[](1);
+        dhwBag.swapInfo[0][0][0] = SwapInfo(address(smartVaultManager), address(tokenA), 1, redeemFastEncoded);
+
+        vm.startPrank(doHardWorker);
+        vm.expectRevert("SpoolUtils::_getRevertMsg: Transaction reverted silently.");
+        strategyRegistry.doHardWork(dhwBag);
+        vm.stopPrank();
     }
 
     function test_dhw_tokenOrder() public {

@@ -298,7 +298,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm)
         external
         whenNotPaused
-        checkNonReentrant
     {
         _checkRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender);
 
