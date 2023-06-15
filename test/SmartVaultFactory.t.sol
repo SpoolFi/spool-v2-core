@@ -40,6 +40,7 @@ contract SmartVaultFactoryTest is Test {
     event BaseURIChanged(string baseURI);
 
     address strategy = address(0x1);
+    address anotherStrategy = address(0x11);
     address riskProvider = address(0x7);
     address allocProviderAddress = address(0x8);
 
@@ -56,6 +57,7 @@ contract SmartVaultFactoryTest is Test {
 
     function setUp() public {
         vm.mockCall(strategy, abi.encodeWithSelector(IStrategy.assetGroupId.selector), abi.encode(1));
+        vm.mockCall(anotherStrategy, abi.encodeWithSelector(IStrategy.assetGroupId.selector), abi.encode(1));
 
         accessControl = new SpoolAccessControl();
         accessControl.initialize();
@@ -91,7 +93,7 @@ contract SmartVaultFactoryTest is Test {
         vm.mockCall(
             address(allocProvider),
             abi.encodeWithSelector(IAllocationProvider.calculateAllocation.selector),
-            abi.encode(Arrays.toArray(FULL_PERCENT))
+            abi.encode(Arrays.toArray(FULL_PERCENT / 2, FULL_PERCENT / 2))
         );
 
         riskManager = new RiskManager(accessControl, strategyRegistry, address(0xabc));
@@ -110,12 +112,14 @@ contract SmartVaultFactoryTest is Test {
         accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(factory));
         accessControl.grantRole(ADMIN_ROLE_STRATEGY, address(this));
         accessControl.grantRole(ROLE_STRATEGY, strategy);
+        accessControl.grantRole(ROLE_STRATEGY, anotherStrategy);
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, allocProviderAddress);
 
-        uint8[] memory riskScores = new uint8[](1);
-        address[] memory strategies = Arrays.toArray(strategy);
+        address[] memory strategies = Arrays.toArray(strategy, anotherStrategy);
+        uint8[] memory riskScores = new uint8[](2);
         riskScores[0] = 1;
+        riskScores[1] = 1;
         vm.prank(riskProvider);
         riskManager.setRiskScores(riskScores, strategies);
     }
@@ -131,9 +135,36 @@ contract SmartVaultFactoryTest is Test {
     }
 
     function test_deploySmartVault_shouldDeploySmartVault() public {
-        ISmartVault mySmartVault = factory.deploySmartVault(_getSpecification());
+        SmartVaultSpecification memory specification = _getSpecification();
 
-        assertEq(mySmartVault.vaultName(), "MySmartVault");
+        // - smart vault with dynamic allocation
+        {
+            ISmartVault mySmartVault = factory.deploySmartVault(specification);
+
+            assertEq(mySmartVault.vaultName(), "MySmartVault");
+        }
+
+        // - smart vault with static allocation
+        {
+            address allocationProviderBefore = specification.allocationProvider;
+            address riskProviderBefore = specification.riskProvider;
+            int8 riskToleranceBefore = specification.riskTolerance;
+            uint16a16 strategyAllocationBefore = specification.strategyAllocation;
+
+            specification.allocationProvider = address(0);
+            specification.riskProvider = address(0);
+            specification.riskTolerance = 0;
+            specification.strategyAllocation = Arrays.toUint16a16(FULL_PERCENT / 2, FULL_PERCENT / 2);
+
+            ISmartVault mySmartVault = factory.deploySmartVault(specification);
+
+            assertEq(mySmartVault.vaultName(), "MySmartVault");
+
+            specification.allocationProvider = allocationProviderBefore;
+            specification.riskProvider = riskProviderBefore;
+            specification.riskTolerance = riskToleranceBefore;
+            specification.strategyAllocation = strategyAllocationBefore;
+        }
     }
 
     function test_deploySmartVault_shouldValidateSpecification() public {
@@ -168,19 +199,6 @@ contract SmartVaultFactoryTest is Test {
             factory.deploySmartVault(specification);
 
             specification.strategies = before;
-        }
-
-        // - validate allocations length
-        {
-            address[] memory before = specification.strategies;
-            specification.strategyAllocation = uint16a16.wrap(0).set(1, 10_00);
-            specification.strategies = Arrays.toArray(specification.strategies[0], specification.strategies[0]);
-
-            vm.expectRevert(InvalidStrategyAllocationsLength.selector);
-            factory.deploySmartVault(specification);
-
-            specification.strategies = before;
-            specification.strategyAllocation = uint16a16.wrap(0);
         }
 
         // - validate strategy validity
@@ -228,6 +246,114 @@ contract SmartVaultFactoryTest is Test {
             factory.deploySmartVault(specification);
 
             specification.depositFeePct = before;
+        }
+
+        // - validate static allocations length
+        {
+            address allocationProviderBefore = specification.allocationProvider;
+            address riskProviderBefore = specification.riskProvider;
+            int8 riskToleranceBefore = specification.riskTolerance;
+            uint16a16 strategyAllocationBefore = specification.strategyAllocation;
+
+            specification.allocationProvider = address(0);
+            specification.riskProvider = address(0);
+            specification.riskTolerance = 0;
+            specification.strategyAllocation = Arrays.toUint16a16(FULL_PERCENT, 0);
+
+            vm.expectRevert(InvalidStrategyAllocationsLength.selector);
+            factory.deploySmartVault(specification);
+
+            specification.allocationProvider = allocationProviderBefore;
+            specification.riskProvider = riskProviderBefore;
+            specification.riskTolerance = riskToleranceBefore;
+            specification.strategyAllocation = strategyAllocationBefore;
+        }
+
+        // - validate static allocation sum
+        {
+            address allocationProviderBefore = specification.allocationProvider;
+            address riskProviderBefore = specification.riskProvider;
+            int8 riskToleranceBefore = specification.riskTolerance;
+            uint16a16 strategyAllocationBefore = specification.strategyAllocation;
+
+            specification.allocationProvider = address(0);
+            specification.riskProvider = address(0);
+            specification.riskTolerance = 0;
+            specification.strategyAllocation = Arrays.toUint16a16(100, 100);
+
+            vm.expectRevert(InvalidStaticAllocation.selector);
+            factory.deploySmartVault(specification);
+
+            specification.allocationProvider = allocationProviderBefore;
+            specification.riskProvider = riskProviderBefore;
+            specification.riskTolerance = riskToleranceBefore;
+            specification.strategyAllocation = strategyAllocationBefore;
+        }
+
+        // - validate that static allocation and allocation provider are not both set
+        {
+            address riskProviderBefore = specification.riskProvider;
+            int8 riskToleranceBefore = specification.riskTolerance;
+            uint16a16 strategyAllocationBefore = specification.strategyAllocation;
+
+            specification.riskProvider = address(0);
+            specification.riskTolerance = 0;
+            specification.strategyAllocation = Arrays.toUint16a16(FULL_PERCENT / 2, FULL_PERCENT / 2);
+
+            vm.expectRevert(StaticAllocationAndAllocationProviderSet.selector);
+            factory.deploySmartVault(specification);
+
+            specification.riskProvider = riskProviderBefore;
+            specification.riskTolerance = riskToleranceBefore;
+            specification.strategyAllocation = strategyAllocationBefore;
+        }
+
+        // - validate that static allocation and risk provider are not both set
+        {
+            address allocationProviderBefore = specification.allocationProvider;
+            int8 riskToleranceBefore = specification.riskTolerance;
+            uint16a16 strategyAllocationBefore = specification.strategyAllocation;
+
+            specification.allocationProvider = address(0);
+            specification.riskTolerance = 0;
+            specification.strategyAllocation = Arrays.toUint16a16(FULL_PERCENT / 2, FULL_PERCENT / 2);
+
+            vm.expectRevert(StaticAllocationAndRiskProviderSet.selector);
+            factory.deploySmartVault(specification);
+
+            specification.allocationProvider = allocationProviderBefore;
+            specification.riskTolerance = riskToleranceBefore;
+            specification.strategyAllocation = strategyAllocationBefore;
+        }
+
+        // - validate that static allocation and risk tolerance are not both set
+        {
+            address allocationProviderBefore = specification.allocationProvider;
+            address riskProviderBefore = specification.riskProvider;
+            uint16a16 strategyAllocationBefore = specification.strategyAllocation;
+
+            specification.allocationProvider = address(0);
+            specification.riskProvider = address(0);
+            specification.strategyAllocation = Arrays.toUint16a16(FULL_PERCENT / 2, FULL_PERCENT / 2);
+
+            vm.expectRevert(StaticAllocationAndRiskToleranceSet.selector);
+            factory.deploySmartVault(specification);
+
+            specification.allocationProvider = allocationProviderBefore;
+            specification.riskProvider = riskProviderBefore;
+            specification.strategyAllocation = strategyAllocationBefore;
+        }
+
+        // - enforce static allocation is set when only one strategy in vault
+        {
+            address[] memory strategiesBefore = specification.strategies;
+
+            specification.strategies = Arrays.toArray(strategy);
+
+            vm.expectRevert(SingleStrategyDynamicAllocation.selector);
+            factory.deploySmartVault(specification);
+
+            specification.strategies = strategiesBefore;
         }
     }
 
@@ -503,7 +629,7 @@ contract SmartVaultFactoryTest is Test {
             svtSymbol: "MSV",
             baseURI: "https://token-cdn-domain/",
             assetGroupId: 1,
-            strategies: Arrays.toArray(strategy),
+            strategies: Arrays.toArray(strategy, anotherStrategy),
             strategyAllocation: uint16a16.wrap(0),
             riskTolerance: 4,
             riskProvider: riskProvider,

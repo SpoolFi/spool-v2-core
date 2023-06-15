@@ -1919,12 +1919,12 @@ contract ScenariosTest is Test {
             guardRequestTypes: new RequestType[](0),
             strategies: strategies,
             strategyAllocation: allocation,
-            riskTolerance: 4,
-            riskProvider: riskProvider,
+            riskTolerance: 0,
+            riskProvider: address(0),
             managementFeePct: 0,
             depositFeePct: 0,
             allowRedeemFor: false,
-            allocationProvider: allocationProvider,
+            allocationProvider: address(0),
             performanceFeePct: 0
         });
     }

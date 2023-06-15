@@ -83,4 +83,32 @@ contract ActionManagerTest is Test {
         vm.expectRevert(abi.encodeWithSelector(TooManyActions.selector));
         actionManager.setActions(smartVaultId, actions, requestTypes);
     }
+
+    function test_setAction_shouldRevertWhenWrongRequestType() public {
+        IAction[] memory actions = new IAction[](1);
+        actions[0] = mockAction;
+        RequestType[] memory requestTypes = new RequestType[](1);
+
+        actionManager.whitelistAction(address(mockAction), true);
+
+        // should work for Deposit and Withdrawal
+        requestTypes[0] = RequestType.Deposit;
+        actionManager.setActions(address(0x1), actions, requestTypes);
+
+        requestTypes[0] = RequestType.Withdrawal;
+        actionManager.setActions(address(0x2), actions, requestTypes);
+
+        // should not work for TransferNFT, BurnNFT and TransferSVTs
+        requestTypes[0] = RequestType.TransferNFT;
+        vm.expectRevert(abi.encodeWithSelector(WrongActionRequestType.selector, RequestType.TransferNFT));
+        actionManager.setActions(address(0x3), actions, requestTypes);
+
+        requestTypes[0] = RequestType.BurnNFT;
+        vm.expectRevert(abi.encodeWithSelector(WrongActionRequestType.selector, RequestType.BurnNFT));
+        actionManager.setActions(address(0x4), actions, requestTypes);
+
+        requestTypes[0] = RequestType.TransferSVTs;
+        vm.expectRevert(abi.encodeWithSelector(WrongActionRequestType.selector, RequestType.TransferSVTs));
+        actionManager.setActions(address(0x5), actions, requestTypes);
+    }
 }

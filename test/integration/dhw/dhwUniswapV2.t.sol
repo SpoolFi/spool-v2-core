@@ -82,13 +82,13 @@ contract DhwUniswapV2Test is TestFixture {
                     guards: new GuardDefinition[][](0),
                     guardRequestTypes: new RequestType[](0),
                     strategies: smartVaultStrategies,
-                    strategyAllocation: uint16a16.wrap(0),
-                    riskTolerance: 4,
-                    riskProvider: riskProvider,
+                    strategyAllocation: Arrays.toUint16a16(FULL_PERCENT),
+                    riskTolerance: 0,
+                    riskProvider: address(0),
+                    allocationProvider: address(0),
                     managementFeePct: 0,
                     depositFeePct: 0,
                     allowRedeemFor: false,
-                    allocationProvider: address(allocationProvider),
                     performanceFeePct: 0
                 })
             );

@@ -3903,14 +3903,24 @@ contract ReallocationIntegrationTest is Test {
         // setup strategies
         MockStrategy strategyA;
         MockStrategy strategyB;
+        MockStrategy strategyC;
+        MockStrategy strategyD;
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId1);
             strategyA.initialize("StratA", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA), 0);
 
-            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId2);
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId1);
             strategyB.initialize("StratB", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyB), 0);
+
+            strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId2);
+            strategyC.initialize("StratC", Arrays.toArray(1));
+            strategyRegistry.registerStrategy(address(strategyC), 0);
+
+            strategyD = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId2);
+            strategyD.initialize("StratD", Arrays.toArray(1));
+            strategyRegistry.registerStrategy(address(strategyD), 0);
         }
 
         // setup smart vaults
@@ -3920,7 +3930,7 @@ contract ReallocationIntegrationTest is Test {
             SmartVaultSpecification memory specification = _getSmartVaultSpecification();
             specification.smartVaultName = "SmartVaultA";
             specification.assetGroupId = assetGroupId1;
-            specification.strategies = Arrays.toArray(address(strategyA));
+            specification.strategies = Arrays.toArray(address(strategyA), address(strategyB));
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
@@ -3930,7 +3940,7 @@ contract ReallocationIntegrationTest is Test {
 
             specification.smartVaultName = "SmartVaultB";
             specification.assetGroupId = assetGroupId2;
-            specification.strategies = Arrays.toArray(address(strategyB));
+            specification.strategies = Arrays.toArray(address(strategyC), address(strategyD));
             vm.mockCall(
                 address(riskManager),
                 abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
@@ -3977,6 +3987,9 @@ contract ReallocationIntegrationTest is Test {
         ISmartVault smartVaultA;
         {
             SmartVaultSpecification memory specification = _getSmartVaultSpecification();
+            specification.riskProvider = address(0);
+            specification.riskTolerance = 0;
+            specification.allocationProvider = address(0);
             specification.smartVaultName = "SmartVaultA";
             specification.assetGroupId = assetGroupId;
             specification.strategyAllocation = Arrays.toUint16a16(60_00, 40_00);

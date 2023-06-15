@@ -42,6 +42,10 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
                 revert TooManyActions();
             }
 
+            if (requestTypes[i] != RequestType.Deposit && requestTypes[i] != RequestType.Withdrawal) {
+                revert WrongActionRequestType(requestTypes[i]);
+            }
+
             emit ActionSet(smartVault, address(action), requestTypes[i]);
         }
 

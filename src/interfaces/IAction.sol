@@ -25,6 +25,12 @@ error ActionsAlreadyInitialized(address smartVault);
 error TooManyActions();
 
 /**
+ * @notice Used when wrong request type is set for an action.
+ * @param requestType Wrong request type.
+ */
+error WrongActionRequestType(RequestType requestType);
+
+/**
  * @notice Represents a context that is sent to actions.
  * @custom:member smartVault Smart vault address
  * @custom:member recipient In case of deposit, recipient of deposit NFT; in case of withdrawal, recipient of assets.

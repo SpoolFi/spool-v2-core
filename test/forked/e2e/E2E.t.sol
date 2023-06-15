@@ -30,7 +30,7 @@ contract E2E is ForkTestFixtureDeployment {
 
         address[] memory strategies = Arrays.toArray(aaveStrategy, compoundV2Strategy);
 
-        uint16a16 allocations = uint16a16Lib.set(uint16a16.wrap(0), Arrays.toArray(1, 2));
+        uint16a16 allocations = uint16a16Lib.set(uint16a16.wrap(0), Arrays.toArray(FULL_PERCENT / 2, FULL_PERCENT / 2));
         ISmartVault vault = _createVault(0, 0, assetGroupIdUSDC, strategies, allocations, address(0));
 
         address alice = address(0xa);

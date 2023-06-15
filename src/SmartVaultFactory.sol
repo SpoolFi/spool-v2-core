@@ -39,6 +39,31 @@ error StrategiesNotUnique();
  */
 error InvalidStrategyAllocationsLength();
 
+/**
+ * @notice Used when provided static allocation does not sum to FULL_PERCENT.
+ */
+error InvalidStaticAllocation();
+
+/**
+ * @notice Used when smart vault has set static allocation and risk provider.
+ */
+error StaticAllocationAndRiskProviderSet();
+
+/**
+ * @notice Used when smart vault has set static allocation and risk tolerance.
+ */
+error StaticAllocationAndRiskToleranceSet();
+
+/**
+ * @notice Used when smart vault has set static allocation and allocation provider.
+ */
+error StaticAllocationAndAllocationProviderSet();
+
+/**
+ * @notice Used when smart vault has only one strategy but does not set static allocation.
+ */
+error SingleStrategyDynamicAllocation();
+
 /* ========== STRUCTS ========== */
 
 /**
@@ -258,9 +283,32 @@ contract SmartVaultFactory is UpgradeableBeacon {
 
         unchecked {
             bool fixedAllocations = uint16a16.unwrap(specification.strategyAllocation) > 0;
+            uint256 fullAllocation;
+
+            if (specification.strategies.length == 1 && !fixedAllocations) {
+                revert SingleStrategyDynamicAllocation();
+            }
+
+            if (fixedAllocations) {
+                if (specification.riskProvider != address(0)) {
+                    revert StaticAllocationAndRiskProviderSet();
+                }
+
+                if (specification.riskTolerance != 0) {
+                    revert StaticAllocationAndRiskToleranceSet();
+                }
+
+                if (specification.allocationProvider != address(0)) {
+                    revert StaticAllocationAndAllocationProviderSet();
+                }
+            }
+
             for (uint256 i; i < specification.strategies.length; ++i) {
-                if (fixedAllocations && specification.strategyAllocation.get(i) == 0) {
-                    revert InvalidStrategyAllocationsLength();
+                if (fixedAllocations) {
+                    if (specification.strategyAllocation.get(i) == 0) {
+                        revert InvalidStrategyAllocationsLength();
+                    }
+                    fullAllocation += specification.strategyAllocation.get(i);
                 }
 
                 if (!_accessControl.hasRole(ROLE_STRATEGY, specification.strategies[i])) {
@@ -276,6 +324,10 @@ contract SmartVaultFactory is UpgradeableBeacon {
                         revert StrategiesNotUnique();
                     }
                 }
+            }
+
+            if (fixedAllocations && fullAllocation != FULL_PERCENT) {
+                revert InvalidStaticAllocation();
             }
         }
 

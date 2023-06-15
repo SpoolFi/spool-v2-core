@@ -480,6 +480,12 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         uint16a16 allocations,
         address allocationProvider
     ) internal returns (ISmartVault smartVault) {
+        address riskProvider = _riskProvider;
+
+        if (uint16a16.unwrap(allocations) > 0) {
+            riskProvider = address(0);
+        }
+
         smartVault = _deploySpool.smartVaultFactory().deploySmartVault(
             SmartVaultSpecification({
                 smartVaultName: "MySmartVault",
@@ -493,7 +499,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 strategies: strategies,
                 strategyAllocation: allocations,
                 riskTolerance: 0,
-                riskProvider: _riskProvider,
+                riskProvider: riskProvider,
                 managementFeePct: managementFeePct,
                 depositFeePct: depositFeePct,
                 allocationProvider: allocationProvider,
