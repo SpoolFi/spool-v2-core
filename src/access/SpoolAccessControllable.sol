@@ -61,6 +61,18 @@ abstract contract SpoolAccessControllable {
         }
     }
 
+    function _checkNonReentrant() internal view {
+        _accessControl.checkNonReentrant();
+    }
+
+    function _nonReentrantBefore() internal {
+        _accessControl.nonReentrantBefore();
+    }
+
+    function _nonReentrantAfter() internal {
+        _accessControl.nonReentrantAfter();
+    }
+
     /* ========== MODIFIERS ========== */
 
     /**
@@ -113,16 +125,16 @@ abstract contract SpoolAccessControllable {
      * @dev Prevents a contract from calling itself, or other contracts using this modifier.
      */
     modifier nonReentrant() {
-        _accessControl.nonReentrantBefore();
+        _nonReentrantBefore();
         _;
-        _accessControl.nonReentrantAfter();
+        _nonReentrantAfter();
     }
 
     /**
      * @dev Check if a system has already entered in the non-reentrant state.
      */
     modifier checkNonReentrant() {
-        _accessControl.checkNonReentrant();
+        _checkNonReentrant();
         _;
     }
 
