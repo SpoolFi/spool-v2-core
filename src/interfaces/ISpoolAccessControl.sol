@@ -117,10 +117,20 @@ interface ISpoolAccessControl is IAccessControlUpgradeable {
      */
     function grantSmartVaultOwnership(address smartVault, address owner) external;
 
+    /**
+     * @notice Checks and reverts if a system has already entered in the non-reentrant state.
+     */
     function checkNonReentrant() external view;
 
+    /**
+     * @notice Sets the entered flag to true when entering for the first time.
+     * @dev Reverts if a system has already entered before.
+     */
     function nonReentrantBefore() external;
 
+    /**
+     * @notice Resets the entered flag after the call is finished.
+     */
     function nonReentrantAfter() external;
 
     /**

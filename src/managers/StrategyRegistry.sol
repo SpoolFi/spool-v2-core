@@ -539,7 +539,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         address[] calldata strategies,
         uint256[] calldata shares,
         uint256[][] calldata withdrawalSlippages
-    ) external {
+    ) external checkNonReentrant {
         for (uint256 i; i < strategies.length; ++i) {
             if (strategies[i] == _ghostStrategy) {
                 continue;
