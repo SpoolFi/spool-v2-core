@@ -36,9 +36,9 @@ contract NotionalFinanceStrategy is Strategy {
     INToken public nToken;
 
     /// @notice underlying token ID in notional contract
-    uint16 private id;
+    uint16 private _id;
 
-    uint80 private underlyingDecimalsMultiplier;
+    uint80 private _underlyingDecimalsMultiplier;
 
     /// @notice exchangeRateCurrent at the last DHW.
     uint256 private _lastExchangeRate;
@@ -74,9 +74,9 @@ contract NotionalFinanceStrategy is Strategy {
         }
 
         nToken = nToken_;
-        id = nToken_.currencyId();
+        _id = nToken_.currencyId();
 
-        underlyingDecimalsMultiplier = SafeCast.toUint80(10 ** IERC20Metadata(tokens[0]).decimals());
+        _underlyingDecimalsMultiplier = SafeCast.toUint80(10 ** IERC20Metadata(tokens[0]).decimals());
 
         _lastExchangeRate =
             uint256(nToken.getPresentValueUnderlyingDenominated()) * EXCHANGE_RATE_MULTIPLIER / nToken.totalSupply();
@@ -196,8 +196,8 @@ contract NotionalFinanceStrategy is Strategy {
      */
     function _getNTokenValue(uint256 nTokenAmount) private view returns (uint256) {
         if (nTokenAmount == 0) return 0;
-        return (nTokenAmount * uint256(nToken.getPresentValueUnderlyingDenominated()) / nToken.totalSupply())
-            * underlyingDecimalsMultiplier / NTOKEN_DECIMALS_MULTIPLIER;
+        return (nTokenAmount * uint256(nToken.getPresentValueUnderlyingDenominated()) * _underlyingDecimalsMultiplier)
+            / nToken.totalSupply() / NTOKEN_DECIMALS_MULTIPLIER;
     }
 
     function _buildBalanceAction(
@@ -209,7 +209,7 @@ contract NotionalFinanceStrategy is Strategy {
         actions = new BalanceAction[](1);
         actions[0] = BalanceAction({
             actionType: actionType,
-            currencyId: id,
+            currencyId: _id,
             depositActionAmount: depositActionAmount,
             withdrawAmountInternalPrecision: 0,
             withdrawEntireCashBalance: withdrawEntireCashBalance,
