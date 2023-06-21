@@ -249,7 +249,7 @@ contract DhwTest is TestFixture {
         DoHardWorkParameterBag memory dhwBag = generateDhwParameterBag(smartVaultStrategies, assetGroup);
 
         dhwBag.swapInfo[0][0] = new SwapInfo[](1);
-        dhwBag.swapInfo[0][0][0] = SwapInfo(address(smartVaultManager), address(tokenA), 1, depositEncoded);
+        dhwBag.swapInfo[0][0][0] = SwapInfo(address(smartVaultManager), address(tokenA), depositEncoded);
 
         vm.startPrank(doHardWorker);
         vm.expectRevert("SpoolUtils::_getRevertMsg: Transaction reverted silently.");
@@ -305,7 +305,7 @@ contract DhwTest is TestFixture {
         DoHardWorkParameterBag memory dhwBag = generateDhwParameterBag(smartVaultStrategies, assetGroup);
 
         dhwBag.swapInfo[0][0] = new SwapInfo[](1);
-        dhwBag.swapInfo[0][0][0] = SwapInfo(address(smartVaultManager), address(tokenA), 1, redeemFastEncoded);
+        dhwBag.swapInfo[0][0][0] = SwapInfo(address(smartVaultManager), address(tokenA), redeemFastEncoded);
 
         vm.startPrank(doHardWorker);
         vm.expectRevert("SpoolUtils::_getRevertMsg: Transaction reverted silently.");
@@ -533,7 +533,6 @@ contract DhwTest is TestFixture {
         dhwBag.swapInfo[0][0][0] = SwapInfo({
             swapTarget: address(exchangeAB),
             token: address(tokenB),
-            amountIn: 0.3 ether,
             swapCallData: abi.encodeWithSelector(exchangeAB.swap.selector, address(tokenB), 0.3 ether, address(swapper))
         });
 

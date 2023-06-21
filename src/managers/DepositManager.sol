@@ -111,9 +111,9 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         _vaultFlushedDeposits;
 
     /**
-     * @dev smart vault => flush index => FlushShares{mintedVaultShares flushSvtSupply}
+     * @dev smart vault => flush index => mintedVaultShares
      */
-    mapping(address => mapping(uint256 => FlushShares)) internal _flushShares;
+    mapping(address => mapping(uint256 => uint256)) internal _mintedVaultShares;
 
     /**
      * @notice Vault deposits at given flush index
@@ -193,7 +193,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
                 revert DepositNftNotSyncedYet(nftIds[i]);
             }
 
-            bag.mintedSVTs = _flushShares[smartVault][bag.data.flushIndex].mintedVaultShares;
+            bag.mintedSVTs = _mintedVaultShares[smartVault][bag.data.flushIndex];
 
             claimedVaultTokens +=
                 getClaimedVaultTokensPreview(smartVault, bag.data, nftAmounts[i], bag.mintedSVTs, tokens);
@@ -249,9 +249,6 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             }
         }
 
-        // Strategy shares should not exceed uint128
-        _flushShares[smartVault][flushIndex].flushSvtSupply = SafeCast.toUint128(ISmartVault(smartVault).totalSupply());
-
         return _strategyRegistry.addDeposits(strategies, distribution);
     }
 
@@ -273,7 +270,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
 
         if (syncResult.mintedSVTs > 0) {
             // Vault shares should not exceed uint128
-            _flushShares[smartVault][bag[0]].mintedVaultShares = SafeCast.toUint128(syncResult.mintedSVTs);
+            _mintedVaultShares[smartVault][bag[0]] = SafeCast.toUint128(syncResult.mintedSVTs);
             for (uint256 i; i < strategies.length; ++i) {
                 if (syncResult.sstShares[i] > 0) {
                     IStrategy(strategies[i]).claimShares(smartVault, syncResult.sstShares[i]);
@@ -672,7 +669,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         exchangeRates = _flushExchangeRates[smartVaultAddress][data.flushIndex].toArray(data.assets.length);
 
         if (mintedSVTs == 0) {
-            mintedSVTs = _flushShares[smartVaultAddress][data.flushIndex].mintedVaultShares;
+            mintedSVTs = _mintedVaultShares[smartVaultAddress][data.flushIndex];
         }
 
         for (uint256 i; i < data.assets.length; ++i) {

@@ -218,7 +218,6 @@ contract MorphoCompoundV2StrategyTest is TestFixture, ForkTestFixture {
         compoundSwapInfo[0] = SwapInfo({
             swapTarget: address(exchange),
             token: address(rewardToken),
-            amountIn: 41792137860151928,
             swapCallData: abi.encodeCall(exchange.swap, (address(rewardToken), 41792137860151928, address(swapper)))
         });
 

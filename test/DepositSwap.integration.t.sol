@@ -121,13 +121,11 @@ contract DepositSwapIntegrationTest is TestFixture {
         swapInfo[0] = SwapInfo(
             address(exchangeAC),
             address(tokenC),
-            1 ether,
             abi.encodeWithSelector(exchangeAC.swap.selector, address(tokenC), 1 ether, address(depositSwap))
         );
         swapInfo[1] = SwapInfo(
             address(exchangeBC),
             address(tokenC),
-            1 ether,
             abi.encodeWithSelector(exchangeBC.swap.selector, address(tokenC), 0.25 ether, address(depositSwap))
         );
 
@@ -173,7 +171,6 @@ contract DepositSwapIntegrationTest is TestFixture {
         swapInfo[0] = SwapInfo(
             address(exchangeAB),
             address(tokenA),
-            0.4 ether,
             abi.encodeWithSelector(exchangeAB.swap.selector, address(tokenA), 0.4 ether, address(depositSwap))
         );
 
@@ -226,13 +223,11 @@ contract DepositSwapIntegrationTest is TestFixture {
         swapInfo[0] = SwapInfo(
             address(exchangeWethA),
             address(weth),
-            2 ether,
             abi.encodeWithSelector(exchangeWethA.swap.selector, address(weth), 2 ether, address(depositSwap))
         );
         swapInfo[1] = SwapInfo(
             address(exchangeWethB),
             address(weth),
-            0.5 ether,
             abi.encodeWithSelector(exchangeWethB.swap.selector, address(weth), 0.5 ether, address(depositSwap))
         );
 

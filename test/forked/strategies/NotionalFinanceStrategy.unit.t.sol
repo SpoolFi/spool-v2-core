@@ -227,7 +227,6 @@ contract NotionalFinanceStrategyTest is TestFixture, ForkTestFixture {
         compoundSwapInfo[0] = SwapInfo({
             swapTarget: address(exchange),
             token: address(noteToken),
-            amountIn: 7454639134,
             swapCallData: abi.encodeCall(exchange.swap, (address(noteToken), 7454639134, address(swapper)))
         });
 

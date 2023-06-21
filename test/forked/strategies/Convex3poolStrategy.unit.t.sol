@@ -352,7 +352,6 @@ contract Convex3poolStrategyTest is TestFixture, ForkTestFixture {
         compoundSwapInfo[0] = SwapInfo({
             swapTarget: address(crvExchange),
             token: crvRewardToken,
-            amountIn: 102524279220335671371, // ~97.4 USD
             swapCallData: abi.encodeWithSelector(
                 crvExchange.swap.selector, crvRewardToken, 102524279220335671371, address(swapper)
                 )
@@ -360,7 +359,6 @@ contract Convex3poolStrategyTest is TestFixture, ForkTestFixture {
         compoundSwapInfo[1] = SwapInfo({
             swapTarget: address(cvxExchange),
             token: cvxRewardToken,
-            amountIn: 1640388467525370741, // ~9.6 USD
             swapCallData: abi.encodeWithSelector(
                 cvxExchange.swap.selector, cvxRewardToken, 1640388467525370741, address(swapper)
                 )

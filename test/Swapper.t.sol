@@ -142,13 +142,11 @@ contract SwapperTest is Test {
         swapInfo[0] = SwapInfo({
             swapTarget: address(exchangeAB),
             token: address(tokenA),
-            amountIn: 10 ether,
             swapCallData: abi.encodeWithSelector(exchangeAB.swap.selector, address(tokenA), 10 ether, address(swapper))
         });
         swapInfo[1] = SwapInfo({
             swapTarget: address(exchangeBC),
             token: address(tokenB),
-            amountIn: 10 ether,
             swapCallData: abi.encodeWithSelector(exchangeBC.swap.selector, address(tokenB), 10 ether, bob)
         });
 
@@ -174,13 +172,11 @@ contract SwapperTest is Test {
         swapInfo[0] = SwapInfo({
             swapTarget: address(exchangeAB),
             token: address(tokenA),
-            amountIn: 10 ether,
             swapCallData: abi.encodeWithSelector(exchangeAB.swap.selector, address(tokenA), 11 ether, address(swapper))
         });
         swapInfo[1] = SwapInfo({
             swapTarget: address(exchangeBC),
             token: address(tokenB),
-            amountIn: 10 ether,
             swapCallData: abi.encodeWithSelector(exchangeBC.swap.selector, address(tokenB), 11 ether, bob)
         });
 
@@ -205,13 +201,11 @@ contract SwapperTest is Test {
         swapInfo[0] = SwapInfo({
             swapTarget: address(exchangeAB),
             token: address(tokenA),
-            amountIn: 9 ether,
             swapCallData: abi.encodeWithSelector(exchangeAB.swap.selector, address(tokenA), 9 ether, address(swapper))
         });
         swapInfo[1] = SwapInfo({
             swapTarget: address(exchangeBC),
             token: address(tokenB),
-            amountIn: 8 ether,
             swapCallData: abi.encodeWithSelector(exchangeBC.swap.selector, address(tokenB), 8 ether, address(swapper))
         });
 
@@ -233,7 +227,6 @@ contract SwapperTest is Test {
         swapInfo[0] = SwapInfo({
             swapTarget: address(exchangeAB),
             token: address(tokenA),
-            amountIn: 10 ether,
             swapCallData: abi.encodeWithSelector(exchangeAB.swap.selector, address(tokenA), 10 ether, address(swapper))
         });
 
@@ -262,7 +255,6 @@ contract SwapperTest is Test {
         swapInfo[0] = SwapInfo({
             swapTarget: address(exchangeAB),
             token: address(tokenA),
-            amountIn: 10 ether,
             swapCallData: abi.encodeWithSelector(exchangeAB.swap.selector, address(tokenA), 10 ether, address(swapper))
         });
 

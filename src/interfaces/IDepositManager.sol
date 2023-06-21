@@ -82,15 +82,6 @@ struct SimulateDepositParams {
     SmartVaultFees fees;
 }
 
-/**
- * @param mintedVaultShares Minted vault shares at given flush index
- * @param flushSvtSupply Total supply of SVTs for vault at given flush index
- */
-struct FlushShares {
-    uint128 mintedVaultShares;
-    uint128 flushSvtSupply;
-}
-
 interface IDepositManager {
     /**
      * @notice User redeemed deposit NFTs for SVTs

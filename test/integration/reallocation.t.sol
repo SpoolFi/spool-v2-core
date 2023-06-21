@@ -91,7 +91,7 @@ contract ReallocationIntegrationTest is Test {
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(depositManager));
 
         WithdrawalManager withdrawalManager =
-        new WithdrawalManager(strategyRegistry, priceFeedManager, masterWallet, guardManager, actionManager, accessControl);
+            new WithdrawalManager(strategyRegistry, masterWallet, guardManager, actionManager, accessControl);
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(withdrawalManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(withdrawalManager));
         accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, address(0xabc));
@@ -3274,7 +3274,6 @@ contract ReallocationIntegrationTest is Test {
             paramBag.swapInfo[0][0] = SwapInfo({
                 swapTarget: address(exchangeAB),
                 token: address(tokenA),
-                amountIn: 0.8 ether,
                 swapCallData: abi.encodeWithSelector(exchangeAB.swap.selector, address(tokenA), 0.8 ether, address(swapper))
             });
 

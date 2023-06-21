@@ -77,7 +77,7 @@ contract TestFixture is Test {
             new DepositManager(strategyRegistry, priceFeedManager, guardManager, actionManager, accessControl);
 
         withdrawalManager =
-        new WithdrawalManager(strategyRegistry, priceFeedManager, masterWallet, guardManager, actionManager, accessControl);
+            new WithdrawalManager(strategyRegistry, masterWallet, guardManager, actionManager, accessControl);
         smartVaultManager = new SmartVaultManager(
             accessControl,
             assetGroupRegistry,

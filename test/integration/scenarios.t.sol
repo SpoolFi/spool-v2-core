@@ -147,7 +147,7 @@ contract ScenariosTest is Test {
             accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(depositManager));
 
             withdrawalManager =
-            new WithdrawalManager(strategyRegistry, priceFeedManager, masterWallet, guardManager, actionManager, accessControl);
+                new WithdrawalManager(strategyRegistry, masterWallet, guardManager, actionManager, accessControl);
             accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(withdrawalManager));
             accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(withdrawalManager));
 

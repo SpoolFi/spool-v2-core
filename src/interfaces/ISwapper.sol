@@ -9,13 +9,11 @@ import "./ISmartVaultManager.sol";
  * @notice Information needed to make a swap of assets.
  * @custom:member swapTarget Contract executing the swap.
  * @custom:member token Token to be swapped.
- * @custom:member amountIn Amount to swap.
  * @custom:member swapCallData Calldata describing the swap itself.
  */
 struct SwapInfo {
     address swapTarget;
     address token;
-    uint256 amountIn;
     bytes swapCallData;
 }
 

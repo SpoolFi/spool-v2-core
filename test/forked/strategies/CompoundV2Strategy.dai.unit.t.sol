@@ -216,7 +216,6 @@ contract CompoundV2StrategyDaiTest is TestFixture, ForkTestFixture {
         compoundSwapInfo[0] = SwapInfo({
             swapTarget: address(exchange),
             token: address(compToken),
-            amountIn: 45672443008463367,
             swapCallData: abi.encodeCall(exchange.swap, (address(compToken), 45672443008463367, address(swapper)))
         });
 

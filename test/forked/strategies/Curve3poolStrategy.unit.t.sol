@@ -334,7 +334,6 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
         compoundSwapInfo[0] = SwapInfo({
             swapTarget: address(exchange),
             token: rewardToken,
-            amountIn: 1832285496982225999, // ~1.7 USD
             swapCallData: abi.encodeWithSelector(exchange.swap.selector, rewardToken, 1832285496982225999, address(swapper))
         });
 

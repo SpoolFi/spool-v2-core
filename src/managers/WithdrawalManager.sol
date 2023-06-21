@@ -46,9 +46,6 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
     /// @notice Strategy registry
     IStrategyRegistry private immutable _strategyRegistry;
 
-    /// @notice Price feed manager
-    IUsdPriceFeedManager private immutable _priceFeedManager;
-
     /// @notice Master wallet
     IMasterWallet private immutable _masterWallet;
 
@@ -60,14 +57,12 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
 
     constructor(
         IStrategyRegistry strategyRegistry_,
-        IUsdPriceFeedManager priceFeedManager_,
         IMasterWallet masterWallet_,
         IGuardManager guardManager_,
         IActionManager actionManager_,
         ISpoolAccessControl accessControl_
     ) SpoolAccessControllable(accessControl_) {
         if (address(strategyRegistry_) == address(0)) revert ConfigurationAddressZero();
-        if (address(priceFeedManager_) == address(0)) revert ConfigurationAddressZero();
         if (address(guardManager_) == address(0)) revert ConfigurationAddressZero();
         if (address(masterWallet_) == address(0)) revert ConfigurationAddressZero();
         if (address(actionManager_) == address(0)) revert ConfigurationAddressZero();
@@ -75,7 +70,6 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         _guardManager = guardManager_;
         _actionManager = actionManager_;
         _strategyRegistry = strategyRegistry_;
-        _priceFeedManager = priceFeedManager_;
         _masterWallet = masterWallet_;
     }
 

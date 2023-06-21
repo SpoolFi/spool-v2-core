@@ -241,7 +241,6 @@ contract IdleStrategyTest is TestFixture, ForkTestFixture {
         compoundSwapInfo[0] = SwapInfo({
             swapTarget: address(exchanges[0]),
             token: rewardTokens[0],
-            amountIn: 6008767417759680, // ~0.3 USD
             swapCallData: abi.encodeWithSelector(
                 exchanges[0].swap.selector, address(rewardTokens[0]), 6008767417759680, address(swapper)
                 )
@@ -249,7 +248,6 @@ contract IdleStrategyTest is TestFixture, ForkTestFixture {
         compoundSwapInfo[1] = SwapInfo({
             swapTarget: address(exchanges[1]),
             token: rewardTokens[1],
-            amountIn: 84903624193661186, // ~6.8 USD
             swapCallData: abi.encodeWithSelector(
                 exchanges[1].swap.selector, address(rewardTokens[1]), 84903624193661186, address(swapper)
                 )
@@ -257,7 +255,6 @@ contract IdleStrategyTest is TestFixture, ForkTestFixture {
         compoundSwapInfo[2] = SwapInfo({
             swapTarget: address(exchanges[2]),
             token: rewardTokens[2],
-            amountIn: 312239863552643167, // ~0.1 USD
             swapCallData: abi.encodeWithSelector(
                 exchanges[1].swap.selector, address(rewardTokens[2]), 312239863552643167, address(swapper)
                 )

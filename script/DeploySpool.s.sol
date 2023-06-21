@@ -173,7 +173,7 @@ contract DeploySpool {
 
         {
             WithdrawalManager implementation =
-            new WithdrawalManager(strategyRegistry, usdPriceFeedManager, masterWallet, guardManager, actionManager, spoolAccessControl);
+                new WithdrawalManager(strategyRegistry, masterWallet, guardManager, actionManager, spoolAccessControl);
             proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
             withdrawalManager = WithdrawalManager(address(proxy));
 
