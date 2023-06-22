@@ -225,6 +225,26 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
     function syncSmartVault(address smartVault, bool revertIfError) external;
 
     /**
+     * @dev Calculate number of SVTs that haven't been synced yet after DHW runs
+     * DHW has minted strategy shares, but vaults haven't claimed them yet.
+     * Includes management fees (percentage of assets under management, distributed throughout a year) and deposit fees .
+     * Invariants:
+     * - There can't be more than once un-synced flush index per vault at any given time.
+     * - Flush index can't be synced, if all DHWs haven't been completed yet.
+     *
+     * Can be used to retrieve the number of SSTs the vault would claim during sync.
+     * @param smartVault SmartVault address
+     * @return oldTotalSVTs Amount of SVTs before sync
+     * @return mintedSVTs Amount of SVTs minted during sync
+     * @return feeSVTs Amount of SVTs pertaining to fees
+     * @return sstShares Amount of SSTs claimed per strategy
+     */
+    function simulateSync(address smartVault)
+        external
+        view
+        returns (uint256 oldTotalSVTs, uint256 mintedSVTs, uint256 feeSVTs, uint256[] memory sstShares);
+
+    /**
      * @notice Instantly redeems smart vault shares for assets.
      * @param bag Parameters for fast redeemal.
      * @param withdrawalSlippages Slippages guarding redeemal.

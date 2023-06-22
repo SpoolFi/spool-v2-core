@@ -138,7 +138,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256 currentBalance = ISmartVault(smartVaultAddress).balanceOf(userAddress);
 
         if (_accessControl.smartVaultOwner(smartVaultAddress) == userAddress) {
-            (,, uint256 fees) = _simulateSync(smartVaultAddress);
+            (,, uint256 fees,) = simulateSync(smartVaultAddress);
             currentBalance += fees;
         }
 
@@ -150,7 +150,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     }
 
     function getSVTTotalSupply(address smartVault) external view returns (uint256) {
-        (uint256 currentSupply, uint256 mintedSVTs, uint256 fees) = _simulateSync(smartVault);
+        (uint256 currentSupply, uint256 mintedSVTs, uint256 fees,) = simulateSync(smartVault);
         return currentSupply + mintedSVTs + fees;
     }
 
@@ -555,8 +555,14 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * Invariants:
      * - There can't be more than once un-synced flush index per vault at any given time.
      * - Flush index can't be synced, if all DHWs haven't been completed yet.
+     *
+     * Can be used to retrieve the number of SSTs the vault would claim during sync.
      */
-    function _simulateSync(address smartVault) private view returns (uint256 oldTotalSVTs, uint256, uint256) {
+    function simulateSync(address smartVault)
+        public
+        view
+        returns (uint256 oldTotalSVTs, uint256, uint256, uint256[] memory)
+    {
         address[] memory tokens;
         address[] memory strategies_;
         FlushIndex memory flushIndex;
@@ -574,7 +580,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         // If DHWs haven't been run yet, we can't sync
         if (!_areAllDhwRunsCompleted(_strategyRegistry.currentIndex(strategies_), indexes, strategies_, false)) {
-            return (oldTotalSVTs, 0, 0);
+            return (oldTotalSVTs, 0, 0, new uint256[](strategies_.length));
         }
 
         uint256[2] memory packedParams;
@@ -594,9 +600,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(params);
 
-        flushIndex.toSync++;
-
-        return (oldTotalSVTs, syncResult.mintedSVTs, syncResult.feeSVTs);
+        return (oldTotalSVTs, syncResult.mintedSVTs, syncResult.feeSVTs, syncResult.sstShares);
     }
 
     /**
