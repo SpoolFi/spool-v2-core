@@ -25,6 +25,8 @@ import "../fixtures/IntegrationTestFixture.sol";
 contract DepositIntegrationTest is IntegrationTestFixture {
     using uint16a16Lib for uint16a16;
 
+    event PendingDepositsRecovered(address indexed smartVault, uint256[] recoveredAssets);
+
     function setUp() public {
         setUpBase();
         createVault();
@@ -1020,5 +1022,213 @@ contract DepositIntegrationTest is IntegrationTestFixture {
             // - deposit NFT was burned
             assertEq(smartVault.balanceOfFractional(alice, aliceDepositNftId), 0);
         }
+    }
+
+    function test_recoverPendingDeposits_shouldRecoverPendingDeposits() public {
+        // Alice deposits
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
+
+        vm.stopPrank();
+
+        // check state
+        // - tokens were transferred
+        assertEq(tokenA.balanceOf(alice), 0 ether);
+        assertEq(tokenB.balanceOf(alice), 2.763 ether);
+        assertEq(tokenC.balanceOf(alice), 61.2 ether);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 100 ether);
+        assertEq(tokenB.balanceOf(address(masterWallet)), 7.237 ether);
+        assertEq(tokenC.balanceOf(address(masterWallet)), 438.8 ether);
+        // - deposit NFT was minted
+        assertEq(aliceDepositNftId, 1);
+
+        // remove strategies
+        smartVaultManager.removeStrategyFromVaults(address(strategyA), Arrays.toArray(address(smartVault)), true);
+        smartVaultManager.removeStrategyFromVaults(address(strategyB), Arrays.toArray(address(smartVault)), true);
+        smartVaultManager.removeStrategyFromVaults(address(strategyC), Arrays.toArray(address(smartVault)), true);
+
+        // recover deposits
+        vm.expectEmit(true, true, true, true);
+        emit PendingDepositsRecovered(address(smartVault), depositAmounts);
+        smartVaultManager.recoverPendingDeposits(address(smartVault));
+
+        // check state
+        // - tokens were transferred
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenB.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenC.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenA.balanceOf(address(emergencyWithdrawalRecipient)), 100 ether);
+        assertEq(tokenB.balanceOf(address(emergencyWithdrawalRecipient)), 7.237 ether);
+        assertEq(tokenC.balanceOf(address(emergencyWithdrawalRecipient)), 438.8 ether);
+    }
+
+    function test_recoverPendingDeposits_shouldNotRecoverSameDepositsTwice() public {
+        // Alice deposits
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
+
+        vm.stopPrank();
+
+        // check state
+        // - tokens were transferred
+        assertEq(tokenA.balanceOf(alice), 0 ether);
+        assertEq(tokenB.balanceOf(alice), 2.763 ether);
+        assertEq(tokenC.balanceOf(alice), 61.2 ether);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 100 ether);
+        assertEq(tokenB.balanceOf(address(masterWallet)), 7.237 ether);
+        assertEq(tokenC.balanceOf(address(masterWallet)), 438.8 ether);
+        // - deposit NFT was minted
+        assertEq(aliceDepositNftId, 1);
+
+        // remove strategies
+        smartVaultManager.removeStrategyFromVaults(address(strategyA), Arrays.toArray(address(smartVault)), true);
+        smartVaultManager.removeStrategyFromVaults(address(strategyB), Arrays.toArray(address(smartVault)), true);
+        smartVaultManager.removeStrategyFromVaults(address(strategyC), Arrays.toArray(address(smartVault)), true);
+
+        // recover deposits
+        smartVaultManager.recoverPendingDeposits(address(smartVault));
+
+        // check state
+        // - tokens were transferred
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenB.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenC.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenA.balanceOf(address(emergencyWithdrawalRecipient)), 100 ether);
+        assertEq(tokenB.balanceOf(address(emergencyWithdrawalRecipient)), 7.237 ether);
+        assertEq(tokenC.balanceOf(address(emergencyWithdrawalRecipient)), 438.8 ether);
+
+        // try to recover deposits again
+        vm.expectRevert(NoDepositsToRecover.selector);
+        smartVaultManager.recoverPendingDeposits(address(smartVault));
+    }
+
+    function test_recoverPendingDeposits_shouldNotRecoverFlushedDeposits() public {
+        // Alice deposits
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
+
+        vm.stopPrank();
+
+        // check state
+        // - tokens were transferred
+        assertEq(tokenA.balanceOf(alice), 0 ether);
+        assertEq(tokenB.balanceOf(alice), 2.763 ether);
+        assertEq(tokenC.balanceOf(alice), 61.2 ether);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 100 ether);
+        assertEq(tokenB.balanceOf(address(masterWallet)), 7.237 ether);
+        assertEq(tokenC.balanceOf(address(masterWallet)), 438.8 ether);
+        // - deposit NFT was minted
+        assertEq(aliceDepositNftId, 1);
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // remove strategies
+        smartVaultManager.removeStrategyFromVaults(address(strategyA), Arrays.toArray(address(smartVault)), true);
+        smartVaultManager.removeStrategyFromVaults(address(strategyB), Arrays.toArray(address(smartVault)), true);
+        smartVaultManager.removeStrategyFromVaults(address(strategyC), Arrays.toArray(address(smartVault)), true);
+
+        // recover deposits
+        vm.expectRevert(NoDepositsToRecover.selector);
+        smartVaultManager.recoverPendingDeposits(address(smartVault));
+    }
+
+    function test_recoverPendingDeposits_shouldRevertWhenNotCalledBySpoolAdmin() public {
+        // Alice deposits
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
+
+        vm.stopPrank();
+
+        // check state
+        // - tokens were transferred
+        assertEq(tokenA.balanceOf(alice), 0 ether);
+        assertEq(tokenB.balanceOf(alice), 2.763 ether);
+        assertEq(tokenC.balanceOf(alice), 61.2 ether);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 100 ether);
+        assertEq(tokenB.balanceOf(address(masterWallet)), 7.237 ether);
+        assertEq(tokenC.balanceOf(address(masterWallet)), 438.8 ether);
+        // - deposit NFT was minted
+        assertEq(aliceDepositNftId, 1);
+
+        // remove strategies
+        address[] memory smartVaults = Arrays.toArray(address(smartVault));
+        smartVaultManager.removeStrategyFromVaults(address(strategyA), smartVaults, true);
+        smartVaultManager.removeStrategyFromVaults(address(strategyB), smartVaults, true);
+        smartVaultManager.removeStrategyFromVaults(address(strategyC), smartVaults, true);
+
+        // recover deposits
+        vm.startPrank(alice);
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SPOOL_ADMIN, alice));
+        smartVaultManager.recoverPendingDeposits(address(smartVault));
+        vm.stopPrank();
+    }
+
+    function test_recoverPendingDeposits_shouldRevertWhenVaultsContainNonGhostStrategies() public {
+        // Alice deposits
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+        tokenB.approve(address(smartVaultManager), depositAmounts[1]);
+        tokenC.approve(address(smartVaultManager), depositAmounts[2]);
+
+        uint256 aliceDepositNftId =
+            smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
+
+        vm.stopPrank();
+
+        // check state
+        // - tokens were transferred
+        assertEq(tokenA.balanceOf(alice), 0 ether);
+        assertEq(tokenB.balanceOf(alice), 2.763 ether);
+        assertEq(tokenC.balanceOf(alice), 61.2 ether);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 100 ether);
+        assertEq(tokenB.balanceOf(address(masterWallet)), 7.237 ether);
+        assertEq(tokenC.balanceOf(address(masterWallet)), 438.8 ether);
+        // - deposit NFT was minted
+        assertEq(aliceDepositNftId, 1);
+
+        // remove strategies
+        address[] memory smartVaults = Arrays.toArray(address(smartVault));
+        smartVaultManager.removeStrategyFromVaults(address(strategyA), smartVaults, true);
+        smartVaultManager.removeStrategyFromVaults(address(strategyB), smartVaults, true);
+
+        // recover deposits
+        vm.expectRevert(NotGhostVault.selector);
+        smartVaultManager.recoverPendingDeposits(address(smartVault));
     }
 }

@@ -20,7 +20,9 @@ contract depositManager3x3Test is Test {
             IUsdPriceFeedManager(address(0x02)),
             IGuardManager(address(0x03)),
             IActionManager(address(0x04)),
-            ISpoolAccessControl(address(0x5))
+            ISpoolAccessControl(address(0x5)),
+            IMasterWallet(address(0x6)),
+            address(0x7)
         );
         exchangeRates = Arrays.toArray(
             1200 * USD_DECIMALS_MULTIPLIER, 16400 * USD_DECIMALS_MULTIPLIER, 270 * USD_DECIMALS_MULTIPLIER
@@ -192,7 +194,9 @@ contract depositManager2x3Test is Test {
             IUsdPriceFeedManager(address(0x02)),
             IGuardManager(address(0x03)),
             IActionManager(address(0x04)),
-            ISpoolAccessControl(address(0x5))
+            ISpoolAccessControl(address(0x5)),
+            IMasterWallet(address(0x6)),
+            address(0x7)
         );
         exchangeRates = Arrays.toArray(1200 * USD_DECIMALS_MULTIPLIER, 16400 * USD_DECIMALS_MULTIPLIER);
         allocation = Arrays.toUint16a16(600, 300, 100);
@@ -268,7 +272,9 @@ contract depositManager1x2Test is Test {
             IUsdPriceFeedManager(address(0x02)),
             IGuardManager(address(0x03)),
             IActionManager(address(0x04)),
-            ISpoolAccessControl(address(0x5))
+            ISpoolAccessControl(address(0x5)),
+            IMasterWallet(address(0x6)),
+            address(0x7)
         );
 
         exchangeRates = Arrays.toArray(1200 * USD_DECIMALS_MULTIPLIER);
@@ -319,7 +325,9 @@ contract depositManagerOtherTest is Test {
             IUsdPriceFeedManager(address(0x02)),
             IGuardManager(address(0x03)),
             IActionManager(address(0x04)),
-            ISpoolAccessControl(address(0x5))
+            ISpoolAccessControl(address(0x5)),
+            IMasterWallet(address(0x6)),
+            address(0x7)
         );
     }
 

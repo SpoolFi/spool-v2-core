@@ -161,7 +161,7 @@ contract DeploySpool {
 
         {
             DepositManager implementation =
-            new DepositManager(strategyRegistry, usdPriceFeedManager, guardManager, actionManager, spoolAccessControl);
+            new DepositManager(strategyRegistry, usdPriceFeedManager, guardManager, actionManager, spoolAccessControl, masterWallet, address(ghostStrategy));
             proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
             depositManager = DepositManager(address(proxy));
 

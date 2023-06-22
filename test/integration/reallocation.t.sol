@@ -86,7 +86,7 @@ contract ReallocationIntegrationTest is Test {
         swapper = new Swapper(accessControl);
 
         DepositManager depositManager =
-            new DepositManager(strategyRegistry, priceFeedManager, guardManager, actionManager, accessControl);
+        new DepositManager(strategyRegistry, priceFeedManager, guardManager, actionManager, accessControl, masterWallet, address(ghostStrategy));
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(depositManager));
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(depositManager));
 

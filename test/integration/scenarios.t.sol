@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import "../../src/access/SpoolAccessControl.sol";
+import "../../src/libraries/SpoolUtils.sol";
 import "../../src/libraries/uint16a16Lib.sol";
 import "../../src/guards/AllowlistGuard.sol";
 import "../../src/managers/ActionManager.sol";
@@ -142,7 +143,7 @@ contract ScenariosTest is Test {
             riskManager = new RiskManager(accessControl, strategyRegistry, address(ghostStrategy));
 
             depositManager =
-                new DepositManager(strategyRegistry, priceFeedManager, guardManager, actionManager, accessControl);
+            new DepositManager(strategyRegistry, priceFeedManager, guardManager, actionManager, accessControl, masterWallet, address(ghostStrategy));
             accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(depositManager));
             accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(depositManager));
 
@@ -659,6 +660,71 @@ contract ScenariosTest is Test {
         assertEq(smartVault.balanceOf(alice, withdrawalNftIdAlice), 0);
     }
 
+    function test_flush_shouldRevertWhenOnlyGhostStrategies() public {
+        address[] memory smartVaultStrategies = Arrays.toArray(address(strategyA1));
+        ISmartVault smartVault =
+            smartVaultFactory.deploySmartVault(getSmartVaultSpecification(assetGroupIdA, smartVaultStrategies));
+
+        // Alice deposits
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(10 ether);
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+        uint256 depositNftIdAlice = smartVaultManager.deposit(
+            DepositBag({
+                smartVault: address(smartVault),
+                assets: depositAmounts,
+                receiver: alice,
+                referral: address(0x0),
+                doFlush: false
+            })
+        );
+
+        vm.stopPrank();
+
+        // check state
+        // - deposit NFTs were minted
+        assertEq(depositNftIdAlice, 1);
+        assertEq(smartVault.balanceOf(alice, depositNftIdAlice), 1);
+
+        // strategy A1 is removed
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
+
+        // should not flush deposit
+        vm.expectRevert(GhostVault.selector);
+        smartVaultManager.flushSmartVault(address(smartVault));
+    }
+
+    function test_redeem_shouldRevertWhenOnlyGhostStrategies() public {
+        address[] memory smartVaultStrategies = Arrays.toArray(address(strategyA1));
+        ISmartVault smartVault =
+            smartVaultFactory.deploySmartVault(getSmartVaultSpecification(assetGroupIdA, smartVaultStrategies));
+
+        // set initial state - Alice deposited 40 ether to the smart vault
+        deal(address(smartVault), alice, 4_000_000, true);
+        deal(address(strategyA1), address(smartVault), 4_000_000, true);
+        deal(address(tokenA), address(strategyA1), 40 ether, true);
+
+        // strategy A1 is removed
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
+
+        // Alice should not be able to request withdrawal
+        vm.startPrank(alice);
+        vm.expectRevert(GhostVault.selector);
+        smartVaultManager.redeem(
+            RedeemBag({
+                smartVault: address(smartVault),
+                shares: 1_000_000,
+                nftIds: new uint256[](0),
+                nftAmounts: new uint256[](0)
+            }),
+            alice,
+            false
+        );
+        vm.stopPrank();
+    }
+
     function test_redeemFor_shouldRevertWhenExecutorNotOnAllowlist() public {
         // set smart vault with allowlist guard checking executor of redeemal
         AllowlistGuard allowlistGuard = new AllowlistGuard(accessControl);
@@ -769,6 +835,1062 @@ contract ScenariosTest is Test {
         // - withdrawal NFT is minted
         assertEq(withdrawalNftIdBob, 2 ** 255 + 2);
         assertEq(smartVault.balanceOf(alice, withdrawalNftIdBob), 1);
+    }
+
+    function test_removeStrategy_afterDeposit() public {
+        // after a deposit is made, a strategy is removed
+        // - all deposited funds should be diverted to other strategies
+
+        address[] memory smartVaultStrategies = Arrays.toArray(address(strategyA1), address(strategyA2));
+        ISmartVault smartVault =
+            smartVaultFactory.deploySmartVault(getSmartVaultSpecification(assetGroupIdA, smartVaultStrategies));
+        uint256[] memory depositAmounts;
+
+        // arrange
+        {
+            // - Alice deposits and flushes
+            vm.startPrank(alice);
+
+            depositAmounts = Arrays.toArray(10 ether);
+            tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+            uint256 depositNftIdAlice = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVault),
+                    assets: depositAmounts,
+                    receiver: alice,
+                    referral: address(0x0),
+                    doFlush: true
+                })
+            );
+
+            vm.stopPrank();
+
+            // - DHW
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroupA));
+            vm.stopPrank();
+
+            // - sync vault
+            smartVaultManager.syncSmartVault(address(smartVault), true);
+
+            // - claim deposits
+            vm.startPrank(alice);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVault), Arrays.toArray(depositNftIdAlice), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+
+            // check initial state
+            // - tokens were transferred
+            assertEq(tokenA.balanceOf(alice), 90 ether);
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+            assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 5 ether);
+            assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 5 ether);
+            // - strategy tokens were minted
+            assertEq(strategyA1.totalSupply(), 5000000000000000000000);
+            assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertEq(strategyA2.totalSupply(), 5000000000000000000000);
+            assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+            // - vault tokens were minted
+            assertEq(smartVault.totalSupply(), 10000000000000000000000);
+            assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000000);
+        }
+
+        // Bob deposits
+        vm.startPrank(bob);
+
+        depositAmounts = Arrays.toArray(10 ether);
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+        uint256 depositNftIdBob = smartVaultManager.deposit(
+            DepositBag({
+                smartVault: address(smartVault),
+                assets: depositAmounts,
+                receiver: bob,
+                referral: address(0x0),
+                doFlush: false
+            })
+        );
+
+        vm.stopPrank();
+
+        // check state
+        // - tokens were transferred
+        assertEq(tokenA.balanceOf(bob), 90 ether);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 10 ether);
+
+        // remove strategy A1
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // DHW
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(Arrays.toArray(smartVaultStrategies[1]), assetGroupA));
+        vm.stopPrank();
+
+        // check state
+        // - all Bob's tokens should go to strategy A2
+        // - tokens were routed to protocol
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 5 ether);
+        assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 15 ether);
+        // - strategy tokens were minted
+        assertEq(strategyA1.totalSupply(), 5000000000000000000000);
+        assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertEq(strategyA2.totalSupply(), 15000000000000000000000);
+        assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+
+        // sync vault
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        // check state
+        // - after removal of strategy A1, vault had effectively only deposited 5 ether
+        // - strategy tokens were claimed
+        assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertEq(strategyA2.balanceOf(address(smartVault)), 15000000000000000000000);
+        // - vault tokens were minted
+        assertEq(smartVault.totalSupply(), 30000000000000000000000);
+
+        // claim deposits
+        vm.startPrank(bob);
+        smartVaultManager.claimSmartVaultTokens(
+            address(smartVault), Arrays.toArray(depositNftIdBob), Arrays.toArray(NFT_MINTED_SHARES)
+        );
+        vm.stopPrank();
+
+        // check state
+        // - vault tokens were claimed
+        assertEq(smartVault.balanceOf(bob), 20000000000000000000000);
+        // - final vault value
+        assertEq(
+            SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
+            15000000000000000000
+        );
+    }
+
+    function test_removeStrategy_afterDepositFlush() public {
+        // after a deposit is flushed, a strategy is removed
+        // - funds flushed to the removed strategy should be sent to emergency withdrawer
+
+        address[] memory smartVaultStrategies = Arrays.toArray(address(strategyA1), address(strategyA2));
+        ISmartVault smartVault =
+            smartVaultFactory.deploySmartVault(getSmartVaultSpecification(assetGroupIdA, smartVaultStrategies));
+        uint256[] memory depositAmounts;
+
+        // arrange
+        {
+            // - Alice deposits and flushes
+            vm.startPrank(alice);
+
+            depositAmounts = Arrays.toArray(10 ether);
+            tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+            uint256 depositNftIdAlice = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVault),
+                    assets: depositAmounts,
+                    receiver: alice,
+                    referral: address(0x0),
+                    doFlush: true
+                })
+            );
+
+            vm.stopPrank();
+
+            // - DHW
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroupA));
+            vm.stopPrank();
+
+            // - sync vault
+            smartVaultManager.syncSmartVault(address(smartVault), true);
+
+            // - claim deposits
+            vm.startPrank(alice);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVault), Arrays.toArray(depositNftIdAlice), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+
+            // check initial state
+            // - tokens were transferred
+            assertEq(tokenA.balanceOf(alice), 90 ether);
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+            assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 5 ether);
+            assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 5 ether);
+            // - strategy tokens were minted
+            assertEq(strategyA1.totalSupply(), 5000000000000000000000);
+            assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertEq(strategyA2.totalSupply(), 5000000000000000000000);
+            assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+            // - vault tokens were minted
+            assertEq(smartVault.totalSupply(), 10000000000000000000000);
+            assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000000);
+        }
+
+        // Bob deposits
+        vm.startPrank(bob);
+
+        depositAmounts = Arrays.toArray(10 ether);
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+        uint256 depositNftIdBob = smartVaultManager.deposit(
+            DepositBag({
+                smartVault: address(smartVault),
+                assets: depositAmounts,
+                receiver: bob,
+                referral: address(0x0),
+                doFlush: false
+            })
+        );
+
+        vm.stopPrank();
+
+        // check state
+        // - tokens were transferred
+        assertEq(tokenA.balanceOf(bob), 90 ether);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 10 ether);
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // remove strategy A1
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
+
+        // check state
+        // - funds flushed to strategy A1 were transferred to emergency withdrawer
+        assertEq(tokenA.balanceOf(address(masterWallet)), 5 ether);
+        assertEq(tokenA.balanceOf(address(emergencyWithdrawalWallet)), 5 ether);
+
+        // DHW
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(Arrays.toArray(smartVaultStrategies[1]), assetGroupA));
+        vm.stopPrank();
+
+        // check state
+        // - remaining Bob's tokens should go to strategy A2
+        // - tokens were routed to protocol
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 5 ether);
+        assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 10 ether);
+        // - strategy tokens were minted
+        assertEq(strategyA1.totalSupply(), 5000000000000000000000);
+        assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertEq(strategyA2.totalSupply(), 10000000000000000000000);
+        assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+
+        // sync vault
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        // check state
+        // - after removal of strategy A1, vault had effectively only deposited 5 ether
+        // - strategy tokens were claimed
+        assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertEq(strategyA2.balanceOf(address(smartVault)), 10000000000000000000000);
+        // - vault tokens were minted
+        assertEq(smartVault.totalSupply(), 20000000000000000000000);
+
+        // claim deposits
+        vm.startPrank(bob);
+        smartVaultManager.claimSmartVaultTokens(
+            address(smartVault), Arrays.toArray(depositNftIdBob), Arrays.toArray(NFT_MINTED_SHARES)
+        );
+        vm.stopPrank();
+
+        // check state
+        // - vault tokens were claimed
+        assertEq(smartVault.balanceOf(bob), 10000000000000000000000);
+        // - final vault value
+        assertEq(
+            SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
+            10000000000000000000
+        );
+    }
+
+    function test_removeStrategy_afterDepositDhw() public {
+        // after a deposit is DHWed, a strategy is removed
+        // - funds are already routed to the protocol
+        // - try to retrieve them using emergency withdrawal
+
+        address[] memory smartVaultStrategies = Arrays.toArray(address(strategyA1), address(strategyA2));
+        ISmartVault smartVault =
+            smartVaultFactory.deploySmartVault(getSmartVaultSpecification(assetGroupIdA, smartVaultStrategies));
+        uint256[] memory depositAmounts;
+
+        // arrange
+        {
+            // - Alice deposits and flushes
+            vm.startPrank(alice);
+
+            depositAmounts = Arrays.toArray(10 ether);
+            tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+            uint256 depositNftIdAlice = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVault),
+                    assets: depositAmounts,
+                    receiver: alice,
+                    referral: address(0x0),
+                    doFlush: true
+                })
+            );
+
+            vm.stopPrank();
+
+            // - DHW
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroupA));
+            vm.stopPrank();
+
+            // - sync vault
+            smartVaultManager.syncSmartVault(address(smartVault), true);
+
+            // - claim deposits
+            vm.startPrank(alice);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVault), Arrays.toArray(depositNftIdAlice), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+
+            // check initial state
+            // - tokens were transferred
+            assertEq(tokenA.balanceOf(alice), 90 ether);
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+            assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 5 ether);
+            assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 5 ether);
+            // - strategy tokens were minted
+            assertEq(strategyA1.totalSupply(), 5000000000000000000000);
+            assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertEq(strategyA2.totalSupply(), 5000000000000000000000);
+            assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+            // - vault tokens were minted
+            assertEq(smartVault.totalSupply(), 10000000000000000000000);
+            assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000000);
+        }
+
+        // Bob deposits
+        vm.startPrank(bob);
+
+        depositAmounts = Arrays.toArray(10 ether);
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+        uint256 depositNftIdBob = smartVaultManager.deposit(
+            DepositBag({
+                smartVault: address(smartVault),
+                assets: depositAmounts,
+                receiver: bob,
+                referral: address(0x0),
+                doFlush: false
+            })
+        );
+
+        vm.stopPrank();
+
+        // check state
+        // - tokens were transferred
+        assertEq(tokenA.balanceOf(bob), 90 ether);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 10 ether);
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // DHW
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroupA));
+        vm.stopPrank();
+
+        // check state
+        // - tokens were routed to protocol
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 10 ether);
+        assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 10 ether);
+        // - strategy tokens were minted
+        assertEq(strategyA1.totalSupply(), 10000000000000000000000);
+        assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertEq(strategyA2.totalSupply(), 10000000000000000000000);
+        assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+
+        // remove strategy A1
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
+
+        // sync vault
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        // check state
+        // - after removal of strategy A1, vault had effectively only deposited 5 ether
+        // - strategy tokens were claimed
+        assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertEq(strategyA2.balanceOf(address(smartVault)), 10000000000000000000000);
+        // - vault tokens were minted
+        assertEq(smartVault.totalSupply(), 20000000000000000000000);
+
+        // claim deposits
+        vm.startPrank(bob);
+        smartVaultManager.claimSmartVaultTokens(
+            address(smartVault), Arrays.toArray(depositNftIdBob), Arrays.toArray(NFT_MINTED_SHARES)
+        );
+        vm.stopPrank();
+
+        // check state
+        // - vault tokens were claimed
+        assertEq(smartVault.balanceOf(bob), 10000000000000000000000);
+        // - final vault value
+        assertEq(
+            SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
+            10000000000000000000
+        );
+    }
+
+    function test_removeStrategy_afterDepositSync() public {
+        // after a deposit is synced, a strategy is removed
+        // - funds are already routed to the protocol
+        // - try to retrieve them using emergency withdrawal
+
+        address[] memory smartVaultStrategies = Arrays.toArray(address(strategyA1), address(strategyA2));
+        ISmartVault smartVault =
+            smartVaultFactory.deploySmartVault(getSmartVaultSpecification(assetGroupIdA, smartVaultStrategies));
+        uint256[] memory depositAmounts;
+
+        // arrange
+        {
+            // - Alice deposits and flushes
+            vm.startPrank(alice);
+
+            depositAmounts = Arrays.toArray(10 ether);
+            tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+            uint256 depositNftIdAlice = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVault),
+                    assets: depositAmounts,
+                    receiver: alice,
+                    referral: address(0x0),
+                    doFlush: true
+                })
+            );
+
+            vm.stopPrank();
+
+            // - DHW
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroupA));
+            vm.stopPrank();
+
+            // - sync vault
+            smartVaultManager.syncSmartVault(address(smartVault), true);
+
+            // - claim deposits
+            vm.startPrank(alice);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVault), Arrays.toArray(depositNftIdAlice), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+
+            // check initial state
+            // - tokens were transferred
+            assertEq(tokenA.balanceOf(alice), 90 ether);
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+            assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 5 ether);
+            assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 5 ether);
+            // - strategy tokens were minted
+            assertEq(strategyA1.totalSupply(), 5000000000000000000000);
+            assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertEq(strategyA2.totalSupply(), 5000000000000000000000);
+            assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+            // - vault tokens were minted
+            assertEq(smartVault.totalSupply(), 10000000000000000000000);
+            assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000000);
+        }
+
+        // Bob deposits
+        vm.startPrank(bob);
+
+        depositAmounts = Arrays.toArray(10 ether);
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+        uint256 depositNftIdBob = smartVaultManager.deposit(
+            DepositBag({
+                smartVault: address(smartVault),
+                assets: depositAmounts,
+                receiver: bob,
+                referral: address(0x0),
+                doFlush: false
+            })
+        );
+
+        vm.stopPrank();
+
+        // check state
+        // - tokens were transferred
+        assertEq(tokenA.balanceOf(bob), 90 ether);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 10 ether);
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // DHW
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroupA));
+        vm.stopPrank();
+
+        // check state
+        // - tokens were routed to protocol
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 10 ether);
+        assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 10 ether);
+        // - strategy tokens were minted
+        assertEq(strategyA1.totalSupply(), 10000000000000000000000);
+        assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertEq(strategyA2.totalSupply(), 10000000000000000000000);
+        assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+
+        // sync vault
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        // check state
+        // - strategy tokens were claimed
+        assertEq(strategyA1.balanceOf(address(smartVault)), 10000000000000000000000);
+        assertEq(strategyA2.balanceOf(address(smartVault)), 10000000000000000000000);
+        // - vault tokens were minted
+        assertEq(smartVault.totalSupply(), 20000000000000000000000);
+
+        // remove strategy A1
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
+
+        // claim deposits
+        vm.startPrank(bob);
+        smartVaultManager.claimSmartVaultTokens(
+            address(smartVault), Arrays.toArray(depositNftIdBob), Arrays.toArray(NFT_MINTED_SHARES)
+        );
+        vm.stopPrank();
+
+        // check state
+        // - vault tokens were claimed
+        assertEq(smartVault.balanceOf(bob), 10000000000000000000000);
+        // - final vault value
+        assertEq(
+            SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
+            10000000000000000000
+        );
+    }
+
+    function test_removeStrategy_afterWithdrawal() public {
+        // after withdrawal is made, a strategy is removed
+        // - funds are still on the protocol
+        // - try to retrieve them using emergency withdrawal
+
+        address[] memory smartVaultStrategies = Arrays.toArray(address(strategyA1), address(strategyA2));
+        ISmartVault smartVault =
+            smartVaultFactory.deploySmartVault(getSmartVaultSpecification(assetGroupIdA, smartVaultStrategies));
+
+        // arrange
+        {
+            // - Alice deposits and flushes
+            vm.startPrank(alice);
+
+            uint256[] memory depositAmounts = Arrays.toArray(10 ether);
+            tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+            uint256 depositNftIdAlice = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVault),
+                    assets: depositAmounts,
+                    receiver: alice,
+                    referral: address(0x0),
+                    doFlush: true
+                })
+            );
+
+            vm.stopPrank();
+
+            // - DHW
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroupA));
+            vm.stopPrank();
+
+            // - sync vault
+            smartVaultManager.syncSmartVault(address(smartVault), true);
+
+            // - claim deposits
+            vm.startPrank(alice);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVault), Arrays.toArray(depositNftIdAlice), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+
+            // check initial state
+            // - tokens were transferred
+            assertEq(tokenA.balanceOf(alice), 90 ether);
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+            assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 5 ether);
+            assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 5 ether);
+            // - strategy tokens were minted
+            assertEq(strategyA1.totalSupply(), 5000000000000000000000);
+            assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertEq(strategyA2.totalSupply(), 5000000000000000000000);
+            assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+            // - vault tokens were minted
+            assertEq(smartVault.totalSupply(), 10000000000000000000000);
+            assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000000);
+        }
+
+        // Alice withdraws half her shares
+        vm.startPrank(alice);
+        uint256 withdrawalNftIdAlice = smartVaultManager.redeem(
+            RedeemBag({
+                smartVault: address(smartVault),
+                shares: 5000000000000000000000,
+                nftIds: new uint256[](0),
+                nftAmounts: new uint256[](0)
+            }),
+            alice,
+            false
+        );
+        vm.stopPrank();
+
+        // check state
+        // - vault tokens are returned to vault
+        assertEq(smartVault.balanceOf(alice), 5000000000000000000000);
+        assertEq(smartVault.balanceOf(address(smartVault)), 5000000000000000000000);
+
+        // remove strategy A1
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // check state
+        // - vault tokens are burned
+        assertEq(smartVault.balanceOf(address(smartVault)), 0);
+        // - strategy tokens are returned to strategies
+        assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertEq(strategyA2.balanceOf(address(smartVault)), 2500000000000000000000);
+        assertEq(strategyA2.balanceOf(address(strategyA2)), 2500000000000000000000);
+
+        // DHW
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(Arrays.toArray(smartVaultStrategies[1]), assetGroupA));
+        vm.stopPrank();
+
+        // check state
+        // - strategy tokens are burned
+        assertEq(strategyA2.balanceOf(address(strategyA2)), 0);
+        // - assets are withdrawn from protocol
+        assertEq(tokenA.balanceOf(address(masterWallet)), 2.5 ether);
+        assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 5 ether);
+        assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 2.5 ether);
+
+        // sync vault
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        // claim withdrawal
+        vm.startPrank(alice);
+        smartVaultManager.claimWithdrawal(
+            address(smartVault), Arrays.toArray(withdrawalNftIdAlice), Arrays.toArray(NFT_MINTED_SHARES), alice
+        );
+        vm.stopPrank();
+
+        // check state
+        // - assets are transferred to withdrawers
+        assertEq(tokenA.balanceOf(alice), 92.5 ether);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        // - final vault value
+        assertEq(
+            SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
+            2500000000000000000
+        );
+    }
+
+    function test_removeStrategy_afterWithdrawalFlush() public {
+        // after withdrawal is flushed, a strategy is removed
+        // - funds are still on the protocol
+        // - try to retrieve them using emergency withdrawal
+
+        address[] memory smartVaultStrategies = Arrays.toArray(address(strategyA1), address(strategyA2));
+        ISmartVault smartVault =
+            smartVaultFactory.deploySmartVault(getSmartVaultSpecification(assetGroupIdA, smartVaultStrategies));
+
+        // arrange
+        {
+            // - Alice deposits and flushes
+            vm.startPrank(alice);
+
+            uint256[] memory depositAmounts = Arrays.toArray(10 ether);
+            tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+            uint256 depositNftIdAlice = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVault),
+                    assets: depositAmounts,
+                    receiver: alice,
+                    referral: address(0x0),
+                    doFlush: true
+                })
+            );
+
+            vm.stopPrank();
+
+            // - DHW
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroupA));
+            vm.stopPrank();
+
+            // - sync vault
+            smartVaultManager.syncSmartVault(address(smartVault), true);
+
+            // - claim deposits
+            vm.startPrank(alice);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVault), Arrays.toArray(depositNftIdAlice), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+
+            // check initial state
+            // - tokens were transferred
+            assertEq(tokenA.balanceOf(alice), 90 ether);
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+            assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 5 ether);
+            assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 5 ether);
+            // - strategy tokens were minted
+            assertEq(strategyA1.totalSupply(), 5000000000000000000000);
+            assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertEq(strategyA2.totalSupply(), 5000000000000000000000);
+            assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+            // - vault tokens were minted
+            assertEq(smartVault.totalSupply(), 10000000000000000000000);
+            assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000000);
+        }
+
+        // Alice withdraws half her shares
+        vm.startPrank(alice);
+        uint256 withdrawalNftIdAlice = smartVaultManager.redeem(
+            RedeemBag({
+                smartVault: address(smartVault),
+                shares: 5000000000000000000000,
+                nftIds: new uint256[](0),
+                nftAmounts: new uint256[](0)
+            }),
+            alice,
+            false
+        );
+        vm.stopPrank();
+
+        // check state
+        // - vault tokens are returned to vault
+        assertEq(smartVault.balanceOf(alice), 5000000000000000000000);
+        assertEq(smartVault.balanceOf(address(smartVault)), 5000000000000000000000);
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // check state
+        // - vault tokens are burned
+        assertEq(smartVault.balanceOf(address(smartVault)), 0);
+        // - strategy tokens are returned to strategies
+        assertEq(strategyA1.balanceOf(address(smartVault)), 2500000000000000000000);
+        assertEq(strategyA1.balanceOf(address(strategyA1)), 2500000000000000000000);
+        assertEq(strategyA2.balanceOf(address(smartVault)), 2500000000000000000000);
+        assertEq(strategyA2.balanceOf(address(strategyA2)), 2500000000000000000000);
+
+        // remove strategy A1
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
+
+        // DHW
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(Arrays.toArray(smartVaultStrategies[1]), assetGroupA));
+        vm.stopPrank();
+
+        // check state
+        // - strategy tokens are burned
+        assertEq(strategyA2.balanceOf(address(strategyA2)), 0);
+        // - assets are withdrawn from protocol
+        assertEq(tokenA.balanceOf(address(masterWallet)), 2.5 ether);
+        assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 5 ether);
+        assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 2.5 ether);
+
+        // sync vault
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        // claim withdrawal
+        vm.startPrank(alice);
+        smartVaultManager.claimWithdrawal(
+            address(smartVault), Arrays.toArray(withdrawalNftIdAlice), Arrays.toArray(NFT_MINTED_SHARES), alice
+        );
+        vm.stopPrank();
+
+        // check state
+        // - assets are transferred to withdrawers
+        assertEq(tokenA.balanceOf(alice), 92.5 ether);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        // - final vault value
+        assertEq(
+            SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
+            2500000000000000000
+        );
+    }
+
+    function test_removeStrategy_afterWithdrawalDhw() public {
+        // after withdrawal is DHWed, a strategy is removed
+        // - funds withdrawn from protocol should be sent to emergency withdrawer
+
+        address[] memory smartVaultStrategies = Arrays.toArray(address(strategyA1), address(strategyA2));
+        ISmartVault smartVault =
+            smartVaultFactory.deploySmartVault(getSmartVaultSpecification(assetGroupIdA, smartVaultStrategies));
+
+        // arrange
+        {
+            // - Alice deposits and flushes
+            vm.startPrank(alice);
+
+            uint256[] memory depositAmounts = Arrays.toArray(10 ether);
+            tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+            uint256 depositNftIdAlice = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVault),
+                    assets: depositAmounts,
+                    receiver: alice,
+                    referral: address(0x0),
+                    doFlush: true
+                })
+            );
+
+            vm.stopPrank();
+
+            // - DHW
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroupA));
+            vm.stopPrank();
+
+            // - sync vault
+            smartVaultManager.syncSmartVault(address(smartVault), true);
+
+            // - claim deposits
+            vm.startPrank(alice);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVault), Arrays.toArray(depositNftIdAlice), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+
+            // check initial state
+            // - tokens were transferred
+            assertEq(tokenA.balanceOf(alice), 90 ether);
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+            assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 5 ether);
+            assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 5 ether);
+            // - strategy tokens were minted
+            assertEq(strategyA1.totalSupply(), 5000000000000000000000);
+            assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertEq(strategyA2.totalSupply(), 5000000000000000000000);
+            assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+            // - vault tokens were minted
+            assertEq(smartVault.totalSupply(), 10000000000000000000000);
+            assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000000);
+        }
+
+        // Alice withdraws half her shares
+        vm.startPrank(alice);
+        uint256 withdrawalNftIdAlice = smartVaultManager.redeem(
+            RedeemBag({
+                smartVault: address(smartVault),
+                shares: 5000000000000000000000,
+                nftIds: new uint256[](0),
+                nftAmounts: new uint256[](0)
+            }),
+            alice,
+            false
+        );
+        vm.stopPrank();
+
+        // check state
+        // - vault tokens are returned to vault
+        assertEq(smartVault.balanceOf(alice), 5000000000000000000000);
+        assertEq(smartVault.balanceOf(address(smartVault)), 5000000000000000000000);
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // check state
+        // - vault tokens are burned
+        assertEq(smartVault.balanceOf(address(smartVault)), 0);
+        // - strategy tokens are returned to strategies
+        assertEq(strategyA1.balanceOf(address(smartVault)), 2500000000000000000000);
+        assertEq(strategyA1.balanceOf(address(strategyA1)), 2500000000000000000000);
+        assertEq(strategyA2.balanceOf(address(smartVault)), 2500000000000000000000);
+        assertEq(strategyA2.balanceOf(address(strategyA2)), 2500000000000000000000);
+
+        // DHW
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroupA));
+        vm.stopPrank();
+
+        // check state
+        // - strategy tokens are burned
+        assertEq(strategyA1.balanceOf(address(strategyA1)), 0);
+        assertEq(strategyA2.balanceOf(address(strategyA2)), 0);
+        // - assets are withdrawn from protocol
+        assertEq(tokenA.balanceOf(address(masterWallet)), 5 ether);
+        assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 2.5 ether);
+        assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 2.5 ether);
+
+        // remove strategy A1
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
+
+        // check state
+        // - funds flushed to strategy A1 were transferred to emergency withdrawer
+        assertEq(tokenA.balanceOf(address(masterWallet)), 2.5 ether);
+        assertEq(tokenA.balanceOf(address(emergencyWithdrawalWallet)), 2.5 ether);
+
+        // sync vault
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        // claim withdrawal
+        vm.startPrank(alice);
+        smartVaultManager.claimWithdrawal(
+            address(smartVault), Arrays.toArray(withdrawalNftIdAlice), Arrays.toArray(NFT_MINTED_SHARES), alice
+        );
+        vm.stopPrank();
+
+        // check state
+        // - assets are transferred to withdrawers
+        assertEq(tokenA.balanceOf(alice), 92.5 ether);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        // - final vault value
+        assertEq(
+            SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
+            2500000000000000000
+        );
+    }
+
+    function test_removeStrategy_afterWithdrawalSync() public {
+        // after withdrawal is DHWed, a strategy is removed
+        // - funds withdrawn from protocol should be withdrawn to user
+
+        address[] memory smartVaultStrategies = Arrays.toArray(address(strategyA1), address(strategyA2));
+        ISmartVault smartVault =
+            smartVaultFactory.deploySmartVault(getSmartVaultSpecification(assetGroupIdA, smartVaultStrategies));
+
+        // arrange
+        {
+            // - Alice deposits and flushes
+            vm.startPrank(alice);
+
+            uint256[] memory depositAmounts = Arrays.toArray(10 ether);
+            tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+            uint256 depositNftIdAlice = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVault),
+                    assets: depositAmounts,
+                    receiver: alice,
+                    referral: address(0x0),
+                    doFlush: true
+                })
+            );
+
+            vm.stopPrank();
+
+            // - DHW
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroupA));
+            vm.stopPrank();
+
+            // - sync vault
+            smartVaultManager.syncSmartVault(address(smartVault), true);
+
+            // - claim deposits
+            vm.startPrank(alice);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVault), Arrays.toArray(depositNftIdAlice), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+
+            // check initial state
+            // - tokens were transferred
+            assertEq(tokenA.balanceOf(alice), 90 ether);
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+            assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 5 ether);
+            assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 5 ether);
+            // - strategy tokens were minted
+            assertEq(strategyA1.totalSupply(), 5000000000000000000000);
+            assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertEq(strategyA2.totalSupply(), 5000000000000000000000);
+            assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+            // - vault tokens were minted
+            assertEq(smartVault.totalSupply(), 10000000000000000000000);
+            assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000000);
+        }
+
+        // Alice withdraws half her shares
+        vm.startPrank(alice);
+        uint256 withdrawalNftIdAlice = smartVaultManager.redeem(
+            RedeemBag({
+                smartVault: address(smartVault),
+                shares: 5000000000000000000000,
+                nftIds: new uint256[](0),
+                nftAmounts: new uint256[](0)
+            }),
+            alice,
+            false
+        );
+        vm.stopPrank();
+
+        // check state
+        // - vault tokens are returned to vault
+        assertEq(smartVault.balanceOf(alice), 5000000000000000000000);
+        assertEq(smartVault.balanceOf(address(smartVault)), 5000000000000000000000);
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // check state
+        // - vault tokens are burned
+        assertEq(smartVault.balanceOf(address(smartVault)), 0);
+        // - strategy tokens are returned to strategies
+        assertEq(strategyA1.balanceOf(address(smartVault)), 2500000000000000000000);
+        assertEq(strategyA1.balanceOf(address(strategyA1)), 2500000000000000000000);
+        assertEq(strategyA2.balanceOf(address(smartVault)), 2500000000000000000000);
+        assertEq(strategyA2.balanceOf(address(strategyA2)), 2500000000000000000000);
+
+        // DHW
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroupA));
+        vm.stopPrank();
+
+        // check state
+        // - strategy tokens are burned
+        assertEq(strategyA1.balanceOf(address(strategyA1)), 0);
+        assertEq(strategyA2.balanceOf(address(strategyA2)), 0);
+        // - assets are withdrawn from protocol
+        assertEq(tokenA.balanceOf(address(masterWallet)), 5 ether);
+        assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 2.5 ether);
+        assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 2.5 ether);
+
+        // sync vault
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        // remove strategy A1
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
+
+        // claim withdrawal
+        vm.startPrank(alice);
+        smartVaultManager.claimWithdrawal(
+            address(smartVault), Arrays.toArray(withdrawalNftIdAlice), Arrays.toArray(NFT_MINTED_SHARES), alice
+        );
+        vm.stopPrank();
+
+        // check state
+        // - assets are transferred to withdrawers
+        assertEq(tokenA.balanceOf(alice), 95 ether);
+        assertEq(tokenA.balanceOf(address(masterWallet)), 0);
+        // - final vault value
+        assertEq(
+            SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
+            2500000000000000000
+        );
     }
 
     function getSmartVaultSpecification(uint256 assetGroupId, address[] memory strategies)

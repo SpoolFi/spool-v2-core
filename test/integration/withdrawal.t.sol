@@ -88,7 +88,7 @@ contract WithdrawalIntegrationTest is Test {
         IGuardManager guardManager = new GuardManager(accessControl);
         IRiskManager riskManager = new RiskManager(accessControl, strategyRegistry, address(ghostStrategy));
         depositManager =
-            new DepositManager(strategyRegistry, priceFeedManager, guardManager, actionManager, accessControl);
+        new DepositManager(strategyRegistry, priceFeedManager, guardManager, actionManager, accessControl, masterWallet, address(ghostStrategy));
         withdrawalManager =
             new WithdrawalManager(strategyRegistry, masterWallet, guardManager, actionManager, accessControl);
 

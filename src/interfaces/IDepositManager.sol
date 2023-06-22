@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import "./ISmartVault.sol";
-import "./IStrategyRegistry.sol";
+import "../libraries/uint16a16Lib.sol";
 
 /**
  * @notice Used when deposited assets are not the same length as underlying assets.
@@ -13,6 +13,17 @@ error InvalidAssetLengths();
  * @notice Used when lengths of NFT id and amount arrays when claiming NFTs don't match.
  */
 error InvalidNftArrayLength();
+
+/**
+ * @notice Used when there are no pending deposits to recover.
+ * E.g., they were already recovered or flushed.
+ */
+error NoDepositsToRecover();
+
+/**
+ * @notice Used when trying to recover pending deposits from a smart vault that has non-ghost strategies.
+ */
+error NotGhostVault();
 
 /**
  * @notice Gathers input for depositing assets.
@@ -120,6 +131,13 @@ interface IDepositManager {
     );
 
     /**
+     * @notice Pending deposits were recovered.
+     * @param smartVault Smart vault address.
+     * @param recoveredAssets Amount of assets recovered.
+     */
+    event PendingDepositsRecovered(address indexed smartVault, uint256[] recoveredAssets);
+
+    /**
      * @notice Simulate vault synchronization (i.e. DHW was completed, but vault wasn't synced yet)
      */
     function syncDepositsSimulate(SimulateDepositParams calldata parameters)
@@ -223,6 +241,24 @@ interface IDepositManager {
         address executor,
         uint256 flushIndexToSync
     ) external returns (uint256 claimedTokens);
+
+    /**
+     * @notice Recovers pending deposits from smart vault.
+     * @dev Requirements:
+     * - caller must have role ROLE_SMART_VAULT_MANAGER
+     * @param smartVault Smart vault from which to recover pending deposits.
+     * @param flushIndex Flush index for which to recover pending deposits.
+     * @param strategies Addresses of smart vault's strategies.
+     * @param tokens Asset group token addresses.
+     * @param emergencyWallet Address of emergency withdraw wallet.
+     */
+    function recoverPendingDeposits(
+        address smartVault,
+        uint256 flushIndex,
+        address[] calldata strategies,
+        address[] calldata tokens,
+        address emergencyWallet
+    ) external;
 
     /**
      * @notice Gets current required deposit ratio of a smart vault.

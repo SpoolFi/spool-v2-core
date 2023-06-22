@@ -50,7 +50,9 @@ bytes32 constant ROLE_MASTER_WALLET_MANAGER = keccak256("MASTER_WALLET_MANAGER")
 /**
  * @dev Marks a contract as a smart vault manager.
  *
- * Should be granted to the SmartVaultManager contract.
+ * Should be granted to:
+ * - the SmartVaultManager contract,
+ * - the DepositManager contract.
  */
 bytes32 constant ROLE_SMART_VAULT_MANAGER = keccak256("SMART_VAULT_MANAGER");
 

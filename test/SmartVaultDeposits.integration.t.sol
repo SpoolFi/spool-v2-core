@@ -33,7 +33,9 @@ contract depositManagerIntegrationTest is Test {
             IUsdPriceFeedManager(address(0x02)),
             IGuardManager(address(0x03)),
             IActionManager(address(0x04)),
-            ISpoolAccessControl(address(0x5))
+            ISpoolAccessControl(address(0x5)),
+            IMasterWallet(address(0x6)),
+            address(0x7)
         );
 
         usdPriceFeedManager = new UsdPriceFeedManager(accessControl);

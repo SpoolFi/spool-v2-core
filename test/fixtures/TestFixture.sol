@@ -74,7 +74,7 @@ contract TestFixture is Test {
 
         allocationProvider = new UniformAllocationProvider();
         depositManager =
-            new DepositManager(strategyRegistry, priceFeedManager, guardManager, actionManager, accessControl);
+        new DepositManager(strategyRegistry, priceFeedManager, guardManager, actionManager, accessControl, masterWallet, address(ghostStrategy));
 
         withdrawalManager =
             new WithdrawalManager(strategyRegistry, masterWallet, guardManager, actionManager, accessControl);

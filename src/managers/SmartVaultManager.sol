@@ -294,6 +294,19 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         );
     }
 
+    function recoverPendingDeposits(address smartVault) external whenNotPaused checkNonReentrant {
+        _checkRole(ROLE_SPOOL_ADMIN, msg.sender);
+        _onlyRegisteredSmartVault(smartVault);
+
+        _depositManager.recoverPendingDeposits(
+            smartVault,
+            _flushIndexes[smartVault].current,
+            _smartVaultStrategies[smartVault],
+            _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]),
+            _strategyRegistry.emergencyWithdrawalWallet()
+        );
+    }
+
     /* ========== REGISTRY ========== */
 
     function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm)
@@ -356,10 +369,16 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     function flushSmartVault(address smartVault) public whenNotPaused checkNonReentrant {
         _onlyRegisteredSmartVault(smartVault);
+
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
+
+        // do not allow flushing if vault consists only of ghost strategies
+        _nonGhostVault(strategies_);
+
         _flushSmartVault(
             smartVault,
             _smartVaultAllocations[smartVault],
-            _smartVaultStrategies[smartVault],
+            strategies_,
             _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault])
         );
     }
@@ -689,8 +708,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     {
         _onlyRegisteredSmartVault(bag.smartVault);
 
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
         address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
+
+        // do not allow redeemal if vault consists only of ghost strategies
+        _nonGhostVault(strategies_);
+
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
 
         _syncSmartVault(bag.smartVault, strategies_, tokens, false);
 
@@ -727,20 +750,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function _depositAssets(DepositBag calldata bag) internal returns (uint256) {
         address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
 
-        {
-            // do not allow deposits if vault consists only of ghost strategies
-            bool nonGhostVault;
-            for (uint256 i; i < strategies_.length; ++i) {
-                if (strategies_[i] != _ghostStrategy) {
-                    nonGhostVault = true;
-                    break;
-                }
-            }
-
-            if (!nonGhostVault) {
-                revert GhostVault();
-            }
-        }
+        // do not allow deposits if vault consists only of ghost strategies
+        _nonGhostVault(strategies_);
 
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[bag.smartVault]);
         uint16a16 allocations_ = _smartVaultAllocations[bag.smartVault];
@@ -814,5 +825,19 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     function _isViewExecution() private view returns (bool) {
         return tx.origin == address(0);
+    }
+
+    function _nonGhostVault(address[] memory strategies_) internal view {
+        bool nonGhostVault;
+        for (uint256 i; i < strategies_.length; ++i) {
+            if (strategies_[i] != _ghostStrategy) {
+                nonGhostVault = true;
+                break;
+            }
+        }
+
+        if (!nonGhostVault) {
+            revert GhostVault();
+        }
     }
 }

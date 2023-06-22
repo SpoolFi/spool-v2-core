@@ -67,6 +67,7 @@ struct SyncDepositsSimulateLocalBag {
 /**
  * @dev Requires roles:
  * - ROLE_MASTER_WALLET_MANAGER
+ * - ROLE_SMART_VAULT_MANAGER
  */
 contract DepositManager is SpoolAccessControllable, IDepositManager {
     using SafeERC20 for IERC20;
@@ -97,6 +98,12 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
     /// @notice Action manager
     IActionManager internal immutable _actionManager;
 
+    /// @notice Master wallet
+    IMasterWallet private immutable _masterWallet;
+
+    /// @notice Ghost strategy
+    address private immutable _ghostStrategy;
+
     /**
      * @notice Exchange rates for vault, at given flush index
      * @dev smart vault => flush index => exchange rates
@@ -126,17 +133,23 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         IUsdPriceFeedManager priceFeedManager_,
         IGuardManager guardManager_,
         IActionManager actionManager_,
-        ISpoolAccessControl accessControl_
+        ISpoolAccessControl accessControl_,
+        IMasterWallet masterWallet_,
+        address ghostStrategy
     ) SpoolAccessControllable(accessControl_) {
         if (address(guardManager_) == address(0)) revert ConfigurationAddressZero();
         if (address(actionManager_) == address(0)) revert ConfigurationAddressZero();
         if (address(strategyRegistry_) == address(0)) revert ConfigurationAddressZero();
         if (address(priceFeedManager_) == address(0)) revert ConfigurationAddressZero();
+        if (address(masterWallet_) == address(0)) revert ConfigurationAddressZero();
+        if (ghostStrategy == address(0)) revert ConfigurationAddressZero();
 
         _guardManager = guardManager_;
         _actionManager = actionManager_;
         _strategyRegistry = strategyRegistry_;
         _priceFeedManager = priceFeedManager_;
+        _masterWallet = masterWallet_;
+        _ghostStrategy = ghostStrategy;
     }
 
     function smartVaultDeposits(address smartVault, uint256 flushIdx, uint256 assetGroupLength)
@@ -497,7 +510,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             SpoolUtils.getStrategyRatiosAtLastDhw(bag2.strategies, _strategyRegistry)
         );
 
-        // transfer tokens from user to master wallet
+        // update total deposited amounts with current deposit
         for (uint256 i; i < bag2.tokens.length; ++i) {
             _vaultDeposits[bag.smartVault][bag2.flushIndex][i] += bag.assets[i];
         }
@@ -778,5 +791,37 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         }
 
         return distribution;
+    }
+
+    function recoverPendingDeposits(
+        address smartVault,
+        uint256 flushIndex,
+        address[] calldata strategies,
+        address[] calldata tokens,
+        address emergencyWallet
+    ) external {
+        for (uint256 i; i < strategies.length; ++i) {
+            if (strategies[i] != _ghostStrategy) {
+                revert NotGhostVault();
+            }
+        }
+
+        uint256 totalRecovered;
+        uint256[] memory recoveredAssets = new uint256[](tokens.length);
+
+        for (uint256 i; i < tokens.length; ++i) {
+            recoveredAssets[i] = _vaultDeposits[smartVault][flushIndex][i];
+            totalRecovered += recoveredAssets[i];
+
+            _vaultDeposits[smartVault][flushIndex][i] = 0;
+
+            _masterWallet.transfer(IERC20(tokens[i]), emergencyWallet, recoveredAssets[i]);
+        }
+
+        if (totalRecovered == 0) {
+            revert NoDepositsToRecover();
+        }
+
+        emit PendingDepositsRecovered(smartVault, recoveredAssets);
     }
 }

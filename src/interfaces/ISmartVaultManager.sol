@@ -59,7 +59,7 @@ error RedeemForNotAllowed();
 error VaultNotSynced();
 
 /**
- * @notice Used when trying to deposit into a smart vault that has only ghost strategies.
+ * @notice Used when trying to deposit into, redeem from, or flush a smart vault that has only ghost strategies.
  */
 error GhostVault();
 
@@ -298,6 +298,15 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
      * @return receipt ID of the receipt deposit NFT.
      */
     function deposit(DepositBag calldata bag) external returns (uint256 receipt);
+
+    /**
+     * @notice Recovers pending deposits from smart vault to emergency wallet.
+     * @dev Requirements:
+     * - caller must have role ROLE_SPOOL_ADMIN
+     * - all strategies of the smart vault need to be ghost strategies
+     * @param smartVault Smart vault from which to recover pending deposits.
+     */
+    function recoverPendingDeposits(address smartVault) external;
 
     /* ========== EVENTS ========== */
 
