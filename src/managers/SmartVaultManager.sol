@@ -133,9 +133,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function getUserSVTBalance(address smartVaultAddress, address userAddress, uint256[] calldata nftIds)
         external
         view
-        returns (uint256)
+        returns (uint256 currentBalance)
     {
-        uint256 currentBalance = ISmartVault(smartVaultAddress).balanceOf(userAddress);
+        currentBalance = ISmartVault(smartVaultAddress).balanceOf(userAddress);
 
         if (_accessControl.smartVaultOwner(smartVaultAddress) == userAddress) {
             (,, uint256 fees,) = simulateSync(smartVaultAddress);
@@ -145,8 +145,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         if (nftIds.length > 0) {
             currentBalance += _simulateSyncWithBurn(smartVaultAddress, userAddress, nftIds);
         }
-
-        return currentBalance;
     }
 
     function getSVTTotalSupply(address smartVault) external view returns (uint256) {
@@ -563,19 +561,17 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         view
         returns (uint256 oldTotalSVTs, uint256, uint256, uint256[] memory)
     {
-        address[] memory tokens;
         address[] memory strategies_;
-        FlushIndex memory flushIndex;
         SmartVaultFees memory fees;
         uint16a16 indexes;
+        uint256 flushIndexToSync;
 
         {
-            tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
+            flushIndexToSync = _flushIndexes[smartVault].toSync;
             strategies_ = _smartVaultStrategies[smartVault];
             oldTotalSVTs = ISmartVault(smartVault).totalSupply();
-            flushIndex = _flushIndexes[smartVault];
             fees = _smartVaultFees[smartVault];
-            indexes = _dhwIndexes[smartVault][flushIndex.toSync];
+            indexes = _dhwIndexes[smartVault][flushIndexToSync];
         }
 
         // If DHWs haven't been run yet, we can't sync
@@ -585,11 +581,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         uint256[2] memory packedParams;
         uint16a16 previousIndexes;
+        address[] memory tokens;
 
         {
-            previousIndexes = _getPreviousDhwIndexes(smartVault, flushIndex.toSync);
+            tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
+            previousIndexes = _getPreviousDhwIndexes(smartVault, flushIndexToSync);
             uint256 lastDhwTimestamp = _lastDhwTimestampSynced[smartVault];
-            packedParams = [flushIndex.toSync, lastDhwTimestamp];
+            packedParams = [flushIndexToSync, lastDhwTimestamp];
         }
 
         SimulateDepositParams memory params;
@@ -638,22 +636,28 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         SmartVaultFees memory fees = _smartVaultFees[smartVault];
-        uint256[] memory currentStrategyIndexes = _strategyRegistry.currentIndex(bag2.strategies);
         uint16a16 indexes = _dhwIndexes[smartVault][flushIndex.toSync];
 
         // If DHWs haven't been run yet, we can't sync
-        if (!_areAllDhwRunsCompleted(currentStrategyIndexes, indexes, bag2.strategies, false)) {
+        if (!_areAllDhwRunsCompleted(_strategyRegistry.currentIndex(bag2.strategies), indexes, bag2.strategies, false))
+        {
             return newBalance;
         }
 
         uint256[2] memory packedParams;
         {
-            packedParams = [flushIndex.toSync, _lastDhwTimestampSynced[smartVault]];
+            uint256 lastDhwTimestamp = _lastDhwTimestampSynced[smartVault];
+            packedParams = [flushIndex.toSync, lastDhwTimestamp];
         }
 
-        uint16a16 previousIndexes = _getPreviousDhwIndexes(smartVault, flushIndex.toSync);
         SimulateDepositParams memory params = SimulateDepositParams(
-            smartVault, packedParams, bag2.strategies, bag2.tokens, indexes, previousIndexes, fees
+            smartVault,
+            packedParams,
+            bag2.strategies,
+            bag2.tokens,
+            indexes,
+            _getPreviousDhwIndexes(smartVault, flushIndex.toSync),
+            fees
         );
 
         // Simulate deposit sync (DHW)
@@ -661,7 +665,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         // Burn any NFTs that would be synced as part of this flush cycle
         newBalance += _simulateNFTBurn(smartVault, nftIds, bag2, syncResult.mintedSVTs, flushIndex, true);
-
         return newBalance;
     }
 
@@ -681,8 +684,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256 mintedSVTs,
         FlushIndex memory flushIndex,
         bool onlyCurrentFlushIndex
-    ) private view returns (uint256) {
-        uint256 SVTs;
+    ) private view returns (uint256 SVTs) {
         for (uint256 i; i < nftIds.length; ++i) {
             // Skip W-NFTs
             if (nftIds[i] > MAXIMAL_DEPOSIT_ID) continue;
@@ -702,13 +704,11 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
                 smartVault, data, bag.nftBalances[i], mintedSVTs, bag.tokens
             );
         }
-
-        return SVTs;
     }
 
     function _redeem(RedeemBag calldata bag, address receiver, address owner, address executor, bool doFlush)
         internal
-        returns (uint256)
+        returns (uint256 nftId)
     {
         _onlyRegisteredSmartVault(bag.smartVault);
 
@@ -728,7 +728,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             );
         }
 
-        uint256 nftId = _withdrawalManager.redeem(
+        nftId = _withdrawalManager.redeem(
             bag,
             RedeemExtras({
                 receiver: receiver,
@@ -741,8 +741,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         if (doFlush) {
             _flushSmartVault(bag.smartVault, _smartVaultAllocations[bag.smartVault], strategies_, tokens);
         }
-
-        return nftId;
     }
 
     /**
@@ -832,16 +830,12 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     }
 
     function _nonGhostVault(address[] memory strategies_) internal view {
-        bool nonGhostVault;
         for (uint256 i; i < strategies_.length; ++i) {
             if (strategies_[i] != _ghostStrategy) {
-                nonGhostVault = true;
-                break;
+                return;
             }
         }
 
-        if (!nonGhostVault) {
-            revert GhostVault();
-        }
+        revert GhostVault();
     }
 }
