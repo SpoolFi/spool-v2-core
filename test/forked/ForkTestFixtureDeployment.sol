@@ -607,11 +607,11 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 } else if (Strings.equal(strategyKey, COMPOUND_V2_KEY)) {
                     // continue
                 } else if (Strings.equal(strategyKey, CONVEX_3POOL_KEY)) {
-                    _setInitialDhwParametersWithBeforeChecks(parameters, i, j, strategy, 13);
+                    _setInitialDhwParametersGeneric(parameters, i, j, 12);
                 } else if (Strings.equal(strategyKey, CONVEX_ALUSD_KEY)) {
-                    _setInitialDhwParametersWithBeforeChecks(parameters, i, j, strategy, 13);
+                    _setInitialDhwParametersGeneric(parameters, i, j, 14);
                 } else if (Strings.equal(strategyKey, CURVE_3POOL_KEY)) {
-                    _setInitialDhwParametersWithBeforeChecks(parameters, i, j, strategy, 13);
+                    _setInitialDhwParametersGeneric(parameters, i, j, 12);
                 } else if (Strings.equal(strategyKey, IDLE_BEST_YIELD_SENIOR_KEY)) {
                     _setInitialDhwParametersWithBeforeChecks(parameters, i, j, strategy, 7);
                 } else if (Strings.equal(strategyKey, MORPHO_AAVE_V2_KEY)) {
@@ -651,11 +651,11 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 } else if (Strings.equal(strategyKey, COMPOUND_V2_KEY)) {
                     // continue
                 } else if (Strings.equal(strategyKey, CONVEX_3POOL_KEY)) {
-                    _updateDhwParametersSlippageMulti(parameters, i, j, strategy, logs, 10);
+                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
                 } else if (Strings.equal(strategyKey, CONVEX_ALUSD_KEY)) {
-                    _updateDhwParametersSlippageMulti(parameters, i, j, strategy, logs, 10);
+                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
                 } else if (Strings.equal(strategyKey, CURVE_3POOL_KEY)) {
-                    _updateDhwParametersSlippageMulti(parameters, i, j, strategy, logs, 10);
+                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
                 } else if (Strings.equal(strategyKey, IDLE_BEST_YIELD_SENIOR_KEY)) {
                     _updateDhwParametersSlippageSimple(parameters, i, j, strategy, logs, 6);
                 } else if (Strings.equal(strategyKey, MORPHO_AAVE_V2_KEY)) {
@@ -730,6 +730,15 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
             baseYields: baseYields,
             validUntil: TimeUtils.getTimestampInInfiniteFuture()
         });
+    }
+
+    function _setInitialDhwParametersGeneric(
+        DoHardWorkParameterBag memory parameters,
+        uint256 strategyGroupIdx,
+        uint256 strategyIdx,
+        uint256 numberOfSlippages
+    ) internal pure {
+        parameters.strategySlippages[strategyGroupIdx][strategyIdx] = new uint256[](numberOfSlippages);
     }
 
     function _setInitialDhwParametersWithBeforeChecks(
@@ -850,6 +859,92 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 }
             }
         }
+    }
+
+    function _updateDhwParametersGeneric(
+        DoHardWorkParameterBag memory parameters,
+        uint256 strategyGroupIdx,
+        uint256 strategyIdx,
+        address strategy,
+        Vm.Log[] memory logs,
+        uint256 numberOfCompoundSlippages
+    ) internal pure {
+        uint256[] memory strategySlippages = parameters.strategySlippages[strategyGroupIdx][strategyIdx];
+
+        uint256 currentSlippageIndex = 1;
+        {
+            // beforeDepositCheck slippages
+            bool found = false;
+
+            for (uint256 i; i < logs.length; ++i) {
+                if (logs[i].emitter != strategy || logs[i].topics[0] != EVENT_BEFORE_DEPOSIT_CHECK_SLIPPAGES) {
+                    continue;
+                }
+
+                (uint256[] memory amounts) = abi.decode(logs[i].data, (uint256[]));
+
+                for (uint256 j; j < amounts.length; ++j) {
+                    strategySlippages[currentSlippageIndex++] = Arrays.toPackedRange(amounts[j], amounts[j]);
+                }
+
+                found = true;
+                break;
+            }
+
+            if (!found) {
+                revert("_updateReallocateParamsGeneric:: EVENT_BEFORE_DEPOSIT_CHECK_SLIPPAGES not found.");
+            }
+        }
+
+        {
+            // beforeRedeemalCheck slippages
+            bool found = false;
+
+            for (uint256 i; i < logs.length; ++i) {
+                if (logs[i].emitter != strategy || logs[i].topics[0] != EVENT_BEFORE_REDEEMAL_CHECK_SLIPPAGES) {
+                    continue;
+                }
+
+                (uint256 ssts) = abi.decode(logs[i].data, (uint256));
+
+                strategySlippages[currentSlippageIndex++] = Arrays.toPackedRange(ssts, ssts);
+
+                found = true;
+                break;
+            }
+
+            if (!found) {
+                revert("_updateReallocateParamsGeneric:: EVENT_BEFORE_REDEEMAL_CHECK_SLIPPAGES not found.");
+            }
+        }
+
+        currentSlippageIndex += numberOfCompoundSlippages;
+        {
+            // _depositToProtocol / _redeemFromProtocol slippages
+            for (uint256 i; i < logs.length; ++i) {
+                if (logs[i].emitter != strategy || logs[i].topics[0] != EVENT_SLIPPAGES_TOPIC) {
+                    continue;
+                }
+
+                (bool isDeposit, uint256 slippage, bytes memory data) = abi.decode(logs[i].data, (bool, uint256, bytes));
+
+                if (isDeposit) {
+                    strategySlippages[currentSlippageIndex++] = slippage;
+                } else {
+                    strategySlippages[0] = 1;
+
+                    (uint256[] memory slippages) = abi.decode(data, (uint256[]));
+
+                    for (uint256 j; j < slippages.length; ++j) {
+                        strategySlippages[currentSlippageIndex++] = slippages[j];
+                    }
+                }
+
+                break;
+            }
+        }
+
+        parameters.strategySlippages[strategyGroupIdx][strategyIdx] = strategySlippages;
     }
 
     function _updateDhwParametersREthHoldingStrategy(
@@ -1069,11 +1164,11 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
             } else if (Strings.equal(strategyKey, COMPOUND_V2_KEY)) {
                 // continue
             } else if (Strings.equal(strategyKey, CONVEX_3POOL_KEY)) {
-                _setInitialReallocateParamsWithBeforeChecks(params, i, strategies[i], 8, 6);
+                _setInitialReallocateParamsGeneric(params, i, 8, 5);
             } else if (Strings.equal(strategyKey, CONVEX_ALUSD_KEY)) {
-                _setInitialReallocateParamsWithBeforeChecks(params, i, strategies[i], 8, 6);
+                _setInitialReallocateParamsGeneric(params, i, 10, 5);
             } else if (Strings.equal(strategyKey, CURVE_3POOL_KEY)) {
-                _setInitialReallocateParamsWithBeforeChecks(params, i, strategies[i], 8, 6);
+                _setInitialReallocateParamsGeneric(params, i, 8, 5);
             } else if (Strings.equal(strategyKey, IDLE_BEST_YIELD_SENIOR_KEY)) {
                 _setInitialReallocateParamsWithBeforeChecks(params, i, strategies[i], 4, 4);
             } else if (Strings.equal(strategyKey, MORPHO_AAVE_V2_KEY)) {
@@ -1108,14 +1203,11 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
             } else if (Strings.equal(strategyKey, COMPOUND_V2_KEY)) {
                 // continue
             } else if (Strings.equal(strategyKey, CONVEX_3POOL_KEY)) {
-                _updateReallocateParamsBeforeCheckSlippages(params, i, strategy, logs);
-                _updateReallocateParamsSlippagesMulti(params, i, strategy, logs);
+                _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else if (Strings.equal(strategyKey, CONVEX_ALUSD_KEY)) {
-                _updateReallocateParamsBeforeCheckSlippages(params, i, strategy, logs);
-                _updateReallocateParamsSlippagesMulti(params, i, strategy, logs);
+                _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else if (Strings.equal(strategyKey, CURVE_3POOL_KEY)) {
-                _updateReallocateParamsBeforeCheckSlippages(params, i, strategy, logs);
-                _updateReallocateParamsSlippagesMulti(params, i, strategy, logs);
+                _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else if (Strings.equal(strategyKey, IDLE_BEST_YIELD_SENIOR_KEY)) {
                 _updateReallocateParamsBeforeCheckSlippages(params, i, strategy, logs);
                 _updateReallocateParamsSlippagesSimple(params, i, strategy, logs);
@@ -1169,6 +1261,22 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         params.withdrawalSlippages[strategyIdx] = withdrawalSlippages;
     }
 
+    function _setInitialReallocateParamsGeneric(
+        ReallocateParamBag memory params,
+        uint256 strategyIdx,
+        uint256 numberOfDepositSlippages,
+        uint256 numberOfWithdrawalSlippages
+    ) internal pure {
+        uint256[] memory depositSlippages = new uint256[](numberOfDepositSlippages);
+        uint256[] memory withdrawalSlippages = new uint256[](numberOfWithdrawalSlippages);
+
+        depositSlippages[0] = 2;
+        withdrawalSlippages[0] = 2;
+
+        params.depositSlippages[strategyIdx] = depositSlippages;
+        params.withdrawalSlippages[strategyIdx] = withdrawalSlippages;
+    }
+
     function _updateReallocateParamsBeforeCheckSlippages(
         ReallocateParamBag memory params,
         uint256 strategyIdx,
@@ -1214,6 +1322,109 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
 
         if (!found) {
             revert("_updateReallocateParamsBeforeCheckSlippages:: Event not found.");
+        }
+
+        params.depositSlippages[strategyIdx] = depositSlippages;
+        params.withdrawalSlippages[strategyIdx] = withdrawalSlippages;
+    }
+
+    function _updateReallocateParamsGeneric(
+        ReallocateParamBag memory params,
+        uint256 strategyIdx,
+        address strategy,
+        Vm.Log[] memory logs
+    ) internal pure {
+        uint256[] memory depositSlippages = params.depositSlippages[strategyIdx];
+        uint256[] memory withdrawalSlippages = params.withdrawalSlippages[strategyIdx];
+
+        uint256 currentSlippageIndex = 1;
+        {
+            // beforeDepositCheck slippages
+            bool found = false;
+
+            for (uint256 i; i < logs.length; ++i) {
+                if (logs[i].emitter != strategy || logs[i].topics[0] != EVENT_BEFORE_DEPOSIT_CHECK_SLIPPAGES) {
+                    continue;
+                }
+
+                (uint256[] memory amounts) = abi.decode(logs[i].data, (uint256[]));
+
+                for (uint256 j; j < amounts.length; ++j) {
+                    depositSlippages[currentSlippageIndex++] = Arrays.toPackedRange(amounts[j], amounts[j]);
+                }
+
+                found = true;
+                break;
+            }
+
+            if (!found) {
+                revert("_updateReallocateParamsGeneric:: EVENT_BEFORE_DEPOSIT_CHECK_SLIPPAGES not found.");
+            }
+        }
+
+        {
+            // _depositToProtocol slippages
+            for (uint256 i; i < logs.length; ++i) {
+                if (logs[i].emitter != strategy || logs[i].topics[0] != EVENT_SLIPPAGES_TOPIC) {
+                    continue;
+                }
+
+                (bool isDeposit, uint256 slippage,) = abi.decode(logs[i].data, (bool, uint256, bytes));
+
+                if (!isDeposit) {
+                    continue;
+                }
+
+                depositSlippages[currentSlippageIndex++] = slippage;
+
+                break;
+            }
+        }
+
+        currentSlippageIndex = 1;
+        {
+            // beforeRedeemalCheck slippages
+            bool found = false;
+
+            for (uint256 i; i < logs.length; ++i) {
+                if (logs[i].emitter != strategy || logs[i].topics[0] != EVENT_BEFORE_REDEEMAL_CHECK_SLIPPAGES) {
+                    continue;
+                }
+
+                (uint256 ssts) = abi.decode(logs[i].data, (uint256));
+
+                withdrawalSlippages[currentSlippageIndex++] = Arrays.toPackedRange(ssts, ssts);
+
+                found = true;
+                break;
+            }
+
+            if (!found) {
+                revert("_updateReallocateParamsGeneric:: EVENT_BEFORE_REDEEMAL_CHECK_SLIPPAGES not found.");
+            }
+        }
+
+        {
+            // _redeemFromProtocol slippages
+            for (uint256 i; i < logs.length; ++i) {
+                if (logs[i].emitter != strategy || logs[i].topics[0] != EVENT_SLIPPAGES_TOPIC) {
+                    continue;
+                }
+
+                (bool isDeposit,, bytes memory data) = abi.decode(logs[i].data, (bool, uint256, bytes));
+
+                if (isDeposit) {
+                    continue;
+                }
+
+                (uint256[] memory slippages) = abi.decode(data, (uint256[]));
+
+                for (uint256 j; j < slippages.length; ++j) {
+                    withdrawalSlippages[currentSlippageIndex++] = slippages[j];
+                }
+
+                break;
+            }
         }
 
         params.depositSlippages[strategyIdx] = depositSlippages;

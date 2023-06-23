@@ -128,9 +128,9 @@ contract ConvexAlusdStrategyTest is TestFixture, ForkTestFixture {
         uint256 usdtBalanceOfCurvePoolBefore = tokenUsdt.balanceOf(address(curvePool));
 
         // act
-        uint256[] memory slippages = new uint256[](11);
+        uint256[] memory slippages = new uint256[](12);
         slippages[0] = 0;
-        slippages[10] = 1;
+        slippages[11] = 1;
 
         convexStrategy.exposed_depositToProtocol(
             assetGroup, Arrays.toArray(toDepositDai, toDepositUsdc, toDepositUsdt), slippages
@@ -158,9 +158,9 @@ contract ConvexAlusdStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdt), address(convexStrategy), toDepositUsdt, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](11);
+        uint256[] memory slippages = new uint256[](12);
         slippages[0] = 0;
-        slippages[10] = 1;
+        slippages[11] = 1;
         convexStrategy.exposed_depositToProtocol(
             assetGroup, Arrays.toArray(toDepositDai, toDepositUsdc, toDepositUsdt), slippages
         );
@@ -174,11 +174,11 @@ contract ConvexAlusdStrategyTest is TestFixture, ForkTestFixture {
         uint256 crvRewardsBalanceOfStrategyBefore = crvRewards.balanceOf(address(convexStrategy));
 
         // act
-        slippages = new uint256[](13);
+        slippages = new uint256[](14);
         slippages[0] = 1;
-        slippages[10] = 1;
         slippages[11] = 1;
         slippages[12] = 1;
+        slippages[13] = 1;
 
         convexStrategy.exposed_redeemFromProtocol(assetGroup, 60, slippages);
 
@@ -212,9 +212,9 @@ contract ConvexAlusdStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdt), address(convexStrategy), toDepositUsdt, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](11);
+        uint256[] memory slippages = new uint256[](12);
         slippages[0] = 0;
-        slippages[10] = 1;
+        slippages[11] = 1;
         convexStrategy.exposed_depositToProtocol(
             assetGroup, Arrays.toArray(toDepositDai, toDepositUsdc, toDepositUsdt), slippages
         );
@@ -279,9 +279,9 @@ contract ConvexAlusdStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdt), address(convexStrategy), toDepositUsdt, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](11);
+        uint256[] memory slippages = new uint256[](12);
         slippages[0] = 0;
-        slippages[10] = 1;
+        slippages[11] = 1;
         convexStrategy.exposed_depositToProtocol(
             assetGroup, Arrays.toArray(toDepositDai, toDepositUsdc, toDepositUsdt), slippages
         );
@@ -332,9 +332,9 @@ contract ConvexAlusdStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdt), address(convexStrategy), toDepositUsdt, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](11);
+        uint256[] memory slippages = new uint256[](12);
         slippages[0] = 0;
-        slippages[10] = 1;
+        slippages[11] = 1;
         convexStrategy.exposed_depositToProtocol(
             assetGroup, Arrays.toArray(toDepositDai, toDepositUsdc, toDepositUsdt), slippages
         );
@@ -364,8 +364,8 @@ contract ConvexAlusdStrategyTest is TestFixture, ForkTestFixture {
                 )
         });
 
-        slippages = new uint256[](11);
-        slippages[9] = 1;
+        slippages = new uint256[](12);
+        slippages[10] = 1;
         int256 compoundYieldPercentage = convexStrategy.exposed_compound(assetGroup, compoundSwapInfo, slippages);
 
         // assert
@@ -410,9 +410,9 @@ contract ConvexAlusdStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdt), address(convexStrategy), toDepositUsdt, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](11);
+        uint256[] memory slippages = new uint256[](12);
         slippages[0] = 0;
-        slippages[10] = 1;
+        slippages[11] = 1;
         convexStrategy.exposed_depositToProtocol(
             assetGroup, Arrays.toArray(toDepositDai, toDepositUsdc, toDepositUsdt), slippages
         );

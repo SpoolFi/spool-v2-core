@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../../external/interfaces/strategies/curve/ICurvePool.sol";
+import "../../libraries/PackedRange.sol";
 import "../../libraries/uint16a16Lib.sol";
 import "../Strategy.sol";
 import "./CurvePoolBase.sol";
@@ -19,19 +20,19 @@ error CurveCompoundSlippagesFailed();
 // - mode selection: slippages[0]
 // - DHW with deposit: slippages[0] == 0
 //   - beforeDepositCheck: slippages[1..6]
-//   - beforeRedeemalCheck: slippages[7..8]
-//   - compound: slippages[9]
-//   - _depositToProtocol: slippages[10]
+//   - beforeRedeemalCheck: slippages[7]
+//   - compound: slippages[8]
+//   - _depositToProtocol: slippages[9]
 // - DHW with withdrawal: slippages[0] == 1
 //   - beforeDepositCheck: slippages[1..6]
-//   - beforeRedeemalCheck: slippages[7..8]
-//   - compound: slippages[9]
-//   - _redeemFromProtocol: slippages[10..12]
+//   - beforeRedeemalCheck: slippages[7]
+//   - compound: slippages[8]
+//   - _redeemFromProtocol: slippages[9..11]
 // - reallocate: slippages[0] == 2
 //   - beforeDepositCheck: depositSlippages[1..6]
 //   - _depositToProtocol: depositSlippages[7]
-//   - beforeRedeemalCheck: withdrawalSlippages[1..2]
-//   - _redeemFromProtocol: withdrawalSlippages[3..5]
+//   - beforeRedeemalCheck: withdrawalSlippages[1]
+//   - _redeemFromProtocol: withdrawalSlippages[2..4]
 // - redeemFast or emergencyWithdraw: slippages[0] == 3
 //   - _redeemFromProtocol or _emergencyWithdrawImpl: slippages[1..3]
 abstract contract Curve3CoinPoolBase is CurvePoolBase {
@@ -70,7 +71,16 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
         if (_isViewExecution()) {
-            emit BeforeDepositCheckSlippages(amounts);
+            uint256[] memory beforeDepositCheckSlippageAmounts = new uint256[](6);
+
+            for (uint256 i; i < N_COINS; ++i) {
+                beforeDepositCheckSlippageAmounts[i] = amounts[i];
+
+                beforeDepositCheckSlippageAmounts[N_COINS + i] = ICurvePoolUint256(address(pool)).balances(i);
+            }
+
+            emit BeforeDepositCheckSlippages(beforeDepositCheckSlippageAmounts);
+            return;
         }
 
         if (slippages[0] > 2) {
@@ -78,7 +88,12 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
         }
 
         for (uint256 i; i < N_COINS; ++i) {
-            if (amounts[i] < slippages[1 + 2 * i] || amounts[i] > slippages[2 + 2 * i]) {
+            uint256 poolBalance = ICurvePoolUint256(address(pool)).balances(i);
+
+            if (
+                !PackedRange.isWithinRange(slippages[i + 1], amounts[i])
+                    || !PackedRange.isWithinRange(slippages[i + 4], poolBalance)
+            ) {
                 revert CurveBeforeDepositCheckFailed();
             }
         }
@@ -87,18 +102,19 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public override {
         if (_isViewExecution()) {
             emit BeforeRedeemalCheckSlippages(ssts);
+            return;
         }
 
-        uint256 slippageOffset;
+        uint256 slippage;
         if (slippages[0] < 2) {
-            slippageOffset = 7;
+            slippage = slippages[7];
         } else if (slippages[0] == 2) {
-            slippageOffset = 1;
+            slippage = slippages[1];
         } else {
             revert CurveBeforeRedeemalCheckFailed();
         }
 
-        if (ssts < slippages[slippageOffset] || ssts > slippages[slippageOffset + 1]) {
+        if (!PackedRange.isWithinRange(slippage, ssts)) {
             revert CurveBeforeRedeemalCheckFailed();
         }
     }
@@ -109,7 +125,7 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
     {
         uint256 slippage;
         if (slippages[0] == 0) {
-            slippage = slippages[10];
+            slippage = slippages[9];
         } else if (slippages[0] == 2) {
             slippage = slippages[7];
         } else {
@@ -122,13 +138,13 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
     function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
         uint256 slippageOffset;
         if (slippages[0] == 1) {
-            slippageOffset = 10;
+            slippageOffset = 9;
         } else if (slippages[0] == 2) {
-            slippageOffset = 3;
+            slippageOffset = 2;
         } else if (slippages[0] == 3) {
             slippageOffset = 1;
         } else if (slippages[0] == 0 && _isViewExecution()) {
-            slippageOffset = 10;
+            slippageOffset = 9;
         } else {
             revert CurveRedeemSlippagesFailed();
         }
@@ -179,7 +195,7 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
             revert CurveCompoundSlippagesFailed();
         }
 
-        _depositToCurve(tokens, amounts, slippages[9]);
+        _depositToCurve(tokens, amounts, slippages[8]);
     }
 
     function _depositToCurve(address[] memory tokens, uint256[] memory amounts, uint256 slippage) private {

@@ -2,9 +2,11 @@
 pragma solidity 0.8.17;
 
 import "../../src/libraries/uint16a16Lib.sol";
+import "../../src/libraries/uint128a2Lib.sol";
 
 library Arrays {
     using uint16a16Lib for uint16a16;
+    using uint128a2Lib for uint128a2;
 
     function test_lib() external pure {}
 
@@ -158,6 +160,14 @@ library Arrays {
         result = result.set(1, x2);
         result = result.set(1, x3);
         return result.set(2, x4);
+    }
+
+    function toPackedRange(uint256 lowerRange, uint256 upperRange) public pure returns (uint256) {
+        uint128a2 range;
+        range = range.set(0, lowerRange);
+        range = range.set(1, upperRange);
+
+        return uint128a2.unwrap(range);
     }
 
     /// @dev based on https://gist.github.com/subhodi/b3b86cc13ad2636420963e692a4d896f

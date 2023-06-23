@@ -112,9 +112,9 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
         uint256 usdtBalanceOfCurvePoolBefore = tokenUsdt.balanceOf(address(curvePool));
 
         // act
-        uint256[] memory slippages = new uint256[](11);
+        uint256[] memory slippages = new uint256[](10);
         slippages[0] = 0;
-        slippages[10] = 1;
+        slippages[9] = 1;
 
         curveStrategy.exposed_depositToProtocol(
             assetGroup, Arrays.toArray(toDepositDai, toDepositUsdc, toDepositUsdt), slippages
@@ -146,9 +146,9 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
         tokenUsdt.balanceOf(address(curvePool));
 
         // act and assert
-        uint256[] memory slippages = new uint256[](11);
+        uint256[] memory slippages = new uint256[](10);
         slippages[0] = 0;
-        slippages[10] = type(uint256).max;
+        slippages[9] = type(uint256).max;
 
         uint256[] memory amounts = Arrays.toArray(toDepositDai, toDepositUsdc, toDepositUsdt);
 
@@ -166,9 +166,9 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdt), address(curveStrategy), toDepositUsdt, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](11);
+        uint256[] memory slippages = new uint256[](10);
         slippages[0] = 0;
-        slippages[10] = 1;
+        slippages[9] = 1;
         curveStrategy.exposed_depositToProtocol(
             assetGroup, Arrays.toArray(toDepositDai, toDepositUsdc, toDepositUsdt), slippages
         );
@@ -182,11 +182,11 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
         uint256 gaugeBalanceOfStrategyBefore = curveGauge.balanceOf(address(curveStrategy));
 
         // act
-        slippages = new uint256[](13);
+        slippages = new uint256[](12);
         slippages[0] = 1;
+        slippages[9] = 1;
         slippages[10] = 1;
         slippages[11] = 1;
-        slippages[12] = 1;
 
         curveStrategy.exposed_redeemFromProtocol(assetGroup, 60, slippages);
 
@@ -220,9 +220,9 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdt), address(curveStrategy), toDepositUsdt, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](11);
+        uint256[] memory slippages = new uint256[](10);
         slippages[0] = 0;
-        slippages[10] = 1;
+        slippages[9] = 1;
         curveStrategy.exposed_depositToProtocol(
             assetGroup, Arrays.toArray(toDepositDai, toDepositUsdc, toDepositUsdt), slippages
         );
@@ -273,9 +273,9 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdt), address(curveStrategy), toDepositUsdt, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](11);
+        uint256[] memory slippages = new uint256[](10);
         slippages[0] = 0;
-        slippages[10] = 1;
+        slippages[9] = 1;
         curveStrategy.exposed_depositToProtocol(
             assetGroup, Arrays.toArray(toDepositDai, toDepositUsdc, toDepositUsdt), slippages
         );
@@ -314,9 +314,9 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdt), address(curveStrategy), toDepositUsdt, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](11);
+        uint256[] memory slippages = new uint256[](10);
         slippages[0] = 0;
-        slippages[10] = 1;
+        slippages[9] = 1;
         curveStrategy.exposed_depositToProtocol(
             assetGroup, Arrays.toArray(toDepositDai, toDepositUsdc, toDepositUsdt), slippages
         );
@@ -337,8 +337,8 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
             swapCallData: abi.encodeWithSelector(exchange.swap.selector, rewardToken, 1832285496982225999, address(swapper))
         });
 
-        slippages = new uint256[](11);
-        slippages[9] = 1;
+        slippages = new uint256[](10);
+        slippages[8] = 1;
         int256 compoundYieldPercentage = curveStrategy.exposed_compound(assetGroup, compoundSwapInfo, slippages);
 
         // assert
@@ -382,9 +382,9 @@ contract Curve3poolStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdt), address(curveStrategy), toDepositUsdt, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](11);
+        uint256[] memory slippages = new uint256[](10);
         slippages[0] = 0;
-        slippages[10] = 1;
+        slippages[9] = 1;
         curveStrategy.exposed_depositToProtocol(
             assetGroup, Arrays.toArray(toDepositDai, toDepositUsdc, toDepositUsdt), slippages
         );

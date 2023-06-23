@@ -5,6 +5,7 @@ import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../../external/interfaces/strategies/convex/IBaseRewardPool.sol";
 import "../../external/interfaces/strategies/convex/IBooster.sol";
+import "../../libraries/PackedRange.sol";
 import "../curve/CurveAdapter.sol";
 import "../Strategy.sol";
 import "../helpers/StrategyManualYieldVerifier.sol";
@@ -20,22 +21,22 @@ error StratCompoundSlippagesFailed();
 // slippages
 // - mode selection: slippages[0]
 // - DHW with deposit: slippages[0] == 0
-//   - beforeDepositCheck: slippages[1..2*tokenLength] --> [1..6]
-//   - beforeRedeemalCheck: slippages[2*tokenLength+1..2*tokenLength+2] --> [7..8]
-//   - compound: slippages[2*tokenLength+3] --> [9]
-//   - _depositToProtocol: slippages[2*tokenLength+4] --> 10
+//   - beforeDepositCheck: slippages[1..8]
+//   - beforeRedeemalCheck: slippages[9]
+//   - compound: slippages[10]
+//   - _depositToProtocol: slippages[11]
 // - DHW with withdrawal: slippages[0] == 1
-//   - beforeDepositCheck: slippages[1..2*tokenLength] --> [1..6]
-//   - beforeRedeemalCheck: slippages[2*tokenLength+1..2*tokenLength+2] --> [7..8]
-//   - compound: slippages[2*tokenLength+3] --> [9]
-//   - _redeemFromProtocol: slippages[4+2*tokenLength..4+3*tokenLength-1] --> [10..12]
+//   - beforeDepositCheck: slippages[1..8]
+//   - beforeRedeemalCheck: slippages[9]
+//   - compound: slippages[10]
+//   - _redeemFromProtocol: slippages[11..13]
 // - reallocate: slippages[0] == 2
-//   - beforeDepositCheck: depositSlippages[1..2*tokenLength] --> [1..6]
-//   - _depositToProtocol: depositSlippages[2*tokenLength+1] --> [7]
-//   - beforeRedeemalCheck: withdrawalSlippages[1..2]
-//   - _redeemFromProtocol: withdrawalSlippages[3..tokenLength+2] --> [3..5]
+//   - beforeDepositCheck: depositSlippages[1..8]
+//   - _depositToProtocol: depositSlippages[9]
+//   - beforeRedeemalCheck: withdrawalSlippages[1]
+//   - _redeemFromProtocol: withdrawalSlippages[2..4]
 // - redeemFast or emergencyWithdraw: slippages[0] == 3
-//   - _redeemFromProtocol or _emergencyWithdrawImpl: slippages[1..tokenLength] --> [1..3]
+//   - _redeemFromProtocol or _emergencyWithdrawImpl: slippages[1..3]
 contract ConvexAlusdStrategy is
     StrategyManualYieldVerifier,
     Strategy,
@@ -154,17 +155,48 @@ contract ConvexAlusdStrategy is
     }
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
-        if (_isViewExecution()) {
-            emit BeforeDepositCheckSlippages(amounts);
-        }
+        unchecked {
+            if (_isViewExecution()) {
+                uint256[] memory beforeDepositCheckSlippageAmounts = new uint256[](8);
 
-        if (slippages[0] > 2) {
-            revert StratBeforeDepositCheckFailed();
-        }
+                for (uint256 i; i < tokenLength; ++i) {
+                    beforeDepositCheckSlippageAmounts[i] = amounts[i];
+                }
+                for (uint256 i; i < N_COINS; ++i) {
+                    beforeDepositCheckSlippageAmounts[i + 3] = ICurvePoolUint256(address(_pool)).balances(i);
+                }
+                for (uint256 i; i < N_COINS_META; ++i) {
+                    beforeDepositCheckSlippageAmounts[i + 6] = ICurvePoolUint256(address(_poolMeta)).balances(i);
+                }
 
-        for (uint256 i; i < tokenLength; ++i) {
-            if (amounts[i] < slippages[1 + 2 * i] || amounts[i] > slippages[2 + 2 * i]) {
+                emit BeforeDepositCheckSlippages(beforeDepositCheckSlippageAmounts);
+                return;
+            }
+
+            if (slippages[0] > 2) {
                 revert StratBeforeDepositCheckFailed();
+            }
+
+            for (uint256 i; i < tokenLength; ++i) {
+                if (!PackedRange.isWithinRange(slippages[i + 1], amounts[i])) {
+                    revert StratBeforeDepositCheckFailed();
+                }
+            }
+
+            for (uint256 i; i < N_COINS; ++i) {
+                uint256 poolBalance = ICurvePoolUint256(address(_pool)).balances(i);
+
+                if (!PackedRange.isWithinRange(slippages[i + 4], poolBalance)) {
+                    revert StratBeforeDepositCheckFailed();
+                }
+            }
+
+            for (uint256 i; i < N_COINS_META; ++i) {
+                uint256 metapoolBalance = ICurvePoolUint256(address(_poolMeta)).balances(i);
+
+                if (!PackedRange.isWithinRange(slippages[i + 7], metapoolBalance)) {
+                    revert StratBeforeDepositCheckFailed();
+                }
             }
         }
     }
@@ -172,18 +204,19 @@ contract ConvexAlusdStrategy is
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public override {
         if (_isViewExecution()) {
             emit BeforeRedeemalCheckSlippages(ssts);
+            return;
         }
 
-        uint256 slippageOffset;
+        uint256 slippage;
         if (slippages[0] < 2) {
-            slippageOffset = 2 * tokenLength + 1;
+            slippage = slippages[9];
         } else if (slippages[0] == 2) {
-            slippageOffset = 1;
+            slippage = slippages[1];
         } else {
             revert StratBeforeRedeemalCheckFailed();
         }
 
-        if (ssts < slippages[slippageOffset] || ssts > slippages[slippageOffset + 1]) {
+        if (!PackedRange.isWithinRange(slippage, ssts)) {
             revert StratBeforeRedeemalCheckFailed();
         }
     }
@@ -194,9 +227,9 @@ contract ConvexAlusdStrategy is
     {
         uint256 slippage;
         if (slippages[0] == 0) {
-            slippage = 2 * tokenLength + 4;
+            slippage = slippages[11];
         } else if (slippages[0] == 2) {
-            slippage = 2 * tokenLength + 1;
+            slippage = slippages[9];
         } else {
             revert StratDepositSlippagesFailed();
         }
@@ -207,13 +240,13 @@ contract ConvexAlusdStrategy is
     function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
         uint256 slippageOffset;
         if (slippages[0] == 1) {
-            slippageOffset = 2 * tokenLength + 4;
+            slippageOffset = 11;
         } else if (slippages[0] == 2) {
-            slippageOffset = 3;
+            slippageOffset = 2;
         } else if (slippages[0] == 3) {
             slippageOffset = 1;
         } else if (slippages[0] == 0 && _isViewExecution()) {
-            slippageOffset = 2 * tokenLength + 4;
+            slippageOffset = 11;
         } else {
             revert StratRedeemSlippagesFailed();
         }
@@ -253,7 +286,7 @@ contract ConvexAlusdStrategy is
         uint256[] memory swapped = swapper.swap(rewardTokens, compoundSwapInfo, tokens, address(this));
 
         uint256 lpTokensBefore = _lpTokenBalance();
-        _depositInner(tokens, swapped, slippages[2 * tokenLength + 3]);
+        _depositInner(tokens, swapped, slippages[10]);
         uint256 lpTokensMinted = _lpTokenBalance() - lpTokensBefore;
 
         compoundYield = int256(YIELD_FULL_PERCENT * lpTokensMinted / lpTokensBefore);
