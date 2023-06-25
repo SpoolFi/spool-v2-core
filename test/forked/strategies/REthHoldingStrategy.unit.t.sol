@@ -78,11 +78,11 @@ contract REthHoldingStrategyTest is TestFixture, ForkTestFixture {
         uint256 rEthBalanceOfBalancerBefore = rEthToken.balanceOf(balancerVault);
 
         // act
-        uint256[] memory slippages = new uint256[](9);
-        slippages[5] = 100; // portion to swap on uniswap
-        slippages[6] = 0; // portion to swap on balancer
-        slippages[7] = 1; // min out
-        slippages[8] = rEthToken.getRethValue(toDeposit) + 1; // ideal out - should be larger than internal price to swap
+        uint256[] memory slippages = new uint256[](7);
+        slippages[3] = 100; // portion to swap on uniswap
+        slippages[4] = 0; // portion to swap on balancer
+        slippages[5] = 1; // min out
+        slippages[6] = rEthToken.getRethValue(toDeposit) + 1; // ideal out - should be larger than internal price to swap
 
         rEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
@@ -111,11 +111,11 @@ contract REthHoldingStrategyTest is TestFixture, ForkTestFixture {
         uint256 rEthBalanceOfBalancerBefore = rEthToken.balanceOf(balancerVault);
 
         // act
-        uint256[] memory slippages = new uint256[](9);
-        slippages[5] = 0; // portion to swap on uniswap
-        slippages[6] = 100; // portion to swap on balancer
-        slippages[7] = 1; // min out
-        slippages[8] = rEthToken.getRethValue(toDeposit) + 1; // ideal out - should be larger than internal price to swap
+        uint256[] memory slippages = new uint256[](7);
+        slippages[3] = 0; // portion to swap on uniswap
+        slippages[4] = 100; // portion to swap on balancer
+        slippages[5] = 1; // min out
+        slippages[6] = rEthToken.getRethValue(toDeposit) + 1; // ideal out - should be larger than internal price to swap
 
         rEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
@@ -140,11 +140,11 @@ contract REthHoldingStrategyTest is TestFixture, ForkTestFixture {
         IWETH9(address(tokenWeth)).deposit{value: toDeposit}();
         tokenWeth.transfer(address(rEthHoldingStrategy), toDeposit);
         // - deposit
-        uint256[] memory slippages = new uint256[](9);
-        slippages[5] = 100; // portion to swap on uniswap
-        slippages[6] = 0; // portion to swap on balancer
-        slippages[7] = 1; // min out
-        slippages[8] = rEthToken.getRethValue(toDeposit) + 1; // ideal out
+        uint256[] memory slippages = new uint256[](7);
+        slippages[3] = 100; // portion to swap on uniswap
+        slippages[4] = 0; // portion to swap on balancer
+        slippages[5] = 1; // min out
+        slippages[6] = rEthToken.getRethValue(toDeposit) + 1; // ideal out
         rEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -159,7 +159,7 @@ contract REthHoldingStrategyTest is TestFixture, ForkTestFixture {
 
         // act
         slippages[0] = 1;
-        slippages[8] = wethWithdrawnExpected + 1; // ideal out - should be larger than internal price to swap
+        slippages[6] = wethWithdrawnExpected + 1; // ideal out - should be larger than internal price to swap
         rEthHoldingStrategy.exposed_redeemFromProtocol(assetGroup, 60, slippages);
 
         // assert
@@ -182,11 +182,11 @@ contract REthHoldingStrategyTest is TestFixture, ForkTestFixture {
         IWETH9(address(tokenWeth)).deposit{value: toDeposit}();
         tokenWeth.transfer(address(rEthHoldingStrategy), toDeposit);
         // - deposit
-        uint256[] memory slippages = new uint256[](9);
-        slippages[5] = 0; // portion to swap on uniswap
-        slippages[6] = 100; // portion to swap on balancer
-        slippages[7] = 1; // min out
-        slippages[8] = rEthToken.getRethValue(toDeposit) + 1; // ideal out
+        uint256[] memory slippages = new uint256[](7);
+        slippages[3] = 0; // portion to swap on uniswap
+        slippages[4] = 100; // portion to swap on balancer
+        slippages[5] = 1; // min out
+        slippages[6] = rEthToken.getRethValue(toDeposit) + 1; // ideal out
         rEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -201,7 +201,7 @@ contract REthHoldingStrategyTest is TestFixture, ForkTestFixture {
 
         // act
         slippages[0] = 1;
-        slippages[8] = wethWithdrawnExpected + 1; // ideal out - should be larger than internal price to swap
+        slippages[6] = wethWithdrawnExpected + 1; // ideal out - should be larger than internal price to swap
         rEthHoldingStrategy.exposed_redeemFromProtocol(assetGroup, 60, slippages);
 
         // assert
@@ -224,11 +224,11 @@ contract REthHoldingStrategyTest is TestFixture, ForkTestFixture {
         IWETH9(address(tokenWeth)).deposit{value: toDeposit}();
         tokenWeth.transfer(address(rEthHoldingStrategy), toDeposit);
         // - deposit
-        uint256[] memory slippages = new uint256[](9);
-        slippages[5] = 0; // portion to swap on uniswap
-        slippages[6] = 100; // portion to swap on balancer
-        slippages[7] = 1; // min out
-        slippages[8] = rEthToken.getRethValue(toDeposit) + 1; // ideal out
+        uint256[] memory slippages = new uint256[](7);
+        slippages[3] = 0; // portion to swap on uniswap
+        slippages[4] = 100; // portion to swap on balancer
+        slippages[5] = 1; // min out
+        slippages[6] = rEthToken.getRethValue(toDeposit) + 1; // ideal out
         rEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -243,7 +243,7 @@ contract REthHoldingStrategyTest is TestFixture, ForkTestFixture {
 
         // act
         slippages[0] = 1;
-        slippages[8] = wethWithdrawnExpected; // ideal out - should not be larger than internal price to withdraw internally
+        slippages[6] = wethWithdrawnExpected; // ideal out - should not be larger than internal price to withdraw internally
         rEthHoldingStrategy.exposed_redeemFromProtocol(assetGroup, 60, slippages);
 
         // assert
@@ -266,11 +266,11 @@ contract REthHoldingStrategyTest is TestFixture, ForkTestFixture {
         IWETH9(address(tokenWeth)).deposit{value: toDeposit}();
         tokenWeth.transfer(address(rEthHoldingStrategy), toDeposit);
         // - deposit
-        uint256[] memory slippages = new uint256[](9);
-        slippages[5] = 100; // portion to swap on uniswap
-        slippages[6] = 0; // portion to swap on balancer
-        slippages[7] = 1; // min out
-        slippages[8] = rEthToken.getRethValue(toDeposit) + 1; // ideal out
+        uint256[] memory slippages = new uint256[](7);
+        slippages[3] = 100; // portion to swap on uniswap
+        slippages[4] = 0; // portion to swap on balancer
+        slippages[5] = 1; // min out
+        slippages[6] = rEthToken.getRethValue(toDeposit) + 1; // ideal out
         rEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -313,11 +313,11 @@ contract REthHoldingStrategyTest is TestFixture, ForkTestFixture {
         IWETH9(address(tokenWeth)).deposit{value: toDeposit}();
         tokenWeth.transfer(address(rEthHoldingStrategy), toDeposit);
         // - deposit
-        uint256[] memory slippages = new uint256[](9);
-        slippages[5] = 100; // portion to swap on uniswap
-        slippages[6] = 0; // portion to swap on balancer
-        slippages[7] = 1; // min out
-        slippages[8] = rEthToken.getRethValue(toDeposit) + 1; // ideal out
+        uint256[] memory slippages = new uint256[](7);
+        slippages[3] = 100; // portion to swap on uniswap
+        slippages[4] = 0; // portion to swap on balancer
+        slippages[5] = 1; // min out
+        slippages[6] = rEthToken.getRethValue(toDeposit) + 1; // ideal out
         rEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -345,7 +345,7 @@ contract REthHoldingStrategyTest is TestFixture, ForkTestFixture {
         assertEq(yieldPercentage, YIELD_FULL_PERCENT_INT / 5);
 
         slippages[0] = 1;
-        slippages[8] = 1; // ideal out - should not be larger than internal price to withdraw internally
+        slippages[6] = 1; // ideal out - should not be larger than internal price to withdraw internally
         rEthHoldingStrategy.exposed_redeemFromProtocol(assetGroup, 100, slippages);
 
         uint256 wethBalanceOfStrategy = tokenWeth.balanceOf(address(rEthHoldingStrategy));
@@ -361,11 +361,11 @@ contract REthHoldingStrategyTest is TestFixture, ForkTestFixture {
         IWETH9(address(tokenWeth)).deposit{value: toDeposit}();
         tokenWeth.transfer(address(rEthHoldingStrategy), toDeposit);
         // - deposit
-        uint256[] memory slippages = new uint256[](9);
-        slippages[5] = 100; // portion to swap on uniswap
-        slippages[6] = 0; // portion to swap on balancer
-        slippages[7] = 1; // min out
-        slippages[8] = rEthToken.getRethValue(toDeposit) + 1; // ideal out
+        uint256[] memory slippages = new uint256[](7);
+        slippages[3] = 100; // portion to swap on uniswap
+        slippages[4] = 0; // portion to swap on balancer
+        slippages[5] = 1; // min out
+        slippages[6] = rEthToken.getRethValue(toDeposit) + 1; // ideal out
         rEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // act

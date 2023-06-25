@@ -5,6 +5,7 @@ import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../external/interfaces/strategies/rEth/IREthToken.sol";
 import "../external/interfaces/strategies/rEth/IRocketSwapRouter.sol";
+import "../libraries/PackedRange.sol";
 import "./Strategy.sol";
 import "./WethHelper.sol";
 
@@ -18,18 +19,18 @@ error REthHoldingRedeemSlippagesFailed();
 // slippages
 // - mode selection: slippages[0]
 // - DHW with deposit: slippages[0] == 0
-//   - beforeDepositCheck: slippages[1..2]
-//   - beforeRedeemalCheck: slippages[3..4]
-//   - _depositToProtocol: slippages[5..8]
+//   - beforeDepositCheck: slippages[1]
+//   - beforeRedeemalCheck: slippages[2]
+//   - _depositToProtocol: slippages[3..6]
 // - DHW with withdrawal: slippages[0] == 1
-//   - beforeDepositCheck: slippages[1..2]
-//   - beforeRedeemalCheck: slippages[3..4]
-//   - _redeemFromProtocol: slippages[5..8]
+//   - beforeDepositCheck: slippages[1]
+//   - beforeRedeemalCheck: slippages[2]
+//   - _redeemFromProtocol: slippages[3..6]
 // - reallocate: slippages[0] == 2
-//   - beforeDepositCheck: depositSlippages[1..2]
-//   - _depositToProtocol: depositSlippages[3..6]
-//   - beforeRedeemalCheck: withdrawalSlippages[1..2]
-//   - _redeemFromProtocol: withdrawalSlippages[3..6]
+//   - beforeDepositCheck: depositSlippages[1]
+//   - _depositToProtocol: depositSlippages[2..5]
+//   - beforeRedeemalCheck: withdrawalSlippages[1]
+//   - _redeemFromProtocol: withdrawalSlippages[2..5]
 // - redeemFast or emergencyWithdraw: slippages[0] == 3
 //   - _redeemFromProtocol or _emergencyWithdrawImpl: slippages[1..4]
 // - deposit and withdrawals from protocol require four slippages:
@@ -96,14 +97,18 @@ contract REthHoldingStrategy is Strategy, WethHelper {
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
         if (_isViewExecution()) {
-            emit BeforeDepositCheckSlippages(amounts);
+            uint256[] memory beforeDepositCheckSlippageAmounts = new uint256[](1);
+            beforeDepositCheckSlippageAmounts[0] = amounts[0];
+
+            emit BeforeDepositCheckSlippages(beforeDepositCheckSlippageAmounts);
+            return;
         }
 
         if (slippages[0] > 2) {
             revert REthHoldingBeforeDepositCheckFailed();
         }
 
-        if (amounts[0] < slippages[1] || amounts[0] > slippages[2]) {
+        if (!PackedRange.isWithinRange(slippages[1], amounts[0])) {
             revert REthHoldingBeforeDepositCheckFailed();
         }
     }
@@ -111,18 +116,19 @@ contract REthHoldingStrategy is Strategy, WethHelper {
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public override {
         if (_isViewExecution()) {
             emit BeforeRedeemalCheckSlippages(ssts);
+            return;
         }
 
-        uint256 slippageOffset;
+        uint256 slippage;
         if (slippages[0] < 2) {
-            slippageOffset = 3;
+            slippage = slippages[2];
         } else if (slippages[0] == 2) {
-            slippageOffset = 1;
+            slippage = slippages[1];
         } else {
             revert REthHoldingBeforeRedeemalCheckFailed();
         }
 
-        if (ssts < slippages[slippageOffset] || ssts > slippages[slippageOffset + 1]) {
+        if (!PackedRange.isWithinRange(slippage, ssts)) {
             revert REthHoldingBeforeRedeemalCheckFailed();
         }
     }
@@ -133,9 +139,9 @@ contract REthHoldingStrategy is Strategy, WethHelper {
     {
         uint256 slippageOffset;
         if (slippages[0] == 0) {
-            slippageOffset = 5;
-        } else if (slippages[0] == 2) {
             slippageOffset = 3;
+        } else if (slippages[0] == 2) {
+            slippageOffset = 2;
         } else {
             revert REthHoldingDepositSlippagesFailed();
         }
@@ -146,13 +152,13 @@ contract REthHoldingStrategy is Strategy, WethHelper {
     function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
         uint256 slippageOffset;
         if (slippages[0] == 1) {
-            slippageOffset = 5;
-        } else if (slippages[0] == 2) {
             slippageOffset = 3;
+        } else if (slippages[0] == 2) {
+            slippageOffset = 2;
         } else if (slippages[0] == 3) {
             slippageOffset = 1;
         } else if (slippages[0] == 0 && _isViewExecution()) {
-            slippageOffset = 5;
+            slippageOffset = 3;
         } else {
             revert REthHoldingRedeemSlippagesFailed();
         }
@@ -212,7 +218,13 @@ contract REthHoldingStrategy is Strategy, WethHelper {
             slippages[startingSlippage + 2] = amountOut;
             slippages[startingSlippage + 3] = amountOut;
 
-            emit Slippages(true, 0, abi.encode(portions, amountOut));
+            uint256[] memory depositSlippages = new uint256[](4);
+            depositSlippages[0] = portions[0];
+            depositSlippages[1] = portions[1];
+            depositSlippages[2] = amountOut;
+            depositSlippages[3] = amountOut;
+
+            emit Slippages(true, 0, abi.encode(depositSlippages));
         }
 
         unwrapEth(amount);
@@ -242,7 +254,13 @@ contract REthHoldingStrategy is Strategy, WethHelper {
             slippages[startingSlippage + 2] = amountOut;
             slippages[startingSlippage + 3] = amountOut;
 
-            emit Slippages(false, 0, abi.encode(portions, amountOut));
+            uint256[] memory withdrawalSlippages = new uint256[](4);
+            withdrawalSlippages[0] = portions[0];
+            withdrawalSlippages[1] = portions[1];
+            withdrawalSlippages[2] = amountOut;
+            withdrawalSlippages[3] = amountOut;
+
+            emit Slippages(false, 0, abi.encode(withdrawalSlippages));
         }
 
         _resetAndApprove(IERC20(address(rEthToken)), address(rocketSwapRouter), amount);

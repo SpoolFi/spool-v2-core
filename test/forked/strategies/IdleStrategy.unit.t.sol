@@ -64,9 +64,9 @@ contract IdleStrategyTest is TestFixture, ForkTestFixture {
         uint256 usdcBalanceOfIdleTokenBefore = tokenUsdc.balanceOf(address(idleToken));
 
         // act
-        uint256[] memory slippages = new uint256[](7);
+        uint256[] memory slippages = new uint256[](5);
         slippages[0] = 0;
-        slippages[6] = 1;
+        slippages[4] = 1;
 
         idleStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
@@ -86,9 +86,9 @@ contract IdleStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdc), address(idleStrategy), toDeposit, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](7);
+        uint256[] memory slippages = new uint256[](5);
         slippages[0] = 0;
-        slippages[6] = 1;
+        slippages[4] = 1;
         idleStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -123,9 +123,9 @@ contract IdleStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdc), address(idleStrategy), toDeposit, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](7);
+        uint256[] memory slippages = new uint256[](5);
         slippages[0] = 0;
-        slippages[6] = 1;
+        slippages[4] = 1;
         idleStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -164,9 +164,9 @@ contract IdleStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdc), address(idleStrategy), toDeposit, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](7);
+        uint256[] memory slippages = new uint256[](5);
         slippages[0] = 0;
-        slippages[6] = 1;
+        slippages[4] = 1;
         idleStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // - advance block number to gather rewards for reward tokens 0 and 2
@@ -219,9 +219,9 @@ contract IdleStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdc), address(idleStrategy), toDeposit, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](7);
+        uint256[] memory slippages = new uint256[](5);
         slippages[0] = 0;
-        slippages[6] = 1;
+        slippages[4] = 1;
         idleStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // - advance block number to gather rewards for reward tokens 0 and 2
@@ -259,8 +259,8 @@ contract IdleStrategyTest is TestFixture, ForkTestFixture {
                 exchanges[1].swap.selector, address(rewardTokens[2]), 312239863552643167, address(swapper)
                 )
         });
-        slippages = new uint256[](6);
-        slippages[5] = 1;
+        slippages = new uint256[](4);
+        slippages[3] = 1;
         int256 compoundYieldPercentage = idleStrategy.exposed_compound(assetGroup, compoundSwapInfo, slippages);
 
         // assert
@@ -280,9 +280,9 @@ contract IdleStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdc), address(idleStrategy), toDeposit, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](7);
+        uint256[] memory slippages = new uint256[](5);
         slippages[0] = 0;
-        slippages[6] = 1;
+        slippages[4] = 1;
         idleStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -313,9 +313,9 @@ contract IdleStrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdc), address(idleStrategy), toDeposit, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](7);
+        uint256[] memory slippages = new uint256[](5);
         slippages[0] = 0;
-        slippages[6] = 1;
+        slippages[4] = 1;
         idleStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // act

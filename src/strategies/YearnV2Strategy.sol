@@ -5,6 +5,7 @@ import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/utils/math/SafeCast.sol";
 import "../external/interfaces/strategies/yearn/v2/IYearnTokenVault.sol";
+import "../libraries/PackedRange.sol";
 import "./Strategy.sol";
 
 error YearnV2BeforeDepositCheckFailed();
@@ -18,18 +19,18 @@ error YearnV2RedeemSlippagesFailed();
 // slippages
 // - mode selection: slippages[0]
 // - DHW with deposit: slippages[0] == 0
-//   - beforeDepositCheck: slippages[1..2]
-//   - beforeRedeemalCheck: slippages[3..4]
-//   - _depositToProtocol: slippages[5]
+//   - beforeDepositCheck: slippages[1]
+//   - beforeRedeemalCheck: slippages[2]
+//   - _depositToProtocol: slippages[3]
 // - DHW with withdrawal: slippages[0] == 1
-//   - beforeDepositCheck: slippages[1..2]
-//   - beforeRedeemalCheck: slippages[3..4]
-//   - _redeemFromProtocol: slippages[5]
+//   - beforeDepositCheck: slippages[1]
+//   - beforeRedeemalCheck: slippages[2]
+//   - _redeemFromProtocol: slippages[3]
 // - reallocate: slippages[0] == 2
-//   - beforeDepositCheck: depositSlippages[1..2]
-//   - _depositToProtocol: depositSlippages[3]
-//   - beforeRedeemalCheck: withdrawalSlippages[1..2]
-//   - _redeemFromProtocol: withdrawalSlippages[3]
+//   - beforeDepositCheck: depositSlippages[1]
+//   - _depositToProtocol: depositSlippages[2]
+//   - beforeRedeemalCheck: withdrawalSlippages[1]
+//   - _redeemFromProtocol: withdrawalSlippages[2]
 // - redeemFast or emergencyWithdraw: slippages[0] == 3
 //   - _redeemFromProtocol or _emergencyWithdrawImpl: slippages[1]
 contract YearnV2Strategy is Strategy {
@@ -76,14 +77,18 @@ contract YearnV2Strategy is Strategy {
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
         if (_isViewExecution()) {
-            emit BeforeDepositCheckSlippages(amounts);
+            uint256[] memory beforeDepositCheckSlippageAmounts = new uint256[](1);
+            beforeDepositCheckSlippageAmounts[0] = amounts[0];
+
+            emit BeforeDepositCheckSlippages(beforeDepositCheckSlippageAmounts);
+            return;
         }
 
         if (slippages[0] > 2) {
             revert YearnV2BeforeDepositCheckFailed();
         }
 
-        if (amounts[0] < slippages[1] || amounts[0] > slippages[2]) {
+        if (!PackedRange.isWithinRange(slippages[1], amounts[0])) {
             revert YearnV2BeforeDepositCheckFailed();
         }
     }
@@ -91,18 +96,19 @@ contract YearnV2Strategy is Strategy {
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public override {
         if (_isViewExecution()) {
             emit BeforeRedeemalCheckSlippages(ssts);
+            return;
         }
 
-        uint256 slippageOffset;
+        uint256 slippage;
         if (slippages[0] < 2) {
-            slippageOffset = 3;
+            slippage = slippages[2];
         } else if (slippages[0] == 2) {
-            slippageOffset = 1;
+            slippage = slippages[1];
         } else {
             revert YearnV2BeforeRedeemalCheckFailed();
         }
 
-        if (ssts < slippages[slippageOffset] || ssts > slippages[slippageOffset + 1]) {
+        if (!PackedRange.isWithinRange(slippage, ssts)) {
             revert YearnV2BeforeRedeemalCheckFailed();
         }
     }
@@ -113,9 +119,9 @@ contract YearnV2Strategy is Strategy {
     {
         uint256 slippage;
         if (slippages[0] == 0) {
-            slippage = slippages[5];
-        } else if (slippages[0] == 2) {
             slippage = slippages[3];
+        } else if (slippages[0] == 2) {
+            slippage = slippages[2];
         } else {
             revert YearnV2DepositToProtocolSlippagesFailed();
         }
@@ -126,9 +132,9 @@ contract YearnV2Strategy is Strategy {
     function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
         uint256 slippage;
         if (slippages[0] == 1) {
-            slippage = slippages[5];
-        } else if (slippages[0] == 2) {
             slippage = slippages[3];
+        } else if (slippages[0] == 2) {
+            slippage = slippages[2];
         } else if (slippages[0] == 3) {
             slippage = slippages[1];
         } else if (_isViewExecution()) {} else {

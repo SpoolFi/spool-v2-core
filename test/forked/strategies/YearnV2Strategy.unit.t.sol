@@ -57,9 +57,9 @@ contract YearnV2StrategyTest is TestFixture, ForkTestFixture {
         uint256 yTokenVaultTotalAssetsBefore = yTokenVault.totalAssets();
 
         // act
-        uint256[] memory slippages = new uint256[](6);
+        uint256[] memory slippages = new uint256[](4);
         slippages[0] = 0;
-        slippages[5] = 1;
+        slippages[3] = 1;
 
         yearnStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
@@ -80,9 +80,9 @@ contract YearnV2StrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdc), address(yearnStrategy), toDeposit, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](6);
+        uint256[] memory slippages = new uint256[](4);
         slippages[0] = 0;
-        slippages[5] = 1;
+        slippages[3] = 1;
         yearnStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -112,9 +112,9 @@ contract YearnV2StrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdc), address(yearnStrategy), toDeposit, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](6);
+        uint256[] memory slippages = new uint256[](4);
         slippages[0] = 0;
-        slippages[5] = 1;
+        slippages[3] = 1;
         yearnStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -144,9 +144,9 @@ contract YearnV2StrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdc), address(yearnStrategy), toDeposit, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](6);
+        uint256[] memory slippages = new uint256[](4);
         slippages[0] = 0;
-        slippages[5] = 1;
+        slippages[3] = 1;
         yearnStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -180,9 +180,9 @@ contract YearnV2StrategyTest is TestFixture, ForkTestFixture {
         deal(address(tokenUsdc), address(yearnStrategy), toDeposit, true);
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](6);
+        uint256[] memory slippages = new uint256[](4);
         slippages[0] = 0;
-        slippages[5] = 1;
+        slippages[3] = 1;
         yearnStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // act

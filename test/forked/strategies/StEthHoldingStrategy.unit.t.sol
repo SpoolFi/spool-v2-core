@@ -69,8 +69,8 @@ contract StEthHoldingStrategyTest is TestFixture, ForkTestFixture {
         uint256 lidoPooledEthBefore = lido.getTotalPooledEther();
 
         // act
-        uint256[] memory slippages = new uint256[](6);
-        slippages[5] = type(uint256).max;
+        uint256[] memory slippages = new uint256[](4);
+        slippages[3] = type(uint256).max;
 
         stEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
@@ -91,7 +91,7 @@ contract StEthHoldingStrategyTest is TestFixture, ForkTestFixture {
         uint256 lidoPooledEthBefore = lido.getTotalPooledEther();
 
         // act
-        uint256[] memory slippages = new uint256[](6);
+        uint256[] memory slippages = new uint256[](4);
 
         stEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
@@ -109,8 +109,8 @@ contract StEthHoldingStrategyTest is TestFixture, ForkTestFixture {
         IWETH9(address(tokenWeth)).deposit{value: toDeposit}();
         tokenWeth.transfer(address(stEthHoldingStrategy), toDeposit);
         // - deposit
-        uint256[] memory slippages = new uint256[](6);
-        slippages[5] = type(uint256).max;
+        uint256[] memory slippages = new uint256[](4);
+        slippages[3] = type(uint256).max;
         stEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -120,7 +120,7 @@ contract StEthHoldingStrategyTest is TestFixture, ForkTestFixture {
 
         // act
         slippages[0] = 1;
-        slippages[5] = 1;
+        slippages[3] = 1;
         stEthHoldingStrategy.exposed_redeemFromProtocol(assetGroup, 60, slippages);
 
         // assert
@@ -140,8 +140,8 @@ contract StEthHoldingStrategyTest is TestFixture, ForkTestFixture {
         IWETH9(address(tokenWeth)).deposit{value: toDeposit}();
         tokenWeth.transfer(address(stEthHoldingStrategy), toDeposit);
         // - deposit
-        uint256[] memory slippages = new uint256[](6);
-        slippages[5] = type(uint256).max;
+        uint256[] memory slippages = new uint256[](4);
+        slippages[3] = type(uint256).max;
         stEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -167,8 +167,8 @@ contract StEthHoldingStrategyTest is TestFixture, ForkTestFixture {
         IWETH9(address(tokenWeth)).deposit{value: toDeposit}();
         tokenWeth.transfer(address(stEthHoldingStrategy), toDeposit);
         // - deposit
-        uint256[] memory slippages = new uint256[](6);
-        slippages[5] = type(uint256).max;
+        uint256[] memory slippages = new uint256[](4);
+        slippages[3] = type(uint256).max;
         stEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -200,8 +200,8 @@ contract StEthHoldingStrategyTest is TestFixture, ForkTestFixture {
         IWETH9(address(tokenWeth)).deposit{value: toDeposit}();
         tokenWeth.transfer(address(stEthHoldingStrategy), toDeposit);
         // - deposit
-        uint256[] memory slippages = new uint256[](6);
-        slippages[5] = type(uint256).max;
+        uint256[] memory slippages = new uint256[](4);
+        slippages[3] = type(uint256).max;
         stEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // act
