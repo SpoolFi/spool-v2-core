@@ -106,7 +106,7 @@ contract GuardManagerTest is Test, GasHelpers {
         GuardParamType[] memory paramTypes = new GuardParamType[](1);
         paramTypes[0] = GuardParamType.Owner;
 
-        GuardDefinition[][] memory guards = new GuardDefinition[][](2);
+        GuardDefinition[][] memory guards = new GuardDefinition[][](1);
         guards[0] = new GuardDefinition[](1);
         guards[0][0] =
             GuardDefinition(address(mockGuard), "isWhitelisted(address)", uint256(1), paramTypes, new bytes[](0), "<");
@@ -126,7 +126,7 @@ contract GuardManagerTest is Test, GasHelpers {
         GuardParamType[] memory paramTypes = new GuardParamType[](1);
         paramTypes[0] = GuardParamType.Owner;
 
-        GuardDefinition[][] memory guards = new GuardDefinition[][](2);
+        GuardDefinition[][] memory guards = new GuardDefinition[][](1);
         guards[0] = new GuardDefinition[](1);
         guards[0][0] =
             GuardDefinition(address(mockGuard), "isWhitelisted(address)", uint256(0), paramTypes, new bytes[](0), ">");
@@ -146,7 +146,7 @@ contract GuardManagerTest is Test, GasHelpers {
         GuardParamType[] memory paramTypes = new GuardParamType[](1);
         paramTypes[0] = GuardParamType.Owner;
 
-        GuardDefinition[][] memory guards = new GuardDefinition[][](2);
+        GuardDefinition[][] memory guards = new GuardDefinition[][](1);
         guards[0] = new GuardDefinition[](1);
         guards[0][0] =
             GuardDefinition(address(mockGuard), "isWhitelisted(address)", uint256(0), paramTypes, new bytes[](0), "<=");
@@ -194,5 +194,14 @@ contract GuardManagerTest is Test, GasHelpers {
         guardManager.setGuards(address(2), guards, requestTypes);
         GuardDefinition[] memory guards2 = guardManager.readGuards(address(2), RequestType.Deposit);
         assertEq(guards2.length, 0);
+    }
+
+    function test_setGuards_shouldRevertWhenArrayLengthsDoNotMatch() public {
+        (GuardDefinition[][] memory guards,) = _createGuards();
+        RequestType[] memory requestTypes = new RequestType[](1);
+        requestTypes[0] = RequestType.Deposit;
+
+        vm.expectRevert(InvalidArrayLength.selector);
+        guardManager.setGuards(address(2), guards, requestTypes);
     }
 }

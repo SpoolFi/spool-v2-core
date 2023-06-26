@@ -111,4 +111,17 @@ contract ActionManagerTest is Test {
         vm.expectRevert(abi.encodeWithSelector(WrongActionRequestType.selector, RequestType.TransferSVTs));
         actionManager.setActions(address(0x5), actions, requestTypes);
     }
+
+    function test_setAction_shouldRevertWhenArrayLengthsDoNotMatch() public {
+        IAction[] memory actions = new IAction[](1);
+        actions[0] = mockAction;
+        RequestType[] memory requestTypes = new RequestType[](2);
+        requestTypes[0] = RequestType.Deposit;
+        requestTypes[1] = RequestType.Deposit;
+
+        actionManager.whitelistAction(address(mockAction), true);
+
+        vm.expectRevert(InvalidArrayLength.selector);
+        actionManager.setActions(address(0x1), actions, requestTypes);
+    }
 }

@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "../interfaces/IAction.sol";
+import "../interfaces/CommonErrors.sol";
 import "../interfaces/Constants.sol";
 import "../access/SpoolAccessControllable.sol";
 
@@ -32,6 +33,10 @@ contract ActionManager is IActionManager, SpoolAccessControllable {
         onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)
     {
         _checkInitialized(smartVault);
+
+        if (actions_.length != requestTypes.length) {
+            revert InvalidArrayLength();
+        }
 
         for (uint256 i; i < actions_.length; ++i) {
             IAction action = actions_[i];

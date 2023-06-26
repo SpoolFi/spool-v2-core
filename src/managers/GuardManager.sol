@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import "@openzeppelin/utils/Strings.sol";
 import "@openzeppelin/utils/Address.sol";
 import "@solmate/utils/SSTORE2.sol";
+import "../interfaces/CommonErrors.sol";
 import "../interfaces/IGuardManager.sol";
 import "../access/SpoolAccessControllable.sol";
 
@@ -52,6 +53,10 @@ contract GuardManager is IGuardManager, SpoolAccessControllable {
         onlyRole(ROLE_SMART_VAULT_INTEGRATOR, msg.sender)
     {
         _guardsNotInitialized(smartVaultId);
+
+        if (guards.length != requestTypes.length) {
+            revert InvalidArrayLength();
+        }
 
         for (uint256 i; i < requestTypes.length; ++i) {
             _writeGuards(smartVaultId, requestTypes[i], guards[i]);

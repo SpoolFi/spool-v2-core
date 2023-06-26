@@ -297,6 +297,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                     dhwParams.strategies[i].length != dhwParams.swapInfo[i].length
                         || dhwParams.strategies[i].length != dhwParams.compoundSwapInfo[i].length
                         || dhwParams.strategies[i].length != dhwParams.strategySlippages[i].length
+                        || dhwParams.strategies[i].length != dhwParams.baseYields[i].length
                 ) {
                     revert InvalidArrayLength();
                 }

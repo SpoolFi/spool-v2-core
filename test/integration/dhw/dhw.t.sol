@@ -425,10 +425,17 @@ contract DhwTest is TestFixture {
         vm.startPrank(doHardWorker);
 
         // invalid array length
+        // - strategies
         bag.strategies[0] = Arrays.toArray(smartVaultStrategies[0]);
-        vm.expectRevert(abi.encodeWithSelector(InvalidArrayLength.selector));
+        vm.expectRevert(InvalidArrayLength.selector);
         strategyRegistry.doHardWork(bag);
         bag.strategies[0] = smartVaultStrategies;
+        // - base yields
+        int256[] memory baseYieldsOrig = bag.baseYields[0];
+        bag.baseYields[0] = new int256[](baseYieldsOrig.length - 1);
+        vm.expectRevert(InvalidArrayLength.selector);
+        strategyRegistry.doHardWork(bag);
+        bag.baseYields[0] = baseYieldsOrig;
 
         // invalid slippages
         vm.mockCall(
