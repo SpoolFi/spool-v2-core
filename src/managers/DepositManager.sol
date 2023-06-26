@@ -412,16 +412,12 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
                 //   = strategyUsd * (yieldPct * (1 - platformFeesPct) / 1 + yieldPct * (1 - platformFeesPct)) / (1 - platformFeesPct)
                 //   = strategyUsdBefore * (1 + yieldPct * (1 - platformFeesPct)) * yieldPct / (1 + yieldPct * (1 - platformFeesPct))
                 //   = strategyUsdBefore * yieldPct
-                totalYieldUsd += (
-                    int256(strategyUsd)
-                        - (
-                            int256(strategyUsd) * YIELD_FULL_PERCENT_INT
-                                / (
-                                    YIELD_FULL_PERCENT_INT
-                                        + interimYieldPct * (FULL_PERCENT_INT - localVariables.totalPlatformFees) / FULL_PERCENT_INT
-                                )
-                        )
-                ) * FULL_PERCENT_INT / (FULL_PERCENT_INT - localVariables.totalPlatformFees);
+                // totalStrategyYieldUsd = strategyUsd * yieldPct / (1 + yieldPct * (1 - platformFeesPct))
+                totalYieldUsd += int256(strategyUsd) * interimYieldPct
+                    / (
+                        YIELD_FULL_PERCENT_INT
+                            + interimYieldPct * (FULL_PERCENT_INT - localVariables.totalPlatformFees) / FULL_PERCENT_INT
+                    );
             }
         }
 
