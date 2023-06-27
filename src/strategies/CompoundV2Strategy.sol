@@ -171,7 +171,6 @@ contract CompoundV2Strategy is Strategy {
 
     function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
         internal
-        view
         override
         returns (uint256 usdValue)
     {
@@ -189,13 +188,12 @@ contract CompoundV2Strategy is Strategy {
      * @param cTokenAmount cToken amount
      * @return tokenAmount value of `cTokenAmount` in asset tokens
      */
-    function _getcTokenValue(uint256 cTokenAmount) private view returns (uint256) {
+    function _getcTokenValue(uint256 cTokenAmount) private returns (uint256) {
         if (cTokenAmount == 0) {
             return 0;
         }
 
-        // NOTE: can be outdated if noone interacts with the compound protocol for a longer period
-        return (cToken.exchangeRateStored() * cTokenAmount) / MANTISSA;
+        return (cToken.exchangeRateCurrent() * cTokenAmount) / MANTISSA;
     }
 
     function beforeDepositCheck(uint256[] memory, uint256[] calldata) public view override {}
