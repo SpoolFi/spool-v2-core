@@ -69,7 +69,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         assetGroupId = assetGroupId_;
 
         _lastDepositId = 0;
-        _lastWithdrawalId = 2 ** 255;
+        _lastWithdrawalId = MAXIMAL_DEPOSIT_ID;
     }
 
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
@@ -213,7 +213,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256)
     {
-        if (_lastDepositId >= MAXIMAL_DEPOSIT_ID - 1) {
+        if (_lastDepositId >= MAXIMAL_DEPOSIT_ID) {
             revert DepositIdOverflow();
         }
         _lastDepositId++;
@@ -228,7 +228,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256 receipt)
     {
-        if (_lastWithdrawalId >= MAXIMAL_WITHDRAWAL_ID - 1) {
+        if (_lastWithdrawalId >= MAXIMAL_WITHDRAWAL_ID) {
             revert WithdrawalIdOverflow();
         }
         _lastWithdrawalId++;

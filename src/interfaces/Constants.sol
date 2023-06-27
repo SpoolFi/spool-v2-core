@@ -53,7 +53,7 @@ address constant STATIC_RISK_PROVIDER = address(0xaaa);
 uint8 constant STATIC_RISK_SCORE = 1;
 
 /// @dev Maximal value of deposit NFT ID.
-uint256 constant MAXIMAL_DEPOSIT_ID = 2 ** 255 - 1;
+uint256 constant MAXIMAL_DEPOSIT_ID = 2 ** 255;
 
 /// @dev Maximal value of withdrawal NFT ID.
 uint256 constant MAXIMAL_WITHDRAWAL_ID = 2 ** 256 - 1;
