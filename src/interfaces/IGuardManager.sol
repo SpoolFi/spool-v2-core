@@ -27,9 +27,15 @@ error TooManyGuards();
 error IncompleteGuardDefinition();
 
 /**
- * @custom:member Receiver Receiver of receipt NFT.
+ * @custom:member VaultAddress Address of the smart vault.
  * @custom:member Executor In case of deposit, executor of deposit action; in case of withdrawal, executor of redeem action.
+ * @custom:member Receiver Receiver of receipt NFT.
  * @custom:member Owner In case of deposit, owner of assets; in case of withdrawal, owner of vault shares.
+ * @custom:member Assets Amounts of assets involved.
+ * @custom:member Tokens Addresses of assets involved.
+ * @custom:member AssetGroup Asset group of the smart vault.
+ * @custom:member CustomValue Custom value.
+ * @custom:member DynamicCustomValue Dynamic custom value.
  */
 enum GuardParamType {
     VaultAddress,
@@ -70,6 +76,9 @@ struct GuardDefinition {
  * @custom:member receiver Receiver of receipt NFT.
  * @custom:member executor In case of deposit, executor of deposit action; in case of withdrawal, executor of redeem action.
  * @custom:member owner In case of deposit, owner of assets; in case of withdrawal, owner of vault shares.
+ * @custom:member requestType Request type for which the guard is run.
+ * @custom:member assets Amounts of assets involved.
+ * @custom:member tokens Addresses of tokens involved.
  */
 struct RequestContext {
     address receiver;

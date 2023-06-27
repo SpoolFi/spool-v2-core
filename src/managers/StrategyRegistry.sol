@@ -67,14 +67,20 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         uint32 timestamp;
     }
 
+    /**
+     * @notice State at DHW for strategies.
+     * @dev strategy => DHW index => state at DHW
+     */
     mapping(address => mapping(uint256 => StateAtDhwIndex)) internal _stateAtDhw;
 
-    /// @notice Current DHW index for strategies
+    /**
+     * @notice Current DHW index for strategies
+     */
     mapping(address => uint256) internal _currentIndexes;
 
     /**
      * @notice Strategy asset ratios at last DHW.
-     * @dev strategy => assetIndex => exchange rate
+     * @dev strategy => assetIndex => asset ratio weight
      */
     mapping(address => uint256[]) internal _dhwAssetRatios;
 
@@ -380,7 +386,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                         timestamp: SafeCast.toUint32(block.timestamp)
                     });
 
-                    _updateDhwYieldAndApy(strategy, dhwIndex, dhwInfo.yieldPercentage);
+                    _updateApy(strategy, dhwIndex, dhwInfo.yieldPercentage);
 
                     emit StrategyDhw(strategy, dhwIndex, dhwInfo);
                 }
@@ -637,7 +643,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         emit EmergencyWithdrawalWalletSet(emergencyWithdrawalWallet_);
     }
 
-    function _updateDhwYieldAndApy(address strategy, uint256 dhwIndex, int256 yieldPercentage) internal {
+    function _updateApy(address strategy, uint256 dhwIndex, int256 yieldPercentage) internal {
         if (dhwIndex > 1) {
             unchecked {
                 int256 timeDelta =

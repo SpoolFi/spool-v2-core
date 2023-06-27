@@ -255,11 +255,11 @@ contract StrategyRegistryTest is Test {
         assertEq(weight, int256(FULL_PERCENT));
     }
 
-    function test_updateDhwYieldAndApy() public {
+    function test_updateApy() public {
         skip(50 weeks);
         strategyRegistry.setDhwTimestamp(address(0xa), 1, uint32(block.timestamp - 3 days));
         strategyRegistry.setAPY(address(0xa), 3_14);
-        strategyRegistry.updateDhwYieldAndApy(address(0xa), 2, 5_00);
+        strategyRegistry.updateApy(address(0xa), 2, 5_00);
 
         console.logInt(strategyRegistry.strategyAPYs(Arrays.toArray(address(0xa)))[0]);
     }
@@ -285,8 +285,8 @@ contract StrategyRegistryStub is StrategyRegistry {
         address ghostStrategy_
     ) StrategyRegistry(masterWallet_, accessControl_, priceFeedManager_, ghostStrategy_) {}
 
-    function updateDhwYieldAndApy(address strategy, uint256 dhwIndex, int256 yieldPercentage) external {
-        return _updateDhwYieldAndApy(strategy, dhwIndex, yieldPercentage);
+    function updateApy(address strategy, uint256 dhwIndex, int256 yieldPercentage) external {
+        return _updateApy(strategy, dhwIndex, yieldPercentage);
     }
 
     function getRunningAverageApyWeight(int256 timeDelta) external pure returns (int256) {

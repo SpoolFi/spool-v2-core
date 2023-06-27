@@ -1895,7 +1895,7 @@ contract ScenariosTest is Test {
 
     function getSmartVaultSpecification(uint256 assetGroupId, address[] memory strategies)
         private
-        view
+        pure
         returns (SmartVaultSpecification memory)
     {
         uint256 allocationRemaining = 100_00;

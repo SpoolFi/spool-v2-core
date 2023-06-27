@@ -73,7 +73,7 @@ struct DepositSyncResult {
 
 /**
  * @custom:member smartVault Smart Vault address
- * @custom:member bag flush index, lastDhwSyncedTimestamp, oldTotalSVTs
+ * @custom:member bag flush index, lastDhwSyncedTimestamp
  * @custom:member strategies strategy addresses
  * @custom:member assetGroup vault asset group token addresses
  * @custom:member dhwIndexes DHW Indexes for given flush index

@@ -68,7 +68,7 @@ contract RewardManager is IRewardManager, RewardPool, ReentrancyGuardUpgradeable
      *
      * Requirements:
      *
-     * - the caller must be the reward distributor
+     * - the caller must be admin or vault's admin
      * - the reward duration must be non-zero
      * - the token must not have already been added
      *
