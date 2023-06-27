@@ -343,20 +343,22 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     {
         _checkRole(ROLE_SPOOL_ADMIN, msg.sender);
 
-        for (uint256 i; i < vaults.length; ++i) {
-            address smartVault = vaults[i];
-            address[] memory strategies_ = _smartVaultStrategies[vaults[i]];
-            for (uint256 j; j < strategies_.length; ++j) {
-                if (strategies_[j] == strategy) {
-                    _smartVaultStrategies[smartVault][j] = _ghostStrategy;
-                    _smartVaultAllocations[smartVault] = _smartVaultAllocations[smartVault].set(j, 0);
+        unchecked {
+            for (uint256 i; i < vaults.length; ++i) {
+                address smartVault = vaults[i];
+                address[] memory strategies_ = _smartVaultStrategies[vaults[i]];
+                for (uint256 j; j < strategies_.length; ++j) {
+                    if (strategies_[j] == strategy) {
+                        _smartVaultStrategies[smartVault][j] = _ghostStrategy;
+                        _smartVaultAllocations[smartVault] = _smartVaultAllocations[smartVault].set(j, 0);
 
-                    break;
+                        emit StrategyRemovedFromVault(strategy, vaults[i]);
+
+                        break;
+                    }
                 }
             }
         }
-
-        emit StrategyRemovedFromVaults(strategy, vaults);
 
         if (disableStrategy) {
             _strategyRegistry.removeStrategy(strategy);

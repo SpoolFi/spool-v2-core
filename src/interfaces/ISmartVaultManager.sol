@@ -352,11 +352,11 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
     event SmartVaultRegistered(address indexed smartVault, SmartVaultRegistrationForm registrationForm);
 
     /**
-     * @notice Strategy was removed from a set of vaults
+     * @notice Strategy was removed from the vault
      * @param strategy Strategy address
-     * @param vaults Vaults to remove the strategy from
+     * @param vault Vault to remove the strategy from
      */
-    event StrategyRemovedFromVaults(address indexed strategy, address[] vaults);
+    event StrategyRemovedFromVault(address indexed strategy, address indexed vault);
 
     /**
      * @notice Vault was reallocation executed
