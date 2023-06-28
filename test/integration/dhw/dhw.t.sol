@@ -204,9 +204,9 @@ contract DhwTest is TestFixture {
         console2.log("tokenB After:", tokenB.balanceOf(alice));
         console2.log("tokenC After:", tokenC.balanceOf(alice));
 
-        assertEq(tokenA.balanceOf(alice), tokenAInitialBalance);
-        assertEq(tokenB.balanceOf(alice), tokenBInitialBalance);
-        assertEq(tokenC.balanceOf(alice), tokenCInitialBalance);
+        assertApproxEqRel(tokenA.balanceOf(alice), tokenAInitialBalance, 10 ** 12);
+        assertApproxEqRel(tokenB.balanceOf(alice), tokenBInitialBalance, 10 ** 12);
+        assertApproxEqRel(tokenC.balanceOf(alice), tokenCInitialBalance, 10 ** 12);
     }
 
     function test_dhwReentrancyDepositRevert() public {
@@ -401,7 +401,7 @@ contract DhwTest is TestFixture {
         );
         vm.stopPrank();
 
-        assertEq(smartVault.balanceOf(alice), smartVault.balanceOf(bob));
+        assertApproxEqRel(smartVault.balanceOf(alice), smartVault.balanceOf(bob), 10 ** 12);
     }
 
     function test_dhw_revertInvalidParams() public {
@@ -633,11 +633,11 @@ contract DhwMatchingTest is TestFixture {
             // - strategy tokens were minted
             assertEq(strategy.totalSupply(), 100_000000000000000000000, "3");
             // - strategy tokens were distributed
-            assertEq(strategy.balanceOf(address(smartVault)), 100_000000000000000000000, "4");
+            assertApproxEqRel(strategy.balanceOf(address(smartVault)), 100_000000000000000000000, 10 ** 12, "4");
             // - smart vault tokens were minted
-            assertEq(smartVault.totalSupply(), 100_000000000000000000000, "5");
+            assertApproxEqRel(smartVault.totalSupply(), 100_000000000000000000000, 10 ** 12, "5");
             // - smart vault tokens were distributed
-            assertEq(smartVault.balanceOf(alice), 100_000000000000000000000, "6");
+            assertApproxEqRel(smartVault.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "6");
             assertEq(smartVault.balanceOf(bob), 0, "7");
         }
 
@@ -699,20 +699,31 @@ contract DhwMatchingTest is TestFixture {
         // check final state
         {
             // - assets were deposited and withdrawn on strategy
-            assertEq(token.balanceOf(address(strategy.protocol())), 145 ether, "final token balance strategy");
-            assertEq(token.balanceOf(address(strategy.protocolFees())), 5 ether, "final token strategy fees");
+            assertApproxEqRel(
+                token.balanceOf(address(strategy.protocol())), 145 ether, 10 ** 12, "final token balance strategy"
+            );
+            assertApproxEqRel(
+                token.balanceOf(address(strategy.protocolFees())), 5 ether, 10 ** 12, "final token strategy fees"
+            );
             assertEq(token.balanceOf(address(masterWallet)), 0 ether, "final token balance masterWallet");
             // - strategy tokens were minted and burned
-            assertEq(strategy.totalSupply(), 145_000000000000000000000, "final SST supply");
+            assertApproxEqRel(strategy.totalSupply(), 145_000000000000000000000, 10 ** 12, "final SST supply");
             // - strategy tokens were distributed
-            assertEq(strategy.balanceOf(address(smartVault)), 145_000000000000000000000, "final SST balance smartVault");
+            assertApproxEqRel(
+                strategy.balanceOf(address(smartVault)),
+                145_000000000000000000000,
+                10 ** 12,
+                "final SST balance smartVault"
+            );
             // - smart vault tokens were minted and burned
-            assertEq(smartVault.totalSupply(), 145_000000000000000000000, "final SVT total supply");
+            assertApproxEqRel(smartVault.totalSupply(), 145_000000000000000000000, 10 ** 12, "final SVT total supply");
             // - smart vault tokens were distributed
-            assertEq(smartVault.balanceOf(alice), 50_000000000000000000000, "final SVT balance alice");
-            assertEq(smartVault.balanceOf(bob), 95_000000000000000000000, "final SVT balance bob");
+            assertApproxEqRel(
+                smartVault.balanceOf(alice), 50_000000000000000000000, 10 ** 12, "final SVT balance alice"
+            );
+            assertApproxEqRel(smartVault.balanceOf(bob), 95_000000000000000000000, 10 ** 12, "final SVT balance bob");
             // - assets were claimed
-            assertEq(token.balanceOf(alice), 950 ether, "final token balance alice");
+            assertApproxEqRel(token.balanceOf(alice), 950 ether, 10 ** 12, "final token balance alice");
         }
     }
 
@@ -725,11 +736,11 @@ contract DhwMatchingTest is TestFixture {
             // - strategy tokens were minted
             assertEq(strategy.totalSupply(), 100_000000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategy.balanceOf(address(smartVault)), 100_000000000000000000000);
+            assertApproxEqRel(strategy.balanceOf(address(smartVault)), 100_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVault.totalSupply(), 100_000000000000000000000);
+            assertApproxEqRel(smartVault.totalSupply(), 100_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed
-            assertEq(smartVault.balanceOf(alice), 100_000000000000000000000);
+            assertApproxEqRel(smartVault.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
             assertEq(smartVault.balanceOf(bob), 0);
         }
 
@@ -791,20 +802,29 @@ contract DhwMatchingTest is TestFixture {
         // check final state
         {
             // - assets were deposited and withdrawn on strategy
-            assertEq(token.balanceOf(address(strategy.protocol())), 50 ether, "final token balance strategy");
-            assertEq(token.balanceOf(address(strategy.protocolFees())), 10 ether, "final token strategy fees");
+            assertApproxEqRel(
+                token.balanceOf(address(strategy.protocol())), 50 ether, 10 ** 12, "final token balance strategy"
+            );
+            assertApproxEqRel(
+                token.balanceOf(address(strategy.protocolFees())), 10 ether, 10 ** 12, "final token strategy fees"
+            );
             assertEq(token.balanceOf(address(masterWallet)), 0 ether, "final token balance masterWallet");
             // - strategy tokens were minted and burned
-            assertEq(strategy.totalSupply(), 50_000000000000000000000, "final SST supply");
+            assertApproxEqRel(strategy.totalSupply(), 50_000000000000000000000, 10 ** 12, "final SST supply");
             // - strategy tokens were distributed
-            assertEq(strategy.balanceOf(address(smartVault)), 50_000000000000000000000, "final SST balance smart vault");
+            assertApproxEqRel(
+                strategy.balanceOf(address(smartVault)),
+                50_000000000000000000000,
+                10 ** 12,
+                "final SST balance smart vault"
+            );
             // - smart vault tokens were minted and burned
-            assertEq(smartVault.totalSupply(), 50_000000000000000000000);
+            assertApproxEqRel(smartVault.totalSupply(), 50_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed
             assertEq(smartVault.balanceOf(alice), 0);
-            assertEq(smartVault.balanceOf(bob), 50_000000000000000000000);
+            assertApproxEqRel(smartVault.balanceOf(bob), 50_000000000000000000000, 10 ** 12);
             // - assets were claimed
-            assertEq(token.balanceOf(alice), 990 ether, "final token balance alice");
+            assertApproxEqRel(token.balanceOf(alice), 990 ether, 10 ** 12, "final token balance alice");
         }
     }
 
@@ -817,11 +837,11 @@ contract DhwMatchingTest is TestFixture {
             // - strategy tokens were minted
             assertEq(strategy.totalSupply(), 100_000000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategy.balanceOf(address(smartVault)), 100_000000000000000000000);
+            assertApproxEqRel(strategy.balanceOf(address(smartVault)), 100_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVault.totalSupply(), 100_000000000000000000000);
+            assertApproxEqRel(smartVault.totalSupply(), 100_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed
-            assertEq(smartVault.balanceOf(alice), 100_000000000000000000000);
+            assertApproxEqRel(smartVault.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
             assertEq(smartVault.balanceOf(bob), 0);
         }
 
@@ -883,22 +903,26 @@ contract DhwMatchingTest is TestFixture {
         // check final state
         {
             // - assets were deposited and withdrawn on strategy
-            assertEq(token.balanceOf(address(strategy.protocol())), 100 ether, "final token balance strategy");
-            assertEq(token.balanceOf(address(strategy.protocolFees())), 0 ether, "final token strategy fees");
+            assertApproxEqRel(
+                token.balanceOf(address(strategy.protocol())), 100 ether, 10 ** 12, "final token balance strategy"
+            );
             assertEq(token.balanceOf(address(masterWallet)), 0 ether, "final token balance masterWallet");
             // - strategy tokens were minted and burned
-            assertEq(strategy.totalSupply(), 100_000000000000000000000, "final SST supply");
+            assertApproxEqRel(strategy.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SST supply");
             // - strategy tokens were distributed
-            assertEq(
-                strategy.balanceOf(address(smartVault)), 100_000000000000000000000, "final SST balance smart vault"
+            assertApproxEqRel(
+                strategy.balanceOf(address(smartVault)),
+                100_000000000000000000000,
+                10 ** 12,
+                "final SST balance smart vault"
             );
             // - smart vault tokens were minted and burned
-            assertEq(smartVault.totalSupply(), 100_000000000000000000000);
+            assertApproxEqRel(smartVault.totalSupply(), 100_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed
-            assertEq(smartVault.balanceOf(alice), 50_000000000000000000000);
-            assertEq(smartVault.balanceOf(bob), 50_000000000000000000000);
+            assertApproxEqRel(smartVault.balanceOf(alice), 50_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVault.balanceOf(bob), 50_000000000000000000000, 10 ** 12);
             // - assets were claimed
-            assertEq(token.balanceOf(alice), 950 ether, "final token balance alice");
+            assertApproxEqRel(token.balanceOf(alice), 950 ether, 10 ** 12, "final token balance alice");
         }
     }
 
@@ -997,11 +1021,11 @@ contract DhwMatchingTest is TestFixture {
             // - strategy tokens were minted
             assertEq(strategy.totalSupply(), 400_000000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategy.balanceOf(address(smartVault)), 400_000000000000000000000);
+            assertApproxEqRel(strategy.balanceOf(address(smartVault)), 400_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVault.totalSupply(), 400_000000000000000000000);
+            assertApproxEqRel(smartVault.totalSupply(), 400_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed
-            assertEq(smartVault.balanceOf(alice), 400_000000000000000000000);
+            assertApproxEqRel(smartVault.balanceOf(alice), 400_000000000000000000000, 10 ** 12);
             assertEq(smartVault.balanceOf(bob), 0);
         }
 
@@ -1075,25 +1099,40 @@ contract DhwMatchingTest is TestFixture {
         // check final state
         {
             // - assets were routed to and from strategy
-            assertEq(tokenA.balanceOf(address(strategy.protocol())), 90 ether, "final tokenA balance strategy");
-            assertEq(tokenB.balanceOf(address(strategy.protocol())), 180 ether, "final tokenB balance strategy");
+            assertApproxEqRel(
+                tokenA.balanceOf(address(strategy.protocol())), 90 ether, 10 ** 12, "final tokenA balance strategy"
+            );
+            assertApproxEqRel(
+                tokenB.balanceOf(address(strategy.protocol())), 180 ether, 10 ** 12, "final tokenB balance strategy"
+            );
             assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
             assertEq(tokenB.balanceOf(address(masterWallet)), 0 ether, "final tokenB balance masterWallet");
-            assertEq(tokenA.balanceOf(address(strategy.protocolFees())), 2 ether, "final tokenA strategy fees");
-            assertEq(tokenB.balanceOf(address(strategy.protocolFees())), 4 ether, "final tokenB strategy fees");
-            assertEq(tokenA.balanceOf(alice), 948 ether, "final tokenA balance Alice");
-            assertEq(tokenB.balanceOf(alice), 896 ether, "final tokenB balance Alice");
-            assertEq(tokenA.balanceOf(bob), 960 ether, "final tokenA balance Bob");
-            assertEq(tokenB.balanceOf(bob), 920 ether, "final tokenB balance Bob");
+            assertApproxEqRel(
+                tokenA.balanceOf(address(strategy.protocolFees())), 2 ether, 10 ** 12, "final tokenA strategy fees"
+            );
+            assertApproxEqRel(
+                tokenB.balanceOf(address(strategy.protocolFees())), 4 ether, 10 ** 12, "final tokenB strategy fees"
+            );
+            assertApproxEqRel(tokenA.balanceOf(alice), 948 ether, 10 ** 12, "final tokenA balance Alice");
+            assertApproxEqRel(tokenB.balanceOf(alice), 896 ether, 10 ** 12, "final tokenB balance Alice");
+            assertApproxEqRel(tokenA.balanceOf(bob), 960 ether, 10 ** 12, "final tokenA balance Bob");
+            assertApproxEqRel(tokenB.balanceOf(bob), 920 ether, 10 ** 12, "final tokenB balance Bob");
             // - strategy tokens were minted
-            assertEq(strategy.totalSupply(), 360_000000000000000000000, "final SST supply");
+            assertApproxEqRel(strategy.totalSupply(), 360_000000000000000000000, 10 ** 12, "final SST supply");
             // - strategy tokens were distributed
-            assertEq(strategy.balanceOf(address(smartVault)), 360_000000000000000000000, "final SST balance smartVault");
+            assertApproxEqRel(
+                strategy.balanceOf(address(smartVault)),
+                360_000000000000000000000,
+                10 ** 12,
+                "final SST balance smartVault"
+            );
             // - smart vault tokens were minted
-            assertEq(smartVault.totalSupply(), 360_000000000000000000000, "final SVT supply");
+            assertApproxEqRel(smartVault.totalSupply(), 360_000000000000000000000, 10 ** 12, "final SVT supply");
             // - smart vault tokens were distributed
-            assertEq(smartVault.balanceOf(alice), 200_000000000000000000000, "final SVT balance Alice");
-            assertEq(smartVault.balanceOf(bob), 160_000000000000000000000, "final SVT balance Bob");
+            assertApproxEqRel(
+                smartVault.balanceOf(alice), 200_000000000000000000000, 10 ** 12, "final SVT balance Alice"
+            );
+            assertApproxEqRel(smartVault.balanceOf(bob), 160_000000000000000000000, 10 ** 12, "final SVT balance Bob");
         }
     }
 }

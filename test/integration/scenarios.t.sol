@@ -245,10 +245,10 @@ contract ScenariosTest is Test {
         assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 10 ether);
         // strategy tokens were minted
         assertEq(strategyA1.totalSupply(), 10000000000000000000);
-        assertEq(strategyA1.balanceOf(address(smartVault)), 10000000000000000000);
+        assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 10000000000000000000, 10 ** 12);
         // - vault tokens were minted
-        assertEq(smartVault.totalSupply(), 10000000000000000000);
-        assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000);
+        assertApproxEqRel(smartVault.totalSupply(), 10000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVault.balanceOf(address(alice)), 10000000000000000000, 10 ** 12);
 
         // Bob deposits 1 wei of token A and flushes vault
         // - 1 wei of token A equal 0 USD with current exchange rate and because of rounding
@@ -295,10 +295,10 @@ contract ScenariosTest is Test {
         // check state
         // - strategy tokens were claimed
         //   but there should be nothing to claim since deposited value was zero
-        assertEq(strategyA1.balanceOf(address(smartVault)), 10000000000000000000);
+        assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 10000000000000000000, 10 ** 12);
         // - vault tokens were minted
         //   but none should be minted
-        assertEq(smartVault.totalSupply(), 10000000000000000000);
+        assertApproxEqRel(smartVault.totalSupply(), 10000000000000000000, 10 ** 12);
 
         // claim deposits
         vm.startPrank(bob);
@@ -443,10 +443,10 @@ contract ScenariosTest is Test {
         assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 10 ether);
         // strategy tokens were minted
         assertEq(strategyA1.totalSupply(), 10000000000000000000);
-        assertEq(strategyA1.balanceOf(address(smartVault)), 10000000000000000000);
+        assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 10000000000000000000, 10 ** 12);
         // - vault tokens were minted
-        assertEq(smartVault.totalSupply(), 10000000000000000000);
-        assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000);
+        assertApproxEqRel(smartVault.totalSupply(), 10000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVault.balanceOf(address(alice)), 10000000000000000000, 10 ** 12);
 
         // Bob deposits 1 wei of token A and flushes vault
         // - 1 wei of token A equal 0 USD with current exchange rate and because of rounding
@@ -496,10 +496,10 @@ contract ScenariosTest is Test {
         // check state
         // - strategy tokens were claimed
         //   but there should be nothing to claim since deposited value was zero
-        assertEq(strategyA1.balanceOf(address(smartVault)), 10000000000000000000);
+        assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 10000000000000000000, 10 ** 12);
         // - vault tokens were minted
         //   but none should be minted
-        assertEq(smartVault.totalSupply(), 10000000000000000000);
+        assertApproxEqRel(smartVault.totalSupply(), 10000000000000000000, 10 ** 12);
 
         // claim deposits
         vm.startPrank(bob);
@@ -578,11 +578,11 @@ contract ScenariosTest is Test {
 
         // check state
         // - strategy tokens were claimed
-        assertEq(strategyAB1.balanceOf(address(smartVault)), 10000000000000000000000);
+        assertApproxEqRel(strategyAB1.balanceOf(address(smartVault)), 10000000000000000000000, 10 ** 12);
         assertEq(strategyAB1.balanceOf(address(strategyAB1)), 0);
         // - vault tokens were minted
-        assertEq(smartVault.totalSupply(), 10000000000000000000000);
-        assertEq(smartVault.balanceOf(address(smartVault)), 10000000000000000000000);
+        assertApproxEqRel(smartVault.totalSupply(), 10000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVault.balanceOf(address(smartVault)), 10000000000000000000000, 10 ** 12);
 
         // claim deposit
         uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
@@ -592,7 +592,7 @@ contract ScenariosTest is Test {
 
         // check state
         // - vault tokens were claimed
-        assertEq(smartVault.balanceOf(alice), 10000000000000000000000);
+        assertApproxEqRel(smartVault.balanceOf(alice), 10000000000000000000000, 10 ** 12);
         assertEq(smartVault.balanceOf(address(smartVault)), 0);
         // - deposit NFT was burned
         assertEq(smartVault.balanceOfFractional(alice, depositNftIdAlice), 0);
@@ -608,8 +608,8 @@ contract ScenariosTest is Test {
 
         // check state
         // - vault tokens are returned to vault
-        assertEq(smartVault.balanceOf(alice), 5000000000000000000000);
-        assertEq(smartVault.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertApproxEqRel(smartVault.balanceOf(alice), 5000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVault.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
         // - withdrawal NFTs are minted
         assertEq(withdrawalNftIdAlice, 2 ** 255 + 1);
         assertEq(smartVault.balanceOfFractional(alice, withdrawalNftIdAlice), NFT_MINTED_SHARES);
@@ -622,8 +622,8 @@ contract ScenariosTest is Test {
         // - vault tokens are burned
         assertEq(smartVault.balanceOf(address(smartVault)), 0);
         // - strategy tokens are returned to strategies
-        assertEq(strategyAB1.balanceOf(address(smartVault)), 5000000000000000000000);
-        assertEq(strategyAB1.balanceOf(address(strategyAB1)), 5000000000000000000000);
+        assertApproxEqRel(strategyAB1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyAB1.balanceOf(address(strategyAB1)), 5000000000000000000000, 10 ** 12);
 
         // DHW
         vm.startPrank(doHardWorker);
@@ -635,7 +635,7 @@ contract ScenariosTest is Test {
         assertEq(strategyAB1.balanceOf(address(strategyAB1)), 0);
         // - assets are withdrawn from protocol master wallet
         assertEq(tokenA.balanceOf(address(masterWallet)), 0);
-        assertEq(tokenB.balanceOf(address(masterWallet)), 5 ether);
+        assertApproxEqRel(tokenB.balanceOf(address(masterWallet)), 5 ether, 10 ** 12);
         assertEq(tokenA.balanceOf(address(strategyAB1)), 0);
         assertEq(tokenB.balanceOf(address(strategyAB1)), 0);
 
@@ -652,7 +652,7 @@ contract ScenariosTest is Test {
         // check state
         // - assets are transfered to withdrawers
         assertEq(tokenA.balanceOf(alice), 100 ether);
-        assertEq(tokenB.balanceOf(alice), 95 ether);
+        assertApproxEqRel(tokenB.balanceOf(alice), 95 ether, 10 ** 12);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0);
         assertEq(tokenB.balanceOf(address(masterWallet)), 0);
         // - withdrawal NFTs are burned
@@ -889,12 +889,12 @@ contract ScenariosTest is Test {
             assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 5 ether);
             // - strategy tokens were minted
             assertEq(strategyA1.totalSupply(), 5000000000000000000000);
-            assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
             assertEq(strategyA2.totalSupply(), 5000000000000000000000);
-            assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
             // - vault tokens were minted
-            assertEq(smartVault.totalSupply(), 10000000000000000000000);
-            assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000000);
+            assertApproxEqRel(smartVault.totalSupply(), 10000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVault.balanceOf(address(alice)), 10000000000000000000000, 10 ** 12);
         }
 
         // Bob deposits
@@ -939,9 +939,9 @@ contract ScenariosTest is Test {
         assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 15 ether);
         // - strategy tokens were minted
         assertEq(strategyA1.totalSupply(), 5000000000000000000000);
-        assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
         assertEq(strategyA2.totalSupply(), 15000000000000000000000);
-        assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
 
         // sync vault
         smartVaultManager.syncSmartVault(address(smartVault), true);
@@ -949,10 +949,10 @@ contract ScenariosTest is Test {
         // check state
         // - after removal of strategy A1, vault had effectively only deposited 5 ether
         // - strategy tokens were claimed
-        assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
-        assertEq(strategyA2.balanceOf(address(smartVault)), 15000000000000000000000);
+        assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 15000000000000000000000, 10 ** 12);
         // - vault tokens were minted
-        assertEq(smartVault.totalSupply(), 30000000000000000000000);
+        assertApproxEqRel(smartVault.totalSupply(), 30000000000000000000000, 10 ** 12);
 
         // claim deposits
         vm.startPrank(bob);
@@ -963,11 +963,12 @@ contract ScenariosTest is Test {
 
         // check state
         // - vault tokens were claimed
-        assertEq(smartVault.balanceOf(bob), 20000000000000000000000);
+        assertApproxEqRel(smartVault.balanceOf(bob), 20000000000000000000000, 10 ** 12);
         // - final vault value
-        assertEq(
+        assertApproxEqRel(
             SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
-            15000000000000000000
+            15000000000000000000,
+            10 ** 12
         );
     }
 
@@ -1023,12 +1024,12 @@ contract ScenariosTest is Test {
             assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 5 ether);
             // - strategy tokens were minted
             assertEq(strategyA1.totalSupply(), 5000000000000000000000);
-            assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
             assertEq(strategyA2.totalSupply(), 5000000000000000000000);
-            assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
             // - vault tokens were minted
-            assertEq(smartVault.totalSupply(), 10000000000000000000000);
-            assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000000);
+            assertApproxEqRel(smartVault.totalSupply(), 10000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVault.balanceOf(address(alice)), 10000000000000000000000, 10 ** 12);
         }
 
         // Bob deposits
@@ -1078,9 +1079,9 @@ contract ScenariosTest is Test {
         assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 10 ether);
         // - strategy tokens were minted
         assertEq(strategyA1.totalSupply(), 5000000000000000000000);
-        assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
         assertEq(strategyA2.totalSupply(), 10000000000000000000000);
-        assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
 
         // sync vault
         smartVaultManager.syncSmartVault(address(smartVault), true);
@@ -1088,10 +1089,10 @@ contract ScenariosTest is Test {
         // check state
         // - after removal of strategy A1, vault had effectively only deposited 5 ether
         // - strategy tokens were claimed
-        assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
-        assertEq(strategyA2.balanceOf(address(smartVault)), 10000000000000000000000);
+        assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 10000000000000000000000, 10 ** 12);
         // - vault tokens were minted
-        assertEq(smartVault.totalSupply(), 20000000000000000000000);
+        assertApproxEqRel(smartVault.totalSupply(), 20000000000000000000000, 10 ** 12);
 
         // claim deposits
         vm.startPrank(bob);
@@ -1102,11 +1103,12 @@ contract ScenariosTest is Test {
 
         // check state
         // - vault tokens were claimed
-        assertEq(smartVault.balanceOf(bob), 10000000000000000000000);
+        assertApproxEqRel(smartVault.balanceOf(bob), 10000000000000000000000, 10 ** 12);
         // - final vault value
-        assertEq(
+        assertApproxEqRel(
             SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
-            10000000000000000000
+            10000000000000000000,
+            10 ** 12
         );
     }
 
@@ -1163,12 +1165,12 @@ contract ScenariosTest is Test {
             assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 5 ether);
             // - strategy tokens were minted
             assertEq(strategyA1.totalSupply(), 5000000000000000000000);
-            assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
             assertEq(strategyA2.totalSupply(), 5000000000000000000000);
-            assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
             // - vault tokens were minted
-            assertEq(smartVault.totalSupply(), 10000000000000000000000);
-            assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000000);
+            assertApproxEqRel(smartVault.totalSupply(), 10000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVault.balanceOf(address(alice)), 10000000000000000000000, 10 ** 12);
         }
 
         // Bob deposits
@@ -1209,9 +1211,9 @@ contract ScenariosTest is Test {
         assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 10 ether);
         // - strategy tokens were minted
         assertEq(strategyA1.totalSupply(), 10000000000000000000000);
-        assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
         assertEq(strategyA2.totalSupply(), 10000000000000000000000);
-        assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
 
         // remove strategy A1
         smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
@@ -1222,10 +1224,10 @@ contract ScenariosTest is Test {
         // check state
         // - after removal of strategy A1, vault had effectively only deposited 5 ether
         // - strategy tokens were claimed
-        assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
-        assertEq(strategyA2.balanceOf(address(smartVault)), 10000000000000000000000);
+        assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 10000000000000000000000, 10 ** 12);
         // - vault tokens were minted
-        assertEq(smartVault.totalSupply(), 20000000000000000000000);
+        assertApproxEqRel(smartVault.totalSupply(), 20000000000000000000000, 10 ** 12);
 
         // claim deposits
         vm.startPrank(bob);
@@ -1236,11 +1238,12 @@ contract ScenariosTest is Test {
 
         // check state
         // - vault tokens were claimed
-        assertEq(smartVault.balanceOf(bob), 10000000000000000000000);
+        assertApproxEqRel(smartVault.balanceOf(bob), 10000000000000000000000, 10 ** 12);
         // - final vault value
-        assertEq(
+        assertApproxEqRel(
             SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
-            10000000000000000000
+            10000000000000000000,
+            10 ** 12
         );
     }
 
@@ -1297,12 +1300,12 @@ contract ScenariosTest is Test {
             assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 5 ether);
             // - strategy tokens were minted
             assertEq(strategyA1.totalSupply(), 5000000000000000000000);
-            assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
             assertEq(strategyA2.totalSupply(), 5000000000000000000000);
-            assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
             // - vault tokens were minted
-            assertEq(smartVault.totalSupply(), 10000000000000000000000);
-            assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000000);
+            assertApproxEqRel(smartVault.totalSupply(), 10000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVault.balanceOf(address(alice)), 10000000000000000000000, 10 ** 12);
         }
 
         // Bob deposits
@@ -1343,19 +1346,19 @@ contract ScenariosTest is Test {
         assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 10 ether);
         // - strategy tokens were minted
         assertEq(strategyA1.totalSupply(), 10000000000000000000000);
-        assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
         assertEq(strategyA2.totalSupply(), 10000000000000000000000);
-        assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
 
         // sync vault
         smartVaultManager.syncSmartVault(address(smartVault), true);
 
         // check state
         // - strategy tokens were claimed
-        assertEq(strategyA1.balanceOf(address(smartVault)), 10000000000000000000000);
-        assertEq(strategyA2.balanceOf(address(smartVault)), 10000000000000000000000);
+        assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 10000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 10000000000000000000000, 10 ** 12);
         // - vault tokens were minted
-        assertEq(smartVault.totalSupply(), 20000000000000000000000);
+        assertApproxEqRel(smartVault.totalSupply(), 20000000000000000000000, 10 ** 12);
 
         // remove strategy A1
         smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
@@ -1369,11 +1372,12 @@ contract ScenariosTest is Test {
 
         // check state
         // - vault tokens were claimed
-        assertEq(smartVault.balanceOf(bob), 10000000000000000000000);
+        assertApproxEqRel(smartVault.balanceOf(bob), 10000000000000000000000, 10 ** 12);
         // - final vault value
-        assertEq(
+        assertApproxEqRel(
             SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
-            10000000000000000000
+            10000000000000000000,
+            10 ** 12
         );
     }
 
@@ -1429,12 +1433,12 @@ contract ScenariosTest is Test {
             assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 5 ether);
             // - strategy tokens were minted
             assertEq(strategyA1.totalSupply(), 5000000000000000000000);
-            assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
             assertEq(strategyA2.totalSupply(), 5000000000000000000000);
-            assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
             // - vault tokens were minted
-            assertEq(smartVault.totalSupply(), 10000000000000000000000);
-            assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000000);
+            assertApproxEqRel(smartVault.totalSupply(), 10000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVault.balanceOf(address(alice)), 10000000000000000000000, 10 ** 12);
         }
 
         // Alice withdraws half her shares
@@ -1453,7 +1457,7 @@ contract ScenariosTest is Test {
 
         // check state
         // - vault tokens are returned to vault
-        assertEq(smartVault.balanceOf(alice), 5000000000000000000000);
+        assertApproxEqRel(smartVault.balanceOf(alice), 5000000000000000000000, 10 ** 12);
         assertEq(smartVault.balanceOf(address(smartVault)), 5000000000000000000000);
 
         // remove strategy A1
@@ -1466,9 +1470,9 @@ contract ScenariosTest is Test {
         // - vault tokens are burned
         assertEq(smartVault.balanceOf(address(smartVault)), 0);
         // - strategy tokens are returned to strategies
-        assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
-        assertEq(strategyA2.balanceOf(address(smartVault)), 2500000000000000000000);
-        assertEq(strategyA2.balanceOf(address(strategyA2)), 2500000000000000000000);
+        assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 2500000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA2.balanceOf(address(strategyA2)), 2500000000000000000000, 10 ** 12);
 
         // DHW
         vm.startPrank(doHardWorker);
@@ -1479,9 +1483,9 @@ contract ScenariosTest is Test {
         // - strategy tokens are burned
         assertEq(strategyA2.balanceOf(address(strategyA2)), 0);
         // - assets are withdrawn from protocol
-        assertEq(tokenA.balanceOf(address(masterWallet)), 2.5 ether);
+        assertApproxEqRel(tokenA.balanceOf(address(masterWallet)), 2.5 ether, 10 ** 12);
         assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 5 ether);
-        assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 2.5 ether);
+        assertApproxEqRel(tokenA.balanceOf(address(strategyA2.protocol())), 2.5 ether, 10 ** 12);
 
         // sync vault
         smartVaultManager.syncSmartVault(address(smartVault), true);
@@ -1495,12 +1499,13 @@ contract ScenariosTest is Test {
 
         // check state
         // - assets are transferred to withdrawers
-        assertEq(tokenA.balanceOf(alice), 92.5 ether);
+        assertApproxEqRel(tokenA.balanceOf(alice), 92.5 ether, 10 ** 12);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0);
         // - final vault value
-        assertEq(
+        assertApproxEqRel(
             SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
-            2500000000000000000
+            2500000000000000000,
+            10 ** 12
         );
     }
 
@@ -1556,12 +1561,12 @@ contract ScenariosTest is Test {
             assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 5 ether);
             // - strategy tokens were minted
             assertEq(strategyA1.totalSupply(), 5000000000000000000000);
-            assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
             assertEq(strategyA2.totalSupply(), 5000000000000000000000);
-            assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
             // - vault tokens were minted
-            assertEq(smartVault.totalSupply(), 10000000000000000000000);
-            assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000000);
+            assertApproxEqRel(smartVault.totalSupply(), 10000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVault.balanceOf(address(alice)), 10000000000000000000000, 10 ** 12);
         }
 
         // Alice withdraws half her shares
@@ -1580,7 +1585,7 @@ contract ScenariosTest is Test {
 
         // check state
         // - vault tokens are returned to vault
-        assertEq(smartVault.balanceOf(alice), 5000000000000000000000);
+        assertApproxEqRel(smartVault.balanceOf(alice), 5000000000000000000000, 10 ** 12);
         assertEq(smartVault.balanceOf(address(smartVault)), 5000000000000000000000);
 
         // flush
@@ -1590,10 +1595,10 @@ contract ScenariosTest is Test {
         // - vault tokens are burned
         assertEq(smartVault.balanceOf(address(smartVault)), 0);
         // - strategy tokens are returned to strategies
-        assertEq(strategyA1.balanceOf(address(smartVault)), 2500000000000000000000);
-        assertEq(strategyA1.balanceOf(address(strategyA1)), 2500000000000000000000);
-        assertEq(strategyA2.balanceOf(address(smartVault)), 2500000000000000000000);
-        assertEq(strategyA2.balanceOf(address(strategyA2)), 2500000000000000000000);
+        assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 2500000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA1.balanceOf(address(strategyA1)), 2500000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 2500000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA2.balanceOf(address(strategyA2)), 2500000000000000000000, 10 ** 12);
 
         // remove strategy A1
         smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
@@ -1607,9 +1612,9 @@ contract ScenariosTest is Test {
         // - strategy tokens are burned
         assertEq(strategyA2.balanceOf(address(strategyA2)), 0);
         // - assets are withdrawn from protocol
-        assertEq(tokenA.balanceOf(address(masterWallet)), 2.5 ether);
+        assertApproxEqRel(tokenA.balanceOf(address(masterWallet)), 2.5 ether, 10 ** 12);
         assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 5 ether);
-        assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 2.5 ether);
+        assertApproxEqRel(tokenA.balanceOf(address(strategyA2.protocol())), 2.5 ether, 10 ** 12);
 
         // sync vault
         smartVaultManager.syncSmartVault(address(smartVault), true);
@@ -1623,12 +1628,13 @@ contract ScenariosTest is Test {
 
         // check state
         // - assets are transferred to withdrawers
-        assertEq(tokenA.balanceOf(alice), 92.5 ether);
+        assertApproxEqRel(tokenA.balanceOf(alice), 92.5 ether, 10 ** 12);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0);
         // - final vault value
-        assertEq(
+        assertApproxEqRel(
             SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
-            2500000000000000000
+            2500000000000000000,
+            10 ** 12
         );
     }
 
@@ -1683,12 +1689,12 @@ contract ScenariosTest is Test {
             assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 5 ether);
             // - strategy tokens were minted
             assertEq(strategyA1.totalSupply(), 5000000000000000000000);
-            assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
             assertEq(strategyA2.totalSupply(), 5000000000000000000000);
-            assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
             // - vault tokens were minted
-            assertEq(smartVault.totalSupply(), 10000000000000000000000);
-            assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000000);
+            assertApproxEqRel(smartVault.totalSupply(), 10000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVault.balanceOf(address(alice)), 10000000000000000000000, 10 ** 12);
         }
 
         // Alice withdraws half her shares
@@ -1707,8 +1713,8 @@ contract ScenariosTest is Test {
 
         // check state
         // - vault tokens are returned to vault
-        assertEq(smartVault.balanceOf(alice), 5000000000000000000000);
-        assertEq(smartVault.balanceOf(address(smartVault)), 5000000000000000000000);
+        assertApproxEqRel(smartVault.balanceOf(alice), 5000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVault.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
 
         // flush
         smartVaultManager.flushSmartVault(address(smartVault));
@@ -1717,10 +1723,10 @@ contract ScenariosTest is Test {
         // - vault tokens are burned
         assertEq(smartVault.balanceOf(address(smartVault)), 0);
         // - strategy tokens are returned to strategies
-        assertEq(strategyA1.balanceOf(address(smartVault)), 2500000000000000000000);
-        assertEq(strategyA1.balanceOf(address(strategyA1)), 2500000000000000000000);
-        assertEq(strategyA2.balanceOf(address(smartVault)), 2500000000000000000000);
-        assertEq(strategyA2.balanceOf(address(strategyA2)), 2500000000000000000000);
+        assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 2500000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA1.balanceOf(address(strategyA1)), 2500000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 2500000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA2.balanceOf(address(strategyA2)), 2500000000000000000000, 10 ** 12);
 
         // DHW
         vm.startPrank(doHardWorker);
@@ -1732,17 +1738,17 @@ contract ScenariosTest is Test {
         assertEq(strategyA1.balanceOf(address(strategyA1)), 0);
         assertEq(strategyA2.balanceOf(address(strategyA2)), 0);
         // - assets are withdrawn from protocol
-        assertEq(tokenA.balanceOf(address(masterWallet)), 5 ether);
-        assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 2.5 ether);
-        assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 2.5 ether);
+        assertApproxEqRel(tokenA.balanceOf(address(masterWallet)), 5 ether, 10 ** 12);
+        assertApproxEqRel(tokenA.balanceOf(address(strategyA1.protocol())), 2.5 ether, 10 ** 12);
+        assertApproxEqRel(tokenA.balanceOf(address(strategyA2.protocol())), 2.5 ether, 10 ** 12);
 
         // remove strategy A1
         smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
 
         // check state
         // - funds flushed to strategy A1 were transferred to emergency withdrawer
-        assertEq(tokenA.balanceOf(address(masterWallet)), 2.5 ether);
-        assertEq(tokenA.balanceOf(address(emergencyWithdrawalWallet)), 2.5 ether);
+        assertApproxEqRel(tokenA.balanceOf(address(masterWallet)), 2.5 ether, 10 ** 12);
+        assertApproxEqRel(tokenA.balanceOf(address(emergencyWithdrawalWallet)), 2.5 ether, 10 ** 12);
 
         // sync vault
         smartVaultManager.syncSmartVault(address(smartVault), true);
@@ -1756,12 +1762,13 @@ contract ScenariosTest is Test {
 
         // check state
         // - assets are transferred to withdrawers
-        assertEq(tokenA.balanceOf(alice), 92.5 ether);
+        assertApproxEqRel(tokenA.balanceOf(alice), 92.5 ether, 10 ** 12);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0);
         // - final vault value
-        assertEq(
+        assertApproxEqRel(
             SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
-            2500000000000000000
+            2500000000000000000,
+            10 ** 12
         );
     }
 
@@ -1816,12 +1823,12 @@ contract ScenariosTest is Test {
             assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 5 ether);
             // - strategy tokens were minted
             assertEq(strategyA1.totalSupply(), 5000000000000000000000);
-            assertEq(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
             assertEq(strategyA2.totalSupply(), 5000000000000000000000);
-            assertEq(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000);
+            assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 5000000000000000000000, 10 ** 12);
             // - vault tokens were minted
-            assertEq(smartVault.totalSupply(), 10000000000000000000000);
-            assertEq(smartVault.balanceOf(address(alice)), 10000000000000000000000);
+            assertApproxEqRel(smartVault.totalSupply(), 10000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVault.balanceOf(address(alice)), 10000000000000000000000, 10 ** 12);
         }
 
         // Alice withdraws half her shares
@@ -1840,7 +1847,7 @@ contract ScenariosTest is Test {
 
         // check state
         // - vault tokens are returned to vault
-        assertEq(smartVault.balanceOf(alice), 5000000000000000000000);
+        assertApproxEqRel(smartVault.balanceOf(alice), 5000000000000000000000, 10 ** 12);
         assertEq(smartVault.balanceOf(address(smartVault)), 5000000000000000000000);
 
         // flush
@@ -1850,10 +1857,10 @@ contract ScenariosTest is Test {
         // - vault tokens are burned
         assertEq(smartVault.balanceOf(address(smartVault)), 0);
         // - strategy tokens are returned to strategies
-        assertEq(strategyA1.balanceOf(address(smartVault)), 2500000000000000000000);
-        assertEq(strategyA1.balanceOf(address(strategyA1)), 2500000000000000000000);
-        assertEq(strategyA2.balanceOf(address(smartVault)), 2500000000000000000000);
-        assertEq(strategyA2.balanceOf(address(strategyA2)), 2500000000000000000000);
+        assertApproxEqRel(strategyA1.balanceOf(address(smartVault)), 2500000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA1.balanceOf(address(strategyA1)), 2500000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA2.balanceOf(address(smartVault)), 2500000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA2.balanceOf(address(strategyA2)), 2500000000000000000000, 10 ** 12);
 
         // DHW
         vm.startPrank(doHardWorker);
@@ -1865,9 +1872,9 @@ contract ScenariosTest is Test {
         assertEq(strategyA1.balanceOf(address(strategyA1)), 0);
         assertEq(strategyA2.balanceOf(address(strategyA2)), 0);
         // - assets are withdrawn from protocol
-        assertEq(tokenA.balanceOf(address(masterWallet)), 5 ether);
-        assertEq(tokenA.balanceOf(address(strategyA1.protocol())), 2.5 ether);
-        assertEq(tokenA.balanceOf(address(strategyA2.protocol())), 2.5 ether);
+        assertApproxEqRel(tokenA.balanceOf(address(masterWallet)), 5 ether, 10 ** 12);
+        assertApproxEqRel(tokenA.balanceOf(address(strategyA1.protocol())), 2.5 ether, 10 ** 12);
+        assertApproxEqRel(tokenA.balanceOf(address(strategyA2.protocol())), 2.5 ether, 10 ** 12);
 
         // sync vault
         smartVaultManager.syncSmartVault(address(smartVault), true);
@@ -1884,12 +1891,13 @@ contract ScenariosTest is Test {
 
         // check state
         // - assets are transferred to withdrawers
-        assertEq(tokenA.balanceOf(alice), 95 ether);
+        assertApproxEqRel(tokenA.balanceOf(alice), 95 ether, 10 ** 12);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0);
         // - final vault value
-        assertEq(
+        assertApproxEqRel(
             SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
-            2500000000000000000
+            2500000000000000000,
+            10 ** 12
         );
     }
 

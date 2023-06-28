@@ -489,7 +489,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         // Pack values to avoid stack depth limit
         uint16a16 indexes = _dhwIndexes[smartVault][flushIndex.toSync];
         uint16a16[2] memory packedIndexes = [indexes, _getPreviousDhwIndexes(smartVault, flushIndex.toSync)];
-        DepositSyncResult memory syncResult;
 
         // If DHWs haven't been run yet, we can't sync
         if (!_areAllDhwRunsCompleted(_strategyRegistry.currentIndex(strategies_), indexes, strategies_, revertIfError))
@@ -498,7 +497,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         SmartVaultFees memory fees = _smartVaultFees[smartVault];
-        address vaultOwner = _accessControl.smartVaultOwner(smartVault);
         // Pack values to avoid stack depth limit
         uint256[2] memory packedParams = [flushIndex.toSync, _lastDhwTimestampSynced[smartVault]];
 
@@ -506,20 +504,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _withdrawalManager.syncWithdrawals(smartVault, flushIndex.toSync, strategies_, indexes);
 
         // SYNC DEPOSITS
-        syncResult = _depositManager.syncDeposits(smartVault, packedParams, strategies_, packedIndexes, tokens, fees);
+        DepositSyncResult memory syncResult =
+            _depositManager.syncDeposits(smartVault, packedParams, strategies_, packedIndexes, tokens, fees);
 
         emit SmartVaultSynced(smartVault, flushIndex.toSync);
         flushIndex.toSync++;
         _flushIndexes[smartVault] = flushIndex;
         _lastDhwTimestampSynced[smartVault] = syncResult.dhwTimestamp;
-
-        if (syncResult.mintedSVTs > 0) {
-            ISmartVault(smartVault).mintVaultShares(smartVault, syncResult.mintedSVTs);
-        }
-
-        if (syncResult.feeSVTs > 0) {
-            ISmartVault(smartVault).mintVaultShares(vaultOwner, syncResult.feeSVTs);
-        }
     }
 
     /**
@@ -566,14 +557,18 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         address[] memory strategies_;
         SmartVaultFees memory fees;
         uint16a16 indexes;
-        uint256 flushIndexToSync;
+
+        FlushIndex memory flushIndex = _flushIndexes[smartVault];
 
         {
-            flushIndexToSync = _flushIndexes[smartVault].toSync;
             strategies_ = _smartVaultStrategies[smartVault];
             oldTotalSVTs = ISmartVault(smartVault).totalSupply();
             fees = _smartVaultFees[smartVault];
-            indexes = _dhwIndexes[smartVault][flushIndexToSync];
+            indexes = _dhwIndexes[smartVault][flushIndex.toSync];
+        }
+
+        if (flushIndex.current == flushIndex.toSync) {
+            return (oldTotalSVTs, 0, 0, new uint256[](strategies_.length));
         }
 
         // If DHWs haven't been run yet, we can't sync
@@ -587,9 +582,9 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         {
             tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-            previousIndexes = _getPreviousDhwIndexes(smartVault, flushIndexToSync);
+            previousIndexes = _getPreviousDhwIndexes(smartVault, flushIndex.toSync);
             uint256 lastDhwTimestamp = _lastDhwTimestampSynced[smartVault];
-            packedParams = [flushIndexToSync, lastDhwTimestamp];
+            packedParams = [flushIndex.toSync, lastDhwTimestamp];
         }
 
         SimulateDepositParams memory params;

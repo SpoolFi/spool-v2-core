@@ -40,6 +40,11 @@ error InvalidNormalization();
 error DepositNftNotSyncedYet(uint256 id);
 
 /**
+ * @notice Used when initial locked smart vault shares are already minted and vault usd value is zero.
+ */
+error SmartVaultWorthIsZero();
+
+/**
  * @notice Contains parameters for distributeDeposit call.
  * @custom:member deposit Amounts deposited.
  * @custom:member exchangeRates Asset -> USD exchange rates.
@@ -291,6 +296,19 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             }
         }
 
+        if (syncResult.initialLockedSVTs > 0) {
+            ISmartVault(smartVault).mintVaultShares(INITIAL_LOCKED_SHARES_ADDRESS, syncResult.initialLockedSVTs);
+        }
+
+        if (syncResult.mintedSVTs > 0) {
+            ISmartVault(smartVault).mintVaultShares(smartVault, syncResult.mintedSVTs);
+        }
+
+        if (syncResult.feeSVTs > 0) {
+            address vaultOwner = _accessControl.smartVaultOwner(smartVault);
+            ISmartVault(smartVault).mintVaultShares(vaultOwner, syncResult.feeSVTs);
+        }
+
         return syncResult;
     }
 
@@ -408,9 +426,19 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         }
 
         // calculate amount of SVTs to mint
-        if (totalUsd[1] == 0) {
+        if (localVariables.svtSupply < INITIAL_LOCKED_SHARES) {
             result.mintedSVTs = totalUsd[0] * INITIAL_SHARE_MULTIPLIER;
-        } else {
+
+            unchecked {
+                result.initialLockedSVTs = INITIAL_LOCKED_SHARES - localVariables.svtSupply;
+
+                if (result.mintedSVTs < result.initialLockedSVTs) {
+                    result.initialLockedSVTs = result.mintedSVTs;
+                }
+
+                result.mintedSVTs -= result.initialLockedSVTs;
+            }
+        } else if (totalUsd[1] > 0) {
             uint256 fees;
             // management fees
             if (parameters.fees.managementFeePct > 0) {
@@ -435,6 +463,8 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
 
             // deposits
             result.mintedSVTs = (localVariables.svtSupply + result.feeSVTs) * totalUsd[0] / totalUsd[1];
+        } else {
+            revert SmartVaultWorthIsZero();
         }
 
         // deposit fees

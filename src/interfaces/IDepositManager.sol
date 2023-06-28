@@ -62,12 +62,14 @@ struct DepositExtras {
  * @custom:member mintedSVTs Amount of SVTs minted.
  * @custom:member dhwTimestamp Timestamp of the last DHW synced.
  * @custom:member feeSVTs Amount of SVTs minted as fees.
+ * @custom:member initialLockedSVTs Amount of initial locked SVTs.
  * @custom:member sstShares Amount of SSTs claimed for each strategy.
  */
 struct DepositSyncResult {
     uint256 mintedSVTs;
     uint256 dhwTimestamp;
     uint256 feeSVTs;
+    uint256 initialLockedSVTs;
     uint256[] sstShares;
 }
 

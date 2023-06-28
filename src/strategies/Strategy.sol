@@ -14,6 +14,11 @@ import "../interfaces/CommonErrors.sol";
 import "../interfaces/Constants.sol";
 import "../access/SpoolAccessControllable.sol";
 
+/**
+ * @notice Used when initial locked strategy shares are already minted and strategy usd value is zero.
+ */
+error StrategyWorthIsZero();
+
 abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrategy {
     using SafeERC20 for IERC20;
 
@@ -135,12 +140,12 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
                 dhwParams.assetGroup, assetsToDeposit, dhwParams.exchangeRates
             );
 
-            unchecked {
-                if (usdWorth[0] > 0) {
-                    depositShareEquivalent = totalSupply() * valueToDeposit / usdWorth[0];
-                } else {
-                    depositShareEquivalent = INITIAL_SHARE_MULTIPLIER * valueToDeposit;
-                }
+            if (totalSupply() < INITIAL_LOCKED_SHARES) {
+                depositShareEquivalent = INITIAL_SHARE_MULTIPLIER * valueToDeposit;
+            } else if (usdWorth[0] > 0) {
+                depositShareEquivalent = totalSupply() * valueToDeposit / usdWorth[0];
+            } else {
+                revert StrategyWorthIsZero();
             }
 
             // Match withdrawals and deposits by taking smaller value as matched shares.
@@ -180,17 +185,9 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             usdWorth[1] = _getUsdWorth(dhwParams.exchangeRates, dhwParams.priceFeedManager);
 
             // - mint SSTs
-            uint256 usdWorthDeposited = usdWorth[1] - usdWorth[0];
-            unchecked {
-                if (usdWorth[0] > 0) {
-                    mintedShares = usdWorthDeposited * totalSupply() / usdWorth[0];
-                } else {
-                    mintedShares = usdWorthDeposited * INITIAL_SHARE_MULTIPLIER;
-                }
-            }
-            _mint(address(this), mintedShares);
+            mintedShares = _mintStrategyShares(usdWorth[0], usdWorth[1]);
 
-            emit Deposited(mintedShares, usdWorthDeposited, assetsIn, assetsToDeposit);
+            emit Deposited(mintedShares, usdWorth[1] - usdWorth[0], assetsIn, assetsToDeposit);
 
             mintedShares += matchedShares;
         } else if (withdrawnShares > depositShareEquivalent) {
@@ -310,14 +307,7 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         uint256 usdWorth1 = _getUsdWorth(exchangeRates, priceFeedManager);
 
         // mint SSTs
-        uint256 usdWorthDeposited = usdWorth1 - usdWorth0;
-        uint256 sstsToMint;
-        if (usdWorth0 > 0) {
-            sstsToMint = usdWorthDeposited * totalSupply() / usdWorth0;
-        } else {
-            sstsToMint = usdWorthDeposited * INITIAL_SHARE_MULTIPLIER;
-        }
-        _mint(address(this), sstsToMint);
+        uint256 sstsToMint = _mintStrategyShares(usdWorth0, usdWorth1);
 
         totalUsdValue = usdWorth1;
 
@@ -347,6 +337,36 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
     }
 
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
+
+    function _mintStrategyShares(uint256 usdWorthBefore, uint256 usdWorthAfter)
+        private
+        returns (uint256 mintedShares)
+    {
+        uint256 totalSupply_ = totalSupply();
+
+        if (totalSupply_ < INITIAL_LOCKED_SHARES) {
+            // multiply with usd worth after deposit as there are no other owned shares
+            mintedShares = usdWorthAfter * INITIAL_SHARE_MULTIPLIER;
+
+            unchecked {
+                uint256 lockedSharesLeftToMint = INITIAL_LOCKED_SHARES - totalSupply_;
+
+                if (mintedShares < lockedSharesLeftToMint) {
+                    lockedSharesLeftToMint = mintedShares;
+                }
+
+                mintedShares -= lockedSharesLeftToMint;
+
+                _mint(INITIAL_LOCKED_SHARES_ADDRESS, lockedSharesLeftToMint);
+            }
+        } else if (usdWorthBefore > 0) {
+            mintedShares = (usdWorthAfter - usdWorthBefore) * totalSupply_ / usdWorthBefore;
+        } else {
+            revert StrategyWorthIsZero();
+        }
+
+        _mint(address(this), mintedShares);
+    }
 
     function _redeemShares(
         uint256 shares,

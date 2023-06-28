@@ -144,7 +144,7 @@ contract PlatformFeesTest is TestFixture {
         }
     }
 
-    function test_initialState() public {
+    function test_initialState1() public {
         // check initial state
         {
             // - assets were routed to strategy
@@ -155,14 +155,14 @@ contract PlatformFeesTest is TestFixture {
             assertEq(strategyA.totalSupply(), 100_000000000000000000000);
             assertEq(strategyB.totalSupply(), 100_000000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 100_000000000000000000000);
-            assertEq(strategyB.balanceOf(address(smartVaultB)), 100_000000000000000000000);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 100_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(strategyB.balanceOf(address(smartVaultB)), 100_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
-            assertEq(smartVaultB.totalSupply(), 100_000000000000000000000);
+            assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed
-            assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
-            assertEq(smartVaultB.balanceOf(bob), 100_000000000000000000000);
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultB.balanceOf(bob), 100_000000000000000000000, 10 ** 12);
         }
     }
 
@@ -551,7 +551,7 @@ contract PlatformFeesTest is TestFixture {
         // check protocol funds
         {
             // assets were really withdrawn during DHW
-            assertApproxEqAbs(token.balanceOf(address(strategyA.protocol())), 59 ether, 10);
+            assertApproxEqRel(token.balanceOf(address(strategyA.protocol())), 59 ether, 10 ** 12);
         }
     }
 }
@@ -676,7 +676,7 @@ contract SmartVaultFeesTest is TestFixture {
         return totalUnderlying * userShares / totalShares;
     }
 
-    function test_initialState() public {
+    function test_initialState2() public {
         // check initial state
         {
             // - assets were routed to strategy
@@ -685,12 +685,12 @@ contract SmartVaultFeesTest is TestFixture {
             // - strategy tokens were minted
             assertEq(strategyA.totalSupply(), 100_000000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 100_000000000000000000000);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 100_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
+            assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed and deposit fee taken
-            assertEq(smartVaultA.balanceOf(alice), 95_000000000000000000000);
-            assertEq(smartVaultA.balanceOf(vaultOwner), 5_000000000000000000000);
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000 * 95 / 100, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(vaultOwner), 100_000000000000000000000 * 5 / 100, 10 ** 12);
         }
     }
 
@@ -700,8 +700,8 @@ contract SmartVaultFeesTest is TestFixture {
             // Alice deposited 100 eth
             // - 5 eth or 5% should go as deposit fee
             // - 95 eth or 95% should go to Alice
-            assertEq(_getUserValue(alice, smartVaultA), 95 ether);
-            assertEq(_getUserValue(vaultOwner, smartVaultA), 5 ether);
+            assertApproxEqRel(_getUserValue(alice, smartVaultA), 95 ether, 10 ** 12);
+            assertApproxEqRel(_getUserValue(vaultOwner, smartVaultA), 5 ether, 10 ** 12);
         }
     }
 
@@ -777,14 +777,14 @@ contract SmartVaultFeesTest is TestFixture {
         {
             // Alice deposited 100 eth and withdrew 47.5 eth
             // Bob deposited 100 eth
-            assertEq(token.balanceOf(alice), 847.5 ether);
+            assertApproxEqRel(token.balanceOf(alice), 847.5 ether, 10 ** 12);
             assertEq(token.balanceOf(bob), 900 ether);
             // 5% of deposits should be taken as fees
             // - 5 eth from Alice
             // - 5 eth from Bob
-            assertEq(_getUserValue(alice, smartVaultA), 142.5 ether);
-            assertEq(_getUserValue(bob, smartVaultA), 95 ether);
-            assertEq(_getUserValue(vaultOwner, smartVaultA), 15 ether);
+            assertApproxEqRel(_getUserValue(alice, smartVaultA), 142.5 ether, 10 ** 12);
+            assertApproxEqRel(_getUserValue(bob, smartVaultA), 95 ether, 10 ** 12);
+            assertApproxEqRel(_getUserValue(vaultOwner, smartVaultA), 15 ether, 10 ** 12);
         }
     }
 
@@ -831,13 +831,13 @@ contract SmartVaultFeesTest is TestFixture {
             // - strategy tokens were minted
             assertEq(strategyA.totalSupply(), 101_000000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVaultA.totalSupply(), 101_000000000000000000000);
+            assertApproxEqRel(smartVaultA.totalSupply(), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed and deposit fee taken
-            assertEq(smartVaultA.balanceOf(alice), 95_000000000000000000000);
-            assertEq(smartVaultA.balanceOf(bob), 950000000000000000000);
-            assertEq(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000);
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 95_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(bob), 950000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000, 10 ** 12);
         }
 
         // Bob deposits again and Alice redeems fast after flush
@@ -900,11 +900,16 @@ contract SmartVaultFeesTest is TestFixture {
             // Bob deposited 100 eth
             // - 5 for fees
             // - 95 for Bob
-            assertEq(token.balanceOf(alice), 995 ether, "token balance Alice");
-            assertEq(token.balanceOf(address(strategyA.protocol())), 95.95 ether + 10.05 ether, "token balance vault A");
+            assertApproxEqRel(token.balanceOf(alice), 995 ether, 10 ** 12, "token balance Alice");
+            assertApproxEqRel(
+                token.balanceOf(address(strategyA.protocol())),
+                95.95 ether + 10.05 ether,
+                10 ** 12,
+                "token balance vault A"
+            );
             assertEq(_getUserValue(alice, smartVaultA), 0 ether, "vault value Alice");
-            assertEq(_getUserValue(bob, smartVaultA), 95.95 ether, "vault value Bob");
-            assertEq(_getUserValue(vaultOwner, smartVaultA), 10.05 ether, "vault value vault owner");
+            assertApproxEqRel(_getUserValue(bob, smartVaultA), 95.95 ether, 10 ** 12, "vault value Bob");
+            assertApproxEqRel(_getUserValue(vaultOwner, smartVaultA), 10.05 ether, 10 ** 12, "vault value vault owner");
         }
     }
 
@@ -951,13 +956,13 @@ contract SmartVaultFeesTest is TestFixture {
             // - strategy tokens were minted
             assertEq(strategyA.totalSupply(), 101_000000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVaultA.totalSupply(), 101_000000000000000000000);
+            assertApproxEqRel(smartVaultA.totalSupply(), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed and deposit fee taken
-            assertEq(smartVaultA.balanceOf(alice), 95_000000000000000000000);
-            assertEq(smartVaultA.balanceOf(bob), 950000000000000000000);
-            assertEq(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000);
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 95_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(bob), 950000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000, 10 ** 12);
         }
 
         // Bob deposits again and Alice redeems fast after flush
@@ -1017,11 +1022,16 @@ contract SmartVaultFeesTest is TestFixture {
             // Bob deposited 100 eth
             // - 5 for fees
             // - 95 for Bob
-            assertEq(token.balanceOf(alice), 995 ether, "token balance Alice");
-            assertEq(token.balanceOf(address(strategyA.protocol())), 95.95 ether + 10.05 ether, "token balance vault A");
+            assertApproxEqRel(token.balanceOf(alice), 995 ether, 10 ** 12, "token balance Alice");
+            assertApproxEqRel(
+                token.balanceOf(address(strategyA.protocol())),
+                95.95 ether + 10.05 ether,
+                10 ** 12,
+                "token balance vault A"
+            );
             assertEq(_getUserValue(alice, smartVaultA), 0 ether, "vault value Alice");
-            assertEq(_getUserValue(bob, smartVaultA), 95.95 ether, "vault value Bob");
-            assertEq(_getUserValue(vaultOwner, smartVaultA), 10.05 ether, "vault value vault owner");
+            assertApproxEqRel(_getUserValue(bob, smartVaultA), 95.95 ether, 10 ** 12, "vault value Bob");
+            assertApproxEqRel(_getUserValue(vaultOwner, smartVaultA), 10.05 ether, 10 ** 12, "vault value vault owner");
         }
     }
 
@@ -1066,8 +1076,8 @@ contract SmartVaultFeesTest is TestFixture {
             // - 18 eth is divided among shares
             //   - 17.1 eth for Alice
             //   - 0.9 eth for vault owner
-            assertEq(_getUserValue(alice, smartVaultA), 95 ether + 17.1 ether);
-            assertEq(_getUserValue(vaultOwner, smartVaultA), 5 ether + 2 ether + 0.9 ether);
+            assertApproxEqRel(_getUserValue(alice, smartVaultA), 95 ether + 17.1 ether, 10 ** 12);
+            assertApproxEqRel(_getUserValue(vaultOwner, smartVaultA), 5 ether + 2 ether + 0.9 ether, 10 ** 12);
         }
     }
 
@@ -1125,8 +1135,8 @@ contract SmartVaultFeesTest is TestFixture {
             //   - 62.244 eth (= 90%) for Alice
             // vault owner had 5 eth
             // - generated 3.64 eth yield
-            assertEq(_getUserValue(alice, smartVaultA), 95 ether + 62.244 ether);
-            assertEq(_getUserValue(vaultOwner, smartVaultA), 5 ether + 6.916 ether + 3.64 ether);
+            assertApproxEqRel(_getUserValue(alice, smartVaultA), 95 ether + 62.244 ether, 10 ** 12);
+            assertApproxEqRel(_getUserValue(vaultOwner, smartVaultA), 5 ether + 6.916 ether + 3.64 ether, 10 ** 12);
         }
     }
 
@@ -1253,8 +1263,8 @@ contract SmartVaultFeesTest is TestFixture {
             // Alice deposited 100 eth
             // - 5 eth (= 5%) for fees
             // - 95 eth (= 95%) for Alice
-            assertApproxEqAbs(_getUserValue(alice, smartVaultA), 95 ether + 17.1 ether + 95 ether, 10);
-            assertApproxEqAbs(_getUserValue(vaultOwner, smartVaultA), 5 ether + 1.9 ether + 1 ether + 5 ether, 10);
+            assertApproxEqRel(_getUserValue(alice, smartVaultA), 95 ether + 17.1 ether + 95 ether, 10 ** 12);
+            assertApproxEqRel(_getUserValue(vaultOwner, smartVaultA), 5 ether + 1.9 ether + 1 ether + 5 ether, 10 ** 12);
         }
     }
 
@@ -1315,10 +1325,15 @@ contract SmartVaultFeesTest is TestFixture {
             // - 57 eth (= 95/2 + 9.5) withdrawn
             // - 56.05 eth (= 95/2 + 8.55) left
             // vault owner has 6.95 ether (= 5 + 0.95 + 1)
-            assertEq(token.balanceOf(alice), 957 ether, "token balance Alice");
-            assertEq(token.balanceOf(address(strategyA.protocol())), 56.05 ether + 6.95 ether, "token balance vault A");
-            assertEq(_getUserValue(alice, smartVaultA), 56.05 ether, "vault value Alice");
-            assertApproxEqAbs(_getUserValue(vaultOwner, smartVaultA), 6.95 ether, 10, "vault value vault owner");
+            assertApproxEqRel(token.balanceOf(alice), 957 ether, 10 ** 12, "token balance Alice");
+            assertApproxEqRel(
+                token.balanceOf(address(strategyA.protocol())),
+                56.05 ether + 6.95 ether,
+                10 ** 12,
+                "token balance vault A"
+            );
+            assertApproxEqRel(_getUserValue(alice, smartVaultA), 56.05 ether, 10 ** 12, "vault value Alice");
+            assertApproxEqRel(_getUserValue(vaultOwner, smartVaultA), 6.95 ether, 10 ** 12, "vault value vault owner");
         }
     }
 
@@ -1365,13 +1380,13 @@ contract SmartVaultFeesTest is TestFixture {
             // - strategy tokens were minted
             assertEq(strategyA.totalSupply(), 101_000000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVaultA.totalSupply(), 101_000000000000000000000);
+            assertApproxEqRel(smartVaultA.totalSupply(), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed and deposit fee taken
-            assertEq(smartVaultA.balanceOf(alice), 95_000000000000000000000);
-            assertEq(smartVaultA.balanceOf(bob), 950000000000000000000);
-            assertEq(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000);
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 95_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(bob), 950000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000, 10 ** 12);
         }
 
         // generate yield and withdraw
@@ -1431,11 +1446,16 @@ contract SmartVaultFeesTest is TestFixture {
             // - 114 eth (= 95 + 19)
             // Bob has 1.121 eth
             // vault owner has 6.079 eth (= 5.05 + 0.019 + 1.01)
-            assertEq(token.balanceOf(alice), 1014 ether, "token balance Alice");
-            assertEq(token.balanceOf(address(strategyA.protocol())), 1.121 ether + 6.079 ether, "token balance vault A");
+            assertApproxEqRel(token.balanceOf(alice), 1014 ether, 10 ** 12, "token balance Alice");
+            assertApproxEqRel(
+                token.balanceOf(address(strategyA.protocol())),
+                1.121 ether + 6.079 ether,
+                10 ** 12,
+                "token balance vault A"
+            );
             assertEq(_getUserValue(alice, smartVaultA), 0 ether, "vault value Alice");
-            assertEq(_getUserValue(bob, smartVaultA), 1.121 ether, "vault value Bob");
-            assertApproxEqAbs(_getUserValue(vaultOwner, smartVaultA), 6.079 ether, 10, "vault value vault owner");
+            assertApproxEqRel(_getUserValue(bob, smartVaultA), 1.121 ether, 10 ** 12, "vault value Bob");
+            assertApproxEqRel(_getUserValue(vaultOwner, smartVaultA), 6.079 ether, 10 ** 12, "vault value vault owner");
         }
     }
 
@@ -1482,13 +1502,13 @@ contract SmartVaultFeesTest is TestFixture {
             // - strategy tokens were minted
             assertEq(strategyA.totalSupply(), 101_000000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVaultA.totalSupply(), 101_000000000000000000000);
+            assertApproxEqRel(smartVaultA.totalSupply(), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed and deposit fee taken
-            assertEq(smartVaultA.balanceOf(alice), 95_000000000000000000000);
-            assertEq(smartVaultA.balanceOf(bob), 950000000000000000000);
-            assertEq(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000);
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 95_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(bob), 950000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000, 10 ** 12);
         }
 
         // generate yield and redeem fast
@@ -1556,15 +1576,18 @@ contract SmartVaultFeesTest is TestFixture {
             // - 95 eth
             // Bob has 3.8285 eth (= 0.95 + 2.8785)
             // vault owner has 22.3715 eth (= 5.05 + 15.3015 + 2.02)
-            assertEq(token.balanceOf(alice), 995 ether, "token balance Alice");
-            assertEq(
+            assertApproxEqRel(token.balanceOf(alice), 995 ether, 10 ** 12, "token balance Alice");
+            assertApproxEqRel(
                 token.balanceOf(address(strategyA.protocol())),
                 3.8285 ether + 22.3715 ether + 1,
+                10 ** 12,
                 "token balance vault A"
             );
             assertEq(_getUserValue(alice, smartVaultA), 0 ether, "vault value Alice");
-            assertApproxEqAbs(_getUserValue(bob, smartVaultA), 3.8285 ether, 1e5, "vault value Bob");
-            assertApproxEqAbs(_getUserValue(vaultOwner, smartVaultA), 22.3715 ether, 1e5, "vault value vault owner");
+            assertApproxEqRel(_getUserValue(bob, smartVaultA), 3.8285 ether, 10 ** 12, "vault value Bob");
+            assertApproxEqRel(
+                _getUserValue(vaultOwner, smartVaultA), 22.3715 ether, 10 ** 12, "vault value vault owner"
+            );
         }
     }
 
@@ -1611,13 +1634,13 @@ contract SmartVaultFeesTest is TestFixture {
             // - strategy tokens were minted
             assertEq(strategyA.totalSupply(), 101_000000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVaultA.totalSupply(), 101_000000000000000000000);
+            assertApproxEqRel(smartVaultA.totalSupply(), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed and deposit fee taken
-            assertEq(smartVaultA.balanceOf(alice), 95_000000000000000000000);
-            assertEq(smartVaultA.balanceOf(bob), 950000000000000000000);
-            assertEq(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000);
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 95_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(bob), 950000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000, 10 ** 12);
         }
 
         // generate yield and redeem fast
@@ -1692,13 +1715,16 @@ contract SmartVaultFeesTest is TestFixture {
             // Alice withdraws all her shares and her yield 112.1 eth (= 95 + 17.1)
             // Bob has 1.121 eth (= 0.95 + 0.171)
             // vault owner has 7.979 eth (= 5.05 + 1.9 + 1.01 + 0.019)
-            assertApproxEqAbs(token.balanceOf(alice), 1012.1 ether, 10, "token balance Alice");
-            assertApproxEqAbs(
-                token.balanceOf(address(strategyA.protocol())), 1.121 ether + 7.979 ether, 10, "token balance vault A"
+            assertApproxEqRel(token.balanceOf(alice), 1012.1 ether, 10 ** 12, "token balance Alice");
+            assertApproxEqRel(
+                token.balanceOf(address(strategyA.protocol())),
+                1.121 ether + 7.979 ether,
+                10 ** 12,
+                "token balance vault A"
             );
             assertEq(_getUserValue(alice, smartVaultA), 0 ether, "vault value Alice");
-            assertEq(_getUserValue(bob, smartVaultA), 1.121 ether, "vault value Bob");
-            assertApproxEqAbs(_getUserValue(vaultOwner, smartVaultA), 7.979 ether, 10, "vault value vault owner");
+            assertApproxEqRel(_getUserValue(bob, smartVaultA), 1.121 ether, 10 ** 12, "vault value Bob");
+            assertApproxEqRel(_getUserValue(vaultOwner, smartVaultA), 7.979 ether, 10 ** 12, "vault value vault owner");
         }
     }
 
@@ -1737,8 +1763,8 @@ contract SmartVaultFeesTest is TestFixture {
         {
             // 2% management fees should be collected
             // - Alice held 95 ether -> 1.9 ether should be taken as fees
-            assertEq(_getUserValue(alice, smartVaultA), 95 ether - 1.9 ether);
-            assertEq(_getUserValue(vaultOwner, smartVaultA), 5 ether + 1.9 ether);
+            assertApproxEqRel(_getUserValue(alice, smartVaultA), 95 ether - 1.9 ether, 10 ** 12);
+            assertApproxEqRel(_getUserValue(vaultOwner, smartVaultA), 5 ether + 1.9 ether, 10 ** 12);
         }
     }
 
@@ -1834,11 +1860,14 @@ contract SmartVaultFeesTest is TestFixture {
             // Alice deposited 100 eth
             // - 5 eth (= 5%) for fees
             // - 95 eth (= 95%) for Alice
-            assertApproxEqAbs(
-                _getUserValue(alice, smartVaultA), 95 ether - 1.9 ether + 95 ether, 10, "vault value Alice"
+            assertApproxEqRel(
+                _getUserValue(alice, smartVaultA), 95 ether - 1.9 ether + 95 ether, 10 ** 12, "vault value Alice"
             );
-            assertApproxEqAbs(
-                _getUserValue(vaultOwner, smartVaultA), 5 ether + 1.9 ether + 5 ether, 10, "vault value vault owner"
+            assertApproxEqRel(
+                _getUserValue(vaultOwner, smartVaultA),
+                5 ether + 1.9 ether + 5 ether,
+                10 ** 12,
+                "vault value vault owner"
             );
         }
     }
@@ -1886,13 +1915,13 @@ contract SmartVaultFeesTest is TestFixture {
             // - strategy tokens were minted
             assertEq(strategyA.totalSupply(), 101_000000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVaultA.totalSupply(), 101_000000000000000000000);
+            assertApproxEqRel(smartVaultA.totalSupply(), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed and deposit fee taken
-            assertEq(smartVaultA.balanceOf(alice), 95_000000000000000000000);
-            assertEq(smartVaultA.balanceOf(bob), 950000000000000000000);
-            assertEq(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000);
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 95_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(bob), 950000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000, 10 ** 12);
         }
 
         // skip time to get management fees and withdraw
@@ -1939,12 +1968,14 @@ contract SmartVaultFeesTest is TestFixture {
             // - Bob held 0.95 eth -> 0.019 eth should be taken as fees
             // Alice withdrew all her shares
             // - 95 eth
-            assertEq(token.balanceOf(alice), 995 ether, "token balance Alice");
-            assertEq(token.balanceOf(address(strategyA.protocol())), 1 ether + 5 ether, "token balance vault A");
+            assertApproxEqRel(token.balanceOf(alice), 995 ether, 10 ** 12, "token balance Alice");
+            assertApproxEqRel(
+                token.balanceOf(address(strategyA.protocol())), 1 ether + 5 ether, 10 ** 12, "token balance vault A"
+            );
             assertEq(_getUserValue(alice, smartVaultA), 0 ether, "vault value Alice");
-            assertEq(_getUserValue(bob, smartVaultA), 0.931 ether, "vault value Bob");
-            assertApproxEqAbs(
-                _getUserValue(vaultOwner, smartVaultA), 5.05 ether + 0.019 ether, 10, "vault value vault owner"
+            assertApproxEqRel(_getUserValue(bob, smartVaultA), 0.931 ether, 10 ** 12, "vault value Bob");
+            assertApproxEqRel(
+                _getUserValue(vaultOwner, smartVaultA), 5.05 ether + 0.019 ether, 10 ** 12, "vault value vault owner"
             );
         }
     }
@@ -1992,13 +2023,13 @@ contract SmartVaultFeesTest is TestFixture {
             // - strategy tokens were minted
             assertEq(strategyA.totalSupply(), 101_000000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVaultA.totalSupply(), 101_000000000000000000000);
+            assertApproxEqRel(smartVaultA.totalSupply(), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed and deposit fee taken
-            assertEq(smartVaultA.balanceOf(alice), 95_000000000000000000000);
-            assertEq(smartVaultA.balanceOf(bob), 950000000000000000000);
-            assertEq(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000);
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 95_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(bob), 950000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000, 10 ** 12);
         }
 
         // skip time to get management fees
@@ -2055,11 +2086,13 @@ contract SmartVaultFeesTest is TestFixture {
             // 2% management fees should be collected
             // - Alice fast redeemed before sync -> no fees collected
             // - Bob had 0.95 eth -> should collect 0.019 eth fees
-            assertEq(token.balanceOf(alice), 995 ether, "token balance Alice");
-            assertEq(token.balanceOf(address(strategyA.protocol())), 6 ether + 1, "token balance vault A");
+            assertApproxEqRel(token.balanceOf(alice), 995 ether, 10 ** 12, "token balance Alice");
+            assertApproxEqRel(
+                token.balanceOf(address(strategyA.protocol())), 6 ether + 1, 10 ** 12, "token balance vault A"
+            );
             assertEq(_getUserValue(alice, smartVaultA), 0 ether, "vault value Alice");
-            assertEq(_getUserValue(bob, smartVaultA), 0.931 ether, "vault value Bob");
-            assertEq(_getUserValue(vaultOwner, smartVaultA), 5.069 ether, "vault value vault owner");
+            assertApproxEqRel(_getUserValue(bob, smartVaultA), 0.931 ether, 10 ** 12, "vault value Bob");
+            assertApproxEqRel(_getUserValue(vaultOwner, smartVaultA), 5.069 ether, 10 ** 12, "vault value vault owner");
         }
     }
 
@@ -2106,13 +2139,13 @@ contract SmartVaultFeesTest is TestFixture {
             // - strategy tokens were minted
             assertEq(strategyA.totalSupply(), 101_000000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVaultA.totalSupply(), 101_000000000000000000000);
+            assertApproxEqRel(smartVaultA.totalSupply(), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed and deposit fee taken
-            assertEq(smartVaultA.balanceOf(alice), 95_000000000000000000000);
-            assertEq(smartVaultA.balanceOf(bob), 950000000000000000000);
-            assertEq(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000);
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 95_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(bob), 950000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000, 10 ** 12);
         }
 
         // skip time to get management fees
@@ -2166,11 +2199,16 @@ contract SmartVaultFeesTest is TestFixture {
             // 2% management fees should be collected
             // - Alice had 95 eth -> should collect 1.9 eth fees
             // - Bob had 0.95 eth -> should collect 0.019 eth fees
-            assertEq(token.balanceOf(alice), 993.1 ether, "token balance Alice");
-            assertEq(token.balanceOf(address(strategyA.protocol())), 6 ether + 1.9 ether + 1, "token balance vault A");
+            assertApproxEqRel(token.balanceOf(alice), 993.1 ether, 10 ** 12, "token balance Alice");
+            assertApproxEqRel(
+                token.balanceOf(address(strategyA.protocol())),
+                6 ether + 1.9 ether + 1,
+                10 ** 12,
+                "token balance vault A"
+            );
             assertEq(_getUserValue(alice, smartVaultA), 0 ether, "vault value Alice");
-            assertEq(_getUserValue(bob, smartVaultA), 0.931 ether, "vault value Bob");
-            assertEq(_getUserValue(vaultOwner, smartVaultA), 6.969 ether, "vault value vault owner");
+            assertApproxEqRel(_getUserValue(bob, smartVaultA), 0.931 ether, 10 ** 12, "vault value Bob");
+            assertApproxEqRel(_getUserValue(vaultOwner, smartVaultA), 6.969 ether, 10 ** 12, "vault value vault owner");
         }
     }
 
@@ -2215,14 +2253,14 @@ contract SmartVaultFeesTest is TestFixture {
         // check state
         {
             // - assets were removed from the strategy
-            assertEq(token.balanceOf(address(strategyA.protocol())), 95 ether);
-            assertEq(token.balanceOf(vaultOwner), 5 ether);
+            assertApproxEqRel(token.balanceOf(address(strategyA.protocol())), 95 ether, 10 ** 12);
+            assertApproxEqRel(token.balanceOf(vaultOwner), 5 ether, 10 ** 12);
             // - strategy tokens were burned
-            assertEq(strategyA.totalSupply(), 95_000000000000000000000);
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 95_000000000000000000000);
+            assertApproxEqRel(strategyA.totalSupply(), 95_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 95_000000000000000000000, 10 ** 12);
             // - smart vault tokens were burned
-            assertEq(smartVaultA.totalSupply(), 95_000000000000000000000);
-            assertEq(smartVaultA.balanceOf(alice), 95_000000000000000000000);
+            assertApproxEqRel(smartVaultA.totalSupply(), 95_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 95_000000000000000000000, 10 ** 12);
         }
 
         // do things
@@ -2272,9 +2310,13 @@ contract SmartVaultFeesTest is TestFixture {
             //   - should take 1.9 eth (= 19 * 10%)
             // - users should get remaining assets
             //   - 109.82 eth
-            assertEq(token.balanceOf(address(strategyA.protocol())), 114 ether + 1, "token balance strategy A");
-            assertEq(_getUserValue(alice, smartVaultA), 109.82 ether, "vault value Alice");
-            assertEq(_getUserValue(vaultOwner, smartVaultA), 2.28 ether + 1.9 ether, "vault value vault owner");
+            assertApproxEqRel(
+                token.balanceOf(address(strategyA.protocol())), 114 ether + 1, 10 ** 12, "token balance strategy A"
+            );
+            assertApproxEqRel(_getUserValue(alice, smartVaultA), 109.82 ether, 10 ** 12, "vault value Alice");
+            assertApproxEqRel(
+                _getUserValue(vaultOwner, smartVaultA), 2.28 ether + 1.9 ether, 10 ** 12, "vault value vault owner"
+            );
         }
     }
 
@@ -2321,13 +2363,13 @@ contract SmartVaultFeesTest is TestFixture {
             // - strategy tokens were minted
             assertEq(strategyA.totalSupply(), 101_000000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVaultA.totalSupply(), 101_000000000000000000000);
+            assertApproxEqRel(smartVaultA.totalSupply(), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed and deposit fee taken
-            assertEq(smartVaultA.balanceOf(alice), 95_000000000000000000000);
-            assertEq(smartVaultA.balanceOf(bob), 950000000000000000000);
-            assertEq(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000);
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 95_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(bob), 950000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000, 10 ** 12);
         }
 
         // do things
@@ -2418,17 +2460,19 @@ contract SmartVaultFeesTest is TestFixture {
             // Bob deposits 10 eth
             // - 0.5 eth (= 5%) for fees
             // - 9.5 eth (= 95%) for Bob
-            assertEq(token.balanceOf(alice), 957 ether, "token balance Alice");
-            assertEq(
+            assertApproxEqRel(token.balanceOf(alice), 957 ether, 10 ** 12, "token balance Alice");
+            assertApproxEqRel(
                 token.balanceOf(address(strategyA.protocol())),
                 53.5 ether + 10.7 ether + 10 ether,
+                10 ** 12,
                 "token balance vault A"
             );
-            assertEq(_getUserValue(alice, smartVaultA), 54.91 ether, "vault value Alice");
-            assertApproxEqAbs(_getUserValue(bob, smartVaultA), 1.0982 ether + 9.5 ether, 10, "vault value Bob");
-            assertEq(
+            assertApproxEqRel(_getUserValue(alice, smartVaultA), 54.91 ether, 10 ** 12, "vault value Alice");
+            assertApproxEqRel(_getUserValue(bob, smartVaultA), 1.0982 ether + 9.5 ether, 10 ** 12, "vault value Bob");
+            assertApproxEqRel(
                 _getUserValue(vaultOwner, smartVaultA),
                 5.8378 ether + 1.284 ether + 1.07 ether + 0.5 ether,
+                10 ** 12,
                 "vault value vault owner"
             );
         }
@@ -2518,11 +2562,17 @@ contract SmartVaultFeesTest is TestFixture {
             // - vault owner withdrew all her shares
             //   - 5 eth of base
             //   - 1 eth of yield
-            assertEq(token.balanceOf(address(strategyA.protocol())), 0, "token balance strategy A protocol");
-            assertEq(strategyA.totalSupply(), 0, "strategy A supply");
-            assertEq(smartVaultA.totalSupply(), 0, "smart vault A supply");
-            assertEq(token.balanceOf(alice), 900 ether + 95 ether + 19 ether, "token balance Alice");
-            assertEq(token.balanceOf(vaultOwner), 5 ether + 1 ether);
+            assertApproxEqAbs(
+                token.balanceOf(address(strategyA.protocol())), 0, 10 ** 12, "token balance strategy A protocol"
+            );
+            // we need to consider strategy locked shares and smart vault locked shares
+            assertApproxEqRel(strategyA.totalSupply(), INITIAL_LOCKED_SHARES * 2, 10 ** 12, "strategy A supply");
+            // total fees were around 4%
+            assertApproxEqRel(
+                smartVaultA.totalSupply(), INITIAL_LOCKED_SHARES * 104 / 100, 10 ** 16, "smart vault A supply"
+            );
+            assertApproxEqRel(token.balanceOf(alice), 900 ether + 95 ether + 19 ether, 10 ** 12, "token balance Alice");
+            assertApproxEqRel(token.balanceOf(vaultOwner), 5 ether + 1 ether, 10 ** 12);
         }
     }
 }
@@ -2681,7 +2731,7 @@ contract AllFeesTest is TestFixture {
         return userUnderlying;
     }
 
-    function test_initialState() public {
+    function test_initialState3() public {
         // check initial state
         {
             // - assets were routed to strategy
@@ -2689,16 +2739,17 @@ contract AllFeesTest is TestFixture {
             assertEq(token.balanceOf(address(strategyB.protocol())), 50 ether);
             assertEq(token.balanceOf(address(masterWallet)), 0 ether);
             // - strategy tokens were minted
+
             assertEq(strategyA.totalSupply(), 50_000000000000000000000);
             assertEq(strategyB.totalSupply(), 50_000000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 50_000000000000000000000);
-            assertEq(strategyB.balanceOf(address(smartVaultA)), 50_000000000000000000000);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 50_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 50_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
+            assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed and deposit fee taken
-            assertEq(smartVaultA.balanceOf(alice), 95_000000000000000000000);
-            assertEq(smartVaultA.balanceOf(vaultOwner), 5_000000000000000000000);
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 95_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(vaultOwner), 5_000000000000000000000, 10 ** 12);
         }
     }
 
@@ -2754,9 +2805,9 @@ contract AllFeesTest is TestFixture {
             assertEq(token.balanceOf(address(strategyB.protocol())), 60 ether + 1);
             assertApproxEqAbs(_getUserStrategyValue(ecosystemFeeRecipient, strategiesA), 1.2 ether, 10);
             assertApproxEqAbs(_getUserStrategyValue(treasuryFeeRecipient, strategiesA), 0.8 ether, 10);
-            assertEq(_getUserStrategyValue(address(smartVaultA), strategiesA), 100 ether + 18 ether);
-            assertEq(_getUserVaultValue(alice, smartVaultA), 95 ether + 15.2 ether);
-            assertApproxEqAbs(_getUserVaultValue(vaultOwner, smartVaultA), 5 ether + 0.8 ether + 2 ether, 10);
+            assertApproxEqRel(_getUserStrategyValue(address(smartVaultA), strategiesA), 100 ether + 18 ether, 10 ** 12);
+            assertApproxEqRel(_getUserVaultValue(alice, smartVaultA), 95 ether + 15.2 ether, 10 ** 12);
+            assertApproxEqRel(_getUserVaultValue(vaultOwner, smartVaultA), 5 ether + 0.8 ether + 2 ether, 10 ** 12);
         }
     }
 
@@ -2805,14 +2856,14 @@ contract AllFeesTest is TestFixture {
             assertEq(strategyA.totalSupply(), 50_500000000000000000000);
             assertEq(strategyB.totalSupply(), 50_500000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 50_500000000000000000000);
-            assertEq(strategyB.balanceOf(address(smartVaultA)), 50_500000000000000000000);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 50_500000000000000000000, 10 ** 12);
+            assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 50_500000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVaultA.totalSupply(), 101_000000000000000000000);
+            assertApproxEqRel(smartVaultA.totalSupply(), 101_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed and deposit fee taken
-            assertEq(smartVaultA.balanceOf(alice), 95_000000000000000000000);
-            assertEq(smartVaultA.balanceOf(bob), 950000000000000000000);
-            assertEq(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000);
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 95_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(bob), 950000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultA.balanceOf(vaultOwner), 5_050000000000000000000, 10 ** 12);
         }
 
         // generate yield and redeem fast
@@ -2910,24 +2961,24 @@ contract AllFeesTest is TestFixture {
             //     - 8.08 eth (= 9.09 - 1.01) for users
             //       - 1.279333333333333333 eth (= 8.08 * 0.95 / 6) for Bob
             //       - 6.800666666666666666 eth (= 1.01 * 5.05 / 6) for vault owner
-            assertEq(token.balanceOf(address(strategyA.protocol())), 4.55 ether + 1);
-            assertEq(token.balanceOf(address(strategyB.protocol())), 13.1 ether + 1);
-            assertEq(token.balanceOf(alice), 900 ether + 56.05 ether + 47.5 ether);
-            assertApproxEqAbs(_getUserStrategyValue(ecosystemFeeRecipient, strategiesA), 1.212 ether, 1e5);
-            assertApproxEqAbs(_getUserStrategyValue(treasuryFeeRecipient, strategiesA), 0.808 ether, 1e5);
-            assertApproxEqAbs(
+            assertApproxEqRel(token.balanceOf(address(strategyA.protocol())), 4.55 ether + 1, 10 ** 12);
+            assertApproxEqRel(token.balanceOf(address(strategyB.protocol())), 13.1 ether + 1, 10 ** 12);
+            assertApproxEqRel(token.balanceOf(alice), 900 ether + 56.05 ether + 47.5 ether, 10 ** 12);
+            assertApproxEqRel(_getUserStrategyValue(ecosystemFeeRecipient, strategiesA), 1.212 ether, 10 ** 12);
+            assertApproxEqRel(_getUserStrategyValue(treasuryFeeRecipient, strategiesA), 0.808 ether, 10 ** 12);
+            assertApproxEqRel(
                 _getUserStrategyValue(address(smartVaultA), strategiesA),
                 3.54 ether + 3 ether + 1.01 ether + 8.08 ether,
-                1e5
+                10 ** 12
             );
             assertEq(_getUserVaultValue(alice, smartVaultA), 0);
-            assertApproxEqAbs(
-                _getUserVaultValue(bob, smartVaultA), 0.95 ether + 0.076 ether + 1.279333333333333333 ether, 1e5
+            assertApproxEqRel(
+                _getUserVaultValue(bob, smartVaultA), 0.95 ether + 0.076 ether + 1.279333333333333333 ether, 10 ** 12
             );
-            assertApproxEqAbs(
+            assertApproxEqRel(
                 _getUserVaultValue(vaultOwner, smartVaultA),
                 5.05 ether + (0.06 ether + 0.404 ether) + (1.01 ether + 6.800666666666666666 ether),
-                1e5
+                10 ** 12
             );
         }
     }

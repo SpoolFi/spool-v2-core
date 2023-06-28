@@ -327,12 +327,12 @@ contract ReallocationIntegrationTest is Test {
         assertEq(strategyA.totalSupply(), 60_000000000000000000000);
         assertEq(strategyB.totalSupply(), 40_000000000000000000000);
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 60_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 40_000000000000000000000);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 60_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 40_000000000000000000000, 10 ** 12);
         // - smart vault tokens were minted
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
         // - smart vault tokens were distributed
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
 
         // mock changes in allocation
         vm.mockCall(
@@ -367,12 +367,22 @@ contract ReallocationIntegrationTest is Test {
         assertEq(strategyA.totalSupply(), 50_000000000000000000000, "final SSTA supply");
         assertEq(strategyB.totalSupply(), 50_000000000000000000000, "final SSTB supply");
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 50_000000000000000000000, "final SSTA balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 50_000000000000000000000, "final SSTB balance smartVaultA");
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultA)),
+            50_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultA)),
+            50_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultA"
+        );
         // - smart vault tokens remain unchanged
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
         // - smart vault tokens distribution remains unchanged
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice");
     }
 
     function test_reallocate_02() public {
@@ -485,13 +495,13 @@ contract ReallocationIntegrationTest is Test {
         assertEq(strategyB.totalSupply(), 35_000000000000000000000);
         assertEq(strategyC.totalSupply(), 15_000000000000000000000);
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 50_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 35_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 15_000000000000000000000);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 50_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 35_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultA)), 15_000000000000000000000, 10 ** 12);
         // - smart vault tokens were minted
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
         // - smart vault tokens were distributed
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
 
         // mock changes in allocation
         vm.mockCall(
@@ -531,22 +541,43 @@ contract ReallocationIntegrationTest is Test {
             "final allocation for smart vault A"
         );
         // - assets were redistributed between strategies
-        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 40 ether, "final tokenA balance strategyA");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 30 ether, "final tokenA balance strategyB");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 30 ether, "final tokenA balance strategyC");
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyA.protocol())), 40 ether, 10 ** 12, "final tokenA balance strategyA"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 30 ether, 10 ** 12, "final tokenA balance strategyB"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 30 ether, 10 ** 12, "final tokenA balance strategyC"
+        );
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
         // - strategy tokens were minted and burned
-        assertEq(strategyA.totalSupply(), 40_000000000000000000000, "final SSTA supply");
-        assertEq(strategyB.totalSupply(), 30_000000000000000000000, "final SSTB supply");
-        assertEq(strategyC.totalSupply(), 30_000000000000000000000, "final SSTC supply");
+        assertApproxEqRel(strategyA.totalSupply(), 40_000000000000000000000, 10 ** 12, "final SSTA supply");
+        assertApproxEqRel(strategyB.totalSupply(), 30_000000000000000000000, 10 ** 12, "final SSTB supply");
+        assertApproxEqRel(strategyC.totalSupply(), 30_000000000000000000000, 10 ** 12, "final SSTC supply");
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 40_000000000000000000000, "final SSTA balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTB balance smartVaultA");
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTC balance smartVaultA");
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultA)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultA"
+        );
         // - smart vault tokens remain unchanged
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
         // - smart vault tokens distribution remains unchanged
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice");
     }
 
     function test_reallocate_03() public {
@@ -659,13 +690,13 @@ contract ReallocationIntegrationTest is Test {
         assertEq(strategyB.totalSupply(), 25_000000000000000000000);
         assertEq(strategyC.totalSupply(), 20_000000000000000000000);
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 55_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 25_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 20_000000000000000000000);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 55_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 25_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultA)), 20_000000000000000000000, 10 ** 12);
         // - smart vault tokens were minted
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
         // - smart vault tokens were distributed
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
 
         // mock changes in allocation
         vm.mockCall(
@@ -693,22 +724,43 @@ contract ReallocationIntegrationTest is Test {
             "final allocation for smart vault A"
         );
         // - assets were redistributed between strategies
-        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 40 ether, "final tokenA balance strategyA");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 30 ether, "final tokenA balance strategyB");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 30 ether, "final tokenA balance strategyC");
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyA.protocol())), 40 ether, 10 ** 12, "final tokenA balance strategyA"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 30 ether, 10 ** 12, "final tokenA balance strategyB"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 30 ether, 10 ** 12, "final tokenA balance strategyC"
+        );
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
         // - strategy tokens were minted and burned
-        assertEq(strategyA.totalSupply(), 40_000000000000000000000, "final SSTA supply");
-        assertEq(strategyB.totalSupply(), 30_000000000000000000000, "final SSTB supply");
-        assertEq(strategyC.totalSupply(), 30_000000000000000000000, "final SSTC supply");
+        assertApproxEqRel(strategyA.totalSupply(), 40_000000000000000000000, 10 ** 12, "final SSTA supply");
+        assertApproxEqRel(strategyB.totalSupply(), 30_000000000000000000000, 10 ** 12, "final SSTB supply");
+        assertApproxEqRel(strategyC.totalSupply(), 30_000000000000000000000, 10 ** 12, "final SSTC supply");
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 40_000000000000000000000, "final SSTA balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTB balance smartVaultA");
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTC balance smartVaultA");
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultA)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultA"
+        );
         // - smart vault tokens remain unchanged
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
         // - smart vault tokens distribution remains unchanged
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice");
     }
 
     function test_reallocate_04() public {
@@ -817,17 +869,17 @@ contract ReallocationIntegrationTest is Test {
         assertEq(tokenA.balanceOf(address(strategyC.protocol())), 20 ether);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether);
         // - strategy tokens were minted
-        assertEq(strategyA.totalSupply(), 50_000000000000000000000);
-        assertEq(strategyB.totalSupply(), 30_000000000000000000000);
-        assertEq(strategyC.totalSupply(), 20_000000000000000000000);
+        assertApproxEqRel(strategyA.totalSupply(), 50_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.totalSupply(), 30_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.totalSupply(), 20_000000000000000000000, 10 ** 12);
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 50_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 30_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 20_000000000000000000000);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 50_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 30_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultA)), 20_000000000000000000000, 10 ** 12);
         // - smart vault tokens were minted
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
         // - smart vault tokens were distributed
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
 
         // mock changes in allocation
         vm.mockCall(
@@ -855,22 +907,43 @@ contract ReallocationIntegrationTest is Test {
             "final allocation for smart vault A"
         );
         // - assets were redistributed between strategies
-        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 40 ether, "final tokenA balance strategyA");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 30 ether, "final tokenA balance strategyB");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 30 ether, "final tokenA balance strategyC");
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyA.protocol())), 40 ether, 10 ** 12, "final tokenA balance strategyA"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 30 ether, 10 ** 12, "final tokenA balance strategyB"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 30 ether, 10 ** 12, "final tokenA balance strategyC"
+        );
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
         // - strategy tokens were minted and burned
-        assertEq(strategyA.totalSupply(), 40_000000000000000000000, "final SSTA supply");
-        assertEq(strategyB.totalSupply(), 30_000000000000000000000, "final SSTB supply");
-        assertEq(strategyC.totalSupply(), 30_000000000000000000000, "final SSTC supply");
+        assertApproxEqRel(strategyA.totalSupply(), 40_000000000000000000000, 10 ** 12, "final SSTA supply");
+        assertApproxEqRel(strategyB.totalSupply(), 30_000000000000000000000, 10 ** 12, "final SSTB supply");
+        assertApproxEqRel(strategyC.totalSupply(), 30_000000000000000000000, 10 ** 12, "final SSTC supply");
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 40_000000000000000000000, "final SSTA balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTB balance smartVaultA");
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTC balance smartVaultA");
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultA)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultA"
+        );
         // - smart vault tokens remain unchanged
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
         // - smart vault tokens distribution remains unchanged
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice");
     }
 
     function test_reallocate_05() public {
@@ -1000,20 +1073,20 @@ contract ReallocationIntegrationTest is Test {
         assertEq(tokenA.balanceOf(address(strategyC.protocol())), 35 ether);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether);
         // - strategy tokens were minted
-        assertEq(strategyA.totalSupply(), 60_000000000000000000000);
-        assertEq(strategyB.totalSupply(), 105_000000000000000000000);
-        assertEq(strategyC.totalSupply(), 35_000000000000000000000);
+        assertApproxEqRel(strategyA.totalSupply(), 60_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.totalSupply(), 105_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.totalSupply(), 35_000000000000000000000, 10 ** 12);
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 60_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 40_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 65_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 35_000000000000000000000);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 60_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 40_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultB)), 65_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultB)), 35_000000000000000000000, 10 ** 12);
         // - smart vault tokens were minted
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12);
         // - smart vault tokens were distributed
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
 
         // mock changes in allocation
         vm.mockCall(
@@ -1046,25 +1119,51 @@ contract ReallocationIntegrationTest is Test {
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
-        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 50 ether, "final tokenA balance strategyA");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 100 ether, "final tokenA balance strategyB");
-        assertEq(tokenA.balanceOf(address(strategyC.protocol())), 50 ether, "final tokenA balance strategyC");
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyA.protocol())), 50 ether, 10 ** 12, "final tokenA balance strategyA"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 100 ether, 10 ** 12, "final tokenA balance strategyB"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyC.protocol())), 50 ether, 10 ** 12, "final tokenA balance strategyC"
+        );
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
         // - strategy tokens were minted and burned
-        assertEq(strategyA.totalSupply(), 50_000000000000000000000, "final SSTA supply");
-        assertEq(strategyB.totalSupply(), 100_000000000000000000000, "final SSTB supply");
-        assertEq(strategyC.totalSupply(), 50_000000000000000000000, "final SSTC supply");
+        assertApproxEqRel(strategyA.totalSupply(), 50_000000000000000000000, 10 ** 12, "final SSTA supply");
+        assertApproxEqRel(strategyB.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SSTB supply");
+        assertApproxEqRel(strategyC.totalSupply(), 50_000000000000000000000, 10 ** 12, "final SSTC supply");
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 50_000000000000000000000, "final SSTA balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 50_000000000000000000000, "final SSTB balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 50_000000000000000000000, "final SSTB balance smartVaultB");
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 50_000000000000000000000, "final SSTC balance smartVaultB");
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultA)),
+            50_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultA)),
+            50_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultB)),
+            50_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultB)),
+            50_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultB"
+        );
         // - smart vault tokens remain unchanged
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000, "final SVTB supply");
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTB supply");
         // - smart vault tokens distribution remains unchanged
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000, "final SVTB balance alice");
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice");
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTB balance alice");
     }
 
     function test_reallocate_06() public {
@@ -1194,20 +1293,20 @@ contract ReallocationIntegrationTest is Test {
         assertEq(tokenA.balanceOf(address(strategyC.protocol())), 40 ether);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether);
         // - strategy tokens were minted
-        assertEq(strategyA.totalSupply(), 65_000000000000000000000);
-        assertEq(strategyB.totalSupply(), 95_000000000000000000000);
-        assertEq(strategyC.totalSupply(), 40_000000000000000000000);
+        assertApproxEqRel(strategyA.totalSupply(), 65_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.totalSupply(), 95_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.totalSupply(), 40_000000000000000000000, 10 ** 12);
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 65_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 35_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 60_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 40_000000000000000000000);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 65_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 35_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultB)), 60_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultB)), 40_000000000000000000000, 10 ** 12);
         // - smart vault tokens were minted
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12);
         // - smart vault tokens were distributed
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
 
         // mock changes in allocation
         vm.mockCall(
@@ -1240,25 +1339,51 @@ contract ReallocationIntegrationTest is Test {
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
-        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 50 ether, "final tokenA balance strategyA");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 100 ether, "final tokenA balance strategyB");
-        assertEq(tokenA.balanceOf(address(strategyC.protocol())), 50 ether, "final tokenA balance strategyC");
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyA.protocol())), 50 ether, 10 ** 12, "final tokenA balance strategyA"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 100 ether, 10 ** 12, "final tokenA balance strategyB"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyC.protocol())), 50 ether, 10 ** 12, "final tokenA balance strategyC"
+        );
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
         // - strategy tokens were minted and burned
-        assertEq(strategyA.totalSupply(), 50_000000000000000000000, "final SSTA supply");
-        assertEq(strategyB.totalSupply(), 100_000000000000000000000, "final SSTB supply");
-        assertEq(strategyC.totalSupply(), 50_000000000000000000000, "final SSTC supply");
+        assertApproxEqRel(strategyA.totalSupply(), 50_000000000000000000000, 10 ** 12, "final SSTA supply");
+        assertApproxEqRel(strategyB.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SSTB supply");
+        assertApproxEqRel(strategyC.totalSupply(), 50_000000000000000000000, 10 ** 12, "final SSTC supply");
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 50_000000000000000000000, "final SSTA balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 50_000000000000000000000, "final SSTB balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 50_000000000000000000000, "final SSTB balance smartVaultB");
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 50_000000000000000000000, "final SSTC balance smartVaultB");
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultA)),
+            50_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultA)),
+            50_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultB)),
+            50_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultB)),
+            50_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultB"
+        );
         // - smart vault tokens remain unchanged
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000, "final SVTB supply");
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTB supply");
         // - smart vault tokens distribution remains unchanged
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000, "final SVTB balance alice");
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice");
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTB balance alice");
     }
 
     function test_reallocate_07() public {
@@ -1388,20 +1513,20 @@ contract ReallocationIntegrationTest is Test {
         assertEq(tokenA.balanceOf(address(strategyC.protocol())), 40 ether);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether);
         // - strategy tokens were minted
-        assertEq(strategyA.totalSupply(), 60_000000000000000000000);
-        assertEq(strategyB.totalSupply(), 100_000000000000000000000);
-        assertEq(strategyC.totalSupply(), 40_000000000000000000000);
+        assertApproxEqRel(strategyA.totalSupply(), 60_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.totalSupply(), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.totalSupply(), 40_000000000000000000000, 10 ** 12);
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 60_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 40_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 60_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 40_000000000000000000000);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 60_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 40_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultB)), 60_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultB)), 40_000000000000000000000, 10 ** 12);
         // - smart vault tokens were minted
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12);
         // - smart vault tokens were distributed
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
 
         // mock changes in allocation
         vm.mockCall(
@@ -1434,25 +1559,51 @@ contract ReallocationIntegrationTest is Test {
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
-        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 50 ether, "final tokenA balance strategyA");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 100 ether, "final tokenA balance strategyB");
-        assertEq(tokenA.balanceOf(address(strategyC.protocol())), 50 ether, "final tokenA balance strategyC");
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyA.protocol())), 50 ether, 10 ** 12, "final tokenA balance strategyA"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 100 ether, 10 ** 12, "final tokenA balance strategyB"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyC.protocol())), 50 ether, 10 ** 12, "final tokenA balance strategyC"
+        );
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
         // - strategy tokens were minted and burned
-        assertEq(strategyA.totalSupply(), 50_000000000000000000000, "final SSTA supply");
-        assertEq(strategyB.totalSupply(), 100_000000000000000000000, "final SSTB supply");
-        assertEq(strategyC.totalSupply(), 50_000000000000000000000, "final SSTC supply");
+        assertApproxEqRel(strategyA.totalSupply(), 50_000000000000000000000, 10 ** 12, "final SSTA supply");
+        assertApproxEqRel(strategyB.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SSTB supply");
+        assertApproxEqRel(strategyC.totalSupply(), 50_000000000000000000000, 10 ** 12, "final SSTC supply");
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 50_000000000000000000000, "final SSTA balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 50_000000000000000000000, "final SSTB balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 50_000000000000000000000, "final SSTB balance smartVaultB");
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 50_000000000000000000000, "final SSTC balance smartVaultB");
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultA)),
+            50_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultA)),
+            50_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultB)),
+            50_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultB)),
+            50_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultB"
+        );
         // - smart vault tokens remain unchanged
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000, "final SVTB supply");
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTB supply");
         // - smart vault tokens distribution remains unchanged
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000, "final SVTB balance alice");
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice");
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTB balance alice");
     }
 
     function test_reallocate_08() public {
@@ -1584,22 +1735,22 @@ contract ReallocationIntegrationTest is Test {
         assertEq(tokenA.balanceOf(address(strategyC.protocol())), 50 ether);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether);
         // - strategy tokens were minted
-        assertEq(strategyA.totalSupply(), 115_000000000000000000000);
-        assertEq(strategyB.totalSupply(), 35_000000000000000000000);
-        assertEq(strategyC.totalSupply(), 50_000000000000000000000);
+        assertApproxEqRel(strategyA.totalSupply(), 115_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.totalSupply(), 35_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.totalSupply(), 50_000000000000000000000, 10 ** 12);
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 60_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 15_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 25_000000000000000000000);
-        assertEq(strategyA.balanceOf(address(smartVaultB)), 55_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 20_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 25_000000000000000000000);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 60_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 15_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultA)), 25_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultB)), 55_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultB)), 20_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultB)), 25_000000000000000000000, 10 ** 12);
         // - smart vault tokens were minted
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12);
         // - smart vault tokens were distributed
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
 
         // mock changes in allocation
         vm.mockCall(
@@ -1632,27 +1783,63 @@ contract ReallocationIntegrationTest is Test {
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
-        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 80 ether, "final tokenA balance strategyA");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 60 ether, "final tokenA balance strategyB");
-        assertEq(tokenA.balanceOf(address(strategyC.protocol())), 60 ether, "final tokenA balance strategyC");
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyA.protocol())), 80 ether, 10 ** 12, "final tokenA balance strategyA"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 60 ether, 10 ** 12, "final tokenA balance strategyB"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyC.protocol())), 60 ether, 10 ** 12, "final tokenA balance strategyC"
+        );
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
         // - strategy tokens were minted and burned
-        assertEq(strategyA.totalSupply(), 80_000000000000000000000, "final SSTA supply");
-        assertEq(strategyB.totalSupply(), 60_000000000000000000000, "final SSTB supply");
-        assertEq(strategyC.totalSupply(), 60_000000000000000000000, "final SSTC supply");
+        assertApproxEqRel(strategyA.totalSupply(), 80_000000000000000000000, 10 ** 12, "final SSTA supply");
+        assertApproxEqRel(strategyB.totalSupply(), 60_000000000000000000000, 10 ** 12, "final SSTB supply");
+        assertApproxEqRel(strategyC.totalSupply(), 60_000000000000000000000, 10 ** 12, "final SSTC supply");
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 40_000000000000000000000, "final SSTA balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTB balance smartVaultA");
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTC balance smartVaultA");
-        assertEq(strategyA.balanceOf(address(smartVaultB)), 40_000000000000000000000, "final SSTA balance smartVaultB");
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 30_000000000000000000000, "final SSTB balance smartVaultB");
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 30_000000000000000000000, "final SSTC balance smartVaultB");
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultA)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultB)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultB)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultB)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultB"
+        );
         // - smart vault tokens remain unchanged
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000, "final SVTB supply");
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTB supply");
         // - smart vault tokens distribution remains unchanged
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000, "final SVTB balance alice");
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice");
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTB balance alice");
     }
 
     function test_reallocate_09() public {
@@ -1784,22 +1971,22 @@ contract ReallocationIntegrationTest is Test {
         assertEq(tokenA.balanceOf(address(strategyC.protocol())), 60 ether);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether);
         // - strategy tokens were minted
-        assertEq(strategyA.totalSupply(), 80_000000000000000000000);
-        assertEq(strategyB.totalSupply(), 60_000000000000000000000);
-        assertEq(strategyC.totalSupply(), 60_000000000000000000000);
+        assertApproxEqRel(strategyA.totalSupply(), 80_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.totalSupply(), 60_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.totalSupply(), 60_000000000000000000000, 10 ** 12);
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 60_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 15_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 25_000000000000000000000);
-        assertEq(strategyA.balanceOf(address(smartVaultB)), 20_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 45_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 35_000000000000000000000);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 60_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 15_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultA)), 25_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultB)), 20_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultB)), 45_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultB)), 35_000000000000000000000, 10 ** 12);
         // - smart vault tokens were minted
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12);
         // - smart vault tokens were distributed
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
 
         // mock changes in allocation
         vm.mockCall(
@@ -1832,27 +2019,63 @@ contract ReallocationIntegrationTest is Test {
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
-        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 80 ether, "final tokenA balance strategyA");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 60 ether, "final tokenA balance strategyB");
-        assertEq(tokenA.balanceOf(address(strategyC.protocol())), 60 ether, "final tokenA balance strategyC");
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyA.protocol())), 80 ether, 10 ** 12, "final tokenA balance strategyA"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 60 ether, 10 ** 12, "final tokenA balance strategyB"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyC.protocol())), 60 ether, 10 ** 12, "final tokenA balance strategyC"
+        );
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
         // - strategy tokens were minted and burned
-        assertEq(strategyA.totalSupply(), 80_000000000000000000000, "final SSTA supply");
-        assertEq(strategyB.totalSupply(), 60_000000000000000000000, "final SSTB supply");
-        assertEq(strategyC.totalSupply(), 60_000000000000000000000, "final SSTC supply");
+        assertApproxEqRel(strategyA.totalSupply(), 80_000000000000000000000, 10 ** 12, "final SSTA supply");
+        assertApproxEqRel(strategyB.totalSupply(), 60_000000000000000000000, 10 ** 12, "final SSTB supply");
+        assertApproxEqRel(strategyC.totalSupply(), 60_000000000000000000000, 10 ** 12, "final SSTC supply");
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 40_000000000000000000000, "final SSTA balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTB balance smartVaultA");
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTC balance smartVaultA");
-        assertEq(strategyA.balanceOf(address(smartVaultB)), 40_000000000000000000000, "final SSTA balance smartVaultB");
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 30_000000000000000000000, "final SSTB balance smartVaultB");
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 30_000000000000000000000, "final SSTC balance smartVaultB");
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultA)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultB)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultB)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultB)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultB"
+        );
         // - smart vault tokens remain unchanged
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000, "final SVTB supply");
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTB supply");
         // - smart vault tokens distribution remains unchanged
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000, "final SVTB balance alice");
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice");
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTB balance alice");
     }
 
     function test_reallocate_10() public {
@@ -1979,27 +2202,27 @@ contract ReallocationIntegrationTest is Test {
 
         // check initial state
         // - assets were routed to strategies
-        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 85 ether);
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 50 ether);
-        assertEq(tokenA.balanceOf(address(strategyC.protocol())), 65 ether);
+        assertApproxEqRel(tokenA.balanceOf(address(strategyA.protocol())), 85 ether, 10 ** 12);
+        assertApproxEqRel(tokenA.balanceOf(address(strategyB.protocol())), 50 ether, 10 ** 12);
+        assertApproxEqRel(tokenA.balanceOf(address(strategyC.protocol())), 65 ether, 10 ** 12);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether);
         // - strategy tokens were minted
-        assertEq(strategyA.totalSupply(), 85_000000000000000000000);
-        assertEq(strategyB.totalSupply(), 50_000000000000000000000);
-        assertEq(strategyC.totalSupply(), 65_000000000000000000000);
+        assertApproxEqRel(strategyA.totalSupply(), 85_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.totalSupply(), 50_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.totalSupply(), 65_000000000000000000000, 10 ** 12);
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 60_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 15_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 25_000000000000000000000);
-        assertEq(strategyA.balanceOf(address(smartVaultB)), 25_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 35_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 40_000000000000000000000);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 60_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 15_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultA)), 25_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultB)), 25_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultB)), 35_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultB)), 40_000000000000000000000, 10 ** 12);
         // - smart vault tokens were minted
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12);
         // - smart vault tokens were distributed
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
 
         // mock changes in allocation
         vm.mockCall(
@@ -2032,27 +2255,63 @@ contract ReallocationIntegrationTest is Test {
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
-        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 80 ether, "final tokenA balance strategyA");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 60 ether, "final tokenA balance strategyB");
-        assertEq(tokenA.balanceOf(address(strategyC.protocol())), 60 ether, "final tokenA balance strategyC");
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyA.protocol())), 80 ether, 10 ** 12, "final tokenA balance strategyA"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 60 ether, 10 ** 12, "final tokenA balance strategyB"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyC.protocol())), 60 ether, 10 ** 12, "final tokenA balance strategyC"
+        );
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
         // - strategy tokens were minted and burned
-        assertEq(strategyA.totalSupply(), 80_000000000000000000000, "final SSTA supply");
-        assertEq(strategyB.totalSupply(), 60_000000000000000000000, "final SSTB supply");
-        assertEq(strategyC.totalSupply(), 60_000000000000000000000, "final SSTC supply");
+        assertApproxEqRel(strategyA.totalSupply(), 80_000000000000000000000, 10 ** 12, "final SSTA supply");
+        assertApproxEqRel(strategyB.totalSupply(), 60_000000000000000000000, 10 ** 12, "final SSTB supply");
+        assertApproxEqRel(strategyC.totalSupply(), 60_000000000000000000000, 10 ** 12, "final SSTC supply");
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 40_000000000000000000000, "final SSTA balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTB balance smartVaultA");
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTC balance smartVaultA");
-        assertEq(strategyA.balanceOf(address(smartVaultB)), 40_000000000000000000000, "final SSTA balance smartVaultB");
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 30_000000000000000000000, "final SSTB balance smartVaultB");
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 30_000000000000000000000, "final SSTC balance smartVaultB");
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultA)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultB)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultB)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultB)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultB"
+        );
         // - smart vault tokens remain unchanged
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000, "final SVTB supply");
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTB supply");
         // - smart vault tokens distribution remains unchanged
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000, "final SVTB balance alice");
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice");
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTB balance alice");
     }
 
     function test_reallocate_11() public {
@@ -2184,22 +2443,22 @@ contract ReallocationIntegrationTest is Test {
         assertEq(tokenA.balanceOf(address(strategyC.protocol())), 50 ether);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether);
         // - strategy tokens were minted
-        assertEq(strategyA.totalSupply(), 95_000000000000000000000);
-        assertEq(strategyB.totalSupply(), 55_000000000000000000000);
-        assertEq(strategyC.totalSupply(), 50_000000000000000000000);
+        assertApproxEqRel(strategyA.totalSupply(), 95_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.totalSupply(), 55_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.totalSupply(), 50_000000000000000000000, 10 ** 12);
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 70_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 20_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 10_000000000000000000000);
-        assertEq(strategyA.balanceOf(address(smartVaultB)), 25_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 35_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 40_000000000000000000000);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 70_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 20_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultA)), 10_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultB)), 25_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultB)), 35_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultB)), 40_000000000000000000000, 10 ** 12);
         // - smart vault tokens were minted
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12);
         // - smart vault tokens were distributed
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
 
         // mock changes in allocation
         vm.mockCall(
@@ -2232,27 +2491,63 @@ contract ReallocationIntegrationTest is Test {
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
-        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 80 ether, "final tokenA balance strategyA");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 60 ether, "final tokenA balance strategyB");
-        assertEq(tokenA.balanceOf(address(strategyC.protocol())), 60 ether, "final tokenA balance strategyC");
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyA.protocol())), 80 ether, 10 ** 12, "final tokenA balance strategyA"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 60 ether, 10 ** 12, "final tokenA balance strategyB"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyC.protocol())), 60 ether, 10 ** 12, "final tokenA balance strategyC"
+        );
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
         // - strategy tokens were minted and burned
-        assertEq(strategyA.totalSupply(), 80_000000000000000000000, "final SSTA supply");
-        assertEq(strategyB.totalSupply(), 60_000000000000000000000, "final SSTB supply");
-        assertEq(strategyC.totalSupply(), 60_000000000000000000000, "final SSTC supply");
+        assertApproxEqRel(strategyA.totalSupply(), 80_000000000000000000000, 10 ** 12, "final SSTA supply");
+        assertApproxEqRel(strategyB.totalSupply(), 60_000000000000000000000, 10 ** 12, "final SSTB supply");
+        assertApproxEqRel(strategyC.totalSupply(), 60_000000000000000000000, 10 ** 12, "final SSTC supply");
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 40_000000000000000000000, "final SSTA balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTB balance smartVaultA");
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTC balance smartVaultA");
-        assertEq(strategyA.balanceOf(address(smartVaultB)), 40_000000000000000000000, "final SSTA balance smartVaultB");
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 30_000000000000000000000, "final SSTB balance smartVaultB");
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 30_000000000000000000000, "final SSTC balance smartVaultB");
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultA)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultB)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultB)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultB)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultB"
+        );
         // - smart vault tokens remain unchanged
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000, "final SVTB supply");
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTB supply");
         // - smart vault tokens distribution remains unchanged
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000, "final SVTB balance alice");
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice");
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTB balance alice");
     }
 
     function test_reallocate_12() public {
@@ -2384,22 +2679,22 @@ contract ReallocationIntegrationTest is Test {
         assertEq(tokenA.balanceOf(address(strategyC.protocol())), 70 ether);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether);
         // - strategy tokens were minted
-        assertEq(strategyA.totalSupply(), 65_000000000000000000000);
-        assertEq(strategyB.totalSupply(), 65_000000000000000000000);
-        assertEq(strategyC.totalSupply(), 70_000000000000000000000);
+        assertApproxEqRel(strategyA.totalSupply(), 65_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.totalSupply(), 65_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.totalSupply(), 70_000000000000000000000, 10 ** 12);
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 55_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 25_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 20_000000000000000000000);
-        assertEq(strategyA.balanceOf(address(smartVaultB)), 10_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 40_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 50_000000000000000000000);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 55_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 25_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultA)), 20_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultB)), 10_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultB)), 40_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultB)), 50_000000000000000000000, 10 ** 12);
         // - smart vault tokens were minted
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12);
         // - smart vault tokens were distributed
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
 
         // mock changes in allocation
         vm.mockCall(
@@ -2432,27 +2727,63 @@ contract ReallocationIntegrationTest is Test {
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
-        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 80 ether, "final tokenA balance strategyA");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 60 ether, "final tokenA balance strategyB");
-        assertEq(tokenA.balanceOf(address(strategyC.protocol())), 60 ether, "final tokenA balance strategyC");
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyA.protocol())), 80 ether, 10 ** 12, "final tokenA balance strategyA"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 60 ether, 10 ** 12, "final tokenA balance strategyB"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyC.protocol())), 60 ether, 10 ** 12, "final tokenA balance strategyC"
+        );
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
         // - strategy tokens were minted and burned
-        assertEq(strategyA.totalSupply(), 80_000000000000000000000, "final SSTA supply");
-        assertEq(strategyB.totalSupply(), 60_000000000000000000000, "final SSTB supply");
-        assertEq(strategyC.totalSupply(), 60_000000000000000000000, "final SSTC supply");
+        assertApproxEqRel(strategyA.totalSupply(), 80_000000000000000000000, 10 ** 12, "final SSTA supply");
+        assertApproxEqRel(strategyB.totalSupply(), 60_000000000000000000000, 10 ** 12, "final SSTB supply");
+        assertApproxEqRel(strategyC.totalSupply(), 60_000000000000000000000, 10 ** 12, "final SSTC supply");
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 40_000000000000000000000, "final SSTA balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTB balance smartVaultA");
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTC balance smartVaultA");
-        assertEq(strategyA.balanceOf(address(smartVaultB)), 40_000000000000000000000, "final SSTA balance smartVaultB");
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 30_000000000000000000000, "final SSTB balance smartVaultB");
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 30_000000000000000000000, "final SSTC balance smartVaultB");
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultA)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultB)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultB)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultB)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultB"
+        );
         // - smart vault tokens remain unchanged
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000, "final SVTB supply");
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTB supply");
         // - smart vault tokens distribution remains unchanged
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000, "final SVTB balance alice");
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice");
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTB balance alice");
     }
 
     function test_reallocate_13() public {
@@ -2586,22 +2917,22 @@ contract ReallocationIntegrationTest is Test {
         assertEq(tokenA.balanceOf(address(strategyC.protocol())), 40 ether);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether);
         // - strategy tokens were minted
-        assertEq(strategyA.totalSupply(), 105_000000000000000000000);
-        assertEq(strategyB.totalSupply(), 55_000000000000000000000);
-        assertEq(strategyC.totalSupply(), 40_000000000000000000000);
+        assertApproxEqRel(strategyA.totalSupply(), 105_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.totalSupply(), 55_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.totalSupply(), 40_000000000000000000000, 10 ** 12);
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 65_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 20_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 15_000000000000000000000);
-        assertEq(strategyA.balanceOf(address(smartVaultB)), 40_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 35_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 25_000000000000000000000);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 65_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 20_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultA)), 15_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultB)), 40_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultB)), 35_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultB)), 25_000000000000000000000, 10 ** 12);
         // - smart vault tokens were minted
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12);
         // - smart vault tokens were distributed
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
 
         // mock changes in allocation
         vm.mockCall(
@@ -2634,28 +2965,66 @@ contract ReallocationIntegrationTest is Test {
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
-        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 80 ether, "final tokenA balance strategyA");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 58 ether, "final tokenA balance strategyB");
-        assertEq(tokenA.balanceOf(address(strategyC.protocol())), 57 ether, "final tokenA balance strategyC");
-        assertEq(tokenA.balanceOf(address(strategyA.protocolFees())), 5 ether, "final tokenA strategyA fees");
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyA.protocol())), 80 ether, 10 ** 12, "final tokenA balance strategyA"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 58 ether, 10 ** 12, "final tokenA balance strategyB"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyC.protocol())), 57 ether, 10 ** 12, "final tokenA balance strategyC"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyA.protocolFees())), 5 ether, 10 ** 12, "final tokenA strategyA fees"
+        );
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
         // - strategy tokens were minted and burned
-        assertEq(strategyA.totalSupply(), 80_000000000000000000000, "final SSTA supply");
-        assertEq(strategyB.totalSupply(), 58_000000000000000000000, "final SSTB supply");
-        assertEq(strategyC.totalSupply(), 57_000000000000000000000, "final SSTC supply");
+        assertApproxEqRel(strategyA.totalSupply(), 80_000000000000000000000, 10 ** 12, "final SSTA supply");
+        assertApproxEqRel(strategyB.totalSupply(), 58_000000000000000000000, 10 ** 12, "final SSTB supply");
+        assertApproxEqRel(strategyC.totalSupply(), 57_000000000000000000000, 10 ** 12, "final SSTC supply");
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 40_000000000000000000000, "final SSTA balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 28_000000000000000000000, "final SSTB balance smartVaultA");
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 27_000000000000000000000, "final SSTC balance smartVaultA");
-        assertEq(strategyA.balanceOf(address(smartVaultB)), 40_000000000000000000000, "final SSTA balance smartVaultB");
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 30_000000000000000000000, "final SSTB balance smartVaultB");
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 30_000000000000000000000, "final SSTC balance smartVaultB");
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultA)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultA)),
+            28_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultA)),
+            27_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultB)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultB)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultB)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultB"
+        );
         // - smart vault tokens remain unchanged
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000, "final SVTB supply");
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTB supply");
         // - smart vault tokens distribution remains unchanged
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000, "final SVTB balance alice");
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice");
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTB balance alice");
     }
 
     function test_reallocate_14() public {
@@ -2789,22 +3158,22 @@ contract ReallocationIntegrationTest is Test {
         assertEq(tokenA.balanceOf(address(strategyC.protocol())), 30 ether);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether);
         // - strategy tokens were minted
-        assertEq(strategyA.totalSupply(), 105_000000000000000000000);
-        assertEq(strategyB.totalSupply(), 65_000000000000000000000);
-        assertEq(strategyC.totalSupply(), 30_000000000000000000000);
+        assertApproxEqRel(strategyA.totalSupply(), 105_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.totalSupply(), 65_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.totalSupply(), 30_000000000000000000000, 10 ** 12);
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 55_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 35_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 10_000000000000000000000);
-        assertEq(strategyA.balanceOf(address(smartVaultB)), 50_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 30_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 20_000000000000000000000);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 55_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 35_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultA)), 10_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultB)), 50_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultB)), 30_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultB)), 20_000000000000000000000, 10 ** 12);
         // - smart vault tokens were minted
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12);
         // - smart vault tokens were distributed
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
 
         // mock changes in allocation
         vm.mockCall(
@@ -2837,28 +3206,66 @@ contract ReallocationIntegrationTest is Test {
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
-        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 80 ether, "final tokenA balance strategyA");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 60 ether, "final tokenA balance strategyB");
-        assertEq(tokenA.balanceOf(address(strategyC.protocol())), 55 ether, "final tokenA balance strategyC");
-        assertEq(tokenA.balanceOf(address(strategyA.protocolFees())), 5 ether, "final tokenA strategyA fees");
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyA.protocol())), 80 ether, 10 ** 12, "final tokenA balance strategyA"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 60 ether, 10 ** 12, "final tokenA balance strategyB"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyC.protocol())), 55 ether, 10 ** 12, "final tokenA balance strategyC"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyA.protocolFees())), 5 ether, 10 ** 12, "final tokenA strategyA fees"
+        );
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
         // - strategy tokens were minted and burned
-        assertEq(strategyA.totalSupply(), 80_000000000000000000000, "final SSTA supply");
-        assertEq(strategyB.totalSupply(), 60_000000000000000000000, "final SSTB supply");
-        assertEq(strategyC.totalSupply(), 55_000000000000000000000, "final SSTC supply");
+        assertApproxEqRel(strategyA.totalSupply(), 80_000000000000000000000, 10 ** 12, "final SSTA supply");
+        assertApproxEqRel(strategyB.totalSupply(), 60_000000000000000000000, 10 ** 12, "final SSTB supply");
+        assertApproxEqRel(strategyC.totalSupply(), 55_000000000000000000000, 10 ** 12, "final SSTC supply");
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 40_000000000000000000000, "final SSTA balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTB balance smartVaultA");
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 27_000000000000000000000, "final SSTC balance smartVaultA");
-        assertEq(strategyA.balanceOf(address(smartVaultB)), 40_000000000000000000000, "final SSTA balance smartVaultB");
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 30_000000000000000000000, "final SSTB balance smartVaultB");
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 28_000000000000000000000, "final SSTC balance smartVaultB");
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultA)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultA)),
+            27_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultB)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultB)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultB)),
+            28_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultB"
+        );
         // - smart vault tokens remain unchanged
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000, "final SVTB supply");
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTB supply");
         // - smart vault tokens distribution remains unchanged
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000, "final SVTB balance alice");
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice");
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTB balance alice");
     }
 
     function test_reallocate_15() public {
@@ -2991,22 +3398,22 @@ contract ReallocationIntegrationTest is Test {
         assertEq(tokenA.balanceOf(address(strategyC.protocol())), 30 ether);
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether);
         // - strategy tokens were minted
-        assertEq(strategyA.totalSupply(), 105_000000000000000000000);
-        assertEq(strategyB.totalSupply(), 65_000000000000000000000);
-        assertEq(strategyC.totalSupply(), 30_000000000000000000000);
+        assertApproxEqRel(strategyA.totalSupply(), 105_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.totalSupply(), 65_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.totalSupply(), 30_000000000000000000000, 10 ** 12);
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 55_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 35_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 10_000000000000000000000);
-        assertEq(strategyA.balanceOf(address(smartVaultB)), 50_000000000000000000000);
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 30_000000000000000000000);
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 20_000000000000000000000);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 55_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 35_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultA)), 10_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyA.balanceOf(address(smartVaultB)), 50_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyB.balanceOf(address(smartVaultB)), 30_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(strategyC.balanceOf(address(smartVaultB)), 20_000000000000000000000, 10 ** 12);
         // - smart vault tokens were minted
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12);
         // - smart vault tokens were distributed
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000);
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
 
         // set deposit fee for strategy C
         strategyC.setDepositFee(20_00);
@@ -3042,28 +3449,66 @@ contract ReallocationIntegrationTest is Test {
             "final allocation for smart vault B"
         );
         // - assets were redistributed between strategies
-        assertEq(tokenA.balanceOf(address(strategyA.protocol())), 80 ether, "final tokenA balance strategyA");
-        assertEq(tokenA.balanceOf(address(strategyB.protocol())), 60 ether, "final tokenA balance strategyB");
-        assertEq(tokenA.balanceOf(address(strategyC.protocol())), 54 ether, "final tokenA balance strategyC");
-        assertEq(tokenA.balanceOf(address(strategyC.protocolFees())), 6 ether, "final tokenA strategyC fees");
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyA.protocol())), 80 ether, 10 ** 12, "final tokenA balance strategyA"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyB.protocol())), 60 ether, 10 ** 12, "final tokenA balance strategyB"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyC.protocol())), 54 ether, 10 ** 12, "final tokenA balance strategyC"
+        );
+        assertApproxEqRel(
+            tokenA.balanceOf(address(strategyC.protocolFees())), 6 ether, 10 ** 12, "final tokenA strategyC fees"
+        );
         assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
         // - strategy tokens were minted and burned
-        assertEq(strategyA.totalSupply(), 80_000000000000000000000, "final SSTA supply");
-        assertEq(strategyB.totalSupply(), 60_000000000000000000000, "final SSTB supply");
-        assertEq(strategyC.totalSupply(), 54_000000000000000000000, "final SSTC supply");
+        assertApproxEqRel(strategyA.totalSupply(), 80_000000000000000000000, 10 ** 12, "final SSTA supply");
+        assertApproxEqRel(strategyB.totalSupply(), 60_000000000000000000000, 10 ** 12, "final SSTB supply");
+        assertApproxEqRel(strategyC.totalSupply(), 54_000000000000000000000, 10 ** 12, "final SSTC supply");
         // - strategy tokens were distributed
-        assertEq(strategyA.balanceOf(address(smartVaultA)), 40_000000000000000000000, "final SSTA balance smartVaultA");
-        assertEq(strategyB.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTB balance smartVaultA");
-        assertEq(strategyC.balanceOf(address(smartVaultA)), 26_000000000000000000000, "final SSTC balance smartVaultA");
-        assertEq(strategyA.balanceOf(address(smartVaultB)), 40_000000000000000000000, "final SSTA balance smartVaultB");
-        assertEq(strategyB.balanceOf(address(smartVaultB)), 30_000000000000000000000, "final SSTB balance smartVaultB");
-        assertEq(strategyC.balanceOf(address(smartVaultB)), 28_000000000000000000000, "final SSTC balance smartVaultB");
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultA)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultA)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultA)),
+            26_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultA"
+        );
+        assertApproxEqRel(
+            strategyA.balanceOf(address(smartVaultB)),
+            40_000000000000000000000,
+            10 ** 12,
+            "final SSTA balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyB.balanceOf(address(smartVaultB)),
+            30_000000000000000000000,
+            10 ** 12,
+            "final SSTB balance smartVaultB"
+        );
+        assertApproxEqRel(
+            strategyC.balanceOf(address(smartVaultB)),
+            28_000000000000000000000,
+            10 ** 12,
+            "final SSTC balance smartVaultB"
+        );
         // - smart vault tokens remain unchanged
-        assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
-        assertEq(smartVaultB.totalSupply(), 100_000000000000000000000, "final SVTB supply");
+        assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
+        assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTB supply");
         // - smart vault tokens distribution remains unchanged
-        assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
-        assertEq(smartVaultB.balanceOf(alice), 100_000000000000000000000, "final SVTB balance alice");
+        assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice");
+        assertApproxEqRel(smartVaultB.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTB balance alice");
     }
 
     function test_reallocate_multiasset() public {
@@ -3219,16 +3664,16 @@ contract ReallocationIntegrationTest is Test {
             assertEq(strategyA.totalSupply(), 80_000000000000000000000);
             assertEq(strategyB.totalSupply(), 120_000000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 60_000000000000000000000);
-            assertEq(strategyB.balanceOf(address(smartVaultA)), 40_000000000000000000000);
-            assertEq(strategyA.balanceOf(address(smartVaultB)), 20_000000000000000000000);
-            assertEq(strategyB.balanceOf(address(smartVaultB)), 80_000000000000000000000);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 60_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 40_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultB)), 20_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(strategyB.balanceOf(address(smartVaultB)), 80_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
-            assertEq(smartVaultB.totalSupply(), 100_000000000000000000000);
+            assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed
-            assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
-            assertEq(smartVaultB.balanceOf(bob), 100_000000000000000000000);
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVaultB.balanceOf(bob), 100_000000000000000000000, 10 ** 12);
         }
 
         // change settings
@@ -3295,38 +3740,68 @@ contract ReallocationIntegrationTest is Test {
                 "final allocation for smartVaultB"
             );
             // - assets were redistributed between strategies
-            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 47.2 ether, "final tokenA balance strategyA");
-            assertEq(tokenB.balanceOf(address(strategyA.protocol())), 23.6 ether, "final tokenA balance strategyA");
-            assertEq(tokenA.balanceOf(address(strategyB.protocol())), 55 ether, "final tokenA balance strategyB");
-            assertEq(tokenB.balanceOf(address(strategyB.protocol())), 22.5 ether, "final tokenA balance strategyB");
-            assertEq(tokenA.balanceOf(address(strategyA.protocolFees())), 0.8 ether, "final tokenA strategyA fees");
-            assertEq(tokenB.balanceOf(address(strategyA.protocolFees())), 0.4 ether, "final tokenB strategyA fees");
-            assertEq(tokenA.balanceOf(address(strategyB.protocolFees())), 2.2 ether, "final tokenA strategyB fees");
-            assertEq(tokenB.balanceOf(address(strategyB.protocolFees())), 0.9 ether, "final tokenB strategyB fees");
+            assertApproxEqRel(
+                tokenA.balanceOf(address(strategyA.protocol())), 47.2 ether, 10 ** 12, "final tokenA balance strategyA"
+            );
+            assertApproxEqRel(
+                tokenB.balanceOf(address(strategyA.protocol())), 23.6 ether, 10 ** 12, "final tokenA balance strategyA"
+            );
+            assertApproxEqRel(
+                tokenA.balanceOf(address(strategyB.protocol())), 55 ether, 10 ** 12, "final tokenA balance strategyB"
+            );
+            assertApproxEqRel(
+                tokenB.balanceOf(address(strategyB.protocol())), 22.5 ether, 10 ** 12, "final tokenA balance strategyB"
+            );
+            assertApproxEqRel(
+                tokenA.balanceOf(address(strategyA.protocolFees())), 0.8 ether, 10 ** 12, "final tokenA strategyA fees"
+            );
+            assertApproxEqRel(
+                tokenB.balanceOf(address(strategyA.protocolFees())), 0.4 ether, 10 ** 12, "final tokenB strategyA fees"
+            );
+            assertApproxEqRel(
+                tokenA.balanceOf(address(strategyB.protocolFees())), 2.2 ether, 10 ** 12, "final tokenA strategyB fees"
+            );
+            assertApproxEqRel(
+                tokenB.balanceOf(address(strategyB.protocolFees())), 0.9 ether, 10 ** 12, "final tokenB strategyB fees"
+            );
             assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
             assertEq(tokenB.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
             // - strategy tokens were minted and burned
-            assertEq(strategyA.totalSupply(), 94_400000000000000000000, "final SSTA supply");
-            assertEq(strategyB.totalSupply(), 100_000000000000000000000, "final SSTB supply");
+            assertApproxEqRel(strategyA.totalSupply(), 94_400000000000000000000, 10 ** 12, "final SSTA supply");
+            assertApproxEqRel(strategyB.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SSTB supply");
             // - strategy tokens were distributed
-            assertEq(
-                strategyA.balanceOf(address(smartVaultA)), 50_000000000000000000000, "final SSTA balance smartVaultA"
+            assertApproxEqRel(
+                strategyA.balanceOf(address(smartVaultA)),
+                50_000000000000000000000,
+                10 ** 12,
+                "final SSTA balance smartVaultA"
             );
-            assertEq(
-                strategyB.balanceOf(address(smartVaultA)), 50_000000000000000000000, "final SSTB balance smartVaultA"
+            assertApproxEqRel(
+                strategyB.balanceOf(address(smartVaultA)),
+                50_000000000000000000000,
+                10 ** 12,
+                "final SSTB balance smartVaultA"
             );
-            assertEq(
-                strategyA.balanceOf(address(smartVaultB)), 44_400000000000000000000, "final SSTA balance smartVaultB"
+            assertApproxEqRel(
+                strategyA.balanceOf(address(smartVaultB)),
+                44_400000000000000000000,
+                10 ** 12,
+                "final SSTA balance smartVaultB"
             );
-            assertEq(
-                strategyB.balanceOf(address(smartVaultB)), 50_000000000000000000000, "final SSTB balance smartVaultB"
+            assertApproxEqRel(
+                strategyB.balanceOf(address(smartVaultB)),
+                50_000000000000000000000,
+                10 ** 12,
+                "final SSTB balance smartVaultB"
             );
             // - smart vault tokens remain unchanged
-            assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
-            assertEq(smartVaultB.totalSupply(), 100_000000000000000000000, "final SVTB supply");
+            assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
+            assertApproxEqRel(smartVaultB.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTB supply");
             // - smart vault tokens distribution remains unchanged
-            assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
-            assertEq(smartVaultB.balanceOf(bob), 100_000000000000000000000, "final SVTB balance bob");
+            assertApproxEqRel(
+                smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice"
+            );
+            assertApproxEqRel(smartVaultB.balanceOf(bob), 100_000000000000000000000, 10 ** 12, "final SVTB balance bob");
         }
     }
 
@@ -3436,17 +3911,17 @@ contract ReallocationIntegrationTest is Test {
             assertEq(tokenA.balanceOf(address(strategyC.protocol())), 30 ether);
             assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether);
             // - strategy tokens were minted
-            assertEq(strategyA.totalSupply(), 40_000000000000000000000);
-            assertEq(strategyB.totalSupply(), 30_000000000000000000000);
-            assertEq(strategyB.totalSupply(), 30_000000000000000000000);
+            assertApproxEqRel(strategyA.totalSupply(), 40_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(strategyB.totalSupply(), 30_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(strategyB.totalSupply(), 30_000000000000000000000, 10 ** 12);
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 40_000000000000000000000);
-            assertEq(strategyB.balanceOf(address(smartVaultA)), 30_000000000000000000000);
-            assertEq(strategyC.balanceOf(address(smartVaultA)), 30_000000000000000000000);
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 40_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 30_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(strategyC.balanceOf(address(smartVaultA)), 30_000000000000000000000, 10 ** 12);
             // - smart vault tokens were minted
-            assertEq(smartVaultA.totalSupply(), 100_000000000000000000000);
+            assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
             // - smart vault tokens were distributed
-            assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000);
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
         }
 
         // remove strategy B and update allocation
@@ -3482,31 +3957,49 @@ contract ReallocationIntegrationTest is Test {
                 "final allocation for smart vault A"
             );
             // - assets were redistributed between strategies
-            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 35 ether, "final tokenA balance strategyA");
-            assertEq(tokenA.balanceOf(address(strategyB.protocol())), 30 ether, "final tokenA balance strategyB");
-            assertEq(tokenA.balanceOf(address(strategyC.protocol())), 35 ether, "final tokenA balance strategyC");
+            assertApproxEqRel(
+                tokenA.balanceOf(address(strategyA.protocol())), 35 ether, 10 ** 12, "final tokenA balance strategyA"
+            );
+            assertApproxEqRel(
+                tokenA.balanceOf(address(strategyB.protocol())), 30 ether, 10 ** 12, "final tokenA balance strategyB"
+            );
+            assertApproxEqRel(
+                tokenA.balanceOf(address(strategyC.protocol())), 35 ether, 10 ** 12, "final tokenA balance strategyC"
+            );
             assertEq(tokenA.balanceOf(address(masterWallet)), 0 ether, "final tokenA balance masterWallet");
             // - strategy tokens were minted and burned
-            assertEq(strategyA.totalSupply(), 35_000000000000000000000, "final SSTA supply");
-            assertEq(strategyB.totalSupply(), 30_000000000000000000000, "final SSTB supply");
-            assertEq(strategyC.totalSupply(), 35_000000000000000000000, "final SSTC supply");
+            assertApproxEqRel(strategyA.totalSupply(), 35_000000000000000000000, 10 ** 12, "final SSTA supply");
+            assertApproxEqRel(strategyB.totalSupply(), 30_000000000000000000000, 10 ** 12, "final SSTB supply");
+            assertApproxEqRel(strategyC.totalSupply(), 35_000000000000000000000, 10 ** 12, "final SSTC supply");
             // - strategy tokens were distributed
-            assertEq(
-                strategyA.balanceOf(address(smartVaultA)), 35_000000000000000000000, "final SSTA balance smartVaultA"
+            assertApproxEqRel(
+                strategyA.balanceOf(address(smartVaultA)),
+                35_000000000000000000000,
+                10 ** 12,
+                "final SSTA balance smartVaultA"
             );
-            assertEq(
-                strategyB.balanceOf(address(smartVaultA)), 30_000000000000000000000, "final SSTB balance smartVaultA"
+            assertApproxEqRel(
+                strategyB.balanceOf(address(smartVaultA)),
+                30_000000000000000000000,
+                10 ** 12,
+                "final SSTB balance smartVaultA"
             );
-            assertEq(
-                strategyC.balanceOf(address(smartVaultA)), 35_000000000000000000000, "final SSTC balance smartVaultA"
+            assertApproxEqRel(
+                strategyC.balanceOf(address(smartVaultA)),
+                35_000000000000000000000,
+                10 ** 12,
+                "final SSTC balance smartVaultA"
             );
             // - smart vault tokens remain unchanged
-            assertEq(smartVaultA.totalSupply(), 100_000000000000000000000, "final SVTA supply");
+            assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12, "final SVTA supply");
             // - smart vault tokens distribution remains unchanged
-            assertEq(smartVaultA.balanceOf(alice), 100_000000000000000000000, "final SVTA balance alice");
+            assertApproxEqRel(
+                smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12, "final SVTA balance alice"
+            );
         }
     }
 
+    // TODO: locked shares fix test
     function test_reallocate_shouldNotLeaveAnyDustSsts() public {
         // setup:
         // - tokens: A
@@ -3555,18 +4048,18 @@ contract ReallocationIntegrationTest is Test {
 
         // setup initial state
         {
-            deal(address(tokenA), address(strategyA.protocol()), 2_000_000, true);
-            deal(address(tokenA), address(strategyB.protocol()), 2_000_000, true);
-            deal(address(strategyA), address(bob), 1_000_000, true);
-            deal(address(strategyB), address(bob), 1_000_000, true);
+            deal(address(tokenA), address(strategyA.protocol()), 2_000 ether, true);
+            deal(address(tokenA), address(strategyB.protocol()), 2_000 ether, true);
+            deal(address(strategyA), address(bob), 1_000 ether, true);
+            deal(address(strategyB), address(bob), 1_000 ether, true);
 
             // Alice deposits 615_487 TokenA wei into SmartVaultA
             vm.startPrank(alice);
-            tokenA.approve(address(smartVaultManager), 615_487);
+            tokenA.approve(address(smartVaultManager), 615 ether);
             uint256 depositNft = smartVaultManager.deposit(
                 DepositBag({
                     smartVault: address(smartVaultA),
-                    assets: Arrays.toArray(615_487),
+                    assets: Arrays.toArray(615 ether),
                     receiver: alice,
                     referral: address(0),
                     doFlush: false
@@ -3604,19 +4097,19 @@ contract ReallocationIntegrationTest is Test {
         // check initial state
         {
             // - assets were routed to strategies
-            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 2_369_293);
-            assertEq(tokenA.balanceOf(address(strategyB.protocol())), 2_246_194);
+            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 2369000000000000000000);
+            assertEq(tokenA.balanceOf(address(strategyB.protocol())), 2246000000000000000000);
             assertEq(tokenA.balanceOf(address(masterWallet)), 0);
             // - strategy tokens were minted
-            assertEq(strategyA.totalSupply(), 1_184_646);
-            assertEq(strategyB.totalSupply(), 1_123_097);
+            assertEq(strategyA.totalSupply(), 1184500000000000000000);
+            assertEq(strategyB.totalSupply(), 1123000000000000000000);
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 184_646);
-            assertEq(strategyB.balanceOf(address(smartVaultA)), 123_097);
+            assertEq(strategyA.balanceOf(address(smartVaultA)), 184500000000000000000);
+            assertEq(strategyB.balanceOf(address(smartVaultA)), 123000000000000000000);
             // - smart vault tokens were minted
-            assertEq(smartVaultA.totalSupply(), 615_486_000);
+            assertEq(smartVaultA.totalSupply(), 615000000000000000000000);
             // - smart vault tokens were distributed
-            assertEq(smartVaultA.balanceOf(alice), 615_486_000);
+            assertEq(smartVaultA.balanceOf(alice), 615000000000000000000000 - INITIAL_LOCKED_SHARES);
         }
 
         // mock changes in allocation
@@ -3650,21 +4143,33 @@ contract ReallocationIntegrationTest is Test {
                 "final allocation for smart vault A"
             );
             // - assets were redistributed between strategies
-            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 2_307_745, "final tokenA balance strategyA");
-            assertEq(tokenA.balanceOf(address(strategyB.protocol())), 2_307_742, "final tokenA balance strategyB");
+            assertEq(
+                tokenA.balanceOf(address(strategyA.protocol())),
+                2307500000000000000000,
+                "final tokenA balance strategyA"
+            );
+            assertEq(
+                tokenA.balanceOf(address(strategyB.protocol())),
+                2307500000000000000000,
+                "final tokenA balance strategyB"
+            );
             assertEq(tokenA.balanceOf(address(masterWallet)), 0, "final tokenA balance masterWallet");
             // - strategy tokens were minted and burned
-            assertEq(strategyA.totalSupply(), 1_153_872, "final SSTA supply");
-            assertEq(strategyB.totalSupply(), 1_153_871, "final SSTB supply");
+            assertEq(strategyA.totalSupply(), 1153750000000000000000, "final SSTA supply");
+            assertEq(strategyB.totalSupply(), 1153750000000000000000, "final SSTB supply");
             // - strategy tokens were distributed
-            assertEq(strategyA.balanceOf(address(smartVaultA)), 153_872, "final SSTA balance smartVaultA");
-            assertEq(strategyB.balanceOf(address(smartVaultA)), 153_871, "final SSTB balance smartVaultA");
+            assertEq(strategyA.balanceOf(address(smartVaultA)), 153750000000000000000, "final SSTA balance smartVaultA");
+            assertEq(strategyB.balanceOf(address(smartVaultA)), 153750000000000000000, "final SSTB balance smartVaultA");
             assertEq(strategyA.balanceOf(address(strategyA)), 0, "final SSTA balance strategyA");
             assertEq(strategyB.balanceOf(address(strategyB)), 0, "final SSTB balance strategyB");
             // - smart vault tokens remain unchanged
-            assertEq(smartVaultA.totalSupply(), 615_486_000, "final SVTA supply");
+            assertEq(smartVaultA.totalSupply(), 615000000000000000000000, "final SVTA supply");
             // - smart vault tokens distribution remains unchanged
-            assertEq(smartVaultA.balanceOf(alice), 615_486_000, "final SVTA balance alice");
+            assertEq(
+                smartVaultA.balanceOf(alice),
+                615000000000000000000000 - INITIAL_LOCKED_SHARES,
+                "final SVTA balance alice"
+            );
         }
     }
 

@@ -99,19 +99,19 @@ contract DepositIntegrationTest is IntegrationTestFixture {
 
         // check state
         // - strategy tokens were claimed
-        assertEq(strategyA.balanceOf(address(smartVault)), 214297693046938776377950000);
-        assertEq(strategyB.balanceOf(address(smartVault)), 107148831538266256993250000);
-        assertEq(strategyC.balanceOf(address(smartVault)), 35716275414794966628800000);
+        assertEq(strategyA.balanceOf(address(smartVault)), 214297693046938776377950000 - INITIAL_LOCKED_SHARES);
+        assertEq(strategyB.balanceOf(address(smartVault)), 107148831538266256993250000 - INITIAL_LOCKED_SHARES);
+        assertEq(strategyC.balanceOf(address(smartVault)), 35716275414794966628800000 - INITIAL_LOCKED_SHARES);
         assertEq(strategyA.balanceOf(address(strategyA)), 0);
         assertEq(strategyB.balanceOf(address(strategyB)), 0);
         assertEq(strategyC.balanceOf(address(strategyC)), 0);
         // - vault tokens were minted
-        assertEq(smartVault.totalSupply(), 357162800000000000000000000);
-        assertEq(smartVault.balanceOf(address(smartVault)), 357162800000000000000000000);
+        assertApproxEqRel(smartVault.totalSupply(), 357162800000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVault.balanceOf(address(smartVault)), 357162800000000000000000000, 10 ** 12);
 
         uint256[] memory ids = Arrays.toArray(aliceDepositNftId);
         uint256 balance = smartVaultManager.getUserSVTBalance(address(smartVault), alice, ids);
-        assertEq(balance, 357162800000000000000000000);
+        assertApproxEqRel(balance, 357162800000000000000000000, 10 ** 12);
 
         // claim deposit
         uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
@@ -120,7 +120,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
 
         // check state
         // - vault tokens were claimed
-        assertEq(smartVault.balanceOf(address(alice)), 357162800000000000000000000);
+        assertApproxEqRel(smartVault.balanceOf(address(alice)), 357162800000000000000000000, 10 ** 12);
         assertEq(smartVault.balanceOf(address(smartVault)), 0);
         // - deposit NFT was burned
         assertEq(smartVault.balanceOfFractional(alice, aliceDepositNftId), 0);
@@ -274,10 +274,11 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         // sync vault
         smartVaultManager.syncSmartVault(address(smartVault), true);
 
-        uint256 svtBalance = 357162800000000000000000000;
+        // without locked SVTs
+        uint256 svtBalance = 357162799999996000000000000;
 
         // - vault tokens were minted
-        assertEq(smartVault.totalSupply(), svtBalance);
+        assertEq(smartVault.totalSupply() - INITIAL_LOCKED_SHARES, svtBalance);
         assertEq(smartVault.balanceOf(address(smartVault)), svtBalance);
 
         uint256 balance =
@@ -343,7 +344,9 @@ contract DepositIntegrationTest is IntegrationTestFixture {
 
         // balance after DHW, before vault sync
         // should simulate sync
-        uint256 expectedBalance = 357162800000000000000000000;
+
+        // balance without locked SVTs
+        uint256 expectedBalance = 357162799999996000000000000;
         aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice, nftIds);
         assertEq(smartVault.totalSupply(), 0);
         assertEq(smartVault.balanceOf(address(smartVault)), 0);
@@ -355,7 +358,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         // balances after vault sync
         aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice, nftIds);
         assertEq(aliceBalance, expectedBalance);
-        assertEq(smartVault.totalSupply(), expectedBalance);
+        assertEq(smartVault.totalSupply() - INITIAL_LOCKED_SHARES, expectedBalance);
         assertEq(smartVault.balanceOf(address(smartVault)), expectedBalance);
 
         // Alice deposits #2
@@ -374,7 +377,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         // balances after deposit #2, before DHW, should be the same
         uint256 aliceBalance2 = smartVaultManager.getUserSVTBalance(address(smartVault), alice, nftIds);
         assertEq(aliceBalance2, expectedBalance);
-        assertEq(smartVault.totalSupply(), expectedBalance);
+        assertEq(smartVault.totalSupply() - INITIAL_LOCKED_SHARES, expectedBalance);
         assertEq(smartVault.balanceOf(address(smartVault)), expectedBalance);
     }
 
@@ -641,14 +644,14 @@ contract DepositIntegrationTest is IntegrationTestFixture {
             // check state
             // - strategy tokens were claimed
             assertEq(strategyA.balanceOf(address(smartVault)), 0);
-            assertEq(strategyB.balanceOf(address(smartVault)), 273253953679742923416040000);
-            assertEq(strategyC.balanceOf(address(smartVault)), 91084646320257076583960000);
+            assertEq(strategyB.balanceOf(address(smartVault)), 273253953679742923416040000 - INITIAL_LOCKED_SHARES);
+            assertEq(strategyC.balanceOf(address(smartVault)), 91084646320257076583960000 - INITIAL_LOCKED_SHARES);
             assertEq(strategyA.balanceOf(address(strategyA)), 0);
             assertEq(strategyB.balanceOf(address(strategyB)), 0);
             assertEq(strategyC.balanceOf(address(strategyC)), 0);
             // - vault tokens were minted
-            assertEq(smartVault.totalSupply(), 364338600000000000000000000);
-            assertEq(smartVault.balanceOf(address(smartVault)), 364338600000000000000000000);
+            assertApproxEqRel(smartVault.totalSupply(), 364338600000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVault.balanceOf(address(smartVault)), 364338600000000000000000000, 10 ** 12);
         }
 
         {
@@ -660,7 +663,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
 
             // check state
             // - vault tokens were claimed
-            assertEq(smartVault.balanceOf(address(alice)), 364338600000000000000000000);
+            assertApproxEqRel(smartVault.balanceOf(address(alice)), 364338600000000000000000000, 10 ** 12);
             assertEq(smartVault.balanceOf(address(smartVault)), 0);
             // - deposit NFT was burned
             assertEq(smartVault.balanceOfFractional(alice, aliceDepositNftId), 0);
@@ -762,14 +765,14 @@ contract DepositIntegrationTest is IntegrationTestFixture {
             // check state
             // - strategy tokens were claimed
             assertEq(strategyA.balanceOf(address(smartVault)), 0);
-            assertEq(strategyB.balanceOf(address(smartVault)), 267882762562285092340460000);
-            assertEq(strategyC.balanceOf(address(smartVault)), 89280037437714907659540000);
+            assertEq(strategyB.balanceOf(address(smartVault)), 267882762562285092340460000 - INITIAL_LOCKED_SHARES);
+            assertEq(strategyC.balanceOf(address(smartVault)), 89280037437714907659540000 - INITIAL_LOCKED_SHARES);
             assertEq(strategyA.balanceOf(address(strategyA)), 0);
             assertEq(strategyB.balanceOf(address(strategyB)), 0);
             assertEq(strategyC.balanceOf(address(strategyC)), 0);
             // - vault tokens were minted
-            assertEq(smartVault.totalSupply(), 357162800000000000000000000);
-            assertEq(smartVault.balanceOf(address(smartVault)), 357162800000000000000000000);
+            assertApproxEqRel(smartVault.totalSupply(), 357162800000000000000000000, 10 ** 12);
+            assertApproxEqRel(smartVault.balanceOf(address(smartVault)), 357162800000000000000000000, 10 ** 12);
         }
 
         {
@@ -782,7 +785,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
 
             // check state
             // - vault tokens were claimed
-            assertEq(smartVault.balanceOf(address(alice)), 357162800000000000000000000);
+            assertApproxEqRel(smartVault.balanceOf(address(alice)), 357162800000000000000000000, 10 ** 12);
             assertEq(smartVault.balanceOf(address(smartVault)), 0);
             // - deposit NFT was burned
             assertEq(smartVault.balanceOfFractional(alice, aliceDepositNftId), 0);
@@ -893,14 +896,14 @@ contract DepositIntegrationTest is IntegrationTestFixture {
             // check state
             // - strategy tokens were claimed
             assertEq(strategyA.balanceOf(address(smartVault)), 0);
-            assertEq(strategyB.balanceOf(address(smartVault)), 107148831538266256993250000);
-            assertEq(strategyC.balanceOf(address(smartVault)), 35716275414794966628800000);
+            assertEq(strategyB.balanceOf(address(smartVault)), 107148831538266256993250000 - INITIAL_LOCKED_SHARES);
+            assertEq(strategyC.balanceOf(address(smartVault)), 35716275414794966628800000 - INITIAL_LOCKED_SHARES);
             assertEq(strategyA.balanceOf(address(strategyA)), 0);
             assertEq(strategyB.balanceOf(address(strategyB)), 0);
             assertEq(strategyC.balanceOf(address(strategyC)), 0);
             // - vault tokens were minted
-            assertEq(smartVault.totalSupply(), 142865106953061223622050000);
-            assertEq(smartVault.balanceOf(address(smartVault)), 142865106953061223622050000);
+            assertApproxEqRel(smartVault.totalSupply(), 142865106953061223622050000, 10 ** 12);
+            assertApproxEqRel(smartVault.balanceOf(address(smartVault)), 142865106953061223622050000, 10 ** 12);
         }
 
         {
@@ -912,7 +915,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
 
             // check state
             // - vault tokens were claimed
-            assertEq(smartVault.balanceOf(address(alice)), 142865106953061223622050000);
+            assertApproxEqRel(smartVault.balanceOf(address(alice)), 142865106953061223622050000, 10 ** 12);
             assertEq(smartVault.balanceOf(address(smartVault)), 0);
             // - deposit NFT was burned
             assertEq(smartVault.balanceOfFractional(alice, aliceDepositNftId), 0);
@@ -998,14 +1001,14 @@ contract DepositIntegrationTest is IntegrationTestFixture {
             // check state
             // - strategy tokens for strategy B and C were claimed, for A they remain with strategy
             assertEq(strategyA.balanceOf(address(smartVault)), 0);
-            assertEq(strategyB.balanceOf(address(smartVault)), 107148831538266256993250000);
-            assertEq(strategyC.balanceOf(address(smartVault)), 35716275414794966628800000);
-            assertEq(strategyA.balanceOf(address(strategyA)), 214297693046938776377950000);
+            assertEq(strategyB.balanceOf(address(smartVault)), 107148831538266256993250000 - INITIAL_LOCKED_SHARES);
+            assertEq(strategyC.balanceOf(address(smartVault)), 35716275414794966628800000 - INITIAL_LOCKED_SHARES);
+            assertEq(strategyA.balanceOf(address(strategyA)), 214297693046938776377950000 - INITIAL_LOCKED_SHARES);
             assertEq(strategyB.balanceOf(address(strategyB)), 0);
             assertEq(strategyC.balanceOf(address(strategyC)), 0);
             // - vault tokens were minted
-            assertEq(smartVault.totalSupply(), 142865106953061223622050000);
-            assertEq(smartVault.balanceOf(address(smartVault)), 142865106953061223622050000);
+            assertApproxEqRel(smartVault.totalSupply(), 142865106953061223622050000, 10 ** 12);
+            assertApproxEqRel(smartVault.balanceOf(address(smartVault)), 142865106953061223622050000, 10 ** 12);
         }
 
         {
@@ -1017,7 +1020,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
 
             // check state
             // - vault tokens were claimed
-            assertEq(smartVault.balanceOf(address(alice)), 142865106953061223622050000);
+            assertApproxEqRel(smartVault.balanceOf(address(alice)), 142865106953061223622050000, 10 ** 12);
             assertEq(smartVault.balanceOf(address(smartVault)), 0);
             // - deposit NFT was burned
             assertEq(smartVault.balanceOfFractional(alice, aliceDepositNftId), 0);

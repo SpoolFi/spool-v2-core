@@ -91,14 +91,14 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         smartVaultManager.syncSmartVault(address(smartVault), true);
 
         assertEq(smartVaultStrategies[0], address(ghostStrategy));
-        assertEq(syncResult.mintedSVTs, smartVault.totalSupply());
+        assertEq(syncResult.mintedSVTs, smartVault.totalSupply() - INITIAL_LOCKED_SHARES);
         assertEq(ghostStrategy.totalSupply(), 0);
         assertEq(strategyA.totalSupply(), syncResult.sstShares[0]);
-        assertEq(strategyB.totalSupply(), syncResult.sstShares[1]);
-        assertEq(strategyC.totalSupply(), syncResult.sstShares[2]);
+        assertEq(strategyB.totalSupply(), syncResult.sstShares[1] + INITIAL_LOCKED_SHARES);
+        assertEq(strategyC.totalSupply(), syncResult.sstShares[2] + INITIAL_LOCKED_SHARES);
         assertEq(syncResult.sstShares[0], 0);
-        assertEq(syncResult.sstShares[1], 107148831538266256993250000);
-        assertEq(syncResult.sstShares[2], 35716275414794966628800000);
+        assertEq(syncResult.sstShares[1] + INITIAL_LOCKED_SHARES, 107148831538266256993250000);
+        assertEq(syncResult.sstShares[2] + INITIAL_LOCKED_SHARES, 35716275414794966628800000);
 
         assertGt(deposits[0], 0);
         assertGt(deposits[1], 0);
@@ -137,14 +137,14 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         smartVaultManager.syncSmartVault(address(smartVault), true);
 
         assertEq(smartVaultStrategies[0], address(ghostStrategy));
-        assertEq(syncResult.mintedSVTs, smartVault.totalSupply());
+        assertEq(syncResult.mintedSVTs, smartVault.totalSupply() - INITIAL_LOCKED_SHARES);
         assertEq(ghostStrategy.totalSupply(), 0);
         assertEq(strategyA.totalSupply(), 214297693046938776377950000);
-        assertEq(strategyB.totalSupply(), syncResult.sstShares[1]);
-        assertEq(strategyC.totalSupply(), syncResult.sstShares[2]);
+        assertEq(strategyB.totalSupply(), syncResult.sstShares[1] + INITIAL_LOCKED_SHARES);
+        assertEq(strategyC.totalSupply(), syncResult.sstShares[2] + INITIAL_LOCKED_SHARES);
         assertEq(syncResult.sstShares[0], 0);
-        assertEq(syncResult.sstShares[1], 107148831538266256993250000);
-        assertEq(syncResult.sstShares[2], 35716275414794966628800000);
+        assertEq(syncResult.sstShares[1] + INITIAL_LOCKED_SHARES, 107148831538266256993250000);
+        assertEq(syncResult.sstShares[2] + INITIAL_LOCKED_SHARES, 35716275414794966628800000);
     }
 
     function test_removeStrategy_betweenFlushAndDhwWithdrawals() public {

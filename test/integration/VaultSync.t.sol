@@ -83,14 +83,14 @@ contract VaultSyncTest is IntegrationTestFixture {
 
         uint256 totalSupply = smartVault.totalSupply();
 
-        assertEq(strategyA.totalSupply(), syncResult.sstShares[0]);
-        assertEq(strategyB.totalSupply(), syncResult.sstShares[1]);
-        assertEq(strategyC.totalSupply(), syncResult.sstShares[2]);
-        assertEq(syncResult.sstShares[0], 214297693046938776377950000);
-        assertEq(syncResult.sstShares[1], 107148831538266256993250000);
-        assertEq(syncResult.sstShares[2], 35716275414794966628800000);
-        assertEq(syncResult.mintedSVTs, totalSupply);
-        assertEq(syncResult.mintedSVTs, 357162800000000000000000000);
+        assertEq(strategyA.totalSupply(), syncResult.sstShares[0] + INITIAL_LOCKED_SHARES);
+        assertEq(strategyB.totalSupply(), syncResult.sstShares[1] + INITIAL_LOCKED_SHARES);
+        assertEq(strategyC.totalSupply(), syncResult.sstShares[2] + INITIAL_LOCKED_SHARES);
+        assertEq(syncResult.sstShares[0] + INITIAL_LOCKED_SHARES, 214297693046938776377950000);
+        assertEq(syncResult.sstShares[1] + INITIAL_LOCKED_SHARES, 107148831538266256993250000);
+        assertEq(syncResult.sstShares[2] + INITIAL_LOCKED_SHARES, 35716275414794966628800000);
+        assertEq(syncResult.mintedSVTs, totalSupply - INITIAL_LOCKED_SHARES);
+        assertApproxEqRel(syncResult.mintedSVTs, 357162800000000000000000000, 10 ** 12);
         assertEq(syncResult.dhwTimestamp, dhwTimestamp);
         assertEq(smartVault.totalSupply(), smartVaultManager.getSVTTotalSupply(address(smartVault)));
 
@@ -151,7 +151,7 @@ contract VaultSyncTest is IntegrationTestFixture {
         uint256 simulatedTotalSupply = smartVaultManager.getSVTTotalSupply(address(smartVault));
 
         // Should have management fees after syncing second DHW
-        assertEq(vaultSupplyBefore, 357162800000000000000000000);
+        assertApproxEqRel(vaultSupplyBefore, 357162800000000000000000000, 10 ** 12);
         assertEq(syncResult.dhwTimestamp, dhw2Timestamp);
         assertEq(smartVault.totalSupply(), simulatedTotalSupply);
         assertGt(vaultOwnerBalance, 0);
@@ -205,11 +205,11 @@ contract VaultSyncTest is IntegrationTestFixture {
         uint256 mintedSVTs = 357162800000000000000000000;
         uint256 depositFee = mintedSVTs * 3_00 / 100_00;
         uint256 totalSupply = smartVault.totalSupply();
-        assertEq(smartVault.balanceOf(vaultOwner), depositFee);
-        assertEq(ownerBalance, depositFee);
-        assertEq(totalSupply, mintedSVTs);
-        assertEq(smartVault.totalSupply(), simulatedTotalSupply);
-        assertEq(syncResult.mintedSVTs, mintedSVTs - depositFee);
+        assertApproxEqRel(smartVault.balanceOf(vaultOwner), depositFee, 10 ** 12);
+        assertApproxEqRel(ownerBalance, depositFee, 10 ** 12);
+        assertApproxEqRel(totalSupply, mintedSVTs, 10 ** 12);
+        assertEq(smartVault.totalSupply(), simulatedTotalSupply + INITIAL_LOCKED_SHARES);
+        assertApproxEqRel(syncResult.mintedSVTs, mintedSVTs - depositFee, 10 ** 12);
     }
 
     function test_syncVault_performanceFees() public {
@@ -287,8 +287,6 @@ contract VaultSyncTest is IntegrationTestFixture {
         }
 
         // Run simulations
-        uint16a16 dhwIndexes = smartVaultManager.dhwIndexes(address(smartVault), 0);
-
         uint16a16 dhwIndexesBefore = uint16a16.wrap(0xff);
 
         {
@@ -299,18 +297,6 @@ contract VaultSyncTest is IntegrationTestFixture {
                     StrategyRegistry.strategyAtIndexBatch, (smartVaultStrategies, dhwIndexesBefore, assetGroup.length)
                 ),
                 abi.encode(new int256[](smartVaultStrategies.length))
-            );
-
-            depositManager.syncDepositsSimulate(
-                SimulateDepositParams(
-                    address(smartVault),
-                    [uint256(0), 0],
-                    smartVaultStrategies,
-                    assetGroup,
-                    dhwIndexes,
-                    dhwIndexesBefore,
-                    SmartVaultFees(0, 0, vaultPerformanceFee)
-                )
             );
 
             // Sync previous DHW
@@ -370,9 +356,9 @@ contract VaultSyncTest is IntegrationTestFixture {
             address(smartVault), Arrays.toArray(redeemNftId), Arrays.toArray(NFT_MINTED_SHARES), alice
         );
 
-        assertEq(withdrawnAssets[0], bag.depositAmounts[0]);
-        assertEq(withdrawnAssets[1], bag.depositAmounts[1]);
-        assertEq(withdrawnAssets[2], bag.depositAmounts[2]);
+        assertApproxEqRel(withdrawnAssets[0], bag.depositAmounts[0], 10 ** 12);
+        assertApproxEqRel(withdrawnAssets[1], bag.depositAmounts[1], 10 ** 12);
+        assertApproxEqRel(withdrawnAssets[2], bag.depositAmounts[2], 10 ** 12);
 
         assertEq(smartVault.balanceOf(alice), 0);
         assertEq(smartVault.balanceOf(alice, nftId), 0);

@@ -56,7 +56,7 @@ contract E2E is ForkTestFixtureDeployment {
         _claimWithdrawals(vault, alice, withdrawalId);
         uint256 balanceAfter = usdc.balanceOf(alice);
 
-        assertApproxEqAbs(balanceAfter - balanceBefore, depositAmount, 1);
+        assertApproxEqAbs(balanceAfter - balanceBefore, depositAmount, 2);
     }
 
     function test_depositAndWithdraw_dai() public {
