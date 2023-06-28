@@ -1815,6 +1815,50 @@ contract SmartVaultFeesTest is TestFixture {
         }
     }
 
+    function test_managementFees_feesShouldBeBound() public {
+        // skip time to get management fees
+        {
+            skip(SECONDS_IN_YEAR * 52);
+
+            // must make a small deposit so that vault can be flushed
+            vm.startPrank(charlie);
+            token.approve(address(smartVaultManager), 1);
+            smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVaultA),
+                    assets: Arrays.toArray(1),
+                    receiver: charlie,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+
+            // flush
+            smartVaultManager.flushSmartVault(address(smartVaultA));
+
+            // dhw
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(strategiesA, assetGroup));
+            vm.stopPrank();
+
+            // sync
+            smartVaultManager.syncSmartVault(address(smartVaultA), true);
+        }
+
+        // check state and fees
+        {
+            // 104% management fees should be collected
+            // - fees should be bound to 100x dilution
+            // - Alice held 95 ether worth of shares
+            //   - get diluted 100x -> 1 share to 101 share
+            //   - Alice only holds 95 ether * 1 / 101 (= 0.94 ether) worth of shares
+            uint256 expectedAlice = uint256(95 ether) / uint256(101);
+            assertApproxEqRel(_getUserValue(alice, smartVaultA), expectedAlice, 10 ** 12);
+            assertApproxEqRel(_getUserValue(vaultOwner, smartVaultA), 100 ether - expectedAlice, 10 ** 12);
+        }
+    }
+
     function test_managementFees_deposit() public {
         // skip time to get management fees and deposit
         {

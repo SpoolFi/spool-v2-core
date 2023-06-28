@@ -454,7 +454,16 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
                 // amount of fee shares represent fees
                 //   feeSVTs ... fees
                 // => feeSVTs = svtSupply * fees / (totalUsd[1] - fees)
-                result.feeSVTs = localVariables.svtSupply * fees / (totalUsd[1] - fees);
+
+                // limit dilution to factor 100 (100 fee shares for each share)
+                // fee / (totalUsd[1] - fees) <= 100
+                // => fee_limit = totalUsd[1] * 100 / 101
+
+                if (fees < totalUsd[1] * 100 / 101) {
+                    result.feeSVTs = localVariables.svtSupply * fees / (totalUsd[1] - fees);
+                } else {
+                    result.feeSVTs = localVariables.svtSupply * 100;
+                }
             }
 
             // deposits
