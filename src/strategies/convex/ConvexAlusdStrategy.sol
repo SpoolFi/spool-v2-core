@@ -56,6 +56,7 @@ contract ConvexAlusdStrategy is
     uint16a16 _assetMapping;
 
     address private _poolMeta;
+    uint256 private _oneLpToken;
 
     uint256 constant BASE_REWARD_COUNT = 2;
     IBooster public immutable booster;
@@ -116,6 +117,7 @@ contract ConvexAlusdStrategy is
         tokenLength = tokens.length;
 
         _poolMeta = poolMeta_;
+        _oneLpToken = 10 ** IERC20Metadata(_poolMeta).decimals();
 
         pid = pid_;
         extraRewards = extraRewards_;
@@ -161,8 +163,6 @@ contract ConvexAlusdStrategy is
 
                 for (uint256 i; i < tokenLength; ++i) {
                     beforeDepositCheckSlippageAmounts[i] = amounts[i];
-                }
-                for (uint256 i; i < N_COINS; ++i) {
                     beforeDepositCheckSlippageAmounts[i + 3] = ICurvePoolUint256(address(_pool)).balances(i);
                 }
                 for (uint256 i; i < N_COINS_META; ++i) {
@@ -184,17 +184,13 @@ contract ConvexAlusdStrategy is
             }
 
             for (uint256 i; i < N_COINS; ++i) {
-                uint256 poolBalance = ICurvePoolUint256(address(_pool)).balances(i);
-
-                if (!PackedRange.isWithinRange(slippages[i + 4], poolBalance)) {
+                if (!PackedRange.isWithinRange(slippages[i + 4], ICurvePoolUint256(address(_pool)).balances(i))) {
                     revert StratBeforeDepositCheckFailed();
                 }
             }
 
             for (uint256 i; i < N_COINS_META; ++i) {
-                uint256 metapoolBalance = ICurvePoolUint256(address(_poolMeta)).balances(i);
-
-                if (!PackedRange.isWithinRange(slippages[i + 7], metapoolBalance)) {
+                if (!PackedRange.isWithinRange(slippages[i + 7], ICurvePoolUint256(address(_poolMeta)).balances(i))) {
                     revert StratBeforeDepositCheckFailed();
                 }
             }
@@ -287,9 +283,8 @@ contract ConvexAlusdStrategy is
 
         uint256 lpTokensBefore = _lpTokenBalance();
         _depositInner(tokens, swapped, slippages[10]);
-        uint256 lpTokensMinted = _lpTokenBalance() - lpTokensBefore;
 
-        compoundYield = int256(YIELD_FULL_PERCENT * lpTokensMinted / lpTokensBefore);
+        compoundYield = int256(YIELD_FULL_PERCENT * (_lpTokenBalance() - lpTokensBefore) / lpTokensBefore);
     }
 
     function _getYieldPercentage(int256 manualYield) internal view override returns (int256) {
@@ -306,9 +301,8 @@ contract ConvexAlusdStrategy is
         returns (uint256)
     {
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
-        uint256[] memory tokenWorth = _getTokenWorth(tokens);
 
-        return priceFeedManager.assetToUsdCustomPriceBulk(tokens, tokenWorth, exchangeRates);
+        return priceFeedManager.assetToUsdCustomPriceBulk(tokens, _getTokenWorth(tokens), exchangeRates);
     }
 
     // specific
@@ -390,8 +384,7 @@ contract ConvexAlusdStrategy is
         uint256 lpTokenAmount = crvRewards.balanceOf(address(this));
 
         // curve meta
-        uint256 oneLpToken = 10 ** IERC20Metadata(_poolMeta).decimals();
-        lpTokenAmount = _calcWithdrawBase(oneLpToken) * lpTokenAmount / oneLpToken;
+        lpTokenAmount = _calcWithdrawBase(_oneLpToken) * lpTokenAmount / _oneLpToken;
 
         // curve base
         uint256 lpTokenTotalSupply = IERC20(_lpToken).totalSupply();
