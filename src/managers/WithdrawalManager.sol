@@ -103,7 +103,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
     }
 
     function claimWithdrawal(WithdrawalClaimBag calldata bag)
-        public
+        external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256[] memory, uint256)
     {
@@ -182,7 +182,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         _withdrawnVaultShares[bag.smartVault][bag2.flushIndex] += bag.shares;
 
         // transfer vault shares back to smart vault
-        smartVault.transferFromSpender(bag2.owner, bag.smartVault, bag.shares, bag2.owner);
+        smartVault.transferFromSpender(bag2.owner, bag.smartVault, bag.shares);
         uint256 redeemId = smartVault.mintWithdrawalNFT(bag2.receiver, WithdrawalMetadata(bag.shares, bag2.flushIndex));
         emit RedeemInitiated(bag.smartVault, bag2.owner, redeemId, bag2.flushIndex, bag.shares, bag2.receiver);
 
@@ -235,10 +235,6 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
         private
         view
     {
-        if (smartVault.balanceOf(owner) < shares) {
-            revert InsufficientBalance(smartVault.balanceOf(owner), shares);
-        }
-
         uint256[] memory assets = new uint256[](1);
         assets[0] = shares;
         address[] memory tokens = new address[](1);

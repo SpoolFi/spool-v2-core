@@ -35,7 +35,7 @@ contract GuardManagerTest is Test, GasHelpers {
         paramTypes[0] = GuardParamType.Executor;
 
         GuardDefinition memory guard =
-            GuardDefinition(address(mockGuard), "isWhitelisted(address)", uint256(1), paramTypes, emptyBytes, "==");
+            GuardDefinition("isWhitelisted(address)", address(mockGuard), "==", uint256(1), paramTypes, emptyBytes);
 
         GuardParamType[] memory paramTypes2 = new GuardParamType[](2);
         paramTypes2[0] = GuardParamType.CustomValue;
@@ -44,11 +44,11 @@ contract GuardManagerTest is Test, GasHelpers {
         methodValues2[0] = abi.encode(uint256(4));
 
         GuardDefinition memory guard2 = GuardDefinition(
-            address(mockGuard), "checkAddressesLength(uint256,address[])", uint256(1), paramTypes2, methodValues2, "=="
+            "checkAddressesLength(uint256,address[])", address(mockGuard), "==", uint256(1), paramTypes2, methodValues2
         );
 
         GuardDefinition memory guard3 =
-            GuardDefinition(address(mockGuard), "isWhitelisted(address)", uint256(1), paramTypes, emptyBytes, "==");
+            GuardDefinition("isWhitelisted(address)", address(mockGuard), "==", uint256(1), paramTypes, emptyBytes);
 
         GuardParamType[] memory paramTypes4 = new GuardParamType[](2);
         paramTypes4[0] = GuardParamType.DynamicCustomValue;
@@ -60,7 +60,7 @@ contract GuardManagerTest is Test, GasHelpers {
         methodValues4[1] = abi.encode(uint256(12));
 
         GuardDefinition memory guard4 = GuardDefinition(
-            address(mockGuard), "checkArraySum(uint256[],uint256)", uint256(1), paramTypes4, methodValues4, "=="
+            "checkArraySum(uint256[],uint256)", address(mockGuard), "==", uint256(1), paramTypes4, methodValues4
         );
 
         GuardDefinition[][] memory guards = new GuardDefinition[][](2);
@@ -109,7 +109,7 @@ contract GuardManagerTest is Test, GasHelpers {
         GuardDefinition[][] memory guards = new GuardDefinition[][](1);
         guards[0] = new GuardDefinition[](1);
         guards[0][0] =
-            GuardDefinition(address(mockGuard), "isWhitelisted(address)", uint256(1), paramTypes, new bytes[](0), "<");
+            GuardDefinition("isWhitelisted(address)", address(mockGuard), "<", uint256(1), paramTypes, new bytes[](0));
 
         RequestType[] memory requestTypes = new RequestType[](1);
         requestTypes[0] = RequestType.Deposit;
@@ -129,7 +129,7 @@ contract GuardManagerTest is Test, GasHelpers {
         GuardDefinition[][] memory guards = new GuardDefinition[][](1);
         guards[0] = new GuardDefinition[](1);
         guards[0][0] =
-            GuardDefinition(address(mockGuard), "isWhitelisted(address)", uint256(0), paramTypes, new bytes[](0), ">");
+            GuardDefinition("isWhitelisted(address)", address(mockGuard), ">", uint256(0), paramTypes, new bytes[](0));
 
         RequestType[] memory requestTypes = new RequestType[](1);
         requestTypes[0] = RequestType.Deposit;
@@ -149,7 +149,7 @@ contract GuardManagerTest is Test, GasHelpers {
         GuardDefinition[][] memory guards = new GuardDefinition[][](1);
         guards[0] = new GuardDefinition[](1);
         guards[0][0] =
-            GuardDefinition(address(mockGuard), "isWhitelisted(address)", uint256(0), paramTypes, new bytes[](0), "<=");
+            GuardDefinition("isWhitelisted(address)", address(mockGuard), "<=", uint256(0), paramTypes, new bytes[](0));
 
         RequestType[] memory requestTypes = new RequestType[](1);
         requestTypes[0] = RequestType.Deposit;

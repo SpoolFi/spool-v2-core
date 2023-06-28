@@ -416,7 +416,7 @@ library ReallocationLib {
                     sharesToDistribute, reallocationParams.withdrawalSlippages[i]
                 );
 
-                sharesToRedeem = sharesToDistribute * (totals[0] - totals[1]) / totals[0];
+                sharesToRedeem = sharesToDistribute * totalUnmatchedWithdrawals / totals[0];
                 sharesToDistribute -= sharesToRedeem;
 
                 // Distribute matched shares to matched strategies.

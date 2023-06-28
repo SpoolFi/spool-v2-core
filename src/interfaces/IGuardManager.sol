@@ -50,8 +50,9 @@ enum GuardParamType {
 }
 
 /**
- * @custom:member contractAddress Address of the contract to invoke
  * @custom:member methodSignature Signature of the method to invoke
+ * @custom:member contractAddress Address of the contract to invoke
+ * @custom:member operator The operator to use when comparing expectedValue to guard's function result.
  * @custom:member expectedValue Value to use when comparing with the guard function result.
  * - System only supports guards with return values that can be cast to uint256.
  * @custom:member methodParamTypes Types of parameters that the guard function is expecting.
@@ -60,16 +61,15 @@ enum GuardParamType {
  * - All values should be encoded using "abi.encode" before passing them to the GuardManager contract.
  * - We assume that all static types are encoded to 32 bytes. Fixed-size static arrays and structs with only static
  *      type members are not supported.
- * @custom:member operator The operator to use when comparing expectedValue to guard's function result.
  * - If empty, system will assume the expected value is bool(true).
  */
 struct GuardDefinition {
-    address contractAddress;
     string methodSignature;
+    address contractAddress;
+    bytes2 operator;
     uint256 expectedValue;
     GuardParamType[] methodParamTypes;
     bytes[] methodParamValues;
-    bytes2 operator;
 }
 
 /**

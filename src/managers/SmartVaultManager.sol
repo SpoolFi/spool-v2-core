@@ -230,10 +230,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256 assetGroupId_ = _smartVaultAssetGroups[bag.smartVault];
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
 
-        if (
-            bag.nftIds.length != bag.nftAmounts.length || strategies_.length != withdrawalSlippages.length
-                || tokens.length != exchangeRateSlippages.length
-        ) {
+        if (strategies_.length != withdrawalSlippages.length || tokens.length != exchangeRateSlippages.length) {
             revert InvalidArrayLength();
         }
 
@@ -632,7 +629,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             return newBalance;
         }
 
-        SmartVaultFees memory fees = _smartVaultFees[smartVault];
         uint16a16 indexes = _dhwIndexes[smartVault][flushIndex.toSync];
 
         // If DHWs haven't been run yet, we can't sync
@@ -646,6 +642,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             uint256 lastDhwTimestamp = _lastDhwTimestampSynced[smartVault];
             packedParams = [flushIndex.toSync, lastDhwTimestamp];
         }
+        SmartVaultFees memory fees = _smartVaultFees[smartVault];
 
         SimulateDepositParams memory params = SimulateDepositParams(
             smartVault,
@@ -718,21 +715,17 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
         _syncSmartVault(bag.smartVault, strategies_, tokens, false);
 
+        FlushIndex memory flushIndex = _flushIndexes[bag.smartVault];
+
         {
-            uint256 flushIndexToSync = _flushIndexes[bag.smartVault].toSync;
+            uint256 flushIndexToSync = flushIndex.toSync;
             _depositManager.claimSmartVaultTokens(
                 bag.smartVault, bag.nftIds, bag.nftAmounts, tokens, owner, flushIndexToSync
             );
         }
 
         nftId = _withdrawalManager.redeem(
-            bag,
-            RedeemExtras({
-                receiver: receiver,
-                owner: owner,
-                executor: executor,
-                flushIndex: _flushIndexes[bag.smartVault].current
-            })
+            bag, RedeemExtras({receiver: receiver, owner: owner, executor: executor, flushIndex: flushIndex.current})
         );
 
         if (doFlush) {

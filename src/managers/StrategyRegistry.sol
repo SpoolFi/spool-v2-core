@@ -343,10 +343,9 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
                     // Transfer deposited assets to the strategy.
                     for (uint256 k; k < assetGroup.length; ++k) {
-                        if (_assetsDeposited[strategy][dhwIndex][k] > 0) {
-                            _masterWallet.transfer(
-                                IERC20(assetGroup[k]), strategy, _assetsDeposited[strategy][dhwIndex][k]
-                            );
+                        uint256 assetsDepositedK = _assetsDeposited[strategy][dhwIndex][k];
+                        if (assetsDepositedK > 0) {
+                            _masterWallet.transfer(IERC20(assetGroup[k]), strategy, assetsDepositedK);
                         }
                     }
 

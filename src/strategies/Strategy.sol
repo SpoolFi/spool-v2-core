@@ -173,11 +173,17 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             }
 
             // - swap assets
-            _swapAssets(dhwParams.assetGroup, assetsToDeposit, dhwParams.swapInfo);
             uint256[] memory assetsIn = new uint256[](assetsToDeposit.length);
-            for (uint256 i; i < dhwParams.assetGroup.length; ++i) {
-                assetsIn[i] = assetsToDeposit[i];
-                assetsToDeposit[i] = IERC20(dhwParams.assetGroup[i]).balanceOf(address(this)) - withdrawnAssets[i];
+            if (dhwParams.swapInfo.length > 0) {
+                _swapAssets(dhwParams.assetGroup, assetsToDeposit, dhwParams.swapInfo);
+                for (uint256 i; i < dhwParams.assetGroup.length; ++i) {
+                    assetsIn[i] = assetsToDeposit[i];
+                    assetsToDeposit[i] = IERC20(dhwParams.assetGroup[i]).balanceOf(address(this)) - withdrawnAssets[i];
+                }
+            } else {
+                for (uint256 i; i < dhwParams.assetGroup.length; ++i) {
+                    assetsIn[i] = assetsToDeposit[i];
+                }
             }
 
             // - deposit assets into the protocol

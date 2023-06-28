@@ -75,7 +75,7 @@ contract RewardPool is IRewardPool, Pausable {
 
             uint256 alreadyClaimed = rewardsClaimed[msg.sender][data[i].smartVault][data[i].token];
             uint256 toClaim = data[i].rewardsTotal - alreadyClaimed;
-            rewardsClaimed[msg.sender][data[i].smartVault][data[i].token] += toClaim;
+            rewardsClaimed[msg.sender][data[i].smartVault][data[i].token] = data[i].rewardsTotal;
 
             IERC20(data[i].token).safeTransfer(msg.sender, toClaim);
 

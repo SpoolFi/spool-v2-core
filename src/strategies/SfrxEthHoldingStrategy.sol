@@ -95,7 +95,7 @@ contract SfrxEthHoldingStrategy is Strategy, WethHelper {
         curve = curve_;
     }
 
-    function initialize(string memory strategyName_) external initializer {
+    function initialize(string calldata strategyName_) external initializer {
         __Strategy_init(strategyName_, NULL_ASSET_GROUP_ID);
 
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());

@@ -225,7 +225,7 @@ contract WithdrawalIntegrationTest is Test {
 
         // request withdrawal
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(InsufficientBalance.selector, 4_000_000, 5_000_000));
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
         smartVaultManager.redeem(
             RedeemBag(address(mySmartVault), 5_000_000, new uint256[](0), new uint256[](0)), alice, false
         );
@@ -556,7 +556,7 @@ contract WithdrawalIntegrationTest is Test {
         // invalid nft ids length
         vm.startPrank(alice);
         uint256[] memory nftIds = Arrays.toArray(1, 2);
-        vm.expectRevert(abi.encodeWithSelector(InvalidArrayLength.selector));
+        vm.expectRevert(abi.encodeWithSelector(InvalidNftArrayLength.selector));
         smartVaultManager.redeemFast(
             RedeemBag(address(mySmartVault), 3_000_000, nftIds, new uint256[](0)),
             withdrawalSlippages,
@@ -614,6 +614,35 @@ contract WithdrawalIntegrationTest is Test {
         assertEq(tokenB.balanceOf(address(strategyA.protocol())), 2.72 ether); // replaced with ghost
         assertEq(tokenA.balanceOf(address(strategyB.protocol())), 2 ether);
         assertEq(tokenB.balanceOf(address(strategyB.protocol())), 0.134 ether);
+    }
+
+    function test_redeemFast_shouldRevertWhenRedeemingMoreSharesThanOwn() public {
+        // set initial state
+        deal(address(mySmartVault), alice, 4_000_000, true);
+        deal(address(mySmartVault), bob, 1_000_000, true);
+        deal(address(strategyA), address(mySmartVault), 40_000_000, true);
+        deal(address(strategyB), address(mySmartVault), 10_000_000, true);
+        deal(address(tokenA), address(strategyA.protocol()), 40 ether, true);
+        deal(address(tokenB), address(strategyA.protocol()), 2.72 ether, true);
+        deal(address(tokenA), address(strategyB.protocol()), 10 ether, true);
+        deal(address(tokenB), address(strategyB.protocol()), 0.67 ether, true);
+
+        // withdraw fast
+        uint256[][] memory withdrawalSlippages = new uint256[][](2);
+        withdrawalSlippages[0] = new uint256[](0);
+        withdrawalSlippages[1] = new uint256[](0);
+
+        uint256[2][] memory exchangeRateSlippages = new uint256[2][](2);
+        exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(address(tokenA));
+        exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(address(tokenA));
+        exchangeRateSlippages[1][0] = priceFeedManager.exchangeRates(address(tokenB));
+        exchangeRateSlippages[1][1] = priceFeedManager.exchangeRates(address(tokenB));
+
+        vm.startPrank(alice);
+        RedeemBag memory params = RedeemBag(address(mySmartVault), 5_000_000, new uint256[](0), new uint256[](0));
+        vm.expectRevert("ERC20: burn amount exceeds balance");
+        smartVaultManager.redeemFast(params, withdrawalSlippages, exchangeRateSlippages);
+        vm.stopPrank();
     }
 
     function test_emergencyWithdraw_revertMissingRole() public {

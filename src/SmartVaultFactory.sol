@@ -165,7 +165,6 @@ contract SmartVaultFactory is UpgradeableBeacon {
         IAssetGroupRegistry assetGroupRegistry_,
         IRiskManager riskManager_
     ) UpgradeableBeacon(implementation) {
-        if (implementation == address(0)) revert ConfigurationAddressZero();
         if (address(accessControl_) == address(0)) revert ConfigurationAddressZero();
         if (address(actionManager_) == address(0)) revert ConfigurationAddressZero();
         if (address(guardManager_) == address(0)) revert ConfigurationAddressZero();

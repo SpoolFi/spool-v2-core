@@ -80,7 +80,7 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager, SpoolAccessControllable {
     }
 
     function assetToUsdCustomPriceBulk(address[] calldata tokens, uint256[] calldata assets, uint256[] calldata prices)
-        public
+        external
         view
         returns (uint256)
     {

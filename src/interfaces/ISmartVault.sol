@@ -195,16 +195,12 @@ interface ISmartVault is IERC20Upgradeable, IERC1155MetadataURIUpgradeable {
      * @notice Transfers smart vault tokens.
      * @dev Requirements:
      * - caller must have role ROLE_SMART_VAULT_MANAGER
-     * - spender must have approprite allowance set
-     * @param from Address from which tokens will be transferred.
+     * @param from Spender and owner of tokens.
      * @param to Address to which tokens will be transferred.
      * @param amount Amount of tokens to transfer.
-     * @param spender Executor of transfer.
      * @return success True if transfer was successful.
      */
-    function transferFromSpender(address from, address to, uint256 amount, address spender)
-        external
-        returns (bool success);
+    function transferFromSpender(address from, address to, uint256 amount) external returns (bool success);
 
     /**
      * @notice Transfers unclaimed shares to claimer.

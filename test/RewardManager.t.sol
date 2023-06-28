@@ -46,7 +46,6 @@ contract RewardManagerTests is Test {
         smartVault_.initialize("SmartVault", "SV", "https://token-cdn-domain/", assetGroupId);
 
         rewardManager = new RewardManager(sac, assetGroupRegistry, false);
-        rewardManager.initialize();
 
         // NOTE: can use days keyword
         endTimestamp = block.timestamp + duration;

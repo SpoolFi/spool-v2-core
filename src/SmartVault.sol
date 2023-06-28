@@ -55,9 +55,9 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
     }
 
     function initialize(
-        string memory vaultName_,
-        string memory svtSymbol,
-        string memory baseURI_,
+        string calldata vaultName_,
+        string calldata svtSymbol,
+        string calldata baseURI_,
         uint256 assetGroupId_
     ) external initializer {
         if (bytes(vaultName_).length == 0) revert InvalidConfiguration();
@@ -194,12 +194,6 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (bytes[] memory)
     {
-        for (uint256 i; i < nftIds.length; ++i) {
-            if (balanceOfFractional(owner, nftIds[i]) < nftAmounts[i]) {
-                revert InvalidNftBalance(balanceOfFractional(owner, nftIds[i]));
-            }
-        }
-
         _burnBatch(owner, nftIds, nftAmounts);
         return getMetadata(nftIds);
     }
@@ -238,14 +232,11 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         return _lastWithdrawalId;
     }
 
-    function transferFromSpender(address from, address to, uint256 amount, address spender)
+    function transferFromSpender(address from, address to, uint256 amount)
         external
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (bool)
     {
-        if (from != spender) {
-            _spendAllowance(from, spender, amount);
-        }
         _transfer(from, to, amount);
         return true;
     }

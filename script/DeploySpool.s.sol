@@ -208,7 +208,6 @@ contract DeploySpool {
             RewardManager implementation = new RewardManager(spoolAccessControl, assetGroupRegistry, false);
             proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
             rewardManager = RewardManager(address(proxy));
-            rewardManager.initialize();
 
             contractsJson().addProxy("RewardManager", address(implementation), address(proxy));
         }
