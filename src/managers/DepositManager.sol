@@ -835,6 +835,8 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         address[] calldata tokens,
         address emergencyWallet
     ) external {
+        _checkRole(ROLE_SMART_VAULT_MANAGER, msg.sender);
+
         for (uint256 i; i < strategies.length; ++i) {
             if (strategies[i] != _ghostStrategy) {
                 revert NotGhostVault();
