@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import "./ISwapper.sol";
-import "./IStrategy.sol";
+import {DhwInfo} from "./IStrategy.sol";
 import "../libraries/uint16a16Lib.sol";
 
 /* ========== ERRORS ========== */

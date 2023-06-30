@@ -40,6 +40,20 @@ struct ReallocationParameterBag {
     uint256[2][] exchangeRateSlippages;
 }
 
+/**
+ * @dev Parameters for calculateReallocation.
+ * @custom:member smartVault Smart vault.
+ * @custom:member strategyMapping Mapping between smart vault's strategies and provided strategies.
+ * @custom:member totalSharesToRedeem How must shares each strategy needs to redeem. Will be updated.
+ * @custom:member strategyValues Current USD value of each strategy.
+ */
+struct CalculateReallocationParams {
+    address smartVault;
+    uint256[] strategyMapping;
+    uint256[] totalSharesToRedeem;
+    uint256[] strategyValues;
+}
+
 // *Ghost strategies:*
 // Ghost strategy should not be provided among the set of strategies, even if
 // some smart vault is using it.
@@ -70,10 +84,14 @@ library ReallocationLib {
         ReallocationParameterBag calldata reallocationParams,
         mapping(address => address[]) storage _smartVaultStrategies,
         mapping(address => uint16a16) storage _smartVaultAllocations
-    ) public {
+    ) external {
         // Validate provided strategies and create a per smart vault strategy mapping.
         uint256[][] memory strategyMapping =
-            mapStrategies(smartVaults, strategies, ghostStrategy, _smartVaultStrategies);
+            _mapStrategies(smartVaults, strategies, ghostStrategy, _smartVaultStrategies);
+
+        // Get current value of strategies.
+        (uint256[] memory strategyValues, address[] memory assetGroup, uint256[] memory exchangeRates) =
+            _valuateStrategies(strategies, reallocationParams);
 
         // Calculate reallocations needed for smart vaults.
         // - will hold value to move between strategies of smart vaults
@@ -82,10 +100,13 @@ library ReallocationLib {
         uint256[] memory totalSharesToRedeem = new uint256[](strategies.length);
         for (uint256 i; i < smartVaults.length; ++i) {
             address smartVault = smartVaults[i];
-            reallocations[i] = calculateReallocation(
-                smartVault,
-                strategyMapping[i],
-                totalSharesToRedeem,
+            reallocations[i] = _calculateReallocation(
+                CalculateReallocationParams({
+                    smartVault: smartVault,
+                    strategyMapping: strategyMapping[i],
+                    totalSharesToRedeem: totalSharesToRedeem,
+                    strategyValues: strategyValues
+                }),
                 _smartVaultStrategies[smartVault],
                 _smartVaultAllocations
             );
@@ -93,13 +114,13 @@ library ReallocationLib {
 
         // Build the strategy-to-strategy reallocation table.
         uint256[][][] memory reallocationTable =
-            buildReallocationTable(strategyMapping, strategies.length, reallocations, totalSharesToRedeem);
+            _buildReallocationTable(strategyMapping, strategies.length, reallocations, totalSharesToRedeem);
 
         // Do the actual reallocation with withdrawals from and deposits into the underlying protocols.
-        doReallocation(strategies, reallocationParams, reallocationTable);
+        _doReallocation(strategies, reallocationParams, assetGroup, exchangeRates, reallocationTable);
 
         // Smart vaults claim strategy shares.
-        claimShares(smartVaults, strategies, strategyMapping, reallocationTable, reallocations);
+        _claimShares(smartVaults, strategies, strategyMapping, reallocationTable, reallocations);
     }
 
     /**
@@ -115,7 +136,7 @@ library ReallocationLib {
      * - value represents a position of smart vault's strategy in the provided `strategies` array.
      *   A uint256 max represents a ghost strategy, although it is not needed anywhere.
      */
-    function mapStrategies(
+    function _mapStrategies(
         address[] calldata smartVaults,
         address[] calldata strategies,
         address ghostStrategy,
@@ -183,11 +204,52 @@ library ReallocationLib {
     }
 
     /**
+     * @dev Get current value of strategies.
+     * @param strategies Set of strategies involved in the reallocation.
+     * @param reallocationParams Bag with reallocation parameters.
+     * @return strategyValues USD value of each strategy.
+     * @return assetGroup Address of tokens in asset group.
+     * @return exchangeRates USD exchange rate for tokens in asset group.
+     */
+    function _valuateStrategies(address[] calldata strategies, ReallocationParameterBag calldata reallocationParams)
+        private
+        returns (uint256[] memory strategyValues, address[] memory assetGroup, uint256[] memory exchangeRates)
+    {
+        // Get asset group and corresponding exchange rates.
+        assetGroup = reallocationParams.assetGroupRegistry.listAssetGroup(reallocationParams.assetGroupId);
+
+        if (assetGroup.length != reallocationParams.exchangeRateSlippages.length) {
+            revert InvalidArrayLength();
+        }
+
+        exchangeRates = SpoolUtils.getExchangeRates(assetGroup, reallocationParams.priceFeedManager);
+        unchecked {
+            for (uint256 i; i < assetGroup.length; ++i) {
+                if (
+                    exchangeRates[i] < reallocationParams.exchangeRateSlippages[i][0]
+                        || exchangeRates[i] > reallocationParams.exchangeRateSlippages[i][1]
+                ) {
+                    revert ExchangeRateOutOfSlippages();
+                }
+            }
+        }
+
+        // Get value of each strategy.
+        strategyValues = new uint256[](strategies.length);
+        unchecked {
+            for (uint256 i; i < strategyValues.length; ++i) {
+                strategyValues[i] =
+                    IStrategy(strategies[i]).getUsdWorth(exchangeRates, reallocationParams.priceFeedManager);
+            }
+        }
+
+        return (strategyValues, assetGroup, exchangeRates);
+    }
+
+    /**
      * @dev Calculates reallocation needed per smart vault.
      * Also updates the `totalSharesToRedeem`.
-     * @param smartVault Smart vault.
-     * @param strategyMapping Mapping between smart vault's strategies and provided strategies.
-     * @param totalSharesToRedeem How must shares each strategy needs to redeem. Will be updated.
+     * @param params Parameters for calculate reallocation.
      * @param smartVaultStrategies Strategies of the smart vault.
      * @param _smartVaultAllocations Allocations per smart vault.
      * @return Reallocation of the smart vault:
@@ -200,10 +262,8 @@ library ReallocationLib {
      *   - value is USD value that needs to be deposited into the strategy
      *   - extra field gathers total value that needs to be deposited by the smart vault
      */
-    function calculateReallocation(
-        address smartVault,
-        uint256[] memory strategyMapping,
-        uint256[] memory totalSharesToRedeem,
+    function _calculateReallocation(
+        CalculateReallocationParams memory params,
         address[] storage smartVaultStrategies,
         mapping(address => uint16a16) storage _smartVaultAllocations
     ) private returns (uint256[][] memory) {
@@ -216,19 +276,37 @@ library ReallocationLib {
         reallocation[1] = new uint256[](smartVaultStrategiesLength + 1); // values to deposit | total value to deposit
 
         // Get smart vaults total USD value.
-        uint256 totalUsdValue = SpoolUtils.getVaultTotalUsdValue(smartVault, smartVaultStrategies);
+        uint256 totalUsdValue;
+        {
+            uint256 totalSupply;
+            for (uint256 i; i < smartVaultStrategiesLength; ++i) {
+                totalSupply = IStrategy(smartVaultStrategies[i]).totalSupply();
+                if (totalSupply > 0) {
+                    totalUsdValue += params.strategyValues[params.strategyMapping[i]]
+                        * IStrategy(smartVaultStrategies[i]).balanceOf(params.smartVault) / totalSupply;
+                }
+            }
+        }
 
         // Get sum total of target allocation.
         uint256 totalTargetAllocation;
         for (uint256 i; i < smartVaultStrategiesLength; ++i) {
-            totalTargetAllocation += _smartVaultAllocations[smartVault].get(i);
+            totalTargetAllocation += _smartVaultAllocations[params.smartVault].get(i);
         }
 
         // Compare target and current allocation.
         for (uint256 i; i < smartVaultStrategiesLength; ++i) {
-            uint256 targetValue = _smartVaultAllocations[smartVault].get(i);
+            uint256 targetValue = _smartVaultAllocations[params.smartVault].get(i);
             targetValue = targetValue * totalUsdValue / totalTargetAllocation;
-            uint256 currentValue = SpoolUtils.getVaultStrategyUsdValue(smartVault, smartVaultStrategies[i]);
+            // Get current allocation.
+            uint256 currentValue;
+            {
+                uint256 totalSupply = IStrategy(smartVaultStrategies[i]).totalSupply();
+                if (totalSupply > 0) {
+                    currentValue = params.strategyValues[params.strategyMapping[i]]
+                        * IStrategy(smartVaultStrategies[i]).balanceOf(params.smartVault) / totalSupply;
+                }
+            }
 
             if (targetValue > currentValue) {
                 // This strategy needs deposit.
@@ -238,16 +316,16 @@ library ReallocationLib {
                 // This strategy needs withdrawal.
 
                 // Relese strategy shares.
-                uint256 sharesToRedeem = IStrategy(smartVaultStrategies[i]).balanceOf(smartVault);
+                uint256 sharesToRedeem = IStrategy(smartVaultStrategies[i]).balanceOf(params.smartVault);
                 sharesToRedeem = sharesToRedeem * (currentValue - targetValue) / currentValue;
-                IStrategy(smartVaultStrategies[i]).releaseShares(smartVault, sharesToRedeem);
+                IStrategy(smartVaultStrategies[i]).releaseShares(params.smartVault, sharesToRedeem);
 
                 // Recalculate value to withdraw based on released shares.
                 reallocation[0][i] = IStrategy(smartVaultStrategies[i]).totalUsdValue() * sharesToRedeem
                     / IStrategy(smartVaultStrategies[i]).totalSupply();
 
                 // Update total shares to redeem for strategy.
-                totalSharesToRedeem[strategyMapping[i]] += sharesToRedeem;
+                params.totalSharesToRedeem[params.strategyMapping[i]] += sharesToRedeem;
             }
         }
 
@@ -272,7 +350,7 @@ library ReallocationLib {
      *   - 2: value is not used yet
      *     - will be used to represent amount of unmatched shares from strategy j that are distributed to strategy i
      */
-    function buildReallocationTable(
+    function _buildReallocationTable(
         uint256[][] memory strategyMapping,
         uint256 numStrategies,
         uint256[][][] memory reallocations,
@@ -338,31 +416,17 @@ library ReallocationLib {
      * Also populates the reallocation table.
      * @param strategies Set of strategies involved in the reallocation.
      * @param reallocationParams Bag with reallocation parameters.
+     * @param assetGroup Addresses of tokens in asset group.
+     * @param exchangeRates Exchange rate of tokens.
      * @param reallocationTable Reallocation table.
      */
-    function doReallocation(
+    function _doReallocation(
         address[] calldata strategies,
         ReallocationParameterBag calldata reallocationParams,
+        address[] memory assetGroup,
+        uint256[] memory exchangeRates,
         uint256[][][] memory reallocationTable
     ) private {
-        // Get asset group and corresponding exchange rates.
-        address[] memory assetGroup =
-            reallocationParams.assetGroupRegistry.listAssetGroup(reallocationParams.assetGroupId);
-
-        if (assetGroup.length != reallocationParams.exchangeRateSlippages.length) {
-            revert InvalidArrayLength();
-        }
-
-        uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(assetGroup, reallocationParams.priceFeedManager);
-        for (uint256 i; i < assetGroup.length; ++i) {
-            if (
-                exchangeRates[i] < reallocationParams.exchangeRateSlippages[i][0]
-                    || exchangeRates[i] > reallocationParams.exchangeRateSlippages[i][1]
-            ) {
-                revert ExchangeRateOutOfSlippages();
-            }
-        }
-
         // Will store how much assets each strategy has to deposit.
         uint256[][] memory toDeposit = new uint256[][](strategies.length);
         for (uint256 i; i < strategies.length; ++i) {
@@ -546,7 +610,7 @@ library ReallocationLib {
      * @param reallocationTable Filled in reallocation table.
      * @param reallocations Realllocations needed by the smart vaults.
      */
-    function claimShares(
+    function _claimShares(
         address[] calldata smartVaults,
         address[] calldata strategies,
         uint256[][] memory strategyMapping,

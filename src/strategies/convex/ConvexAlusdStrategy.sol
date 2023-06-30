@@ -91,15 +91,9 @@ contract ConvexAlusdStrategy is
     ) external initializer {
         __Strategy_init(strategyName_, NULL_ASSET_GROUP_ID);
 
-        if (pool_ == address(0)) {
-            revert ConfigurationAddressZero();
-        }
-        if (lpToken_ == address(0)) {
-            revert ConfigurationAddressZero();
-        }
-        if (poolMeta_ == address(0)) {
-            revert ConfigurationAddressZero();
-        }
+        _noAddressZero(pool_);
+        _noAddressZero(lpToken_);
+        _noAddressZero(poolMeta_);
 
         _pool = pool_;
         _lpToken = lpToken_;
@@ -121,8 +115,7 @@ contract ConvexAlusdStrategy is
 
         pid = pid_;
         extraRewards = extraRewards_;
-        IBooster.PoolInfo memory cvxPool = booster.poolInfo(pid_);
-        crvRewards = IBaseRewardPool(cvxPool.crvRewards);
+        crvRewards = IBaseRewardPool(booster.poolInfo(pid_).crvRewards);
         crvRewardToken = crvRewards.rewardToken();
         cvxRewardToken = booster.minter();
 
@@ -410,5 +403,11 @@ contract ConvexAlusdStrategy is
         }
 
         return (rewardTokens, balances);
+    }
+
+    function _noAddressZero(address addr) private pure {
+        if (addr == address(0)) {
+            revert ConfigurationAddressZero();
+        }
     }
 }

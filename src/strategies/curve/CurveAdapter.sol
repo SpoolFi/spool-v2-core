@@ -43,9 +43,7 @@ abstract contract CurveMetaPoolAdapter {
     }
 
     function _addLiquidityMeta(uint256 baseAmount, uint256 extraAmount, uint256 slippage) internal {
-        uint256[N_COINS_META] memory metaAmounts = [extraAmount, baseAmount];
-
-        ICurve2CoinPool(poolMeta()).add_liquidity(metaAmounts, slippage);
+        ICurve2CoinPool(poolMeta()).add_liquidity([extraAmount, baseAmount], slippage);
     }
 
     function _removeLiquidityBase(uint256 lpTokens, uint256 slippage) internal {

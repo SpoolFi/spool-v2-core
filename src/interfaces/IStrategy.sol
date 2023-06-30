@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "./IStrategyRegistry.sol";
+import {PlatformFees} from "./IStrategyRegistry.sol";
 import "./ISwapper.sol";
 import "./IUsdPriceFeedManager.sol";
 
@@ -124,6 +124,8 @@ interface IStrategy is IERC20Upgradeable {
      */
     function assets() external view returns (address[] memory assets);
 
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
     /**
      * @dev Performs slippages check before depositing.
      * @param amounts Amounts to be deposited.
@@ -137,8 +139,6 @@ interface IStrategy is IERC20Upgradeable {
      * @param slippages Slippages to check against.
      */
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) external;
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
      * @notice Does hard work:
@@ -238,4 +238,15 @@ interface IStrategy is IERC20Upgradeable {
      * @param recipient Recipient address
      */
     function emergencyWithdraw(uint256[] calldata slippages, address recipient) external;
+
+    /**
+     * @notice Gets USD worth of the strategy.
+     * @dev Requirements:
+     * - caller must have role ROLE_SMART_VAULT_MANAGER
+     * @param exchangeRates Asset to USD exchange rates.
+     * @param priceFeedManager Price feed manager contract.
+     */
+    function getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
+        external
+        returns (uint256 usdWorth);
 }

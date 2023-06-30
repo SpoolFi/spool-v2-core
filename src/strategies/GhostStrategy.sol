@@ -106,4 +106,8 @@ contract GhostStrategy is IERC20Upgradeable, IStrategy {
     function emergencyWithdraw(uint256[] calldata, address) external pure {
         revert IsGhostStrategy();
     }
+
+    function getUsdWorth(uint256[] memory, IUsdPriceFeedManager) external pure returns (uint256) {
+        revert IsGhostStrategy();
+    }
 }

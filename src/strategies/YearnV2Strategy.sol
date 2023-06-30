@@ -13,6 +13,7 @@ error YearnV2BeforeRedeemalCheckFailed();
 error YearnV2CompoundSlippagesFailed();
 error YearnV2DepositToProtocolSlippagesFailed();
 error YearnV2RedeemSlippagesFailed();
+error YearnV2NotRedeemedEnough();
 
 // only uses one asset
 // no rewards
@@ -150,7 +151,7 @@ contract YearnV2Strategy is Strategy {
             revert YearnV2RedeemSlippagesFailed();
         }
 
-        _redeemFromYearn(type(uint256).max, recipient, slippages[1]);
+        _redeemFromYearn(yTokenVault.balanceOf(address(this)), recipient, slippages[1]);
     }
 
     function _compound(address[] calldata, SwapInfo[] calldata, uint256[] calldata)
@@ -198,11 +199,19 @@ contract YearnV2Strategy is Strategy {
     }
 
     function _redeemFromYearn(uint256 yTokens, address recipient, uint256 slippage) private {
+        uint256 balanceBefore = yTokenVault.balanceOf(address(this));
+
         // we allow for total loss here, since we check slippage ourselves
         uint256 redeemedAssets = yTokenVault.withdraw(yTokens, recipient, MAX_BPS);
 
         if (redeemedAssets < slippage) {
             revert YearnV2RedeemSlippagesFailed();
+        }
+
+        // if Yearn V2 protocol cannot get enough funds, it will not burn all shares
+        // if this happens, we should revert
+        if (yTokenVault.balanceOf(address(this)) != balanceBefore - yTokens) {
+            revert YearnV2NotRedeemedEnough();
         }
 
         if (_isViewExecution()) {

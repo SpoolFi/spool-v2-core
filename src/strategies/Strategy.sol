@@ -342,6 +342,14 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         return _getProtocolRewardsInternal();
     }
 
+    function getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
+        external
+        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+        returns (uint256)
+    {
+        return _getUsdWorth(exchangeRates, priceFeedManager);
+    }
+
     /* ========== PRIVATE/INTERNAL FUNCTIONS ========== */
 
     function _mintStrategyShares(uint256 usdWorthBefore, uint256 usdWorthAfter)
