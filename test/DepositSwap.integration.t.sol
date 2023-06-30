@@ -133,7 +133,15 @@ contract DepositSwapIntegrationTest is TestFixture {
         tokenC.approve(address(depositSwap), 2 ether);
 
         uint256 nftId = depositSwap.swapAndDeposit(
-            Arrays.toArray(address(tokenC)), Arrays.toArray(2 ether), swapInfo, address(smartVault), bob
+            SwapDepositBag(
+                Arrays.toArray(address(tokenC)),
+                Arrays.toArray(2 ether),
+                swapInfo,
+                address(smartVault),
+                bob,
+                address(0),
+                false
+            )
         );
         vm.stopPrank();
 
@@ -178,7 +186,15 @@ contract DepositSwapIntegrationTest is TestFixture {
         tokenA.approve(address(depositSwap), 2 ether);
 
         uint256 nftId = depositSwap.swapAndDeposit(
-            Arrays.toArray(address(tokenA)), Arrays.toArray(2 ether), swapInfo, address(smartVault), bob
+            SwapDepositBag(
+                Arrays.toArray(address(tokenA)),
+                Arrays.toArray(2 ether),
+                swapInfo,
+                address(smartVault),
+                bob,
+                address(0),
+                false
+            )
         );
         vm.stopPrank();
 
@@ -235,7 +251,15 @@ contract DepositSwapIntegrationTest is TestFixture {
         IERC20(address(weth)).approve(address(depositSwap), 1 ether);
 
         uint256 nftId = depositSwap.swapAndDeposit{value: 2 ether}(
-            Arrays.toArray(address(weth)), Arrays.toArray(1 ether), swapInfo, address(smartVault), bob
+            SwapDepositBag(
+                Arrays.toArray(address(weth)),
+                Arrays.toArray(1 ether),
+                swapInfo,
+                address(smartVault),
+                bob,
+                address(0),
+                false
+            )
         ); // Alice sends in 2 ether and 1 wrapped ether
         vm.stopPrank();
 
@@ -270,11 +294,15 @@ contract DepositSwapIntegrationTest is TestFixture {
         IERC20(address(tokenB)).approve(address(depositSwap), 0.5 ether);
 
         uint256 nftId = depositSwap.swapAndDeposit{value: 2 ether}(
-            Arrays.toArray(address(tokenA), address(tokenB)),
-            Arrays.toArray(2 ether, 0.5 ether),
-            swapInfo,
-            address(smartVault),
-            bob
+            SwapDepositBag(
+                Arrays.toArray(address(tokenA), address(tokenB)),
+                Arrays.toArray(2 ether, 0.5 ether),
+                swapInfo,
+                address(smartVault),
+                bob,
+                address(0),
+                false
+            )
         ); // Alice sends in 2 ether but it is not used
         vm.stopPrank();
 

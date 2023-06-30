@@ -27,12 +27,16 @@ contract DepositSwapTest is Test {
         uint256[] memory inAmounts = Arrays.toArray(1);
 
         vm.expectRevert(InvalidArrayLength.selector);
-        depositSwap.swapAndDeposit(inTokens, inAmounts, new SwapInfo[](0), address(0x6), address(0xa));
+        depositSwap.swapAndDeposit(
+            SwapDepositBag(inTokens, inAmounts, new SwapInfo[](0), address(0x6), address(0xa), address(0), false)
+        );
 
         inTokens = Arrays.toArray(address(0x4));
         inAmounts = Arrays.toArray(1, 2);
 
         vm.expectRevert(InvalidArrayLength.selector);
-        depositSwap.swapAndDeposit(inTokens, inAmounts, new SwapInfo[](0), address(0x6), address(0xa));
+        depositSwap.swapAndDeposit(
+            SwapDepositBag(inTokens, inAmounts, new SwapInfo[](0), address(0x6), address(0xa), address(0), false)
+        );
     }
 }
