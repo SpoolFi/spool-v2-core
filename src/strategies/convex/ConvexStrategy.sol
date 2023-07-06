@@ -6,7 +6,7 @@ import "../../external/interfaces/strategies/convex/IBaseRewardPool.sol";
 import "../curve/CurvePoolBase.sol";
 
 abstract contract ConvexStrategy is CurvePoolBase {
-    uint256 constant BASE_REWARD_COUNT = 2;
+    uint256 internal constant BASE_REWARD_COUNT = 2;
 
     /// @notice Booster contract
     IBooster public immutable booster;
@@ -19,7 +19,7 @@ abstract contract ConvexStrategy is CurvePoolBase {
     /// @notice Booster pool id
     uint96 public pid;
     /// @notice Are there additional rewards to be collected.
-    bool extraRewards;
+    bool public extraRewards;
 
     constructor(IBooster booster_) {
         if (address(booster_) == address(0)) revert ConfigurationAddressZero();
@@ -37,7 +37,7 @@ abstract contract ConvexStrategy is CurvePoolBase {
         cvxRewardToken = booster.minter();
     }
 
-    function setExtraRewards(bool extraRewards_) external {
+    function setExtraRewards(bool extraRewards_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
         extraRewards = extraRewards_;
     }
 

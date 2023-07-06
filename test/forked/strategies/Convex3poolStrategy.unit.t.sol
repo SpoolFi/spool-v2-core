@@ -449,6 +449,17 @@ contract Convex3poolStrategyTest is TestFixture, ForkTestFixture {
         assertEq(usdWorth, expectedValue);
         assertApproxEqRel(usdWorth, expectedValue2, 1e15); // to 1 permil
     }
+
+    function test_setExtraRewards_shouldOnlyBeCallableByAdmin() public {
+        // should not allow Alice to change extra rewards
+        vm.startPrank(address(0xa));
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SPOOL_ADMIN, address(0xa)));
+        convexStrategy.setExtraRewards(true);
+        vm.stopPrank();
+
+        // spool admin can change extra rewards
+        convexStrategy.setExtraRewards(true);
+    }
 }
 
 // Exposes protocol-specific functions for unit-testing.
