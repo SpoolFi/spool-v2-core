@@ -233,9 +233,7 @@ contract SmartVaultManagerTest is TestFixture {
 
         vm.expectRevert(abi.encodeWithSelector(SystemPaused.selector));
         smartVaultManager.redeemFast(
-            RedeemBag(address(smartVault), 1, new uint256[](0), new uint256[](0)),
-            new uint256[][](0),
-            new uint256[2][](0)
+            RedeemBag(address(smartVault), 1, new uint256[](0), new uint256[](0)), new uint256[][](0)
         );
     }
 

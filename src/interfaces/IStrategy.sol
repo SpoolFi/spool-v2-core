@@ -101,12 +101,6 @@ interface IStrategy is IERC20Upgradeable {
     function strategyName() external view returns (string memory name);
 
     /**
-     * @notice Gets value of the strategy.
-     * @return value Total value of the strategy in USD.
-     */
-    function totalUsdValue() external view returns (uint256 value);
-
-    /**
      * @notice Gets required ratio between underlying assets.
      * @return ratio Required asset ratio for the strategy.
      */
@@ -177,8 +171,6 @@ interface IStrategy is IERC20Upgradeable {
      * @param shares Amount of shares to redeem.
      * @param masterWallet Address of the master wallet.
      * @param assetGroup Asset group of the strategy.
-     * @param exchangeRates Asset to USD exchange rates.
-     * @param priceFeedManager Price feed manager contract.
      * @param slippages Slippages to guard redeeming.
      * @return assetsWithdrawn Amount of assets withdrawn.
      */
@@ -186,8 +178,6 @@ interface IStrategy is IERC20Upgradeable {
         uint256 shares,
         address masterWallet,
         address[] calldata assetGroup,
-        uint256[] calldata exchangeRates,
-        IUsdPriceFeedManager priceFeedManager,
         uint256[] calldata slippages
     ) external returns (uint256[] memory assetsWithdrawn);
 
@@ -196,19 +186,12 @@ interface IStrategy is IERC20Upgradeable {
      * @param shares Amount of shares to redeem.
      * @param redeemer Address of he redeemer, owner of SSTs.
      * @param assetGroup Asset group of the strategy.
-     * @param exchangeRates Asset to USD exchange rates.
-     * @param priceFeedManager Price feed manager contract.
      * @param slippages Slippages to guard redeeming.
      * @return assetsWithdrawn Amount of assets withdrawn.
      */
-    function redeemShares(
-        uint256 shares,
-        address redeemer,
-        address[] calldata assetGroup,
-        uint256[] calldata exchangeRates,
-        IUsdPriceFeedManager priceFeedManager,
-        uint256[] calldata slippages
-    ) external returns (uint256[] memory assetsWithdrawn);
+    function redeemShares(uint256 shares, address redeemer, address[] calldata assetGroup, uint256[] calldata slippages)
+        external
+        returns (uint256[] memory assetsWithdrawn);
 
     /**
      * @notice Instantly deposits into the protocol.

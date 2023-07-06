@@ -9,7 +9,6 @@ contract GhostStrategyTest is Test {
         IStrategy s = new GhostStrategy();
 
         assertEq(s.strategyName(), "Ghost strategy");
-        assertEq(s.totalUsdValue(), 0);
         assertEq(s.assetGroupId(), 0);
         assertEq(s.assetRatio().length, 0);
         assertEq(s.assets().length, 0);
@@ -55,9 +54,7 @@ contract GhostStrategyTest is Test {
         s.transfer(address(1), 10);
 
         vm.expectRevert(abi.encodeWithSelector(IsGhostStrategy.selector));
-        s.redeemFast(
-            0, address(1), new address[](0), new uint256[](0), IUsdPriceFeedManager(address(0)), new uint256[](0)
-        );
+        s.redeemFast(0, address(1), new address[](0), new uint256[](0));
 
         vm.expectRevert(abi.encodeWithSelector(IsGhostStrategy.selector));
         s.emergencyWithdraw(new uint256[](0), address(0));

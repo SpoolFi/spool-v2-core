@@ -862,9 +862,6 @@ contract SmartVaultFeesTest is TestFixture {
             vm.startPrank(alice);
             uint256[][] memory withdrawSlippages = new uint256[][](1);
             withdrawSlippages[0] = new uint256[](0);
-            uint256[2][] memory exchangeRateSlippages = new uint256[2][](1);
-            exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(address(token));
-            exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(address(token));
             smartVaultManager.redeemFast(
                 RedeemBag({
                     smartVault: address(smartVaultA),
@@ -872,8 +869,7 @@ contract SmartVaultFeesTest is TestFixture {
                     nftIds: new uint256[](0),
                     nftAmounts: new uint256[](0)
                 }),
-                withdrawSlippages,
-                exchangeRateSlippages
+                withdrawSlippages
             );
             vm.stopPrank();
 
@@ -992,9 +988,6 @@ contract SmartVaultFeesTest is TestFixture {
             vm.startPrank(alice);
             uint256[][] memory withdrawSlippages = new uint256[][](1);
             withdrawSlippages[0] = new uint256[](0);
-            uint256[2][] memory exchangeRateSlippages = new uint256[2][](1);
-            exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(address(token));
-            exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(address(token));
             smartVaultManager.redeemFast(
                 RedeemBag({
                     smartVault: address(smartVaultA),
@@ -1002,8 +995,7 @@ contract SmartVaultFeesTest is TestFixture {
                     nftIds: new uint256[](0),
                     nftAmounts: new uint256[](0)
                 }),
-                withdrawSlippages,
-                exchangeRateSlippages
+                withdrawSlippages
             );
             vm.stopPrank();
 
@@ -1539,9 +1531,6 @@ contract SmartVaultFeesTest is TestFixture {
             vm.startPrank(alice);
             uint256[][] memory withdrawSlippages = new uint256[][](1);
             withdrawSlippages[0] = new uint256[](0);
-            uint256[2][] memory exchangeRateSlippages = new uint256[2][](1);
-            exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(address(token));
-            exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(address(token));
             smartVaultManager.redeemFast(
                 RedeemBag({
                     smartVault: address(smartVaultA),
@@ -1549,8 +1538,7 @@ contract SmartVaultFeesTest is TestFixture {
                     nftIds: new uint256[](0),
                     nftAmounts: new uint256[](0)
                 }),
-                withdrawSlippages,
-                exchangeRateSlippages
+                withdrawSlippages
             );
             vm.stopPrank();
 
@@ -1685,9 +1673,6 @@ contract SmartVaultFeesTest is TestFixture {
             vm.startPrank(alice);
             uint256[][] memory withdrawSlippages = new uint256[][](1);
             withdrawSlippages[0] = new uint256[](0);
-            uint256[2][] memory exchangeRateSlippages = new uint256[2][](1);
-            exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(address(token));
-            exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(address(token));
             smartVaultManager.redeemFast(
                 RedeemBag({
                     smartVault: address(smartVaultA),
@@ -1695,8 +1680,7 @@ contract SmartVaultFeesTest is TestFixture {
                     nftIds: new uint256[](0),
                     nftAmounts: new uint256[](0)
                 }),
-                withdrawSlippages,
-                exchangeRateSlippages
+                withdrawSlippages
             );
             vm.stopPrank();
         }
@@ -2101,9 +2085,6 @@ contract SmartVaultFeesTest is TestFixture {
             vm.startPrank(alice);
             uint256[][] memory withdrawSlippages = new uint256[][](1);
             withdrawSlippages[0] = new uint256[](0);
-            uint256[2][] memory exchangeRateSlippages = new uint256[2][](1);
-            exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(address(token));
-            exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(address(token));
             smartVaultManager.redeemFast(
                 RedeemBag({
                     smartVault: address(smartVaultA),
@@ -2111,8 +2092,7 @@ contract SmartVaultFeesTest is TestFixture {
                     nftIds: new uint256[](0),
                     nftAmounts: new uint256[](0)
                 }),
-                withdrawSlippages,
-                exchangeRateSlippages
+                withdrawSlippages
             );
             vm.stopPrank();
 
@@ -2222,9 +2202,6 @@ contract SmartVaultFeesTest is TestFixture {
             vm.startPrank(alice);
             uint256[][] memory withdrawSlippages = new uint256[][](1);
             withdrawSlippages[0] = new uint256[](0);
-            uint256[2][] memory exchangeRateSlippages = new uint256[2][](1);
-            exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(address(token));
-            exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(address(token));
             smartVaultManager.redeemFast(
                 RedeemBag({
                     smartVault: address(smartVaultA),
@@ -2232,8 +2209,7 @@ contract SmartVaultFeesTest is TestFixture {
                     nftIds: new uint256[](0),
                     nftAmounts: new uint256[](0)
                 }),
-                withdrawSlippages,
-                exchangeRateSlippages
+                withdrawSlippages
             );
             vm.stopPrank();
         }
@@ -2948,9 +2924,6 @@ contract AllFeesTest is TestFixture {
             uint256[][] memory withdrawSlippages = new uint256[][](2);
             withdrawSlippages[0] = new uint256[](0);
             withdrawSlippages[1] = new uint256[](0);
-            uint256[2][] memory exchangeRateSlippages = new uint256[2][](1);
-            exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(address(token));
-            exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(address(token));
             smartVaultManager.redeemFast(
                 RedeemBag({
                     smartVault: address(smartVaultA),
@@ -2958,8 +2931,7 @@ contract AllFeesTest is TestFixture {
                     nftIds: new uint256[](0),
                     nftAmounts: new uint256[](0)
                 }),
-                withdrawSlippages,
-                exchangeRateSlippages
+                withdrawSlippages
             );
             vm.stopPrank();
 

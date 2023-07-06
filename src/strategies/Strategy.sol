@@ -36,10 +36,6 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
     // Only one of the above can be set. Use the `assetGroupId` function to read
     // the correct one.
 
-    /// @notice Total value (in USD) of assets managed by the strategy.
-    /// @dev Should be updated in DHW with deposits, withdrawals and yields.
-    uint256 public totalUsdValue = 0;
-
     constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, uint256 assetGroupId_)
         SpoolAccessControllable(accessControl_)
     {
@@ -247,8 +243,6 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             }
         }
 
-        totalUsdValue = usdWorth[1];
-
         dhwInfo.sharesMinted = mintedShares;
         dhwInfo.assetsWithdrawn = withdrawnAssets;
         dhwInfo.valueAtDhw = usdWorth[1];
@@ -259,8 +253,6 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         uint256 shares,
         address masterWallet,
         address[] calldata assetGroup,
-        uint256[] calldata exchangeRates,
-        IUsdPriceFeedManager priceFeedManager,
         uint256[] calldata slippages
     ) external returns (uint256[] memory) {
         if (
@@ -270,21 +262,16 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             revert NotFastRedeemer(msg.sender);
         }
 
-        return
-            _redeemShares(shares, address(this), masterWallet, assetGroup, exchangeRates, priceFeedManager, slippages);
+        return _redeemShares(shares, address(this), masterWallet, assetGroup, slippages);
     }
 
-    function redeemShares(
-        uint256 shares,
-        address redeemer,
-        address[] calldata assetGroup,
-        uint256[] calldata exchangeRates,
-        IUsdPriceFeedManager priceFeedManager,
-        uint256[] calldata slippages
-    ) external returns (uint256[] memory) {
+    function redeemShares(uint256 shares, address redeemer, address[] calldata assetGroup, uint256[] calldata slippages)
+        external
+        returns (uint256[] memory)
+    {
         _checkRole(ROLE_STRATEGY_REGISTRY, msg.sender);
 
-        return _redeemShares(shares, redeemer, redeemer, assetGroup, exchangeRates, priceFeedManager, slippages);
+        return _redeemShares(shares, redeemer, redeemer, assetGroup, slippages);
     }
 
     /// @dev is only called when reallocating
@@ -314,8 +301,6 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
         // mint SSTs
         uint256 sstsToMint = _mintStrategyShares(usdWorth0, usdWorth1);
-
-        totalUsdValue = usdWorth1;
 
         return sstsToMint;
     }
@@ -387,15 +372,11 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         address shareOwner,
         address recipient,
         address[] calldata assetGroup,
-        uint256[] calldata exchangeRates,
-        IUsdPriceFeedManager priceFeedManager,
         uint256[] calldata slippages
     ) internal virtual returns (uint256[] memory) {
         // redeem shares from protocol
         uint256[] memory assetsWithdrawn = _redeemFromProtocolAndReturnAssets(assetGroup, shares, slippages);
         _burn(shareOwner, shares);
-
-        totalUsdValue = _getUsdWorth(exchangeRates, priceFeedManager);
 
         // transfer assets to recipient (master wallet in case of redeemFast)
         for (uint256 i; i < assetGroup.length; ++i) {

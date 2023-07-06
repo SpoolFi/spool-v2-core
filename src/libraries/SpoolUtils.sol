@@ -74,48 +74,4 @@ library SpoolUtils {
 
         return abi.decode(returnData_, (string)); // all that remains is the revert string
     }
-
-    /**
-     * @notice Gets total USD value of a smart vault.
-     * @dev Should be called with addresses of all strategies used by the smart vault,
-     * otherwise total USD value will be lower than it actually is.
-     * @param smartVault_ Address of the smart vault.
-     * @param strategyAddresses_ Addresses of smart vault's strategies.
-     * @return totalUsdValue Total USD value of the smart vault.
-     */
-    function getVaultTotalUsdValue(address smartVault_, address[] memory strategyAddresses_)
-        public
-        view
-        returns (uint256)
-    {
-        uint256 totalUsdValue = 0;
-
-        for (uint256 i; i < strategyAddresses_.length; ++i) {
-            IStrategy strategy = IStrategy(strategyAddresses_[i]);
-            uint256 totalSupply = strategy.totalSupply();
-            if (totalSupply == 0) {
-                continue;
-            }
-
-            totalUsdValue = totalUsdValue + strategy.totalUsdValue() * strategy.balanceOf(smartVault_) / totalSupply;
-        }
-
-        return totalUsdValue;
-    }
-
-    /**
-     * @notice Gets USD value of smart vault's share in a strategy.
-     * @param smartVault Smart vault.
-     * @param strategyAddress Strategy.
-     * @return usdValue USD value of the smart vault's share in the strategy.
-     */
-    function getVaultStrategyUsdValue(address smartVault, address strategyAddress) public view returns (uint256) {
-        IStrategy strategy = IStrategy(strategyAddress);
-        uint256 totalSupply = strategy.totalSupply();
-        if (totalSupply == 0) {
-            return 0;
-        }
-
-        return strategy.totalUsdValue() * strategy.balanceOf(smartVault) / totalSupply;
-    }
 }

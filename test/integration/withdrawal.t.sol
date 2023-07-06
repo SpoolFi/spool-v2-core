@@ -449,17 +449,9 @@ contract WithdrawalIntegrationTest is Test {
         withdrawalSlippages[0] = new uint256[](0);
         withdrawalSlippages[1] = new uint256[](0);
 
-        uint256[2][] memory exchangeRateSlippages = new uint256[2][](2);
-        exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(address(tokenA));
-        exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(address(tokenA));
-        exchangeRateSlippages[1][0] = priceFeedManager.exchangeRates(address(tokenB));
-        exchangeRateSlippages[1][1] = priceFeedManager.exchangeRates(address(tokenB));
-
         vm.startPrank(alice);
         uint256[] memory withdrawnAssets = smartVaultManager.redeemFast(
-            RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0)),
-            withdrawalSlippages,
-            exchangeRateSlippages
+            RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0)), withdrawalSlippages
         );
         vm.stopPrank();
 
@@ -499,12 +491,6 @@ contract WithdrawalIntegrationTest is Test {
         withdrawalSlippages[0] = new uint256[](0);
         withdrawalSlippages[1] = new uint256[](0);
 
-        uint256[2][] memory exchangeRateSlippages = new uint256[2][](2);
-        exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(address(tokenA));
-        exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(address(tokenA));
-        exchangeRateSlippages[1][0] = priceFeedManager.exchangeRates(address(tokenB));
-        exchangeRateSlippages[1][1] = priceFeedManager.exchangeRates(address(tokenB));
-
         vm.startPrank(alice);
 
         uint256[][] memory expectedAmounts = new uint256[][](2);
@@ -518,49 +504,23 @@ contract WithdrawalIntegrationTest is Test {
         emit StrategySharesFastRedeemed(address(strategyB), 5_000_000, expectedAmounts[1]);
 
         smartVaultManager.redeemFast(
-            RedeemBag(address(mySmartVault), 2_000_000, new uint256[](0), new uint256[](0)),
-            withdrawalSlippages,
-            exchangeRateSlippages
+            RedeemBag(address(mySmartVault), 2_000_000, new uint256[](0), new uint256[](0)), withdrawalSlippages
         );
         vm.stopPrank();
     }
 
     function test_redeemFast_revertInvalidArrayLength() public {
-        vm.prank(alice);
-
         // withdraw fast
         uint256[][] memory withdrawalSlippages = new uint256[][](2);
         withdrawalSlippages[0] = new uint256[](0);
         withdrawalSlippages[1] = new uint256[](0);
-
-        uint256[2][] memory exchangeRateSlippages = new uint256[2][](1);
-        exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(address(tokenA));
-        exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(address(tokenA));
-
-        // invalid exchange rate slippages length
-        vm.startPrank(alice);
-        vm.expectRevert(abi.encodeWithSelector(InvalidArrayLength.selector));
-        smartVaultManager.redeemFast(
-            RedeemBag(address(mySmartVault), 3_000_000, new uint256[](0), new uint256[](0)),
-            withdrawalSlippages,
-            exchangeRateSlippages
-        );
-        vm.stopPrank();
-
-        exchangeRateSlippages = new uint256[2][](2);
-        exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(address(tokenA));
-        exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(address(tokenA));
-        exchangeRateSlippages[1][0] = priceFeedManager.exchangeRates(address(tokenB));
-        exchangeRateSlippages[1][1] = priceFeedManager.exchangeRates(address(tokenB));
 
         // invalid nft ids length
         vm.startPrank(alice);
         uint256[] memory nftIds = Arrays.toArray(1, 2);
         vm.expectRevert(abi.encodeWithSelector(InvalidNftArrayLength.selector));
         smartVaultManager.redeemFast(
-            RedeemBag(address(mySmartVault), 3_000_000, nftIds, new uint256[](0)),
-            withdrawalSlippages,
-            exchangeRateSlippages
+            RedeemBag(address(mySmartVault), 3_000_000, nftIds, new uint256[](0)), withdrawalSlippages
         );
         vm.stopPrank();
     }
@@ -584,17 +544,9 @@ contract WithdrawalIntegrationTest is Test {
         withdrawalSlippages[0] = new uint256[](0);
         withdrawalSlippages[1] = new uint256[](0);
 
-        uint256[2][] memory exchangeRateSlippages = new uint256[2][](2);
-        exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(address(tokenA));
-        exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(address(tokenA));
-        exchangeRateSlippages[1][0] = priceFeedManager.exchangeRates(address(tokenB));
-        exchangeRateSlippages[1][1] = priceFeedManager.exchangeRates(address(tokenB));
-
         vm.startPrank(alice);
         smartVaultManager.redeemFast(
-            RedeemBag(address(mySmartVault), 4_000_000, new uint256[](0), new uint256[](0)),
-            withdrawalSlippages,
-            exchangeRateSlippages
+            RedeemBag(address(mySmartVault), 4_000_000, new uint256[](0), new uint256[](0)), withdrawalSlippages
         );
         vm.stopPrank();
 
@@ -632,16 +584,10 @@ contract WithdrawalIntegrationTest is Test {
         withdrawalSlippages[0] = new uint256[](0);
         withdrawalSlippages[1] = new uint256[](0);
 
-        uint256[2][] memory exchangeRateSlippages = new uint256[2][](2);
-        exchangeRateSlippages[0][0] = priceFeedManager.exchangeRates(address(tokenA));
-        exchangeRateSlippages[0][1] = priceFeedManager.exchangeRates(address(tokenA));
-        exchangeRateSlippages[1][0] = priceFeedManager.exchangeRates(address(tokenB));
-        exchangeRateSlippages[1][1] = priceFeedManager.exchangeRates(address(tokenB));
-
         vm.startPrank(alice);
         RedeemBag memory params = RedeemBag(address(mySmartVault), 5_000_000, new uint256[](0), new uint256[](0));
         vm.expectRevert("ERC20: burn amount exceeds balance");
-        smartVaultManager.redeemFast(params, withdrawalSlippages, exchangeRateSlippages);
+        smartVaultManager.redeemFast(params, withdrawalSlippages);
         vm.stopPrank();
     }
 

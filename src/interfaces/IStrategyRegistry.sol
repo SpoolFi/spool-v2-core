@@ -99,14 +99,12 @@ struct DoHardWorkParameterBag {
  * @custom:member strategyShares Amount of shares to redeem.
  * @custom:member assetGroup Asset group of the smart vault.
  * @custom:member slippages Slippages to guard withdrawal.
- * @custom:member exchangeRateSlippages Slippages used to constrain exchange rates for asset tokens.
  */
 struct RedeemFastParameterBag {
     address[] strategies;
     uint256[] strategyShares;
     address[] assetGroup;
     uint256[][] withdrawalSlippages;
-    uint256[2][] exchangeRateSlippages;
 }
 
 /**

@@ -467,7 +467,7 @@ contract E2E is ForkTestFixtureDeployment {
         // advance block number
         vm.roll(block.number + 1);
 
-        _assertAllocationApproxRel(vault, 1e8);
+        _assertAllocationApproxRel(vault, 1e10);
 
         // REALLOCATE
         mockAllocationProvider.setWeight(aaveV2Strategy, 10);
@@ -480,7 +480,7 @@ contract E2E is ForkTestFixtureDeployment {
 
         _reallocate(vault);
 
-        _assertAllocationApproxRel(vault, 4e9);
+        _assertAllocationApproxRel(vault, 1e7);
 
         // advance block number
         vm.roll(block.number + 1);
@@ -496,7 +496,7 @@ contract E2E is ForkTestFixtureDeployment {
 
         _reallocate(vault);
 
-        _assertAllocationApproxRel(vault, 2e12);
+        _assertAllocationApproxRel(vault, 1e12);
     }
 
     function test_reallocate_usdc() public {

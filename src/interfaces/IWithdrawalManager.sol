@@ -30,7 +30,6 @@ struct RedeemBag {
  * @custom:member assetGroupId ID of the asset group of the smart vault.
  * @custom:member redeemer Address that initiated the redeemal.
  * @custom:member withdrawalSlippages Slippages used to guard redeemal.
- * @custom:member exchangeRateSlippages Slippages used to constrain exchange rates for asset tokens.
  */
 struct RedeemFastExtras {
     address[] strategies;
@@ -38,7 +37,6 @@ struct RedeemFastExtras {
     uint256 assetGroupId;
     address redeemer;
     uint256[][] withdrawalSlippages;
-    uint256[2][] exchangeRateSlippages;
 }
 
 /**

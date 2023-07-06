@@ -118,61 +118,6 @@ contract SpoolUtilsTest is Test {
         assertEq(exchangeRates, expected);
     }
 
-    function test_getVaultTotalUsdValue_shouldGetValueForOneStrategy() public {
-        address[] memory strategies = Arrays.toArray(address(0xa));
-        uint256[] memory totalStrategyValues = Arrays.toArray(1000000);
-        uint256[] memory strategyVaultBalances = Arrays.toArray(1000000);
-        uint256[] memory strategySupplies = Arrays.toArray(2000000);
-
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            vm.mockCall(
-                strategies[i],
-                abi.encodeWithSelector(IStrategy.totalUsdValue.selector),
-                abi.encode(totalStrategyValues[i])
-            );
-
-            vm.mockCall(
-                strategies[i], abi.encodeWithSelector(IERC20.balanceOf.selector), abi.encode(strategyVaultBalances[i])
-            );
-
-            vm.mockCall(
-                strategies[i], abi.encodeWithSelector(IERC20.totalSupply.selector), abi.encode(strategySupplies[i])
-            );
-        }
-
-        uint256 totalValue = SpoolUtils.getVaultTotalUsdValue(address(0x1), strategies);
-        assertEq(totalValue, 500000);
-    }
-
-    function test_getVaultTotalUsdValue_shouldGetValueForMultipleStrategies() public {
-        address[] memory strategies = Arrays.toArray(address(0xa), address(0xb), address(0xc));
-        uint256[] memory totalStrategyValues = Arrays.toArray(1000000, 100000, 10000);
-        uint256[] memory strategyVaultBalances = Arrays.toArray(1000000, 200000, 40000);
-        uint256[] memory strategySupplies = Arrays.toArray(2000000, 400000, 80000);
-
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            vm.mockCall(
-                strategies[i],
-                abi.encodeWithSelector(IStrategy.totalUsdValue.selector),
-                abi.encode(totalStrategyValues[i])
-            );
-
-            vm.mockCall(
-                strategies[i], abi.encodeWithSelector(IERC20.balanceOf.selector), abi.encode(strategyVaultBalances[i])
-            );
-
-            vm.mockCall(
-                strategies[i], abi.encodeWithSelector(IERC20.totalSupply.selector), abi.encode(strategySupplies[i])
-            );
-        }
-
-        uint256 totalValue = SpoolUtils.getVaultTotalUsdValue(address(0x1), strategies);
-
-        assertEq(totalValue, 555000);
-    }
-
-    // TODO: test limit values for getVaultTotalUsdValue
-
     function test_getRevertMsg_shouldGetDefaultMessageWhenNoRevertMessage() public {
         RevertingContract revertingContract = new RevertingContract();
 

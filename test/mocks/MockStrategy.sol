@@ -39,10 +39,6 @@ contract MockStrategy is Strategy {
         return ratios;
     }
 
-    function setTotalUsdValue(uint256 totalUsdValue_) external {
-        totalUsdValue = totalUsdValue_;
-    }
-
     function _getYieldPercentage(int256 manualYield) internal pure override returns (int256) {
         return manualYield;
     }

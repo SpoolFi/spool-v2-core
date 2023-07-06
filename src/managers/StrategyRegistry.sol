@@ -438,18 +438,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         returns (uint256[] memory)
     {
         uint256[] memory withdrawnAssets = new uint256[](redeemFastParams.assetGroup.length);
-        uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(redeemFastParams.assetGroup, _priceFeedManager);
-
-        unchecked {
-            for (uint256 i; i < exchangeRates.length; ++i) {
-                if (
-                    exchangeRates[i] < redeemFastParams.exchangeRateSlippages[i][0]
-                        || exchangeRates[i] > redeemFastParams.exchangeRateSlippages[i][1]
-                ) {
-                    revert ExchangeRateOutOfSlippages();
-                }
-            }
-        }
 
         for (uint256 i; i < redeemFastParams.strategies.length; ++i) {
             if (redeemFastParams.strategies[i] == _ghostStrategy) {
@@ -461,8 +449,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                 redeemFastParams.strategyShares[i],
                 address(_masterWallet),
                 redeemFastParams.assetGroup,
-                exchangeRates,
-                _priceFeedManager,
                 redeemFastParams.withdrawalSlippages[i]
             );
 
@@ -553,11 +539,9 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
             _checkRole(ROLE_STRATEGY, strategies[i]);
 
             address[] memory assetGroup = IStrategy(strategies[i]).assets();
-            uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(assetGroup, _priceFeedManager);
 
-            uint256[] memory withdrawnAssets = IStrategy(strategies[i]).redeemShares(
-                shares[i], msg.sender, assetGroup, exchangeRates, _priceFeedManager, withdrawalSlippages[i]
-            );
+            uint256[] memory withdrawnAssets =
+                IStrategy(strategies[i]).redeemShares(shares[i], msg.sender, assetGroup, withdrawalSlippages[i]);
 
             emit StrategySharesRedeemed(strategies[i], msg.sender, msg.sender, shares[i], withdrawnAssets);
         }

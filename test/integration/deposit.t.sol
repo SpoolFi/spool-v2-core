@@ -559,13 +559,10 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         uint256[] memory amounts = Arrays.toArray(NFT_MINTED_SHARES);
 
         uint256[][] memory withdrawalSlippages = new uint256[][](3);
-        uint256[2][] memory exchangeRateSlippages = new uint256[2][](3);
 
         vm.startPrank(alice);
         vm.expectRevert(abi.encodeWithSelector(DepositNftNotSyncedYet.selector, aliceDepositNftId));
-        smartVaultManager.redeemFast(
-            RedeemBag(address(smartVault), 0, ids, amounts), withdrawalSlippages, exchangeRateSlippages
-        );
+        smartVaultManager.redeemFast(RedeemBag(address(smartVault), 0, ids, amounts), withdrawalSlippages);
         vm.stopPrank();
     }
 

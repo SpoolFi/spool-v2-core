@@ -10,6 +10,7 @@ import "../../script/MainnetInitialSetup.s.sol";
 import "../libraries/Arrays.sol";
 import "./ForkTestFixture.sol";
 import "../libraries/TimeUtils.sol";
+import "../libraries/VaultValueHelpers.sol";
 
 string constant TEST_CONSTANTS_PATH = "deploy/fork-test.constants.json";
 string constant TEST_CONTRACTS_PATH = "deploy/fork-test.contracts.json";
@@ -317,20 +318,9 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
 
         uint256 userShares = vault.balanceOf(user);
 
-        uint256 assetGroupId = _smartVaultManager.assetGroupId(address(vault));
-        address[] memory tokens = _deploySpool.assetGroupRegistry().listAssetGroup(assetGroupId);
-
-        uint256[2][] memory exchangeRateSlippages = new uint256[2][](tokens.length);
-
-        for (uint256 i; i < tokens.length; ++i) {
-            exchangeRateSlippages[i][0] = 0;
-            exchangeRateSlippages[i][1] = type(uint256).max;
-        }
-
         _smartVaultManager.redeemFast(
             RedeemBag(address(vault), userShares, new uint256[](0), new uint256[](0)),
-            _getRedeemFastSlippages(vault, userShares),
-            exchangeRateSlippages
+            _getRedeemFastSlippages(vault, userShares)
         );
     }
 
@@ -452,7 +442,13 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
     function _assertAllocationApproxRel(ISmartVault vault, uint256 maxDelta) internal {
         uint16a16 setAllocation = _smartVaultManager.allocations(address(vault));
         address[] memory strategies = _smartVaultManager.strategies(address(vault));
-        uint256 totalUsdValue = SpoolUtils.getVaultTotalUsdValue(address(vault), strategies);
+        uint256 totalUsdValue = VaultValueHelpers.getVaultTotalUsdValue(
+            vm,
+            vault,
+            _deploySpool.assetGroupRegistry(),
+            _deploySpool.usdPriceFeedManager(),
+            _deploySpool.smartVaultManager()
+        );
 
         uint256 totalAllocation;
         for (uint256 i; i < strategies.length; ++i) {
@@ -461,7 +457,14 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
 
         for (uint256 i; i < strategies.length; ++i) {
             uint256 targetValue = totalUsdValue * setAllocation.get(i) / totalAllocation;
-            uint256 actualValue = SpoolUtils.getVaultStrategyUsdValue(address(vault), strategies[i]);
+            uint256 actualValue = VaultValueHelpers.getVaultStrategyUsdValue(
+                vm,
+                vault,
+                _deploySpool.assetGroupRegistry(),
+                _deploySpool.usdPriceFeedManager(),
+                _deploySpool.smartVaultManager(),
+                IStrategy(strategies[i])
+            );
 
             assertApproxEqRel(
                 actualValue,

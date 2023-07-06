@@ -290,16 +290,9 @@ contract DhwTest is TestFixture {
         smartVaultManager.flushSmartVault(address(smartVault));
 
         // DHW - DEPOSIT and expect error
-        uint256[2][] memory exchangeRateSlippages = new uint256[2][](1);
-        exchangeRateSlippages[0][0] = 0;
-        exchangeRateSlippages[0][1] = type(uint256).max;
         bytes memory redeemFastEncoded = abi.encodeCall(
             smartVaultManager.redeemFast,
-            (
-                RedeemBag(address(smartVault), 1, new uint256[](0), new uint256[](0)),
-                new uint256[][](3),
-                exchangeRateSlippages
-            )
+            (RedeemBag(address(smartVault), 1, new uint256[](0), new uint256[](0)), new uint256[][](3))
         );
 
         DoHardWorkParameterBag memory dhwBag = generateDhwParameterBag(smartVaultStrategies, assetGroup);

@@ -248,14 +248,11 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
      * @notice Instantly redeems smart vault shares for assets.
      * @param bag Parameters for fast redeemal.
      * @param withdrawalSlippages Slippages guarding redeemal.
-     * @param exchangeRateSlippages Slippages used to constrain exchange rates for asset tokens.
      * @return withdrawnAssets Amount of assets withdrawn.
      */
-    function redeemFast(
-        RedeemBag calldata bag,
-        uint256[][] calldata withdrawalSlippages,
-        uint256[2][] calldata exchangeRateSlippages
-    ) external returns (uint256[] memory withdrawnAssets);
+    function redeemFast(RedeemBag calldata bag, uint256[][] calldata withdrawalSlippages)
+        external
+        returns (uint256[] memory withdrawnAssets);
 
     /**
      * @notice Claims withdrawal of assets by burning withdrawal NFT.

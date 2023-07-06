@@ -216,8 +216,7 @@ contract WithdrawalManager is SpoolAccessControllable, IWithdrawalManager {
                 strategies: bag2.strategies,
                 strategyShares: strategySharesToRedeem,
                 assetGroup: bag2.assetGroup,
-                withdrawalSlippages: bag2.withdrawalSlippages,
-                exchangeRateSlippages: bag2.exchangeRateSlippages
+                withdrawalSlippages: bag2.withdrawalSlippages
             })
         );
 

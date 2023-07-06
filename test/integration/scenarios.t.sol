@@ -3,7 +3,6 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import "../../src/access/SpoolAccessControl.sol";
-import "../../src/libraries/SpoolUtils.sol";
 import "../../src/libraries/uint16a16Lib.sol";
 import "../../src/guards/AllowlistGuard.sol";
 import "../../src/managers/ActionManager.sol";
@@ -22,6 +21,7 @@ import "../../src/Swapper.sol";
 import "../libraries/Arrays.sol";
 import "../libraries/Constants.sol";
 import "../libraries/TimeUtils.sol";
+import "../libraries/VaultValueHelpers.sol";
 import "../mocks/MockPriceFeedManager.sol";
 import "../mocks/MockStrategy.sol";
 import "../mocks/MockToken.sol";
@@ -1153,7 +1153,9 @@ contract ScenariosTest is Test {
         assertApproxEqRel(smartVault.balanceOf(bob), 20000000000000000000000, 10 ** 12);
         // - final vault value
         assertApproxEqRel(
-            SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
+            VaultValueHelpers.getVaultTotalUsdValue(
+                vm, smartVault, assetGroupRegistry, priceFeedManager, smartVaultManager
+            ),
             15000000000000000000,
             10 ** 12
         );
@@ -1293,7 +1295,9 @@ contract ScenariosTest is Test {
         assertApproxEqRel(smartVault.balanceOf(bob), 10000000000000000000000, 10 ** 12);
         // - final vault value
         assertApproxEqRel(
-            SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
+            VaultValueHelpers.getVaultTotalUsdValue(
+                vm, smartVault, assetGroupRegistry, priceFeedManager, smartVaultManager
+            ),
             10000000000000000000,
             10 ** 12
         );
@@ -1428,7 +1432,9 @@ contract ScenariosTest is Test {
         assertApproxEqRel(smartVault.balanceOf(bob), 10000000000000000000000, 10 ** 12);
         // - final vault value
         assertApproxEqRel(
-            SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
+            VaultValueHelpers.getVaultTotalUsdValue(
+                vm, smartVault, assetGroupRegistry, priceFeedManager, smartVaultManager
+            ),
             10000000000000000000,
             10 ** 12
         );
@@ -1562,7 +1568,9 @@ contract ScenariosTest is Test {
         assertApproxEqRel(smartVault.balanceOf(bob), 10000000000000000000000, 10 ** 12);
         // - final vault value
         assertApproxEqRel(
-            SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
+            VaultValueHelpers.getVaultTotalUsdValue(
+                vm, smartVault, assetGroupRegistry, priceFeedManager, smartVaultManager
+            ),
             10000000000000000000,
             10 ** 12
         );
@@ -1690,7 +1698,9 @@ contract ScenariosTest is Test {
         assertEq(tokenA.balanceOf(address(masterWallet)), 0);
         // - final vault value
         assertApproxEqRel(
-            SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
+            VaultValueHelpers.getVaultTotalUsdValue(
+                vm, smartVault, assetGroupRegistry, priceFeedManager, smartVaultManager
+            ),
             2500000000000000000,
             10 ** 12
         );
@@ -1819,7 +1829,9 @@ contract ScenariosTest is Test {
         assertEq(tokenA.balanceOf(address(masterWallet)), 0);
         // - final vault value
         assertApproxEqRel(
-            SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
+            VaultValueHelpers.getVaultTotalUsdValue(
+                vm, smartVault, assetGroupRegistry, priceFeedManager, smartVaultManager
+            ),
             2500000000000000000,
             10 ** 12
         );
@@ -1953,7 +1965,9 @@ contract ScenariosTest is Test {
         assertEq(tokenA.balanceOf(address(masterWallet)), 0);
         // - final vault value
         assertApproxEqRel(
-            SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
+            VaultValueHelpers.getVaultTotalUsdValue(
+                vm, smartVault, assetGroupRegistry, priceFeedManager, smartVaultManager
+            ),
             2500000000000000000,
             10 ** 12
         );
@@ -2082,7 +2096,9 @@ contract ScenariosTest is Test {
         assertEq(tokenA.balanceOf(address(masterWallet)), 0);
         // - final vault value
         assertApproxEqRel(
-            SpoolUtils.getVaultTotalUsdValue(address(smartVault), smartVaultManager.strategies(address(smartVault))),
+            VaultValueHelpers.getVaultTotalUsdValue(
+                vm, smartVault, assetGroupRegistry, priceFeedManager, smartVaultManager
+            ),
             2500000000000000000,
             10 ** 12
         );

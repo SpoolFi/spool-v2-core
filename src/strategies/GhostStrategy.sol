@@ -11,10 +11,6 @@ contract GhostStrategy is IERC20Upgradeable, IStrategy {
         return "Ghost strategy";
     }
 
-    function totalUsdValue() external pure returns (uint256) {
-        return 0;
-    }
-
     function assetRatio() external pure returns (uint256[] memory) {
         return new uint256[](0);
     }
@@ -39,25 +35,19 @@ contract GhostStrategy is IERC20Upgradeable, IStrategy {
         revert IsGhostStrategy();
     }
 
-    function redeemFast(
-        uint256,
-        address,
-        address[] calldata,
-        uint256[] calldata,
-        IUsdPriceFeedManager,
-        uint256[] calldata
-    ) external pure returns (uint256[] memory) {
+    function redeemFast(uint256, address, address[] calldata, uint256[] calldata)
+        external
+        pure
+        returns (uint256[] memory)
+    {
         revert IsGhostStrategy();
     }
 
-    function redeemShares(
-        uint256,
-        address,
-        address[] calldata,
-        uint256[] calldata,
-        IUsdPriceFeedManager,
-        uint256[] calldata
-    ) external pure returns (uint256[] memory) {
+    function redeemShares(uint256, address, address[] calldata, uint256[] calldata)
+        external
+        pure
+        returns (uint256[] memory)
+    {
         revert IsGhostStrategy();
     }
 

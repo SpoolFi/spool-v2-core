@@ -523,8 +523,6 @@ library ReallocationLib {
                 sharesToRedeem,
                 address(reallocationParams.masterWallet),
                 assetGroup,
-                exchangeRates,
-                reallocationParams.priceFeedManager,
                 reallocationParams.withdrawalSlippages[i]
             );
 
