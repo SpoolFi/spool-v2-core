@@ -170,6 +170,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         uint256[] calldata nftIds,
         uint256[] calldata nftAmounts,
         address[] calldata tokens,
+        address owner,
         address executor,
         uint256 flushIndexToSync
     ) external returns (uint256) {
@@ -185,9 +186,9 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         _guardManager.runGuards(
             smartVault,
             RequestContext({
-                receiver: executor,
+                receiver: owner,
                 executor: executor,
-                owner: executor,
+                owner: owner,
                 requestType: RequestType.BurnNFT,
                 assets: nftIds,
                 tokens: new address[](0)
@@ -195,8 +196,7 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         );
 
         ClaimTokensLocalBag memory bag;
-        ISmartVault vault = ISmartVault(smartVault);
-        bag.metadata = vault.burnNFTs(executor, nftIds, nftAmounts);
+        bag.metadata = ISmartVault(smartVault).burnNFTs(owner, nftIds, nftAmounts);
 
         uint256 claimedVaultTokens = 0;
         for (uint256 i; i < nftIds.length; ++i) {
@@ -218,9 +218,9 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         }
 
         // there will be some dust after all users claim SVTs
-        vault.claimShares(executor, claimedVaultTokens);
+        ISmartVault(smartVault).claimShares(owner, claimedVaultTokens);
 
-        emit SmartVaultTokensClaimed(smartVault, executor, claimedVaultTokens, nftIds, nftAmounts);
+        emit SmartVaultTokensClaimed(smartVault, owner, claimedVaultTokens, nftIds, nftAmounts);
 
         return claimedVaultTokens;
     }

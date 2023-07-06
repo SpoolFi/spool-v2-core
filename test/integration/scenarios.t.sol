@@ -768,7 +768,7 @@ contract ScenariosTest is Test {
         vm.stopPrank();
     }
 
-    function test_redeemFor_shouldRevertWhenExecutorNotOnAllowlist() public {
+    function test_redeemFor_shouldRevertWhenExecutorNotOnAllowlist_Withdrawal() public {
         // set smart vault with allowlist guard checking executor of redeemal
         AllowlistGuard allowlistGuard = new AllowlistGuard(accessControl);
 
@@ -875,6 +875,150 @@ contract ScenariosTest is Test {
         // - vault tokens are returned to vault
         assertEq(smartVault.balanceOf(alice), 1_000_000);
         assertEq(smartVault.balanceOf(address(smartVault)), 3_000_000);
+        // - withdrawal NFT is minted
+        assertEq(withdrawalNftIdBob, 2 ** 255 + 2);
+        assertEq(smartVault.balanceOf(alice, withdrawalNftIdBob), 1);
+    }
+
+    function test_redeemFor_shouldRevertWhenExecutorNotOnAllowlist_BurnNFT() public {
+        // set smart vault with allowlist guard checking executor of redeemal
+        AllowlistGuard allowlistGuard = new AllowlistGuard(accessControl);
+
+        GuardDefinition[][] memory guards = new GuardDefinition[][](1);
+        guards[0] = new GuardDefinition[](1);
+
+        GuardParamType[] memory guardParamTypes = new GuardParamType[](3);
+        guardParamTypes[0] = GuardParamType.VaultAddress; // address of the smart vault
+        guardParamTypes[1] = GuardParamType.CustomValue; // ID of the allowlist, set as method param value below
+        guardParamTypes[2] = GuardParamType.Executor; // address of the executor
+
+        bytes[] memory guardParamValues = new bytes[](1);
+        guardParamValues[0] = abi.encode(uint256(0));
+
+        guards[0][0] = GuardDefinition({
+            contractAddress: address(allowlistGuard),
+            methodSignature: "isAllowed(address,uint256,address)",
+            expectedValue: 0, // do not need this
+            methodParamTypes: guardParamTypes,
+            methodParamValues: guardParamValues,
+            operator: 0 // do not need this
+        });
+
+        RequestType[] memory guardRequestTypes = new RequestType[](1);
+        guardRequestTypes[0] = RequestType.BurnNFT;
+
+        address[] memory smartVaultStrategies = Arrays.toArray(address(strategyA1));
+
+        SmartVaultSpecification memory smartVaultSpecification =
+            getSmartVaultSpecification(assetGroupIdA, smartVaultStrategies);
+        smartVaultSpecification.guards = guards;
+        smartVaultSpecification.guardRequestTypes = guardRequestTypes;
+        smartVaultSpecification.allowRedeemFor = true;
+
+        vm.startPrank(bob);
+        // Bob creates the smart vault
+        ISmartVault smartVault = smartVaultFactory.deploySmartVault(smartVaultSpecification);
+        vm.stopPrank();
+
+        // add Alice to allowlist
+        accessControl.grantSmartVaultRole(address(smartVault), ROLE_GUARD_ALLOWLIST_MANAGER, address(this));
+        allowlistGuard.addToAllowlist(address(smartVault), 0, Arrays.toArray(alice));
+
+        // set initial statte
+        // - Alice deposits twice
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(10 ether);
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+        uint256 depositNftIdAlice1 = smartVaultManager.deposit(
+            DepositBag({
+                smartVault: address(smartVault),
+                assets: depositAmounts,
+                receiver: alice,
+                referral: address(0x0),
+                doFlush: false
+            })
+        );
+
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+        uint256 depositNftIdAlice2 = smartVaultManager.deposit(
+            DepositBag({
+                smartVault: address(smartVault),
+                assets: depositAmounts,
+                receiver: alice,
+                referral: address(0x0),
+                doFlush: false
+            })
+        );
+
+        vm.stopPrank();
+
+        // - flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // - DHW
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroupA));
+        vm.stopPrank();
+
+        // - sync vault
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        // check initial state
+        assertApproxEqRel(smartVault.totalSupply(), 20000000000000000000000, 10 ** 12);
+        assertApproxEqRel(smartVault.balanceOf(address(smartVault)), 20000000000000000000000, 10 ** 12);
+
+        // Alice can request withdrawal
+        vm.startPrank(alice);
+        uint256 withdrawalNftIdAlice = smartVaultManager.redeem(
+            RedeemBag({
+                smartVault: address(smartVault),
+                shares: smartVaultManager.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(depositNftIdAlice1)),
+                nftIds: Arrays.toArray(depositNftIdAlice1),
+                nftAmounts: Arrays.toArray(NFT_MINTED_SHARES)
+            }),
+            alice,
+            false
+        );
+        vm.stopPrank();
+
+        // check state
+        // - withdrawal NFT is minted
+        assertEq(withdrawalNftIdAlice, 2 ** 255 + 1);
+        assertEq(smartVault.balanceOf(alice, withdrawalNftIdAlice), 1);
+
+        // Bob as smart vault owner cannnot request withdrawal for Alice
+        vm.startPrank(bob);
+        uint256 shares =
+            smartVaultManager.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(depositNftIdAlice2));
+        uint256[] memory nftIds = Arrays.toArray(depositNftIdAlice2);
+        uint256[] memory nftAmounts = Arrays.toArray(NFT_MINTED_SHARES);
+        vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
+        smartVaultManager.redeemFor(
+            RedeemBag({smartVault: address(smartVault), shares: shares, nftIds: nftIds, nftAmounts: nftAmounts}),
+            alice,
+            false
+        );
+        vm.stopPrank();
+
+        // add Bob to allowlist
+        allowlistGuard.addToAllowlist(address(smartVault), 0, Arrays.toArray(bob));
+
+        // Bob as smart vault owner can request withdrawal for Alice
+        vm.startPrank(bob);
+        shares = smartVaultManager.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(depositNftIdAlice2));
+        nftIds = Arrays.toArray(depositNftIdAlice2);
+        nftAmounts = Arrays.toArray(NFT_MINTED_SHARES);
+        uint256 withdrawalNftIdBob = smartVaultManager.redeemFor(
+            RedeemBag({smartVault: address(smartVault), shares: shares, nftIds: nftIds, nftAmounts: nftAmounts}),
+            alice,
+            false
+        );
+        vm.stopPrank();
+
+        // check state
         // - withdrawal NFT is minted
         assertEq(withdrawalNftIdBob, 2 ** 255 + 2);
         assertEq(smartVault.balanceOf(alice, withdrawalNftIdBob), 1);
