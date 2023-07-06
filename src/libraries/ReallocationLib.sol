@@ -321,7 +321,7 @@ library ReallocationLib {
                 IStrategy(smartVaultStrategies[i]).releaseShares(params.smartVault, sharesToRedeem);
 
                 // Recalculate value to withdraw based on released shares.
-                reallocation[0][i] = IStrategy(smartVaultStrategies[i]).totalUsdValue() * sharesToRedeem
+                reallocation[0][i] = params.strategyValues[params.strategyMapping[i]] * sharesToRedeem
                     / IStrategy(smartVaultStrategies[i]).totalSupply();
 
                 // Update total shares to redeem for strategy.
