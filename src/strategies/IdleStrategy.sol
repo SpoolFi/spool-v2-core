@@ -113,7 +113,7 @@ contract IdleStrategy is Strategy {
         }
 
         if (!PackedRange.isWithinRange(slippage, ssts)) {
-            revert IdleBeforeDepositCheckFailed();
+            revert IdleBeforeRedeemalCheckFailed();
         }
     }
 
