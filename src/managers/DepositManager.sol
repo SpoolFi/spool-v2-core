@@ -780,7 +780,19 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         }
 
         // handle dust
-        distribution[0][0] += bag.deposit[0] - distributed;
+        unchecked {
+            if (bag.deposit[0] > distributed) {
+                // We cannot just assign the dust to an arbitrary strategy (like first or last one)
+                // in case it is ghost strategy. So we need to find a strategy that was already
+                // allocated some assets and assign dust to that one instead.
+                for (uint256 i; i < bag.strategyRatios.length; ++i) {
+                    if (distribution[i][0] > 0) {
+                        distribution[i][0] += bag.deposit[0] - distributed;
+                        break;
+                    }
+                }
+            }
+        }
 
         return distribution;
     }

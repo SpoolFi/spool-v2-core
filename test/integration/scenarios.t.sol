@@ -52,6 +52,7 @@ contract ScenariosTest is Test {
 
     MockStrategy strategyA1;
     MockStrategy strategyA2;
+    MockStrategy strategyA3;
     MockStrategy strategyAB1;
 
     SpoolAccessControl accessControl;
@@ -187,6 +188,10 @@ contract ScenariosTest is Test {
             strategyA2 = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupIdA);
             strategyA2.initialize("StratA2", Arrays.toArray(1));
             strategyRegistry.registerStrategy(address(strategyA2), 0);
+
+            strategyA3 = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupIdA);
+            strategyA3.initialize("StratA3", Arrays.toArray(1));
+            strategyRegistry.registerStrategy(address(strategyA3), 0);
 
             strategyAB1 = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupIdAB);
             strategyAB1.initialize("StratAB1", Arrays.toArray(1, 1));
@@ -694,6 +699,44 @@ contract ScenariosTest is Test {
         // should not flush deposit
         vm.expectRevert(GhostVault.selector);
         smartVaultManager.flushSmartVault(address(smartVault));
+    }
+
+    function test_flush_singleAssetWithFirstStrategyGhost() public {
+        address[] memory smartVaultStrategies =
+            Arrays.toArray(address(strategyA1), address(strategyA2), address(strategyA3));
+
+        SmartVaultSpecification memory specification = getSmartVaultSpecification(assetGroupIdA, smartVaultStrategies);
+        specification.strategyAllocation = Arrays.toUint16a16(99_97, 1, 2);
+
+        ISmartVault smartVault = smartVaultFactory.deploySmartVault(specification);
+
+        // strategy A1 is removed
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[0], Arrays.toArray(address(smartVault)), true);
+
+        // Alice deposits
+        vm.startPrank(alice);
+
+        uint256[] memory depositAmounts = Arrays.toArray(10_000);
+        tokenA.approve(address(smartVaultManager), depositAmounts[0]);
+
+        smartVaultManager.deposit(
+            DepositBag({
+                smartVault: address(smartVault),
+                assets: depositAmounts,
+                receiver: alice,
+                referral: address(0x0),
+                doFlush: false
+            })
+        );
+
+        vm.stopPrank();
+
+        // flush
+        smartVaultManager.flushSmartVault(address(smartVault));
+
+        // check state
+        assertEq(strategyRegistry.depositedAssets(address(strategyA2), 1)[0], 3_334);
+        assertEq(strategyRegistry.depositedAssets(address(strategyA3), 1)[0], 6_666);
     }
 
     function test_redeem_shouldRevertWhenOnlyGhostStrategies() public {
