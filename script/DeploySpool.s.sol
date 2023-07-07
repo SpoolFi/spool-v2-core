@@ -20,6 +20,7 @@ import {MasterWallet} from "../src/MasterWallet.sol";
 import {SmartVault} from "../src/SmartVault.sol";
 import {SmartVaultFactory} from "../src/SmartVaultFactory.sol";
 import {Swapper} from "../src/Swapper.sol";
+import {SpoolLens} from "../src/SpoolLens.sol";
 import "../src/managers/DepositManager.sol";
 import "../src/managers/WithdrawalManager.sol";
 import "../src/strategies/GhostStrategy.sol";
@@ -53,6 +54,7 @@ contract DeploySpool {
     ExponentialAllocationProvider public exponentialAllocationProvider;
     LinearAllocationProvider public linearAllocationProvider;
     UniformAllocationProvider public uniformAllocationProvider;
+    SpoolLens public spoolLens;
 
     function deploySpool() public {
         TransparentUpgradeableProxy proxy;
@@ -280,6 +282,24 @@ contract DeploySpool {
             allowlistGuard = new AllowlistGuard(spoolAccessControl);
 
             contractsJson().add("AllowlistGuard", address(allowlistGuard));
+        }
+
+        {
+            SpoolLens implementation = new SpoolLens(
+                spoolAccessControl,
+                assetGroupRegistry,
+                riskManager,
+                depositManager,
+                withdrawalManager,
+                strategyRegistry,
+                masterWallet,
+                usdPriceFeedManager,
+                smartVaultManager
+            );
+            proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
+            spoolLens = SpoolLens(address(proxy));
+
+            contractsJson().addProxy("SpoolLens", address(implementation), address(spoolLens));
         }
     }
 

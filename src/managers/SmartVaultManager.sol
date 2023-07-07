@@ -143,7 +143,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         if (nftIds.length > 0) {
-            currentBalance += _simulateSyncWithBurn(smartVaultAddress, userAddress, nftIds);
+            currentBalance += simulateSyncWithBurn(smartVaultAddress, userAddress, nftIds);
         }
     }
 
@@ -611,8 +611,8 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * - Flush index can't be synced, if all DHWs haven't been completed yet.
      * - W-NFTs and NFTs with fractional balance of 0 will be skipped.
      */
-    function _simulateSyncWithBurn(address smartVault, address userAddress, uint256[] memory nftIds)
-        private
+    function simulateSyncWithBurn(address smartVault, address userAddress, uint256[] memory nftIds)
+        public
         view
         returns (uint256 newBalance)
     {

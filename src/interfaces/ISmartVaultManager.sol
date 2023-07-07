@@ -249,7 +249,20 @@ interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
     function simulateSync(address smartVault)
         external
         view
-        returns (uint256 oldTotalSVTs, uint256 mintedSVTs, uint256 feeSVTs, uint256[] memory sstShares);
+        returns (uint256 oldTotalSVTs, uint256 mintedSVTs, uint256 feeSVTs, uint256[] calldata sstShares);
+        
+    /**
+     * @dev Simulate sync when burning dNFTs and return their svts value.
+     *
+     * @param smartVault SmartVault address
+     * @param userAddress User address that owns dNFTs
+     * @param nftIds Ids of dNFTs
+     * @return svts Amount of svts user would get if he burns dNFTs 
+     */
+    function simulateSyncWithBurn(address smartVault, address userAddress, uint256[] calldata nftIds)
+        external
+        view
+        returns (uint256 svts);
 
     /**
      * @notice Instantly redeems smart vault shares for assets.
