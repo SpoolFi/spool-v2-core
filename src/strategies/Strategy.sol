@@ -379,8 +379,10 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         _burn(shareOwner, shares);
 
         // transfer assets to recipient (master wallet in case of redeemFast)
-        for (uint256 i; i < assetGroup.length; ++i) {
-            IERC20(assetGroup[i]).safeTransfer(recipient, assetsWithdrawn[i]);
+        unchecked {
+            for (uint256 i; i < assetGroup.length; ++i) {
+                IERC20(assetGroup[i]).safeTransfer(recipient, assetsWithdrawn[i]);
+            }
         }
 
         return assetsWithdrawn;

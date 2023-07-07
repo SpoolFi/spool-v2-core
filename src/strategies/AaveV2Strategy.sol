@@ -50,6 +50,11 @@ contract AaveV2Strategy is Strategy {
         return _assetRatio;
     }
 
+    function getUnderlyingAssetAmounts() external view returns (uint256[] memory amounts) {
+        amounts = new uint256[](1);
+        amounts[0] = aToken.balanceOf(address(this));
+    }
+
     function beforeDepositCheck(uint256[] memory, uint256[] calldata) public view override {}
 
     function beforeRedeemalCheck(uint256, uint256[] calldata) public view override {}

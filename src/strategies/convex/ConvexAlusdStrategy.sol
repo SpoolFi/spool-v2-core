@@ -103,11 +103,15 @@ contract ConvexAlusdStrategy is
         if (tokens.length != N_COINS) {
             revert InvalidAssetGroup(assetGroupId());
         }
-        for (uint256 i; i < tokens.length; ++i) {
-            if (tokens[i] != _coins(i)) {
-                revert InvalidAssetGroup(assetGroupId());
+
+        unchecked {
+            for (uint256 i; i < tokens.length; ++i) {
+                if (tokens[i] != _coins(i)) {
+                    revert InvalidAssetGroup(assetGroupId());
+                }
             }
         }
+
         tokenLength = tokens.length;
 
         _poolMeta = poolMeta_;
@@ -142,11 +146,18 @@ contract ConvexAlusdStrategy is
     function assetRatio() external view override returns (uint256[] memory) {
         uint256[] memory assetRatio_ = new uint256[](tokenLength);
 
-        for (uint256 i; i < tokenLength; ++i) {
-            assetRatio_[i] = _balances(i);
+        unchecked {
+            for (uint256 i; i < tokenLength; ++i) {
+                assetRatio_[i] = _balances(i);
+            }
         }
 
         return assetRatio_;
+    }
+
+    function getUnderlyingAssetAmounts() external view returns (uint256[] memory amounts) {
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
+        amounts = _getTokenWorth(tokens);
     }
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
@@ -252,8 +263,10 @@ contract ConvexAlusdStrategy is
 
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
-        for (uint256 i; i < tokenLength; ++i) {
-            IERC20(tokens[i]).safeTransfer(recipient, IERC20(tokens[i]).balanceOf(address(this)));
+        unchecked {
+            for (uint256 i; i < tokenLength; ++i) {
+                IERC20(tokens[i]).safeTransfer(recipient, IERC20(tokens[i]).balanceOf(address(this)));
+            }
         }
     }
 
@@ -302,9 +315,12 @@ contract ConvexAlusdStrategy is
 
     function _depositInner(address[] calldata tokens, uint256[] memory amounts, uint256 slippage) private {
         // to curve base
-        for (uint256 i; i < tokenLength; ++i) {
-            _resetAndApprove(IERC20(tokens[i]), pool(), amounts[i]);
+        unchecked {
+            for (uint256 i; i < tokenLength; ++i) {
+                _resetAndApprove(IERC20(tokens[i]), pool(), amounts[i]);
+            }
         }
+
         _addLiquidity(amounts, 0);
 
         // to curve meta
@@ -337,8 +353,10 @@ contract ConvexAlusdStrategy is
 
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
         uint256[] memory bought = new uint256[](tokens.length);
-        for (uint256 i; i < tokens.length; ++i) {
-            bought[i] = IERC20(tokens[i]).balanceOf(address(this));
+        unchecked {
+            for (uint256 i; i < tokens.length; ++i) {
+                bought[i] = IERC20(tokens[i]).balanceOf(address(this));
+            }
         }
 
         if (_isViewExecution()) {
@@ -353,10 +371,12 @@ contract ConvexAlusdStrategy is
         address[] memory rewardTokens;
         if (extraRewards) {
             uint256 extraRewardCount = crvRewards.extraRewardsLength();
-            rewardTokens = new address[](BASE_REWARD_COUNT + extraRewardCount);
 
-            for (uint256 i; i < extraRewardCount; ++i) {
-                rewardTokens[BASE_REWARD_COUNT + i] = crvRewards.extraRewards(i);
+            unchecked {
+                rewardTokens = new address[](BASE_REWARD_COUNT + extraRewardCount);
+                for (uint256 i; i < extraRewardCount; ++i) {
+                    rewardTokens[BASE_REWARD_COUNT + i] = crvRewards.extraRewards(i);
+                }
             }
         } else {
             rewardTokens = new address[](BASE_REWARD_COUNT);
@@ -393,12 +413,14 @@ contract ConvexAlusdStrategy is
         address[] memory rewardTokens = _getRewards();
         uint256[] memory balances = new uint256[](rewardTokens.length);
 
-        for (uint256 i; i < rewardTokens.length; ++i) {
-            uint256 balance = IERC20(rewardTokens[i]).balanceOf(address(this));
-            if (balance > 0) {
-                IERC20(rewardTokens[i]).safeTransfer(address(swapper), balance);
+        unchecked {
+            for (uint256 i; i < rewardTokens.length; ++i) {
+                uint256 balance = IERC20(rewardTokens[i]).balanceOf(address(this));
+                if (balance > 0) {
+                    IERC20(rewardTokens[i]).safeTransfer(address(swapper), balance);
 
-                balances[i] = balance;
+                    balances[i] = balance;
+                }
             }
         }
 

@@ -39,6 +39,15 @@ contract MockStrategy is Strategy {
         return ratios;
     }
 
+    function getUnderlyingAssetAmounts() external view returns (uint256[] memory amounts) {
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId());
+        amounts = new uint[](assetGroup.length);
+
+        for (uint256 i = 0; i < assetGroup.length; i++) {
+            amounts[0] = IERC20(assetGroup[i]).balanceOf(address(protocol));
+        }
+    }
+
     function _getYieldPercentage(int256 manualYield) internal pure override returns (int256) {
         return manualYield;
     }

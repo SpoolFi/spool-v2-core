@@ -118,6 +118,12 @@ interface IStrategy is IERC20Upgradeable {
      */
     function assets() external view returns (address[] memory assets);
 
+    /**
+     * @notice Gets underlying asset amounts for the strategy.
+     * @return amounts Amounts of the underlying assets.
+     */
+    function getUnderlyingAssetAmounts() external view returns (uint256[] memory amounts);
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**

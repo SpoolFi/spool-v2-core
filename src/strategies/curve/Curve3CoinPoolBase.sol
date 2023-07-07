@@ -39,7 +39,7 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
     using SafeERC20 for IERC20;
     using uint16a16Lib for uint16a16;
 
-    uint256 constant N_COINS = 3;
+    uint256 internal constant N_COINS = 3;
 
     ICurve3CoinPool public pool;
 
@@ -67,6 +67,17 @@ abstract contract Curve3CoinPoolBase is CurvePoolBase {
         }
 
         return assetRatio_;
+    }
+
+    function getUnderlyingAssetAmounts() external view returns (uint256[] memory amounts) {
+        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
+
+        uint256 lpTokenBalance = _lpTokenBalance();
+        uint256 lpTokenTotalSupply = lpToken.totalSupply();
+        amounts = new uint256[](tokens.length);
+        for (uint256 i; i < tokens.length; ++i) {
+            amounts[i] = _balances(assetMapping.get(i)) * lpTokenBalance / lpTokenTotalSupply;
+        }
     }
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {

@@ -34,6 +34,11 @@ contract MockStrategy2 is Strategy {
         ratio[0] = 1;
     }
 
+    function getUnderlyingAssetAmounts() external view returns (uint256[] memory amounts) {
+        amounts = new uint[](1);
+        amounts[0] = protocol.totalUnderlying();
+    }
+
     function beforeDepositCheck(uint256[] memory, uint256[] calldata) public pure override {}
 
     function beforeRedeemalCheck(uint256, uint256[] calldata) public pure override {}

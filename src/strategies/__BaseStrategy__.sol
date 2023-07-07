@@ -21,6 +21,10 @@ contract __BaseStrategy__ is Strategy {
         // TODO
     }
 
+    function getUnderlyingAssetAmounts() external view override returns (uint256[] memory amounts) {
+        // TODO
+    }
+
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public view override {
         // TODO
     }

@@ -85,6 +85,11 @@ contract CompoundV2Strategy is Strategy {
         return _assetRatio;
     }
 
+    function getUnderlyingAssetAmounts() external view returns (uint256[] memory amounts) {
+        amounts = new uint256[](1);
+        amounts[0] = (cToken.exchangeRateStored() * cToken.balanceOf(address(this))) / MANTISSA;
+    }
+
     /**
      * @notice Nothing to swap as it's only one asset.
      */

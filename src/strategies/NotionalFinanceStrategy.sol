@@ -88,6 +88,13 @@ contract NotionalFinanceStrategy is Strategy {
         return _assetRatio;
     }
 
+    function getUnderlyingAssetAmounts() external view returns (uint256[] memory amounts) {
+        uint256 nTokenBalance = nToken.balanceOf(address(this));
+
+        amounts = new uint256[](1);
+        amounts[0] = _getNTokenValue(nTokenBalance);
+    }
+
     /**
      * @notice Nothing to swap as it's only one asset.
      */

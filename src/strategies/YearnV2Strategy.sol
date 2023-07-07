@@ -76,6 +76,11 @@ contract YearnV2Strategy is Strategy {
         return _assetRatio;
     }
 
+    function getUnderlyingAssetAmounts() external view returns (uint256[] memory amounts) {
+        amounts = new uint256[](1);
+        amounts[0] = yTokenVault.balanceOf(address(this)) * yTokenVault.pricePerShare() / oneShare;
+    }
+
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
         if (_isViewExecution()) {
             uint256[] memory beforeDepositCheckSlippageAmounts = new uint256[](1);

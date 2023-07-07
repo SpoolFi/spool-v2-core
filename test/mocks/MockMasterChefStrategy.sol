@@ -34,6 +34,13 @@ contract MockMasterChefStrategy is Strategy {
         return _assetRatio;
     }
 
+    function getUnderlyingAssetAmounts() external view returns (uint256[] memory amounts) {
+        (uint256 balance,) = masterChef.userInfo(pid, address(this));
+
+        amounts = new uint[](1);
+        amounts[0] = balance;
+    }
+
     function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
     function _compound(address[] calldata tokens, SwapInfo[] calldata, uint256[] calldata)

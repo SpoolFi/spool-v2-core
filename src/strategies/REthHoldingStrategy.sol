@@ -95,6 +95,11 @@ contract REthHoldingStrategy is Strategy, WethHelper {
         return _assetRatio;
     }
 
+    function getUnderlyingAssetAmounts() external view returns (uint256[] memory amounts) {
+        amounts = new uint256[](1);
+        amounts[0] = rEthToken.getEthValue(rEthToken.balanceOf(address(this)));
+    }
+
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
         if (_isViewExecution()) {
             uint256[] memory beforeDepositCheckSlippageAmounts = new uint256[](1);

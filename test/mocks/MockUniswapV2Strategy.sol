@@ -60,6 +60,27 @@ contract MockUniswapV2Strategy is Strategy {
         return _assetRatio;
     }
 
+    function getUnderlyingAssetAmounts() external view returns (uint256[] memory amounts) {
+        amounts = new uint256[](2);
+
+        uint256 lpBalance = uniswapPair.balanceOf(address(this));
+        if (lpBalance == 0) {
+            return amounts;
+        }
+
+        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId());
+        (address tokenA,) = UniswapV2Library.sortTokens(assetGroup[0], assetGroup[1]);
+
+        (uint256 reserveA, uint256 reserveB,) = uniswapPair.getReserves();
+
+        if (tokenA != assetGroup[0]) {
+            (reserveA, reserveB) = (reserveB, reserveA);
+        }
+
+        amounts[0] = reserveA;
+        amounts[1] = reserveB;
+    }
+
     function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
     function _getYieldPercentage(int256 manualYield) internal pure override returns (int256) {
