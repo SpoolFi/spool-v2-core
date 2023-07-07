@@ -157,7 +157,7 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
 
         unchecked {
             for (uint8 i; i < allocations.length; ++i) {
-                    int8 riskTolerance = int8(i) - 10;
+                int8 riskTolerance = int8(i) - 10;
                 allocations[i] = IAllocationProvider(allocationProvider).calculateAllocation(
                     AllocationCalculationInput({
                         strategies: strategies,
