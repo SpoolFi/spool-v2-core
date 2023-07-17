@@ -204,7 +204,8 @@ contract ReallocationIntegrationTest is Test {
             swapInfo: reallocationSwapInfo,
             depositSlippages: depositSlippages,
             withdrawalSlippages: withdrawalSlippages,
-            exchangeRateSlippages: exchangeRateSlippages
+            exchangeRateSlippages: exchangeRateSlippages,
+            validUntil: TimeUtils.getTimestampInInfiniteFuture()
         });
     }
 
@@ -4511,6 +4512,56 @@ contract ReallocationIntegrationTest is Test {
             assetGroupRegistry.listAssetGroup(assetGroupId)
         );
         vm.expectRevert(StaticAllocationSmartVault.selector);
+        smartVaultManager.reallocate(reallocationParams);
+        vm.stopPrank();
+    }
+
+    function test_reallocate_shouldRevertWhenCalledWithExpiredParameters() public {
+        // setup asset group with TokenA
+        uint256 assetGroupId;
+        {
+            assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(tokenA)));
+
+            priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
+        }
+
+        // setup strategies
+        MockStrategy strategyA;
+        MockStrategy strategyB;
+        {
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
+            strategyRegistry.registerStrategy(address(strategyA), 0);
+
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
+            strategyRegistry.registerStrategy(address(strategyB), 0);
+        }
+
+        // setup smart vaults
+        ISmartVault smartVaultA;
+        {
+            SmartVaultSpecification memory specification = _getSmartVaultSpecification();
+            specification.smartVaultName = "SmartVaultA";
+            specification.assetGroupId = assetGroupId;
+            specification.strategies = Arrays.toArray(address(strategyA), address(strategyB));
+            vm.mockCall(
+                address(riskManager),
+                abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+                abi.encode(Arrays.toUint16a16(60_00, 40_00))
+            );
+            smartVaultA = smartVaultFactory.deploySmartVault(specification);
+        }
+
+        // reallocate
+        vm.startPrank(reallocator);
+        ReallocateParamBag memory reallocationParams = generateReallocateParamBag(
+            Arrays.toArray(address(smartVaultA)),
+            Arrays.toArray(address(strategyA), address(strategyB)),
+            assetGroupRegistry.listAssetGroup(assetGroupId)
+        );
+        reallocationParams.validUntil = TimeUtils.getTimestampInPast(1);
+        vm.expectRevert(ReallocationParametersExpired.selector);
         smartVaultManager.reallocate(reallocationParams);
         vm.stopPrank();
     }

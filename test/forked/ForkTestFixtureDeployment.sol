@@ -930,6 +930,8 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         address[] memory strategies = _smartVaultManager.strategies(address(vault));
         address[] memory assets = _deploySpool.assetGroupRegistry().listAssetGroup(vault.assetGroupId());
 
+        params.validUntil = TimeUtils.getTimestampInInfiniteFuture();
+
         params.smartVaults = new address[](1);
         params.smartVaults[0] = address(vault);
 

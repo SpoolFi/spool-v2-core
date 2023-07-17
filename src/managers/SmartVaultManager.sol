@@ -397,6 +397,11 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             _checkRole(ROLE_REALLOCATOR, msg.sender);
         }
 
+        if (reallocateParams.validUntil < block.timestamp) {
+            // Check if reallocation parameters are still valid.
+            revert ReallocationParametersExpired();
+        }
+
         if (reallocateParams.smartVaults.length == 0) {
             // Check if there is anything to reallocate.
             return;

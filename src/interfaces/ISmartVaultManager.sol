@@ -63,6 +63,11 @@ error VaultNotSynced();
  */
 error GhostVault();
 
+/**
+ * @notice Used when reallocation is called with expired parameters.
+ */
+error ReallocationParametersExpired();
+
 /* ========== STRUCTS ========== */
 
 /**
@@ -91,6 +96,7 @@ struct SmartVaultRegistrationForm {
  * @custom:member depositSlippages Slippages used to constrain depositing into the protocol.
  * @custom:member withdrawalSlippages Slippages used to contrain withdrawal from the protocol.
  * @custom:member exchangeRateSlippages Slippages used to constratrain exchange rates for asset tokens.
+ * @custom:member validUntil Sets the maximum timestamp the user is willing to wait to start executing reallocation.
  */
 struct ReallocateParamBag {
     address[] smartVaults;
@@ -99,6 +105,7 @@ struct ReallocateParamBag {
     uint256[][] depositSlippages;
     uint256[][] withdrawalSlippages;
     uint256[2][] exchangeRateSlippages;
+    uint256 validUntil;
 }
 
 struct FlushIndex {
