@@ -51,8 +51,11 @@ contract ReallocationIntegrationTest is Test {
         alice = address(0xa);
         bob = address(0xb);
 
-        tokenA = new MockToken("Token A", "TA");
-        tokenB = new MockToken("Token B", "TB");
+        address[] memory sorted =
+            Arrays.sort(Arrays.toArray(address(new MockToken("Token", "T")), address(new MockToken("Token", "T"))));
+
+        tokenA = MockToken(sorted[0]);
+        tokenB = MockToken(sorted[1]);
 
         accessControl = new SpoolAccessControl();
         accessControl.initialize();
@@ -3529,9 +3532,7 @@ contract ReallocationIntegrationTest is Test {
         uint256 assetGroupId;
         MockExchange exchangeAB;
         {
-            assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(tokenB), address(tokenA)));
-
-            // ASSET GROUP IS [TOKENB, TOKENA]!!!!
+            assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(tokenA), address(tokenB)));
 
             priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
             priceFeedManager.setExchangeRate(address(tokenB), 2 * USD_DECIMALS_MULTIPLIER);
@@ -3548,11 +3549,11 @@ contract ReallocationIntegrationTest is Test {
         MockStrategy strategyB;
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
-            strategyA.initialize("StratA", Arrays.toArray(10, 20));
+            strategyA.initialize("StratA", Arrays.toArray(20, 10));
             strategyRegistry.registerStrategy(address(strategyA), 0);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
-            strategyB.initialize("StratB", Arrays.toArray(9, 22));
+            strategyB.initialize("StratB", Arrays.toArray(22, 9));
             strategyRegistry.registerStrategy(address(strategyB), 0);
         }
 
@@ -3591,7 +3592,7 @@ contract ReallocationIntegrationTest is Test {
             uint256 depositNftAlice = smartVaultManager.deposit(
                 DepositBag({
                     smartVault: address(smartVaultA),
-                    assets: Arrays.toArray(24 ether, 52 ether),
+                    assets: Arrays.toArray(52 ether, 24 ether),
                     receiver: alice,
                     referral: address(0),
                     doFlush: false
@@ -3606,7 +3607,7 @@ contract ReallocationIntegrationTest is Test {
             uint256 depositNftBob = smartVaultManager.deposit(
                 DepositBag({
                     smartVault: address(smartVaultB),
-                    assets: Arrays.toArray(23 ether, 54 ether),
+                    assets: Arrays.toArray(54 ether, 23 ether),
                     receiver: bob,
                     referral: address(0),
                     doFlush: false

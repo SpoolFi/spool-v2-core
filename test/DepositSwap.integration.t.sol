@@ -37,14 +37,21 @@ contract DepositSwapIntegrationTest is TestFixture {
 
         accessControl.grantRole(ROLE_SPOOL_ADMIN, swapperAdmin);
 
-        tokenA = new MockToken("Token A", "TA");
-        tokenB = new MockToken("Token B", "TB");
-        tokenC = new MockToken("Token C", "TC");
+        address[] memory sorted = Arrays.sort(
+            Arrays.toArray(
+                address(new MockToken("Token", "T")),
+                address(new MockToken("Token", "T")),
+                address(new MockToken("Token", "T"))
+            )
+        );
+
+        tokenA = MockToken(sorted[0]);
+        tokenB = MockToken(sorted[1]);
+        tokenC = MockToken(sorted[2]);
 
         assetGroupRegistry.allowToken(address(tokenA));
         assetGroupRegistry.allowToken(address(tokenB));
         assetGroupRegistry.allowToken(address(tokenC));
-        assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(tokenA), address(tokenB), address(tokenC)));
 
         weth = IWETH9(address(new WETH9()));
 
