@@ -18,7 +18,7 @@ bytes32 constant ROLE_SPOOL_ADMIN = 0x00;
  *
  * Should be granted to smart vault factory contracts.
  */
-bytes32 constant ROLE_SMART_VAULT_INTEGRATOR = keccak256("ROLE_SMART_VAULT_INTEGRATOR");
+bytes32 constant ROLE_SMART_VAULT_INTEGRATOR = keccak256("SMART_VAULT_INTEGRATOR");
 
 /**
  * @dev Grants permission to
@@ -45,7 +45,6 @@ bytes32 constant ROLE_GUARD_ALLOWLIST_MANAGER = keccak256("GUARD_ALLOWLIST_MANAG
  * - the WithdrawalManager contract.
  */
 bytes32 constant ROLE_MASTER_WALLET_MANAGER = keccak256("MASTER_WALLET_MANAGER");
-// TODO: check if SmartVaultManager need this permission
 
 /**
  * @dev Marks a contract as a smart vault manager.
@@ -90,7 +89,7 @@ bytes32 constant ROLE_UNPAUSER = keccak256("SYSTEM_UNPAUSER");
 /**
  * @dev Grants permission to manage rewards payment pool.
  */
-bytes32 constant ROLE_REWARD_POOL_ADMIN = keccak256("ROLE_REWARD_POOL_ADMIN");
+bytes32 constant ROLE_REWARD_POOL_ADMIN = keccak256("REWARD_POOL_ADMIN");
 
 /**
  * @dev Grants permission to reallocate smart vaults.
