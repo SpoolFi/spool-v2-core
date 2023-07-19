@@ -87,24 +87,24 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
      * @notice Retrieves a Smart Vault Token Balance for user. Including the predicted balance from all current D-NFTs
      * currently in holding.
      */
-    function getUserSVTBalance(address smartVaultAddress, address userAddress, uint256[] calldata nftIds)
+    function getUserSVTBalance(address smartVault, address user, uint256[] calldata nftIds)
         external
         view
         returns (uint256 currentBalance)
     {
-        currentBalance = ISmartVault(smartVaultAddress).balanceOf(userAddress);
+        currentBalance = ISmartVault(smartVault).balanceOf(user);
 
-        if (accessControl.smartVaultOwner(smartVaultAddress) == userAddress) {
-            (,, uint256 fees,) = smartVaultManager.simulateSync(smartVaultAddress);
+        if (accessControl.smartVaultOwner(smartVault) == user) {
+            (,, uint256 fees,) = smartVaultManager.simulateSync(smartVault);
             currentBalance += fees;
         }
 
         if (nftIds.length > 0) {
-            currentBalance += smartVaultManager.simulateSyncWithBurn(smartVaultAddress, userAddress, nftIds);
+            currentBalance += smartVaultManager.simulateSyncWithBurn(smartVault, user, nftIds);
         }
     }
 
-    function getUserSVTsfromNFTs(address smartVaultAddress, address userAddress, uint256[] calldata nftIds)
+    function getUserSVTsfromNFTs(address smartVault, address user, uint256[] calldata nftIds)
         external
         view
         returns (uint256[] memory nftSvts)
@@ -113,7 +113,7 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
         for (uint256 i; i < nftSvts.length; ++i) {
             uint256[] memory nftId = new uint256[](1);
             nftId[0] = nftId[i];
-            nftSvts[i] = smartVaultManager.simulateSyncWithBurn(smartVaultAddress, userAddress, nftId);
+            nftSvts[i] = smartVaultManager.simulateSyncWithBurn(smartVault, user, nftId);
         }
     }
 

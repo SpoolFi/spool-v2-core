@@ -92,7 +92,7 @@ contract VaultSyncTest is IntegrationTestFixture {
         assertEq(syncResult.mintedSVTs, totalSupply - INITIAL_LOCKED_SHARES);
         assertApproxEqRel(syncResult.mintedSVTs, 357162800000000000000000000, 10 ** 12);
         assertEq(syncResult.dhwTimestamp, dhwTimestamp);
-        assertEq(smartVault.totalSupply(), smartVaultManager.getSVTTotalSupply(address(smartVault)));
+        assertEq(smartVault.totalSupply(), spoolLens.getSVTTotalSupply(address(smartVault)));
 
         uint256 vaultOwnerBalance = smartVault.balanceOf(accessControl.smartVaultOwner(address(smartVault)));
         assertEq(vaultOwnerBalance, 0);
@@ -148,7 +148,7 @@ contract VaultSyncTest is IntegrationTestFixture {
         // Sync second DHW
         smartVaultManager.syncSmartVault(address(smartVault), true);
         uint256 vaultOwnerBalance = smartVault.balanceOf(bag.vaultOwner);
-        uint256 simulatedTotalSupply = smartVaultManager.getSVTTotalSupply(address(smartVault));
+        uint256 simulatedTotalSupply = spoolLens.getSVTTotalSupply(address(smartVault));
 
         // Should have management fees after syncing second DHW
         assertApproxEqRel(vaultSupplyBefore, 357162800000000000000000000, 10 ** 12);
@@ -193,10 +193,10 @@ contract VaultSyncTest is IntegrationTestFixture {
             )
         );
 
-        uint256 simulatedTotalSupply = smartVaultManager.getSVTTotalSupply(address(smartVault));
+        uint256 simulatedTotalSupply = spoolLens.getSVTTotalSupply(address(smartVault));
         address vaultOwner = accessControl.smartVaultOwner(address(smartVault));
         uint256 ownerBalance =
-            smartVaultManager.getUserSVTBalance(address(smartVault), vaultOwner, Arrays.toArray(depositId));
+            spoolLens.getUserSVTBalance(address(smartVault), vaultOwner, Arrays.toArray(depositId));
 
         // Sync previous DHW
         smartVaultManager.syncSmartVault(address(smartVault), true);
@@ -312,14 +312,14 @@ contract VaultSyncTest is IntegrationTestFixture {
         assertApproxEqRel((depositAmounts[0] * 2) * smartVault.balanceOf(vaultOwner) / totalSupply, 1 ether, 1e12);
         assertApproxEqRel(
             (depositAmounts[0] * 2)
-                * smartVaultManager.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(aliceDepositId))
+                * spoolLens.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(aliceDepositId))
                 / totalSupply,
             depositAmounts[0] - 1 ether,
             1e12
         );
         assertApproxEqRel(
             (depositAmounts[0] * 2)
-                * smartVaultManager.getUserSVTBalance(address(smartVault), bob, Arrays.toArray(bobDepositId)) / totalSupply,
+                * spoolLens.getUserSVTBalance(address(smartVault), bob, Arrays.toArray(bobDepositId)) / totalSupply,
             depositAmounts[0],
             1e12
         );
@@ -338,7 +338,7 @@ contract VaultSyncTest is IntegrationTestFixture {
         strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
         vm.stopPrank();
 
-        uint256 aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(nftId));
+        uint256 aliceBalance = spoolLens.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(nftId));
         vm.startPrank(alice);
         uint256 redeemNftId = smartVaultManager.redeem(
             RedeemBag(address(smartVault), aliceBalance, Arrays.toArray(nftId), Arrays.toArray(NFT_MINTED_SHARES)),

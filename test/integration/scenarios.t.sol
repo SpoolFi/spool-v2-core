@@ -15,6 +15,7 @@ import "../../src/managers/StrategyRegistry.sol";
 import "../../src/managers/WithdrawalManager.sol";
 import "../../src/strategies/GhostStrategy.sol";
 import "../../src/MasterWallet.sol";
+import "../../src/SpoolLens.sol";
 import "../../src/SmartVault.sol";
 import "../../src/SmartVaultFactory.sol";
 import "../../src/Swapper.sol";
@@ -69,6 +70,7 @@ contract ScenariosTest is Test {
     StrategyRegistry strategyRegistry;
     Swapper swapper;
     WithdrawalManager withdrawalManager;
+    SpoolLens spoolLens;
 
     function setUp() public {
         {
@@ -179,6 +181,18 @@ contract ScenariosTest is Test {
             accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
             accessControl.grantRole(ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM, address(smartVaultFactory));
         }
+
+        spoolLens = new SpoolLens(
+            accessControl,
+            assetGroupRegistry,
+            riskManager,
+            depositManager,
+            withdrawalManager,
+            strategyRegistry,
+            masterWallet,
+            priceFeedManager,
+            smartVaultManager
+        );
 
         {
             strategyA1 = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupIdA);
@@ -975,7 +989,7 @@ contract ScenariosTest is Test {
         uint256 withdrawalNftIdAlice = smartVaultManager.redeem(
             RedeemBag({
                 smartVault: address(smartVault),
-                shares: smartVaultManager.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(depositNftIdAlice1)),
+                shares: spoolLens.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(depositNftIdAlice1)),
                 nftIds: Arrays.toArray(depositNftIdAlice1),
                 nftAmounts: Arrays.toArray(NFT_MINTED_SHARES)
             }),
@@ -992,7 +1006,7 @@ contract ScenariosTest is Test {
         // Bob as smart vault owner cannnot request withdrawal for Alice
         vm.startPrank(bob);
         uint256 shares =
-            smartVaultManager.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(depositNftIdAlice2));
+            spoolLens.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(depositNftIdAlice2));
         uint256[] memory nftIds = Arrays.toArray(depositNftIdAlice2);
         uint256[] memory nftAmounts = Arrays.toArray(NFT_MINTED_SHARES);
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
@@ -1008,7 +1022,7 @@ contract ScenariosTest is Test {
 
         // Bob as smart vault owner can request withdrawal for Alice
         vm.startPrank(bob);
-        shares = smartVaultManager.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(depositNftIdAlice2));
+        shares = spoolLens.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(depositNftIdAlice2));
         nftIds = Arrays.toArray(depositNftIdAlice2);
         nftAmounts = Arrays.toArray(NFT_MINTED_SHARES);
         uint256 withdrawalNftIdBob = smartVaultManager.redeemFor(

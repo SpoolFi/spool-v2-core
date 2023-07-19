@@ -115,28 +115,6 @@ struct FlushIndex {
 
 /* ========== INTERFACES ========== */
 
-interface ISmartVaultBalance {
-    /**
-     * @notice Retrieves user balance of smart vault tokens.
-     * @param smartVault Smart vault.
-     * @param user User to check.
-     * @param nftIds user's NFTs (only D-NFTs, system will ignore W-NFTs)
-     * @return balance SVT balance of user for smart vault.
-     */
-    function getUserSVTBalance(address smartVault, address user, uint256[] calldata nftIds)
-        external
-        view
-        returns (uint256 balance);
-
-    /**
-     * @notice Retrieves total supply of SVTs.
-     * Includes deposits that were processed by DHW, but still need SVTs to be minted.
-     * @param smartVault Smart Vault address.
-     * @return totalSupply Simulated total supply
-     */
-    function getSVTTotalSupply(address smartVault) external view returns (uint256 totalSupply);
-}
-
 interface ISmartVaultRegistry {
     /**
      * @notice Registers smart vault into the Spool protocol.
@@ -148,7 +126,7 @@ interface ISmartVaultRegistry {
     function registerSmartVault(address smartVault, SmartVaultRegistrationForm calldata registrationForm) external;
 }
 
-interface ISmartVaultManager is ISmartVaultBalance, ISmartVaultRegistry {
+interface ISmartVaultManager is ISmartVaultRegistry {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /**

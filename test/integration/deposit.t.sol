@@ -110,7 +110,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         assertApproxEqRel(smartVault.balanceOf(address(smartVault)), 357162800000000000000000000, 10 ** 12);
 
         uint256[] memory ids = Arrays.toArray(aliceDepositNftId);
-        uint256 balance = smartVaultManager.getUserSVTBalance(address(smartVault), alice, ids);
+        uint256 balance = spoolLens.getUserSVTBalance(address(smartVault), alice, ids);
         assertApproxEqRel(balance, 357162800000000000000000000, 10 ** 12);
 
         // claim deposit
@@ -282,7 +282,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         assertEq(smartVault.balanceOf(address(smartVault)), svtBalance);
 
         uint256 balance =
-            smartVaultManager.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(aliceDepositNftId));
+            spoolLens.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(aliceDepositNftId));
         assertEq(balance, svtBalance);
 
         // burn half of NFT
@@ -332,7 +332,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         uint256[] memory nftIds = Arrays.toArray(aliceDepositNftId);
         // DHW
         // balance before DHW should be 0
-        aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice, nftIds);
+        aliceBalance = spoolLens.getUserSVTBalance(address(smartVault), alice, nftIds);
         assertEq(smartVault.totalSupply(), 0);
         assertEq(smartVault.balanceOf(address(smartVault)), 0);
         assertEq(smartVault.balanceOf(alice), 0);
@@ -347,7 +347,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
 
         // balance without locked SVTs
         uint256 expectedBalance = 357162799999996000000000000;
-        aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice, nftIds);
+        aliceBalance = spoolLens.getUserSVTBalance(address(smartVault), alice, nftIds);
         assertEq(smartVault.totalSupply(), 0);
         assertEq(smartVault.balanceOf(address(smartVault)), 0);
         assertEq(smartVault.balanceOf(alice), 0);
@@ -356,7 +356,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         smartVaultManager.syncSmartVault(address(smartVault), true);
 
         // balances after vault sync
-        aliceBalance = smartVaultManager.getUserSVTBalance(address(smartVault), alice, nftIds);
+        aliceBalance = spoolLens.getUserSVTBalance(address(smartVault), alice, nftIds);
         assertEq(aliceBalance, expectedBalance);
         assertEq(smartVault.totalSupply() - INITIAL_LOCKED_SHARES, expectedBalance);
         assertEq(smartVault.balanceOf(address(smartVault)), expectedBalance);
@@ -375,7 +375,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
 
         nftIds = Arrays.toArray(nftIds[0], aliceDepositNftId);
         // balances after deposit #2, before DHW, should be the same
-        uint256 aliceBalance2 = smartVaultManager.getUserSVTBalance(address(smartVault), alice, nftIds);
+        uint256 aliceBalance2 = spoolLens.getUserSVTBalance(address(smartVault), alice, nftIds);
         assertEq(aliceBalance2, expectedBalance);
         assertEq(smartVault.totalSupply() - INITIAL_LOCKED_SHARES, expectedBalance);
         assertEq(smartVault.balanceOf(address(smartVault)), expectedBalance);
@@ -428,7 +428,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
 
         // Alice withdraws
         uint256 aliceBalance =
-            smartVaultManager.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(aliceDepositNftId));
+            spoolLens.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(aliceDepositNftId));
         vm.startPrank(alice);
         uint256 aliceWithdrawalNftId = smartVaultManager.redeem(
             RedeemBag(

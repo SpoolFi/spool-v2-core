@@ -3,19 +3,28 @@ pragma solidity 0.8.17;
 
 interface ISpoolLens {
     /**
-     * @notice Retrieves a Smart Vault Token Balance for user. Including the predicted balance from all current D-NFTs
-     * currently in holding.
+     * @notice Retrieves user balance of smart vault tokens.
+     * @param smartVault Smart vault.
+     * @param user User to check.
+     * @param nftIds user's NFTs (only D-NFTs, system will ignore W-NFTs)
+     * @return currentBalance SVT balance of user for smart vault.
      */
-    function getUserSVTBalance(address smartVaultAddress, address userAddress, uint256[] calldata nftIds)
+    function getUserSVTBalance(address smartVault, address user, uint256[] calldata nftIds)
         external
         view
         returns (uint256 currentBalance);
 
-    function getUserSVTsfromNFTs(address smartVaultAddress, address userAddress, uint256[] calldata nftIds)
+    function getUserSVTsfromNFTs(address smartVault, address user, uint256[] calldata nftIds)
         external
         view
         returns (uint256[] memory nftSvts);
 
+    /**
+     * @notice Retrieves total supply of SVTs.
+     * Includes deposits that were processed by DHW, but still need SVTs to be minted.
+     * @param smartVault Smart Vault address.
+     * @return totalSupply Simulated total supply
+     */
     function getSVTTotalSupply(address smartVault) external view returns (uint256);
 
     /**

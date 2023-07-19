@@ -126,31 +126,6 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     }
 
     /* ========== VIEW FUNCTIONS ========== */
-    /**
-     * @notice Retrieves a Smart Vault Token Balance for user. Including the predicted balance from all current D-NFTs
-     * currently in holding.
-     */
-    function getUserSVTBalance(address smartVaultAddress, address userAddress, uint256[] calldata nftIds)
-        external
-        view
-        returns (uint256 currentBalance)
-    {
-        currentBalance = ISmartVault(smartVaultAddress).balanceOf(userAddress);
-
-        if (_accessControl.smartVaultOwner(smartVaultAddress) == userAddress) {
-            (,, uint256 fees,) = simulateSync(smartVaultAddress);
-            currentBalance += fees;
-        }
-
-        if (nftIds.length > 0) {
-            currentBalance += simulateSyncWithBurn(smartVaultAddress, userAddress, nftIds);
-        }
-    }
-
-    function getSVTTotalSupply(address smartVault) external view returns (uint256) {
-        (uint256 currentSupply, uint256 mintedSVTs, uint256 fees,) = simulateSync(smartVault);
-        return currentSupply + mintedSVTs + fees;
-    }
 
     /**
      * @notice SmartVault strategies

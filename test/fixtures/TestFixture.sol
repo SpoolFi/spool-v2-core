@@ -19,6 +19,7 @@ import "../../src/providers/UniformAllocationProvider.sol";
 import "../../src/strategies/GhostStrategy.sol";
 import "../../src/MasterWallet.sol";
 import "../../src/SmartVaultFactory.sol";
+import "../../src/SpoolLens.sol";
 import "../../src/Swapper.sol";
 import "../libraries/TimeUtils.sol";
 
@@ -50,6 +51,7 @@ contract TestFixture is Test {
     IAllocationProvider internal allocationProvider;
     IStrategy internal ghostStrategy;
     SmartVaultFactory internal smartVaultFactory;
+    SpoolLens internal spoolLens;
 
     function test_mock() external pure virtual {}
 
@@ -99,6 +101,18 @@ contract TestFixture is Test {
             smartVaultManager,
             assetGroupRegistry,
             riskManager
+        );
+
+        spoolLens = new SpoolLens(
+            accessControl,
+            assetGroupRegistry,
+            riskManager,
+            depositManager,
+            withdrawalManager,
+            strategyRegistry,
+            masterWallet,
+            priceFeedManager,
+            smartVaultManager
         );
 
         accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));

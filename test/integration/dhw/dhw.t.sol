@@ -934,6 +934,18 @@ contract DhwMatchingTest is TestFixture {
             // create new asset group with two tokens
             tokenA = new MockToken("TokenA", "TA");
             tokenB = new MockToken("TokenB", "TB");
+            
+            assetGroup = Arrays.sort(
+                Arrays.toArray(
+                    address(tokenA),
+                    address(tokenB)
+                )
+            );
+
+            if (assetGroup[0] == address(tokenB)) {
+                tokenA = MockToken(assetGroup[0]);
+                tokenB = MockToken(assetGroup[1]);
+            }
 
             deal(address(tokenA), alice, 1000 ether, true);
             deal(address(tokenB), alice, 1000 ether, true);
@@ -945,7 +957,7 @@ contract DhwMatchingTest is TestFixture {
 
             assetGroupRegistry.allowToken(address(tokenA));
             assetGroupRegistry.allowToken(address(tokenB));
-            assetGroup = Arrays.toArray(address(tokenA), address(tokenB));
+
             assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
             // create new strategy using above asset group
