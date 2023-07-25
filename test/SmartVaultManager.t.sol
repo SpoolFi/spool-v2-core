@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {console} from "forge-std/console.sol";
 import "@openzeppelin/proxy/Clones.sol";
 import "forge-std/Test.sol";
 import "../src/interfaces/RequestType.sol";
