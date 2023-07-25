@@ -281,8 +281,7 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         assertEq(smartVault.totalSupply() - INITIAL_LOCKED_SHARES, svtBalance);
         assertEq(smartVault.balanceOf(address(smartVault)), svtBalance);
 
-        uint256 balance =
-            spoolLens.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(aliceDepositNftId));
+        uint256 balance = spoolLens.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(aliceDepositNftId));
         assertEq(balance, svtBalance);
 
         // burn half of NFT

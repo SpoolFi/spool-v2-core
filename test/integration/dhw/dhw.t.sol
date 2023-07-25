@@ -934,13 +934,8 @@ contract DhwMatchingTest is TestFixture {
             // create new asset group with two tokens
             tokenA = new MockToken("TokenA", "TA");
             tokenB = new MockToken("TokenB", "TB");
-            
-            assetGroup = Arrays.sort(
-                Arrays.toArray(
-                    address(tokenA),
-                    address(tokenB)
-                )
-            );
+
+            assetGroup = Arrays.sort(Arrays.toArray(address(tokenA), address(tokenB)));
 
             if (assetGroup[0] == address(tokenB)) {
                 tokenA = MockToken(assetGroup[0]);

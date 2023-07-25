@@ -1005,8 +1005,7 @@ contract ScenariosTest is Test {
 
         // Bob as smart vault owner cannnot request withdrawal for Alice
         vm.startPrank(bob);
-        uint256 shares =
-            spoolLens.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(depositNftIdAlice2));
+        uint256 shares = spoolLens.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(depositNftIdAlice2));
         uint256[] memory nftIds = Arrays.toArray(depositNftIdAlice2);
         uint256[] memory nftAmounts = Arrays.toArray(NFT_MINTED_SHARES);
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));

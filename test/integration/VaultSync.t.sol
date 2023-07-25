@@ -195,8 +195,7 @@ contract VaultSyncTest is IntegrationTestFixture {
 
         uint256 simulatedTotalSupply = spoolLens.getSVTTotalSupply(address(smartVault));
         address vaultOwner = accessControl.smartVaultOwner(address(smartVault));
-        uint256 ownerBalance =
-            spoolLens.getUserSVTBalance(address(smartVault), vaultOwner, Arrays.toArray(depositId));
+        uint256 ownerBalance = spoolLens.getUserSVTBalance(address(smartVault), vaultOwner, Arrays.toArray(depositId));
 
         // Sync previous DHW
         smartVaultManager.syncSmartVault(address(smartVault), true);
@@ -312,8 +311,7 @@ contract VaultSyncTest is IntegrationTestFixture {
         assertApproxEqRel((depositAmounts[0] * 2) * smartVault.balanceOf(vaultOwner) / totalSupply, 1 ether, 1e12);
         assertApproxEqRel(
             (depositAmounts[0] * 2)
-                * spoolLens.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(aliceDepositId))
-                / totalSupply,
+                * spoolLens.getUserSVTBalance(address(smartVault), alice, Arrays.toArray(aliceDepositId)) / totalSupply,
             depositAmounts[0] - 1 ether,
             1e12
         );
