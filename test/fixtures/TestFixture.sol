@@ -112,7 +112,8 @@ contract TestFixture is Test {
             strategyRegistry,
             masterWallet,
             priceFeedManager,
-            smartVaultManager
+            smartVaultManager,
+            address(ghostStrategy)
         );
 
         accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));

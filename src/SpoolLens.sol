@@ -50,6 +50,8 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
     /// @notice Smart vault manager
     ISmartVaultManager public immutable smartVaultManager;
 
+    address public immutable ghostStrategy;
+
     /* ========== VIEW FUNCTIONS ========== */
 
     constructor(
@@ -61,7 +63,8 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
         IStrategyRegistry strategyRegistry_,
         IMasterWallet masterWallet_,
         IUsdPriceFeedManager priceFeedManager_,
-        ISmartVaultManager smartVaultManager_
+        ISmartVaultManager smartVaultManager_,
+        address ghostStrategy_
     ) SpoolAccessControllable(accessControl_) {
         if (address(assetGroupRegistry_) == address(0)) revert ConfigurationAddressZero();
         if (address(riskManager_) == address(0)) revert ConfigurationAddressZero();
@@ -81,6 +84,7 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
         masterWallet = masterWallet_;
         priceFeedManager = priceFeedManager_;
         smartVaultManager = smartVaultManager_;
+        ghostStrategy = ghostStrategy_;
     }
 
     /**
@@ -166,6 +170,39 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
                         riskTolerance: riskTolerance
                     })
                 );
+            }
+        }
+    }
+
+    function getSmartVaultAssetBalances(address smartVault, bool doFlush)
+        external
+        returns (uint256[] memory balances)
+    {
+        if (doFlush) {
+            smartVaultManager.flushSmartVault(smartVault);
+        }
+        
+        smartVaultManager.syncSmartVault(smartVault, false);
+
+        uint256 assetsLength = assetGroupRegistry.assetGroupLength(smartVaultManager.assetGroupId(smartVault));
+        balances = new uint256[](assetsLength);
+
+        address[] memory smartVaultStrategies = smartVaultManager.strategies(smartVault);
+
+        for (uint256 i; i < smartVaultStrategies.length; ++i) {
+            if (ghostStrategy == smartVaultStrategies[i]) {
+                continue;
+            }
+
+            IStrategy strategy = IStrategy(smartVaultStrategies[i]);
+            
+            uint256 strategySupply = strategy.totalSupply(); 
+            uint256 smartVaultBalance = strategy.balanceOf(smartVault); 
+
+            uint256[] memory amounts = strategy.getUnderlyingAssetAmounts();
+
+            for (uint256 j; j < balances.length; ++j) {
+                balances[j] += (amounts[j] * smartVaultBalance) / strategySupply;
             }
         }
     }

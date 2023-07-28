@@ -294,7 +294,8 @@ contract DeploySpool {
                 strategyRegistry,
                 masterWallet,
                 usdPriceFeedManager,
-                smartVaultManager
+                smartVaultManager,
+                address(ghostStrategy)
             );
             proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
             spoolLens = SpoolLens(address(proxy));

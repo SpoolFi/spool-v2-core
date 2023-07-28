@@ -191,7 +191,8 @@ contract ScenariosTest is Test {
             strategyRegistry,
             masterWallet,
             priceFeedManager,
-            smartVaultManager
+            smartVaultManager,
+            address(ghostStrategy)
         );
 
         {
