@@ -347,9 +347,11 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         }
     }
 
-    function _assertSmartVaultBalances(ISmartVault smartVault, uint256[][] memory depositAmounts, uint256 maxDelta) internal {
+    function _assertSmartVaultBalances(ISmartVault smartVault, uint256[][] memory depositAmounts, uint256 maxDelta)
+        internal
+    {
         uint256 snapshot = vm.snapshot();
-        
+
         uint256[] memory balances = _deploySpool.spoolLens().getSmartVaultAssetBalances(address(smartVault), false);
 
         uint256[] memory depositAmountsSum = new uint256[](balances.length);
@@ -365,13 +367,15 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         vm.revertTo(snapshot);
     }
 
-    function _assertSmartVaultBalances(ISmartVault smartVault, uint256[] memory depositAmounts, uint256 maxDelta) internal {
+    function _assertSmartVaultBalances(ISmartVault smartVault, uint256[] memory depositAmounts, uint256 maxDelta)
+        internal
+    {
         uint256[][] memory depositAmountsDoubleArray = new uint256[][](depositAmounts.length);
 
         for (uint256 i; i < depositAmounts.length; ++i) {
             depositAmountsDoubleArray[i] = Arrays.toArray(depositAmounts[i]);
         }
-        
+
         _assertSmartVaultBalances(smartVault, depositAmountsDoubleArray, maxDelta);
     }
 

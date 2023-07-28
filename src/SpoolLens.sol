@@ -181,7 +181,7 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
         if (doFlush) {
             smartVaultManager.flushSmartVault(smartVault);
         }
-        
+
         smartVaultManager.syncSmartVault(smartVault, false);
 
         uint256 assetsLength = assetGroupRegistry.assetGroupLength(smartVaultManager.assetGroupId(smartVault));
@@ -195,9 +195,9 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
             }
 
             IStrategy strategy = IStrategy(smartVaultStrategies[i]);
-            
-            uint256 strategySupply = strategy.totalSupply(); 
-            uint256 smartVaultBalance = strategy.balanceOf(smartVault); 
+
+            uint256 strategySupply = strategy.totalSupply();
+            uint256 smartVaultBalance = strategy.balanceOf(smartVault);
 
             uint256[] memory amounts = strategy.getUnderlyingAssetAmounts();
 
