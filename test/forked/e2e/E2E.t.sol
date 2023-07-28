@@ -111,6 +111,9 @@ contract E2E is ForkTestFixtureDeployment {
         // DHW
         _dhw(strategies);
 
+        // ASSERT vault asset balances after deposit and DHW
+        _assertSmartVaultBalances(vault, depositAmounts, 1e14);
+
         // advance block number between deposit and withdrawal
         vm.roll(block.number + 1);
 
@@ -187,6 +190,9 @@ contract E2E is ForkTestFixtureDeployment {
         // DHW
         _dhw(strategies);
 
+        // ASSERT vault asset balances after deposit and DHW
+        _assertSmartVaultBalances(vault, depositAmounts, 1e14);
+
         // advance block number between deposit and withdrawal
         vm.roll(block.number + 1);
 
@@ -261,6 +267,9 @@ contract E2E is ForkTestFixtureDeployment {
         // DHW
         _dhw(strategies);
 
+        // ASSERT vault asset balances after deposit and DHW
+        _assertSmartVaultBalances(vault, depositAmounts, 1e14);
+
         // advance block number between deposit and withdrawal
         vm.roll(block.number + 1);
 
@@ -325,6 +334,9 @@ contract E2E is ForkTestFixtureDeployment {
         // DHW
         _dhw(strategies);
 
+        // ASSERT vault asset balances after deposit and DHW
+        _assertSmartVaultBalances(vault, depositAmounts, 1e16);
+
         // advance block number between deposit and withdrawal
         vm.roll(block.number + 1);
 
@@ -388,6 +400,9 @@ contract E2E is ForkTestFixtureDeployment {
 
         // DHW
         _dhw(strategies);
+
+        // ASSERT vault asset balances after deposit and DHW
+        _assertSmartVaultBalances(vault, depositAmounts, 1e15);
 
         // advance block number between deposit and withdrawal
         vm.roll(block.number + 1);
