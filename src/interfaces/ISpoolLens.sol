@@ -14,6 +14,13 @@ interface ISpoolLens {
         view
         returns (uint256 currentBalance);
 
+    /**
+     * @notice Retrieves user balances of smart vault tokens for each NFT.
+     * @param smartVault Smart vault.
+     * @param user User to check.
+     * @param nftIds user's NFTs (only D-NFTs, system will ignore W-NFTs)
+     * @return nftSvts SVT balance of each user D-NFT for smart vault.
+     */
     function getUserSVTsfromNFTs(address smartVault, address user, uint256[] calldata nftIds)
         external
         view

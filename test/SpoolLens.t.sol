@@ -94,4 +94,16 @@ contract SpoolLensTest is TestFixture {
             assertEq(allocationsList[i][1], uint256(6000), "Element mismatch");
         }
     }
+
+    function test_getUserSVTBalance_getsCurrentBalanceWithoutDepositNFT() public {
+        SmartVault testSmartVault = new SmartVault(accessControl, new GuardManager(accessControl));
+
+        uint256 amount = 1000;
+        address user = address(8888);
+        deal(address(testSmartVault), user, amount, true); // Depositing into a vault.
+
+        uint256 balance = spoolLens.getUserSVTBalance(address(testSmartVault), user, new uint256[](0));
+
+        assertEq(balance, amount);
+    }
 }

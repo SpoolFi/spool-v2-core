@@ -2,13 +2,10 @@
 pragma solidity 0.8.17;
 
 import "./interfaces/ISpoolLens.sol";
-import "./interfaces/IAction.sol";
 import "./interfaces/IAssetGroupRegistry.sol";
 import "./interfaces/IDepositManager.sol";
-import "./interfaces/IGuardManager.sol";
 import "./interfaces/IMasterWallet.sol";
 import "./interfaces/IRiskManager.sol";
-import "./interfaces/ISmartVault.sol";
 import "./interfaces/ISmartVaultManager.sol";
 import "./interfaces/IStrategy.sol";
 import "./interfaces/IStrategyRegistry.sol";
@@ -108,6 +105,13 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
         }
     }
 
+    /**
+     * @notice Retrieves user balances of smart vault tokens for each NFT.
+     * @param smartVault Smart vault.
+     * @param user User to check.
+     * @param nftIds user's NFTs (only D-NFTs, system will ignore W-NFTs)
+     * @return nftSvts SVT balance of each user D-NFT for smart vault.
+     */
     function getUserSVTsfromNFTs(address smartVault, address user, uint256[] calldata nftIds)
         external
         view
@@ -121,6 +125,12 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
         }
     }
 
+    /**
+     * @notice Retrieves total supply of SVTs.
+     * Includes deposits that were processed by DHW, but still need SVTs to be minted.
+     * @param smartVault Smart Vault address.
+     * @return totalSupply Simulated total supply.
+     */
     function getSVTTotalSupply(address smartVault) external view returns (uint256) {
         (uint256 currentSupply, uint256 mintedSVTs, uint256 fees,) = smartVaultManager.simulateSync(smartVault);
         return currentSupply + mintedSVTs + fees;
@@ -174,6 +184,13 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
         }
     }
 
+    /**
+     * @notice Returns smart vault balances in the underlying assets.
+     * @dev Should be just used as a view to show balances.
+     * @param smartVault Smart vault.
+     * @param doFlush Flush vault before calculation.
+     * @return balances Array of balances for each asset.
+     */
     function getSmartVaultAssetBalances(address smartVault, bool doFlush)
         external
         returns (uint256[] memory balances)
