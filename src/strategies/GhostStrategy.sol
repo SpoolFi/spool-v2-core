@@ -104,4 +104,8 @@ contract GhostStrategy is IERC20Upgradeable, IStrategy {
     function getUnderlyingAssetAmounts() external pure returns (uint256[] memory) {
         revert IsGhostStrategy();
     }
+
+    function getProtocolRewards() external pure returns (address[] memory, uint256[] memory) {
+        revert IsGhostStrategy();
+    }
 }

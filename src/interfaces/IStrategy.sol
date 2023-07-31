@@ -238,4 +238,13 @@ interface IStrategy is IERC20Upgradeable {
     function getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
         external
         returns (uint256 usdWorth);
+
+    /**
+     * @notice Gets protocol rewards.
+     * @dev Requirements:
+     * - can only be called in view-execution mode.
+     * @return tokens Addresses of reward tokens.
+     * @return amounts Amount of reward tokens available.
+     */
+    function getProtocolRewards() external returns (address[] memory tokens, uint256[] memory amounts);
 }
