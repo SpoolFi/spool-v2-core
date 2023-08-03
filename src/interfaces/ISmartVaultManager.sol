@@ -254,7 +254,7 @@ interface ISmartVaultManager is ISmartVaultRegistry {
 
     /**
      * @notice Simulates redeem fast of smart vault shares.
-     * @dev Should only be run by address zero to simutate the redeemal and parse logs.
+     * @dev Should only be run by address zero to simulate the redeemal and parse logs.
      * @param bag Parameters for fast redeemal.
      * @param withdrawalSlippages Slippages guarding redeemal.
      * @param redeemer Address of a user to simulate redeem for.
