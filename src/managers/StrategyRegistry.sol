@@ -514,14 +514,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         if (!_isViewExecution()) {
             _checkRole(ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, msg.sender);
         }
-        _emergencyWithdraw(strategies, withdrawalSlippages, removeStrategies);
-    }
 
-    function _emergencyWithdraw(
-        address[] calldata strategies,
-        uint256[][] calldata withdrawalSlippages,
-        bool removeStrategies
-    ) private {
         for (uint256 i; i < strategies.length; ++i) {
             if (strategies[i] == _ghostStrategy) {
                 continue;
