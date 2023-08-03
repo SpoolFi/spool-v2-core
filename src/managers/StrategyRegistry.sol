@@ -510,7 +510,18 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         address[] calldata strategies,
         uint256[][] calldata withdrawalSlippages,
         bool removeStrategies
-    ) external onlyRole(ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, msg.sender) {
+    ) external {
+        if (!_isViewExecution()) {
+            _checkRole(ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, msg.sender);
+        }
+        _emergencyWithdraw(strategies, withdrawalSlippages, removeStrategies);
+    }
+
+    function _emergencyWithdraw(
+        address[] calldata strategies,
+        uint256[][] calldata withdrawalSlippages,
+        bool removeStrategies
+    ) private {
         for (uint256 i; i < strategies.length; ++i) {
             if (strategies[i] == _ghostStrategy) {
                 continue;
@@ -532,6 +543,27 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         uint256[] calldata shares,
         uint256[][] calldata withdrawalSlippages
     ) external checkNonReentrant {
+        _redeemStrategyShares(strategies, shares, withdrawalSlippages, msg.sender);
+    }
+
+    function redeemStrategySharesView(
+        address[] calldata strategies,
+        uint256[] calldata shares,
+        uint256[][] calldata withdrawalSlippages,
+        address redeemer
+    ) external {
+        if (!_isViewExecution()) {
+            revert OnlyViewExecution(tx.origin);
+        }
+        _redeemStrategyShares(strategies, shares, withdrawalSlippages, redeemer);
+    }
+
+    function _redeemStrategyShares(
+        address[] calldata strategies,
+        uint256[] calldata shares,
+        uint256[][] calldata withdrawalSlippages,
+        address redeemer
+    ) private {
         for (uint256 i; i < strategies.length; ++i) {
             if (strategies[i] == _ghostStrategy) {
                 continue;
@@ -541,9 +573,9 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
             address[] memory assetGroup = IStrategy(strategies[i]).assets();
 
             uint256[] memory withdrawnAssets =
-                IStrategy(strategies[i]).redeemShares(shares[i], msg.sender, assetGroup, withdrawalSlippages[i]);
+                IStrategy(strategies[i]).redeemShares(shares[i], redeemer, assetGroup, withdrawalSlippages[i]);
 
-            emit StrategySharesRedeemed(strategies[i], msg.sender, msg.sender, shares[i], withdrawnAssets);
+            emit StrategySharesRedeemed(strategies[i], redeemer, redeemer, shares[i], withdrawnAssets);
         }
     }
 

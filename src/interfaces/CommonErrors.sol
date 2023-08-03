@@ -37,3 +37,9 @@ error InvalidStrategy(address address_);
  * @param address_ Address of the contract
  */
 error AddressNotContract(address address_);
+
+/**
+ * @notice Used when invoking an only view execution and tx.origin is not address zero.
+ * @param address_ Address of the tx.origin
+ */
+error OnlyViewExecution(address address_);

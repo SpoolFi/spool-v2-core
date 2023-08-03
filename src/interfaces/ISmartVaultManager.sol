@@ -253,6 +253,18 @@ interface ISmartVaultManager is ISmartVaultRegistry {
         returns (uint256[] memory withdrawnAssets);
 
     /**
+     * @notice Simulates redeem fast of smart vault shares.
+     * @dev Should only be run by address zero to simutate the redeemal and parse logs.
+     * @param bag Parameters for fast redeemal.
+     * @param withdrawalSlippages Slippages guarding redeemal.
+     * @param redeemer Address of a user to simulate redeem for.
+     * @return withdrawnAssets Amount of assets withdrawn.
+     */
+    function redeemFastView(RedeemBag calldata bag, uint256[][] calldata withdrawalSlippages, address redeemer)
+        external
+        returns (uint256[] memory withdrawnAssets);
+
+    /**
      * @notice Claims withdrawal of assets by burning withdrawal NFT.
      * @dev Requirements:
      * - withdrawal NFT must be valid

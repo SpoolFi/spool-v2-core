@@ -200,6 +200,24 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         nonReentrant
         returns (uint256[] memory)
     {
+        return _redeemFast(bag, withdrawalSlippages, msg.sender);
+    }
+
+    function redeemFastView(RedeemBag calldata bag, uint256[][] calldata withdrawalSlippages, address redeemer)
+        external
+        whenNotPaused
+        returns (uint256[] memory)
+    {
+        if (!_isViewExecution()) {
+            revert OnlyViewExecution(tx.origin);
+        }
+        return _redeemFast(bag, withdrawalSlippages, redeemer);
+    }
+
+    function _redeemFast(RedeemBag calldata bag, uint256[][] calldata withdrawalSlippages, address redeemer)
+        private
+        returns (uint256[] memory)
+    {
         _onlyRegisteredSmartVault(bag.smartVault);
 
         address[] memory strategies_ = _smartVaultStrategies[bag.smartVault];
@@ -213,10 +231,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         _syncSmartVault(bag.smartVault, strategies_, tokens, false);
         uint256 flushIndexToSync = _flushIndexes[bag.smartVault].toSync;
         _depositManager.claimSmartVaultTokens(
-            bag.smartVault, bag.nftIds, bag.nftAmounts, tokens, msg.sender, msg.sender, flushIndexToSync
+            bag.smartVault, bag.nftIds, bag.nftAmounts, tokens, redeemer, redeemer, flushIndexToSync
         );
         return _withdrawalManager.redeemFast(
-            bag, RedeemFastExtras(strategies_, tokens, assetGroupId_, msg.sender, withdrawalSlippages)
+            bag, RedeemFastExtras(strategies_, tokens, assetGroupId_, redeemer, withdrawalSlippages)
         );
     }
 
