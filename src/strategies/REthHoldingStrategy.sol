@@ -7,7 +7,7 @@ import "../external/interfaces/strategies/rEth/IREthToken.sol";
 import "../external/interfaces/strategies/rEth/IRocketSwapRouter.sol";
 import "../libraries/PackedRange.sol";
 import "./Strategy.sol";
-import "./WethHelper.sol";
+import "./helpers/WethHelper.sol";
 
 error REthHoldingBeforeDepositCheckFailed();
 error REthHoldingBeforeRedeemalCheckFailed();

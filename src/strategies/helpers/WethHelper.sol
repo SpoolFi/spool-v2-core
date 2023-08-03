@@ -3,10 +3,10 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import "../external/interfaces/weth/IWETH9.sol";
-import "../interfaces/CommonErrors.sol";
+import "../../external/interfaces/weth/IWETH9.sol";
+import "../../interfaces/CommonErrors.sol";
 
-contract WethHelper {
+abstract contract WethHelper {
     using SafeERC20 for IERC20;
 
     /**

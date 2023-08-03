@@ -8,7 +8,7 @@ import "../external/interfaces/strategies/frxEth/ISfrxEthToken.sol";
 import "../external/interfaces/strategies/curve/ICurvePool.sol";
 import "../libraries/PackedRange.sol";
 import "./Strategy.sol";
-import "./WethHelper.sol";
+import "./helpers/WethHelper.sol";
 
 error SfrxEthHoldingBeforeDepositCheckFailed();
 error SfrxEthHoldingBeforeRedeemalCheckFailed();

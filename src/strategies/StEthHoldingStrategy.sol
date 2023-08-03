@@ -7,7 +7,7 @@ import "../external/interfaces/strategies/stEth/ILido.sol";
 import "../external/interfaces/strategies/curve/ICurvePool.sol";
 import "../libraries/PackedRange.sol";
 import "./Strategy.sol";
-import "./WethHelper.sol";
+import "./helpers/WethHelper.sol";
 
 error StEthHoldingBeforeDepositCheckFailed();
 error StEthHoldingBeforeRedeemalCheckFailed();
