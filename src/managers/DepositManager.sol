@@ -472,7 +472,9 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
 
                 // calculate the minted SVTs for the specific fees
                 result.feesCollected.performanceFees = result.feeSVTs * result.feesCollected.performanceFees / fees;
-                result.feesCollected.managementFees = result.feeSVTs * result.feesCollected.managementFees / fees;
+                unchecked {
+                    result.feesCollected.managementFees = result.feeSVTs - result.feesCollected.performanceFees;
+                }
             }
 
             // deposits
