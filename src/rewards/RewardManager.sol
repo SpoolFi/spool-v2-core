@@ -117,7 +117,7 @@ contract RewardManager is IRewardManager, RewardPool {
 
         if (block.timestamp >= config.periodFinish) {
             config.rewardRate = SafeCast.toUint192((reward * REWARD_ACCURACY) / config.rewardsDuration);
-            emit RewardAdded(smartVault, token, reward, config.rewardsDuration, config.periodFinish, config.rewardRate);
+            emit RewardAdded(smartVault, token, reward, config.rewardsDuration, newPeriodFinish, config.rewardRate);
         } else {
             // If extending or adding additional rewards,
             // cannot set new finish time to be less than previously configured
