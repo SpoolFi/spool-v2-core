@@ -20,7 +20,7 @@ contract CompoundV2Strategy is Strategy {
 
     uint256 public immutable MANTISSA = 10 ** 18;
 
-    /// @notice Comptroller implementaiton
+    /// @notice Comptroller implementation
     ISwapper public immutable swapper;
 
     /// @notice Comptroller implementation

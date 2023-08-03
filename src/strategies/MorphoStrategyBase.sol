@@ -11,10 +11,10 @@ import "./helpers/StrategyManualYieldVerifier.sol";
 abstract contract MorphoStrategyBase is StrategyManualYieldVerifier, Strategy {
     using SafeERC20 for IERC20;
 
-    /// @notice Swapper implementaiton.
+    /// @notice Swapper implementation.
     ISwapper public immutable swapper;
 
-    /// @notice Morpho implementaiton.
+    /// @notice Morpho implementation.
     IMorpho public immutable morpho;
 
     /// @notice Reward token when participating in the underlying protocol Morpho deposits into.
