@@ -309,6 +309,8 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             ISmartVault(smartVault).mintVaultShares(vaultOwner, syncResult.feeSVTs);
         }
 
+        emit SmartVaultFeesMinted(smartVault, syncResult.feesCollected);
+
         return syncResult;
     }
 
@@ -439,13 +441,16 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             // management fees
             if (parameters.fees.managementFeePct > 0) {
                 // take percentage of whole vault
-                fees = totalUsd[1] * parameters.fees.managementFeePct * (result.dhwTimestamp - parameters.bag[1])
-                    / SECONDS_IN_YEAR / FULL_PERCENT;
+                result.feesCollected.managementFees = totalUsd[1] * parameters.fees.managementFeePct
+                    * (result.dhwTimestamp - parameters.bag[1]) / SECONDS_IN_YEAR / FULL_PERCENT;
+                fees = result.feesCollected.managementFees;
             }
             // performance fees
             if (parameters.fees.performanceFeePct > 0 && totalYieldUsd > 0) {
                 // take percentage of yield
-                fees += uint256(totalYieldUsd) * parameters.fees.performanceFeePct / FULL_PERCENT;
+                result.feesCollected.performanceFees =
+                    uint256(totalYieldUsd) * parameters.fees.performanceFeePct / FULL_PERCENT;
+                fees += result.feesCollected.performanceFees;
             }
             if (fees > 0) {
                 // dilute shares to collect fees
@@ -464,6 +469,10 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
                 } else {
                     result.feeSVTs = localVariables.svtSupply * 100;
                 }
+
+                // calculate the minted SVTs for the specific fees
+                result.feesCollected.performanceFees = result.feeSVTs * result.feesCollected.performanceFees / fees;
+                result.feesCollected.managementFees = result.feeSVTs * result.feesCollected.managementFees / fees;
             }
 
             // deposits
@@ -475,10 +484,10 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
         // deposit fees
         if (parameters.fees.depositFeePct > 0 && result.mintedSVTs > 0) {
             // take smart vault shares to collect deposit fees
-            uint256 depositFees = result.mintedSVTs * parameters.fees.depositFeePct / FULL_PERCENT;
+            result.feesCollected.depositFees = result.mintedSVTs * parameters.fees.depositFeePct / FULL_PERCENT;
             unchecked {
-                result.feeSVTs += depositFees;
-                result.mintedSVTs -= depositFees;
+                result.feeSVTs += result.feesCollected.depositFees;
+                result.mintedSVTs -= result.feesCollected.depositFees;
             }
         }
     }

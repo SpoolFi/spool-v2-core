@@ -58,10 +58,23 @@ struct DepositExtras {
 }
 
 /**
+ * @notice Gathers minted SVTs for a specific fee type.
+ * @custom:member depositFees Minted SVTs for deposit fees.
+ * @custom:member performanceFees Minted SVTs for performance fees.
+ * @custom:member managementFees Minted SVTs for management fees.
+ */
+struct SmartVaultFeesCollected {
+    uint256 depositFees;
+    uint256 performanceFees;
+    uint256 managementFees;
+}
+
+/**
  * @notice Gathers return values of syncing deposits.
  * @custom:member mintedSVTs Amount of SVTs minted.
  * @custom:member dhwTimestamp Timestamp of the last DHW synced.
  * @custom:member feeSVTs Amount of SVTs minted as fees.
+ * @custom:member feesCollected Breakdown of amount of SVTs minted as fees.
  * @custom:member initialLockedSVTs Amount of initial locked SVTs.
  * @custom:member sstShares Amount of SSTs claimed for each strategy.
  */
@@ -69,6 +82,7 @@ struct DepositSyncResult {
     uint256 mintedSVTs;
     uint256 dhwTimestamp;
     uint256 feeSVTs;
+    SmartVaultFeesCollected feesCollected;
     uint256 initialLockedSVTs;
     uint256[] sstShares;
 }
@@ -138,6 +152,13 @@ interface IDepositManager {
      * @param recoveredAssets Amount of assets recovered.
      */
     event PendingDepositsRecovered(address indexed smartVault, uint256[] recoveredAssets);
+
+    /**
+     * @notice Smart vault fees collected.
+     * @param smartVault Smart vault address.
+     * @param smartVaultFeesCollected Collected smart vault fee amounts.
+     */
+    event SmartVaultFeesMinted(address indexed smartVault, SmartVaultFeesCollected smartVaultFeesCollected);
 
     /**
      * @notice Simulate vault synchronization (i.e. DHW was completed, but vault wasn't synced yet)
