@@ -438,19 +438,18 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             }
         } else if (totalUsd[1] > 0) {
             uint256 fees;
+            uint256 mgmtFees;
             // management fees
             if (parameters.fees.managementFeePct > 0) {
                 // take percentage of whole vault
-                result.feesCollected.managementFees = totalUsd[1] * parameters.fees.managementFeePct
-                    * (result.dhwTimestamp - parameters.bag[1]) / SECONDS_IN_YEAR / FULL_PERCENT;
-                fees = result.feesCollected.managementFees;
+                mgmtFees = totalUsd[1] * parameters.fees.managementFeePct * (result.dhwTimestamp - parameters.bag[1])
+                    / SECONDS_IN_YEAR / FULL_PERCENT;
+                fees = mgmtFees;
             }
             // performance fees
             if (parameters.fees.performanceFeePct > 0 && totalYieldUsd > 0) {
                 // take percentage of yield
-                result.feesCollected.performanceFees =
-                    uint256(totalYieldUsd) * parameters.fees.performanceFeePct / FULL_PERCENT;
-                fees += result.feesCollected.performanceFees;
+                fees += uint256(totalYieldUsd) * parameters.fees.performanceFeePct / FULL_PERCENT;
             }
             if (fees > 0) {
                 // dilute shares to collect fees
@@ -471,9 +470,9 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
                 }
 
                 // calculate the minted SVTs for the specific fees
-                result.feesCollected.performanceFees = result.feeSVTs * result.feesCollected.performanceFees / fees;
+                result.feesCollected.managementFees = result.feeSVTs * mgmtFees / fees;
                 unchecked {
-                    result.feesCollected.managementFees = result.feeSVTs - result.feesCollected.performanceFees;
+                    result.feesCollected.performanceFees = result.feeSVTs - result.feesCollected.managementFees;
                 }
             }
 
