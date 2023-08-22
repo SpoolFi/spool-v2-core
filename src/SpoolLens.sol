@@ -120,7 +120,7 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
         nftSvts = new uint256[](nftIds.length);
         for (uint256 i; i < nftSvts.length; ++i) {
             uint256[] memory nftId = new uint256[](1);
-            nftId[0] = nftId[i];
+            nftId[0] = nftIds[i];
             nftSvts[i] = smartVaultManager.simulateSyncWithBurn(smartVault, user, nftId);
         }
     }
