@@ -214,8 +214,11 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
             IStrategy strategy = IStrategy(smartVaultStrategies[i]);
 
             uint256 strategySupply = strategy.totalSupply();
-            uint256 smartVaultBalance = strategy.balanceOf(smartVault);
+            if (strategySupply == 0) {
+                continue;
+            }
 
+            uint256 smartVaultBalance = strategy.balanceOf(smartVault);
             uint256[] memory amounts = strategy.getUnderlyingAssetAmounts();
 
             for (uint256 j; j < balances.length; ++j) {
