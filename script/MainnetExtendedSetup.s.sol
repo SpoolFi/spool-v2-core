@@ -7,19 +7,24 @@ import "./DeploySpool.s.sol";
 import "./mainnet/AssetsInitial.s.sol";
 import "./mainnet/StrategiesInitial.s.sol";
 
-contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesInitial {
+contract MainnetExtendedSetup is Script, DeploySpool, AssetsInitial, StrategiesInitial {
     JsonReader internal _constantsJson;
     JsonReadWriter internal _contractsJson;
 
     function run() external virtual {
         init();
 
+        doSetup();
+
+        broadcast();
+
+        execute();
+    }
+
+    function broadcast() public virtual {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address deployerAddress = vm.addr(deployerPrivateKey);
 
         vm.startBroadcast(deployerPrivateKey);
-
-        doSetup(deployerAddress);
     }
 
     function init() public virtual {
@@ -27,15 +32,13 @@ contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
         _contractsJson = new JsonReadWriter(vm, string.concat("deploy/mainnet.contracts.json"));
     }
 
-    function doSetup(address deployerAddress) public {
-        deploySpool();
+    function doSetup() public {
+        loadSpool();
 
-        setupAssets(assetGroupRegistry, usdPriceFeedManager);
-
-        deployStrategies(spoolAccessControl, assetGroupRegistry, swapper, address(proxyAdmin), strategyRegistry);
-
-        postDeploySpool(deployerAddress);
+        loadAssets(assetGroupRegistry);
     }
+
+    function execute() public virtual {}
 
     function assets(string memory assetKey) public view virtual override returns (address) {
         return _assets[assetKey];
@@ -59,5 +62,5 @@ contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
         return _contractsJson;
     }
 
-    function test_mock_MainnetInitialSetup() external pure {}
+    function test_mock_MainnetExtendedSetup() external pure {}
 }

@@ -8,7 +8,7 @@ contract LocalMainnetInitialSetup is MainnetInitialSetup {
     function init() public virtual override {
         super.init();
 
-        _contractsJson = new JsonWriter(string.concat("deploy/local-mainnet.contracts.json"));
+        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/local-mainnet.contracts.json"));
     }
 
     function test_mock_LocalMainnetInitialSetup() external pure {}
