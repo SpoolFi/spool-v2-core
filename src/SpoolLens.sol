@@ -97,7 +97,6 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
         return _getUserSVTBalance(smartVault, user, nftIds);
     }
 
-
     /**
      * @notice Retrieves user balances of smart vault tokens for each NFT.
      * @param smartVault Smart vault.
@@ -229,12 +228,14 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
      * @param nftIds NFTs in smart vault. same size as smartVaults
      * @return balances Array of balances for each asset, for each strategy, for each smart vault. same size as smartVaults
      */
-    function getUserStrategyValues(address user, address[] calldata smartVaults, bool[] calldata doFlush, uint256[][] calldata nftIds) 
-        external 
-        returns (uint256[][][] memory balances) 
-    {
+    function getUserStrategyValues(
+        address user,
+        address[] calldata smartVaults,
+        bool[] calldata doFlush,
+        uint256[][] calldata nftIds
+    ) external returns (uint256[][][] memory balances) {
         balances = new uint256[][][](smartVaults.length);
-        for(uint i=0; i<smartVaults.length; i++){
+        for (uint256 i = 0; i < smartVaults.length; i++) {
             address smartVault = smartVaults[i];
 
             if (doFlush[i]) {
@@ -246,32 +247,36 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
 
             uint256 vaultSharesTotal = ISmartVault(smartVault).totalSupply();
 
-            balances[i] = _getUserAssetStrategiesForVault(smartVault, vaultSharesUser, vaultSharesTotal);
+            balances[i] = _getUserStrategyValuesByVault(smartVault, vaultSharesUser, vaultSharesTotal);
         }
     }
 
-
-    function _getUserAssetStrategiesForVault(address smartVault, uint vaultSharesUser, uint vaultSharesTotal) 
-    private 
-    view 
-    returns(uint[][] memory balances) 
+    /**
+     * @notice Returns user balances for each strategy in a smart vault
+     * @param smartVault SmartVault.
+     * @param vaultSharesUser User's shares in the smart vault.
+     * @param vaultSharesTotal Total shares in the smart vault.
+     * @return balances Array of balances for each asset. same size as vault strategies
+     */
+    function _getUserStrategyValuesByVault(address smartVault, uint256 vaultSharesUser, uint256 vaultSharesTotal)
+        private
+        view
+        returns (uint256[][] memory balances)
     {
-    
         address[] memory strategies = smartVaultManager.strategies(smartVault);
         balances = new uint256[][](strategies.length);
         for (uint256 i; i < strategies.length; i++) {
-    
             IStrategy strategy = IStrategy(strategies[i]);
-            
+
             uint256 strategySharesTotal = strategy.totalSupply();
-    
+
             uint256 strategySharesVault = strategy.balanceOf(smartVault);
-    
+
             uint256[] memory amounts = strategy.getUnderlyingAssetAmounts();
-    
+
             balances[i] = new uint256[](amounts.length);
             for (uint256 j; j < amounts.length; j++) {
-                uint amountStrategy = amounts[j];
+                uint256 amountStrategy = amounts[j];
 
                 uint256 amountVault = (strategySharesVault * amountStrategy) / strategySharesTotal;
 
@@ -288,7 +293,7 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
      */
     function _getUserSVTBalance(address smartVault, address user, uint256[] calldata nftIds)
         private
-        view 
+        view
         returns (uint256 currentBalance)
     {
         currentBalance = ISmartVault(smartVault).balanceOf(user);
@@ -301,6 +306,5 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
         if (nftIds.length > 0) {
             currentBalance += smartVaultManager.simulateSyncWithBurn(smartVault, user, nftIds);
         }
-
     }
 }

@@ -56,4 +56,20 @@ interface ISpoolLens {
     function getSmartVaultAssetBalances(address smartVault, bool doFlush)
         external
         returns (uint256[] memory balances);
+
+    /**
+     * @notice Returns user balances for each strategy across smart vaults
+     * @dev Should just used as a view to show balances.
+     * @param user User.
+     * @param smartVaults smartVaults that user has deposits in
+     * @param doFlush should smart vault be flushed. same size as smartVaults
+     * @param nftIds NFTs in smart vault. same size as smartVaults
+     * @return balances Array of balances for each asset, for each strategy, for each smart vault. same size as smartVaults
+     */
+    function getUserStrategyValues(
+        address user,
+        address[] calldata smartVaults,
+        bool[] calldata doFlush,
+        uint256[][] calldata nftIds
+    ) external returns (uint256[][][] memory balances);
 }
