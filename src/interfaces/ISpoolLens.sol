@@ -69,7 +69,7 @@ interface ISpoolLens {
     function getUserStrategyValues(
         address user,
         address[] calldata smartVaults,
-        bool[] calldata doFlush,
-        uint256[][] calldata nftIds
+        uint256[][] calldata nftIds,
+        bool[] calldata doFlush
     ) external returns (uint256[][][] memory balances);
 }

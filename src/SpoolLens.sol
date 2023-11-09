@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: BUSL-1.1
-
 pragma solidity 0.8.17;
 
 import "./interfaces/ISpoolLens.sol";
@@ -187,11 +186,11 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
         external
         returns (uint256[] memory balances)
     {
+        smartVaultManager.syncSmartVault(smartVault, false);
+
         if (doFlush) {
             smartVaultManager.flushSmartVault(smartVault);
         }
-
-        smartVaultManager.syncSmartVault(smartVault, false);
 
         uint256 assetsLength = assetGroupRegistry.assetGroupLength(smartVaultManager.assetGroupId(smartVault));
         balances = new uint256[](assetsLength);
@@ -231,17 +230,18 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
     function getUserStrategyValues(
         address user,
         address[] calldata smartVaults,
-        bool[] calldata doFlush,
-        uint256[][] calldata nftIds
+        uint256[][] calldata nftIds,
+        bool[] calldata doFlush
     ) external returns (uint256[][][] memory balances) {
         balances = new uint256[][][](smartVaults.length);
-        for (uint256 i = 0; i < smartVaults.length; i++) {
+        for (uint256 i = 0; i < smartVaults.length; ++i) {
             address smartVault = smartVaults[i];
+
+            smartVaultManager.syncSmartVault(smartVault, false);
 
             if (doFlush[i]) {
                 smartVaultManager.flushSmartVault(smartVault);
             }
-            smartVaultManager.syncSmartVault(smartVault, false);
 
             uint256 vaultSharesUser = _getUserSVTBalance(smartVault, user, nftIds[i]);
 
@@ -265,7 +265,7 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
     {
         address[] memory strategies = smartVaultManager.strategies(smartVault);
         balances = new uint256[][](strategies.length);
-        for (uint256 i; i < strategies.length; i++) {
+        for (uint256 i; i < strategies.length; ++i) {
             IStrategy strategy = IStrategy(strategies[i]);
 
             uint256 strategySharesTotal = strategy.totalSupply();
@@ -275,7 +275,7 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
             uint256[] memory amounts = strategy.getUnderlyingAssetAmounts();
 
             balances[i] = new uint256[](amounts.length);
-            for (uint256 j; j < amounts.length; j++) {
+            for (uint256 j; j < amounts.length; ++j) {
                 uint256 amountStrategy = amounts[j];
 
                 uint256 amountVault = (strategySharesVault * amountStrategy) / strategySharesTotal;
