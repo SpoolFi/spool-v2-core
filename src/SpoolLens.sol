@@ -218,36 +218,55 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
         }
     }
 
-    /**
-     * @notice Returns user balances for each strategy across smart vaults
-     * @dev Should just used as a view to show balances.
-     * @param user User.
-     * @param smartVaults smartVaults that user has deposits in
-     * @param doFlush should smart vault be flushed. same size as smartVaults
-     * @param nftIds NFTs in smart vault. same size as smartVaults
-     * @return balances Array of balances for each asset, for each strategy, for each smart vault. same size as smartVaults
-     */
-    function getUserStrategyValues(
+    function getUserVaultAssetBalances(
         address user,
         address[] calldata smartVaults,
         uint256[][] calldata nftIds,
         bool[] calldata doFlush
-    ) external returns (uint256[][][] memory balances) {
-        balances = new uint256[][][](smartVaults.length);
-        for (uint256 i = 0; i < smartVaults.length; ++i) {
-            address smartVault = smartVaults[i];
+    ) public returns (uint256[][] memory balances) {
+        uint256[][][] memory userVaultStrategyBalances = getUserVaultStrategyAssetBalances(user, smartVaults, nftIds, doFlush);
 
-            smartVaultManager.syncSmartVault(smartVault, false);
+        balances = new uint256[][](smartVaults.length);
+        for (uint256 i; i < smartVaults.length; ++i) {
+            uint256 assetsLength = assetGroupRegistry.assetGroupLength(smartVaultManager.assetGroupId(smartVaults[i]));
+
+            balances[i] = new uint256[](assetsLength);
+            for (uint256 j; j < userVaultStrategyBalances[i].length; ++j) {
+                for (uint256 k; k < userVaultStrategyBalances[i][j].length; ++k) {
+                    balances[i][k] += userVaultStrategyBalances[i][j][k];
+                }
+            }
+        }
+    }
+
+    /**
+     * @notice Returns user balances for each strategy across smart vaults.
+     * @dev Should just be used as a view to show balances.
+     * @param user User.
+     * @param smartVaults smartVaults that user has deposits in.
+     * @param doFlush should smart vault be flushed. same size as smartVaults.
+     * @param nftIds NFTs in smart vault. same size as smartVaults.
+     * @return balances Array of balances for each asset, for each strategy, for each smart vault. same size as smartVaults.
+     */
+    function getUserVaultStrategyAssetBalances(
+        address user,
+        address[] calldata smartVaults,
+        uint256[][] calldata nftIds,
+        bool[] calldata doFlush
+    ) public returns (uint256[][][] memory balances) {
+        balances = new uint256[][][](smartVaults.length);
+        for (uint256 i; i < smartVaults.length; ++i) {
+            smartVaultManager.syncSmartVault(smartVaults[i], false);
 
             if (doFlush[i]) {
-                smartVaultManager.flushSmartVault(smartVault);
+                smartVaultManager.flushSmartVault(smartVaults[i]);
             }
 
-            uint256 vaultSharesUser = _getUserSVTBalance(smartVault, user, nftIds[i]);
+            uint256 vaultSharesUser = _getUserSVTBalance(smartVaults[i], user, nftIds[i]);
 
-            uint256 vaultSharesTotal = ISmartVault(smartVault).totalSupply();
+            uint256 vaultSharesTotal = ISmartVault(smartVaults[i]).totalSupply();
 
-            balances[i] = _getUserStrategyValuesByVault(smartVault, vaultSharesUser, vaultSharesTotal);
+            balances[i] = _getUserStrategyBalancesByVault(smartVaults[i], vaultSharesUser, vaultSharesTotal);
         }
     }
 
@@ -258,7 +277,7 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
      * @param vaultSharesTotal Total shares in the smart vault.
      * @return balances Array of balances for each asset. same size as vault strategies
      */
-    function _getUserStrategyValuesByVault(address smartVault, uint256 vaultSharesUser, uint256 vaultSharesTotal)
+    function _getUserStrategyBalancesByVault(address smartVault, uint256 vaultSharesUser, uint256 vaultSharesTotal)
         private
         view
         returns (uint256[][] memory balances)
@@ -266,6 +285,10 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
         address[] memory strategies = smartVaultManager.strategies(smartVault);
         balances = new uint256[][](strategies.length);
         for (uint256 i; i < strategies.length; ++i) {
+            if (ghostStrategy == strategies[i]) {
+                continue;
+            }
+
             IStrategy strategy = IStrategy(strategies[i]);
 
             uint256 strategySharesTotal = strategy.totalSupply();
@@ -276,6 +299,10 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
 
             balances[i] = new uint256[](amounts.length);
             for (uint256 j; j < amounts.length; ++j) {
+                if (strategySharesTotal == 0 || vaultSharesTotal == 0) {
+                    continue;
+                }
+
                 uint256 amountStrategy = amounts[j];
 
                 uint256 amountVault = (strategySharesVault * amountStrategy) / strategySharesTotal;
