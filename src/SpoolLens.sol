@@ -224,7 +224,8 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
         uint256[][] calldata nftIds,
         bool[] calldata doFlush
     ) public returns (uint256[][] memory balances) {
-        uint256[][][] memory userVaultStrategyBalances = getUserVaultStrategyAssetBalances(user, smartVaults, nftIds, doFlush);
+        uint256[][][] memory userVaultStrategyBalances =
+            getUserVaultStrategyAssetBalances(user, smartVaults, nftIds, doFlush);
 
         balances = new uint256[][](smartVaults.length);
         for (uint256 i; i < smartVaults.length; ++i) {
