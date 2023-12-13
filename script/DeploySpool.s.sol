@@ -26,6 +26,7 @@ import "../src/managers/WithdrawalManager.sol";
 import "../src/strategies/GhostStrategy.sol";
 import "./helper/JsonHelper.sol";
 import {ExponentialAllocationProvider} from "../src/providers/ExponentialAllocationProvider.sol";
+import {ExponentialNormalizedAllocationProvider} from "../src/providers/ExponentialNormalizedAllocationProvider.sol";
 import {LinearAllocationProvider} from "../src/providers/LinearAllocationProvider.sol";
 import {UniformAllocationProvider} from "../src/providers/UniformAllocationProvider.sol";
 
@@ -51,7 +52,9 @@ contract DeploySpool {
     DepositManager public depositManager;
     WithdrawalManager public withdrawalManager;
     IStrategy public ghostStrategy;
+
     ExponentialAllocationProvider public exponentialAllocationProvider;
+    ExponentialNormalizedAllocationProvider public exponentialNormalizedAllocationProvider;
     LinearAllocationProvider public linearAllocationProvider;
     UniformAllocationProvider public uniformAllocationProvider;
     SpoolLens public spoolLens;
@@ -256,6 +259,16 @@ contract DeploySpool {
             contractsJson().addProxy("ExponentialAllocationProvider", address(implementation), address(proxy));
 
             spoolAccessControl.grantRole(ROLE_ALLOCATION_PROVIDER, address(exponentialAllocationProvider));
+        }
+
+        {
+            ExponentialNormalizedAllocationProvider implementation = new ExponentialNormalizedAllocationProvider();
+            proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
+            exponentialNormalizedAllocationProvider = ExponentialNormalizedAllocationProvider(address(proxy));
+
+            contractsJson().addProxy("ExponentialNormalizedAllocationProvider", address(implementation), address(proxy));
+
+            spoolAccessControl.grantRole(ROLE_ALLOCATION_PROVIDER, address(exponentialNormalizedAllocationProvider));
         }
 
         {
