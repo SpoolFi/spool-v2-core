@@ -91,18 +91,9 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
     function getUserSVTBalance(address smartVault, address user, uint256[] calldata nftIds)
         external
         view
-        returns (uint256 currentBalance)
+        returns (uint256)
     {
-        currentBalance = ISmartVault(smartVault).balanceOf(user);
-
-        if (accessControl.smartVaultOwner(smartVault) == user) {
-            (,, uint256 fees,) = smartVaultManager.simulateSync(smartVault);
-            currentBalance += fees;
-        }
-
-        if (nftIds.length > 0) {
-            currentBalance += smartVaultManager.simulateSyncWithBurn(smartVault, user, nftIds);
-        }
+        return _getUserSVTBalance(smartVault, user, nftIds);
     }
 
     /**
@@ -195,11 +186,11 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
         external
         returns (uint256[] memory balances)
     {
+        smartVaultManager.syncSmartVault(smartVault, false);
+
         if (doFlush) {
             smartVaultManager.flushSmartVault(smartVault);
         }
-
-        smartVaultManager.syncSmartVault(smartVault, false);
 
         uint256 assetsLength = assetGroupRegistry.assetGroupLength(smartVaultManager.assetGroupId(smartVault));
         balances = new uint256[](assetsLength);
@@ -224,6 +215,124 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
             for (uint256 j; j < balances.length; ++j) {
                 balances[j] += (amounts[j] * smartVaultBalance) / strategySupply;
             }
+        }
+    }
+
+    function getUserVaultAssetBalances(
+        address user,
+        address[] calldata smartVaults,
+        uint256[][] calldata nftIds,
+        bool[] calldata doFlush
+    ) public returns (uint256[][] memory balances) {
+        uint256[][][] memory userVaultStrategyBalances =
+            getUserVaultStrategyAssetBalances(user, smartVaults, nftIds, doFlush);
+
+        balances = new uint256[][](smartVaults.length);
+        for (uint256 i; i < smartVaults.length; ++i) {
+            uint256 assetsLength = assetGroupRegistry.assetGroupLength(smartVaultManager.assetGroupId(smartVaults[i]));
+
+            balances[i] = new uint256[](assetsLength);
+            for (uint256 j; j < userVaultStrategyBalances[i].length; ++j) {
+                for (uint256 k; k < userVaultStrategyBalances[i][j].length; ++k) {
+                    balances[i][k] += userVaultStrategyBalances[i][j][k];
+                }
+            }
+        }
+    }
+
+    /**
+     * @notice Returns user balances for each strategy across smart vaults.
+     * @dev Should just be used as a view to show balances.
+     * @param user User.
+     * @param smartVaults smartVaults that user has deposits in.
+     * @param doFlush should smart vault be flushed. same size as smartVaults.
+     * @param nftIds NFTs in smart vault. same size as smartVaults.
+     * @return balances Array of balances for each asset, for each strategy, for each smart vault. same size as smartVaults.
+     */
+    function getUserVaultStrategyAssetBalances(
+        address user,
+        address[] calldata smartVaults,
+        uint256[][] calldata nftIds,
+        bool[] calldata doFlush
+    ) public returns (uint256[][][] memory balances) {
+        balances = new uint256[][][](smartVaults.length);
+        for (uint256 i; i < smartVaults.length; ++i) {
+            smartVaultManager.syncSmartVault(smartVaults[i], false);
+
+            if (doFlush[i]) {
+                smartVaultManager.flushSmartVault(smartVaults[i]);
+            }
+
+            uint256 vaultSharesUser = _getUserSVTBalance(smartVaults[i], user, nftIds[i]);
+
+            uint256 vaultSharesTotal = ISmartVault(smartVaults[i]).totalSupply();
+
+            balances[i] = _getUserStrategyBalancesByVault(smartVaults[i], vaultSharesUser, vaultSharesTotal);
+        }
+    }
+
+    /**
+     * @notice Returns user balances for each strategy in a smart vault
+     * @param smartVault SmartVault.
+     * @param vaultSharesUser User's shares in the smart vault.
+     * @param vaultSharesTotal Total shares in the smart vault.
+     * @return balances Array of balances for each asset. same size as vault strategies
+     */
+    function _getUserStrategyBalancesByVault(address smartVault, uint256 vaultSharesUser, uint256 vaultSharesTotal)
+        private
+        view
+        returns (uint256[][] memory balances)
+    {
+        address[] memory strategies = smartVaultManager.strategies(smartVault);
+        balances = new uint256[][](strategies.length);
+        for (uint256 i; i < strategies.length; ++i) {
+            if (ghostStrategy == strategies[i]) {
+                continue;
+            }
+
+            IStrategy strategy = IStrategy(strategies[i]);
+
+            uint256 strategySharesTotal = strategy.totalSupply();
+
+            uint256 strategySharesVault = strategy.balanceOf(smartVault);
+
+            uint256[] memory amounts = strategy.getUnderlyingAssetAmounts();
+
+            balances[i] = new uint256[](amounts.length);
+            for (uint256 j; j < amounts.length; ++j) {
+                if (strategySharesTotal == 0 || vaultSharesTotal == 0) {
+                    continue;
+                }
+
+                uint256 amountStrategy = amounts[j];
+
+                uint256 amountVault = (strategySharesVault * amountStrategy) / strategySharesTotal;
+
+                uint256 amountUser = (vaultSharesUser * amountVault) / vaultSharesTotal;
+
+                balances[i][j] = amountUser;
+            }
+        }
+    }
+
+    /**
+     * @notice Retrieves a Smart Vault Token Balance for user. Including the predicted balance from all current D-NFTs
+     * currently in holding.
+     */
+    function _getUserSVTBalance(address smartVault, address user, uint256[] calldata nftIds)
+        private
+        view
+        returns (uint256 currentBalance)
+    {
+        currentBalance = ISmartVault(smartVault).balanceOf(user);
+
+        if (accessControl.smartVaultOwner(smartVault) == user) {
+            (,, uint256 fees,) = smartVaultManager.simulateSync(smartVault);
+            currentBalance += fees;
+        }
+
+        if (nftIds.length > 0) {
+            currentBalance += smartVaultManager.simulateSyncWithBurn(smartVault, user, nftIds);
         }
     }
 }
