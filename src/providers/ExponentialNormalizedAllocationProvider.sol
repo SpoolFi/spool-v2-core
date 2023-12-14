@@ -16,9 +16,13 @@ contract ExponentialNormalizedAllocationProvider is IAllocationProvider {
     /// @notice Maximum value signed 64.64-bit fixed point number may have.
     int256 private constant MAX_64x64 = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
-    int256 private constant NORMALIZATION_FACTOR = 8;
+    int256 private immutable _normalizationFactor;
 
-    function calculateAllocation(AllocationCalculationInput calldata data) external pure returns (uint256[] memory) {
+    constructor() {
+        _normalizationFactor = fromInt(8);
+    }
+
+    function calculateAllocation(AllocationCalculationInput calldata data) external view returns (uint256[] memory) {
         if (data.apys.length != data.riskScores.length) {
             revert ApysOrRiskScoresLengthMismatch(data.apys.length, data.riskScores.length);
         }
@@ -31,13 +35,7 @@ contract ExponentialNormalizedAllocationProvider is IAllocationProvider {
             return allocations;
         }
 
-        uint8[21] memory riskArray =
-            [10, 19, 28, 37, 46, 55, 64, 73, 82, 91, 100, 109, 118, 127, 136, 145, 154, 163, 172, 181, 190];
-
-        // NOTE: minimum data.riskTolerance value is -10
-        uint256 riskTolerance = uint8(data.riskTolerance + 10); // from 0 to 20
-        int256 normalizationFactor = fromInt(NORMALIZATION_FACTOR);
-        int256 riskToleranceFactor = div(fromUint(riskArray[riskTolerance]), fromInt(100));
+        int256 riskToleranceFactor = _calculateRiskToleranceFactor(data.riskTolerance);
 
         // sum APY over all strategies for normalization
         int256 apySum;
@@ -57,7 +55,7 @@ contract ExponentialNormalizedAllocationProvider is IAllocationProvider {
                 continue;
             }
 
-            int256 allocation = div(mul(fromInt(data.apys[i]), normalizationFactor), partApySum);
+            int256 allocation = div(mul(fromInt(data.apys[i]), _normalizationFactor), partApySum);
             allocation = exp_2(exp_2(mul(riskToleranceFactor, log_2(allocation))));
             allocations[i] = uint256(div(allocation, fromUint(data.riskScores[i])));
 
@@ -78,6 +76,7 @@ contract ExponentialNormalizedAllocationProvider is IAllocationProvider {
             allocations[i] = FULL_PERCENT * allocations[i] / allocationSum;
             residual -= allocations[i];
         }
+
         if (residual > 0) {
             for (uint256 i; i < allocations.length; ++i) {
                 if (allocations[i] > 0) {
@@ -88,6 +87,14 @@ contract ExponentialNormalizedAllocationProvider is IAllocationProvider {
         }
 
         return allocations;
+    }
+
+    function _calculateRiskToleranceFactor(int8 riskTolerance) private pure returns (int256) {
+        // NOTE: minimum data.riskTolerance value is -10
+        uint256 positiveRiskTolerance = uint8(riskTolerance + 10); // from 0 to 20
+        unchecked {
+            return div(fromUint(10 + positiveRiskTolerance * 9), fromInt(100));
+        }
     }
 
     function fromInt(int256 x) internal pure returns (int256) {
