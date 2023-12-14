@@ -7,7 +7,7 @@ import "./EthereumForkConstants.sol";
 contract ForkTestFixture is Test {
     uint256 internal mainnetForkId;
 
-    function setUpForkTestFixture() internal {
+    function setUpForkTestFixture() internal virtual {
         mainnetForkId = vm.createFork(vm.rpcUrl("mainnet"), MAINNET_FORK_BLOCK);
     }
 

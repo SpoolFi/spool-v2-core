@@ -17,6 +17,7 @@ import "../../src/strategies/REthHoldingStrategy.sol";
 import "../../src/strategies/SfrxEthHoldingStrategy.sol";
 import "../../src/strategies/StEthHoldingStrategy.sol";
 import "../../src/strategies/YearnV2Strategy.sol";
+import "../../src/strategies/OEthHoldingStrategy.sol";
 import "../helper/JsonHelper.sol";
 import "./AssetsInitial.s.sol";
 
@@ -37,6 +38,9 @@ string constant RETH_HOLDING_KEY = "reth-holding";
 string constant SFRXETH_HOLDING_KEY = "sfrxeth-holding";
 string constant STETH_HOLDING_KEY = "steth-holding";
 string constant YEARN_V2_KEY = "yearn-v2";
+// extended
+string constant OETH_HOLDING_KEY = "oeth-holding";
+string constant CURVE_OETH_KEY = "curve-oeth";
 
 struct StandardContracts {
     ISpoolAccessControl accessControl;
@@ -91,6 +95,9 @@ contract StrategiesInitial {
         deployNotionalFinance(contracts);
 
         deployYearnV2(contracts);
+
+        // extended
+        deployOeth(contracts);
     }
 
     function deployAaveV2(StandardContracts memory contracts) public {
@@ -661,6 +668,36 @@ contract StrategiesInitial {
             YearnV2Strategy(variant).initialize(variantName, assetGroupId, yTokenVault);
             _registerStrategyVariant(YEARN_V2_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
         }
+    }
+
+    function deployOeth(StandardContracts memory contracts) public {
+        // create implementation contract
+        uint256 assetGroupId = assetGroups(WETH_KEY);
+
+        IOEthToken oEthToken =
+            IOEthToken(constantsJson().getAddress(string.concat(".strategies.", OETH_HOLDING_KEY, ".oEth")));
+
+        IVaultCore oEthVault =
+            IVaultCore(constantsJson().getAddress(string.concat(".strategies.", OETH_HOLDING_KEY, ".vault")));
+
+        ICurveEthPool curvePool =
+            ICurveEthPool(constantsJson().getAddress(string.concat(".strategies.", CURVE_OETH_KEY, ".pool")));
+
+        OEthHoldingStrategy implementation = new OEthHoldingStrategy(
+            contracts.assetGroupRegistry,
+            contracts.accessControl,
+            assetGroupId,
+            oEthToken,
+            oEthVault,
+            curvePool,
+            assets(WETH_KEY)
+        );
+
+        // create proxy
+        address proxy = _newProxy(address(implementation), contracts.proxyAdmin);
+        OEthHoldingStrategy(payable(proxy)).initialize(OETH_HOLDING_KEY);
+
+        _registerStrategy(OETH_HOLDING_KEY, address(implementation), proxy, assetGroupId, contracts.strategyRegistry);
     }
 
     function _newProxy(address implementation, address proxyAdmin) private returns (address) {

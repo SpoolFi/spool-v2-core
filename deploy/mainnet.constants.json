@@ -82,6 +82,9 @@
         "curve-steth": {
             "pool": "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022"
         },
+        "curve-oeth": {
+            "pool": "0x94B17476A93b3262d87B9a326965D1E91f9c13E7"
+        },
         "idle-best-yield-senior": {
             "dai": {
                 "idleToken": "0x3fE7940616e5Bc47b0775a0dccf6237893353bB4",
@@ -156,6 +159,11 @@
         "steth-holding": {
             "lido": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
             "apy": 36000000000
+        },
+        "oeth-holding": {
+            "oEth": "0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3",
+            "vault": "0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab",
+            "apy": 64300000000
         },
         "yearn-v2": {
             "dai": {

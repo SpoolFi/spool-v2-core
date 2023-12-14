@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 uint256 constant MAINNET_FORK_BLOCK = 16_683_900;
+uint256 constant MAINNET_FORK_BLOCK_EXTENDED = 18_776_000;
 
 // tokens
 address constant USDC = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
@@ -45,6 +46,8 @@ address constant CURVE_ALUSD_GAUGE = address(0x9582C4ADACB3BCE56Fea3e590F05c3ca2
 address constant CURVE_FRXETH_POOL = address(0xa1F8A6807c402E4A15ef4EBa36528A3FED24E577);
 //   steth
 address constant CURVE_STETH_POOL = address(0xDC24316b9AE028F1497c275EB9192a3Ea0f67022);
+//   oeth
+address constant CURVE_OETH_POOL = address(0x94B17476A93b3262d87B9a326965D1E91f9c13E7);
 
 // Convex
 address constant CONVEX_BOOSTER = address(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
@@ -74,3 +77,7 @@ address constant FRXETH_MINTER = address(0xbAFA44EFE7901E04E39Dad13167D089C559c1
 
 // Rocket Pool
 address constant ROCKET_SWAP_ROUTER = address(0x16D5A408e807db8eF7c578279BEeEe6b228f1c1C);
+
+// Origin
+address constant OETH_TOKEN = address(0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3);
+address constant OETH_VAULT = address(0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab);
