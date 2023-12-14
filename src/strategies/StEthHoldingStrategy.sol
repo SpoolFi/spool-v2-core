@@ -58,6 +58,8 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
 
     uint256 private _lastSharePrice;
 
+    address public referral;
+
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
@@ -87,6 +89,10 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
         }
 
         _lastSharePrice = _getSharePrice();
+    }
+
+    function updateReferral(address referral_) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        referral = referral_;
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {
@@ -213,7 +219,7 @@ contract StEthHoldingStrategy is Strategy, WethHelper {
     function _stake(uint256 amount) private {
         unwrapEth(amount);
 
-        lido.submit{value: amount}(address(0));
+        lido.submit{value: amount}(referral);
     }
 
     function _buyOnCurve(uint256 amount, uint256 slippage) private {
