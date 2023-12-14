@@ -78,6 +78,7 @@ contract OEthHoldingStrategyTest is TestFixture, ForkTestFixture {
 
         // act
         uint256[] memory slippages = new uint256[](5);
+        slippages[3] = 1;
 
         oEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
@@ -104,7 +105,6 @@ contract OEthHoldingStrategyTest is TestFixture, ForkTestFixture {
 
         // act
         uint256[] memory slippages = new uint256[](5);
-        slippages[3] = 1;
 
         oEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
@@ -126,6 +126,7 @@ contract OEthHoldingStrategyTest is TestFixture, ForkTestFixture {
         tokenWeth.transfer(address(oEthHoldingStrategy), toDeposit);
         // - deposit
         uint256[] memory slippages = new uint256[](5);
+        slippages[3] = 1;
         oEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -159,6 +160,7 @@ contract OEthHoldingStrategyTest is TestFixture, ForkTestFixture {
         tokenWeth.transfer(address(oEthHoldingStrategy), toDeposit);
         // - deposit
         uint256[] memory slippages = new uint256[](5);
+        slippages[3] = 1;
         oEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -189,6 +191,7 @@ contract OEthHoldingStrategyTest is TestFixture, ForkTestFixture {
         tokenWeth.transfer(address(oEthHoldingStrategy), toDeposit);
         // - deposit
         uint256[] memory slippages = new uint256[](5);
+        slippages[3] = 1;
         oEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -220,6 +223,7 @@ contract OEthHoldingStrategyTest is TestFixture, ForkTestFixture {
         tokenWeth.transfer(address(oEthHoldingStrategy), toDeposit);
         // - deposit
         uint256[] memory slippages = new uint256[](5);
+        slippages[3] = 1;
         oEthHoldingStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
