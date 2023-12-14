@@ -39,7 +39,7 @@ error OEthHoldingRedeemSlippagesFailed();
 // - redeemFast or emergencyWithdraw: slippages[0] == 3
 //   - _redeemFromProtocol or _emergencyWithdrawImpl: slippages[1]
 // - _depositToProtocol:
-//   - if selection == 0 -> mint
+//   - if selection == 1 -> mint
 //     else -> buy on curve
 // Description:
 // This is a strategy where ETH is staked with Origin to be used for investing
@@ -172,7 +172,7 @@ contract OEthHoldingStrategy is Strategy, WethHelper {
             revert OEthHoldingDepositSlippagesFailed();
         }
 
-        if (selection == 0) {
+        if (selection == 1) {
             _mint(amounts[0], slippage);
         } else {
             _buyOnCurve(amounts[0], slippage);
@@ -234,7 +234,13 @@ contract OEthHoldingStrategy is Strategy, WethHelper {
     function _mint(uint256 amount, uint256 minOut) private {
         _resetAndApprove(IERC20(address(weth)), address(oEthVault), amount);
 
+        uint256 balanceBefore = oEthToken.balanceOf(address(this));
         oEthVault.mint(address(weth), amount, minOut);
+
+        if (_isViewExecution()) {
+            uint256 balanceAfter = oEthToken.balanceOf(address(this));
+            emit Slippages(true, balanceAfter - balanceBefore, "");
+        }
     }
 
     function _buyOnCurve(uint256 amount, uint256 slippage) private {
