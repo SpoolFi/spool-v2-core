@@ -105,6 +105,9 @@ contract OEthHoldingStrategy is Strategy, WethHelper {
         }
 
         _rebasingCreditsPerTokenLast = oEthToken.rebasingCreditsPerToken();
+
+        // required for a contract address to receive yield
+        oEthToken.rebaseOptIn();
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {

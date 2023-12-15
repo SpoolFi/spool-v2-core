@@ -30,6 +30,7 @@ string constant CURVE_3POOL_KEY = "curve-3pool";
 string constant CURVE_ALUSD_KEY = "curve-alusd";
 string constant CURVE_FRXETH_KEY = "curve-frxeth";
 string constant CURVE_STETH_KEY = "curve-steth";
+string constant CURVE_OETH_KEY = "curve-oeth";
 string constant IDLE_BEST_YIELD_SENIOR_KEY = "idle-best-yield-senior";
 string constant MORPHO_AAVE_V2_KEY = "morpho-aave-v2";
 string constant MORPHO_COMPOUND_V2_KEY = "morpho-compound-v2";
@@ -37,10 +38,8 @@ string constant NOTIONAL_FINANCE_KEY = "notional-finance";
 string constant RETH_HOLDING_KEY = "reth-holding";
 string constant SFRXETH_HOLDING_KEY = "sfrxeth-holding";
 string constant STETH_HOLDING_KEY = "steth-holding";
-string constant YEARN_V2_KEY = "yearn-v2";
-// extended
 string constant OETH_HOLDING_KEY = "oeth-holding";
-string constant CURVE_OETH_KEY = "curve-oeth";
+string constant YEARN_V2_KEY = "yearn-v2";
 
 struct StandardContracts {
     ISpoolAccessControl accessControl;
@@ -96,7 +95,6 @@ contract StrategiesInitial {
 
         deployYearnV2(contracts);
 
-        // extended
         deployOeth(contracts);
     }
 
