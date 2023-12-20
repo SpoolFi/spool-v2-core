@@ -95,7 +95,7 @@ contract StrategiesInitial {
 
         deployYearnV2(contracts);
 
-        deployOeth(contracts);
+        deployOeth(contracts, true);
     }
 
     function deployAaveV2(StandardContracts memory contracts) public {
@@ -668,7 +668,7 @@ contract StrategiesInitial {
         }
     }
 
-    function deployOeth(StandardContracts memory contracts) public {
+    function deployOeth(StandardContracts memory contracts, bool register) public {
         // create implementation contract
         uint256 assetGroupId = assetGroups(WETH_KEY);
 
@@ -694,7 +694,11 @@ contract StrategiesInitial {
         address proxy = _newProxy(address(implementation), contracts.proxyAdmin);
         OEthHoldingStrategy(payable(proxy)).initialize(OETH_HOLDING_KEY);
 
-        _registerStrategy(OETH_HOLDING_KEY, address(implementation), proxy, assetGroupId, contracts.strategyRegistry);
+        if (register) {
+            _registerStrategy(
+                OETH_HOLDING_KEY, address(implementation), proxy, assetGroupId, contracts.strategyRegistry
+            );
+        }
     }
 
     function _newProxy(address implementation, address proxyAdmin) private returns (address) {
