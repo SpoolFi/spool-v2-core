@@ -148,6 +148,10 @@
                 "apy": 69800000000
             }
         },
+        "oeth-holding": {
+            "vault": "0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab",
+            "apy": 64300000000
+        },
         "reth-holding": {
             "rocketSwapRouter": "0x16D5A408e807db8eF7c578279BEeEe6b228f1c1C",
             "apy": 38200000000
@@ -159,11 +163,6 @@
         "steth-holding": {
             "lido": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
             "apy": 36000000000
-        },
-        "oeth-holding": {
-            "oEth": "0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3",
-            "vault": "0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab",
-            "apy": 64300000000
         },
         "yearn-v2": {
             "dai": {
@@ -184,6 +183,7 @@
         "comp": "0xc00e94Cb662C3520282E6f5717214004A7f26888",
         "frxEth": "0x5E8422345238F34275888049021821E8E08CAa1f",
         "note": "0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5",
+        "oEth": "0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3",
         "sfrxEth": "0xac3E018457B222d93114458476f3E3416Abbe38F",
         "stkAave": "0x4da27a545c0c5B758a6BA100e3a049001de870f5"
     },

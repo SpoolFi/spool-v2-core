@@ -672,8 +672,7 @@ contract StrategiesInitial {
         // create implementation contract
         uint256 assetGroupId = assetGroups(WETH_KEY);
 
-        IOEthToken oEthToken =
-            IOEthToken(constantsJson().getAddress(string.concat(".strategies.", OETH_HOLDING_KEY, ".oEth")));
+        IOEthToken oEthToken = IOEthToken(constantsJson().getAddress(string.concat(".tokens.oEth")));
 
         IVaultCore oEthVault =
             IVaultCore(constantsJson().getAddress(string.concat(".strategies.", OETH_HOLDING_KEY, ".vault")));
