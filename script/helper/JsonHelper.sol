@@ -56,12 +56,8 @@ contract JsonWriter {
     }
 
     function addVariantStrategyImplementation(string memory strategyKey, address implementation) public {
-        _addVariantStrategyKey(strategyKey, implementation, "implementation");
-    }
-
-    function _addVariantStrategyKey(string memory strategyKey, address strategyAddress, string memory key) private {
         string memory variantStrategyJson = strategyKey;
-        variantStrategyJson = variantStrategyJson.serialize(key, strategyAddress);
+        variantStrategyJson = variantStrategyJson.serialize("implementation", implementation);
 
         string memory strategiesJson = "strategies";
         strategiesJson = strategiesJson.serialize(strategyKey, variantStrategyJson);
