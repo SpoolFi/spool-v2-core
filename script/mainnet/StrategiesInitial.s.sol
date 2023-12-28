@@ -52,7 +52,7 @@ contract StrategiesInitial {
     function assets(string memory) public view virtual returns (address) {}
     function assetGroups(string memory) public view virtual returns (uint256) {}
     function constantsJson() internal view virtual returns (JsonReader) {}
-    function contractsJson() internal view virtual returns (JsonWriter) {}
+    function contractsJson() internal view virtual returns (JsonReadWriter) {}
 
     // strategy key => asset group id => strategy address
     mapping(string => mapping(uint256 => address)) public strategies;

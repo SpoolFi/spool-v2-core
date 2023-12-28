@@ -7,25 +7,29 @@ import "forge-std/Vm.sol";
 contract JsonWriter {
     using stdJson for string;
 
-    string json = "JSON_ROOT";
+    VmSafe vmWriter;
+    string jsonWriter = "JSON_ROOT";
     string path;
 
-    constructor(string memory _path) {
+    constructor(VmSafe _vmWriter, string memory _path) {
+        string memory content = _vmWriter.readFile(_path);
+        if (bytes(content).length > 0) jsonWriter.serialize(content);
+        vmWriter = _vmWriter;
         path = _path;
     }
 
     function add(string memory key, address value) public {
-        string memory content = json.serialize(key, value);
+        string memory content = jsonWriter.serialize(key, value);
         content.write(path);
     }
 
     function add(string memory key, string memory value) public {
-        string memory content = json.serialize(key, value);
+        string memory content = jsonWriter.serialize(key, value);
         content.write(path);
     }
 
     function add(string memory key, uint256 value) public {
-        string memory content = json.serialize(key, value);
+        string memory content = jsonWriter.serialize(key, value);
         content.write(path);
     }
 
@@ -34,7 +38,7 @@ contract JsonWriter {
         proxyJson.serialize("implementation", implementation);
         proxyJson = proxyJson.serialize("proxy", proxy);
 
-        string memory content = json.serialize(key, proxyJson);
+        string memory content = jsonWriter.serialize(key, proxyJson);
 
         content.write(path);
     }
@@ -47,7 +51,7 @@ contract JsonWriter {
         string memory strategiesJson = "strategies";
         strategiesJson = strategiesJson.serialize(strategyKey, strategyJson);
 
-        string memory content = json.serialize("strategies", strategiesJson);
+        string memory content = jsonWriter.serialize("strategies", strategiesJson);
         content.write(path);
     }
 
@@ -58,7 +62,7 @@ contract JsonWriter {
         string memory strategiesJson = "strategies";
         strategiesJson = strategiesJson.serialize(strategyKey, variantStrategyJson);
 
-        string memory content = json.serialize("strategies", strategiesJson);
+        string memory content = jsonWriter.serialize("strategies", strategiesJson);
         content.write(path);
     }
 
@@ -71,41 +75,73 @@ contract JsonWriter {
         string memory strategiesJson = "strategies";
         strategiesJson = strategiesJson.serialize(strategyKey, variantStrategyJson);
 
-        string memory content = json.serialize("strategies", strategiesJson);
+        string memory content = jsonWriter.serialize("strategies", strategiesJson);
         content.write(path);
     }
 
-    function test_mock() external pure {}
+    // needed to be able to append to inner keys in the json file in later updates.
+    function reserializeKeyAddress(string memory rootKey) public {
+        string memory json = vmWriter.readFile(path);
+
+        string[] memory keys = vmWriter.parseJsonKeys(json, string.concat(".", rootKey));
+
+        string memory rootKeyJson = rootKey;
+        string memory contentSubKey;
+        string memory contentRootKey;
+
+        for (uint256 i = 0; i < keys.length; i++) {
+            string memory key = keys[i];
+            string[] memory subKeys = vmWriter.parseJsonKeys(json, string.concat(".", rootKey, ".", key));
+            for (uint256 j = 0; j < subKeys.length; j++) {
+                contentSubKey =
+                    key.serialize(subKeys[j], json.readAddress(string.concat(".", rootKey, ".", key, ".", subKeys[j])));
+            }
+            contentRootKey = rootKeyJson.serialize(key, contentSubKey);
+        }
+        jsonWriter.serialize(rootKey, contentRootKey);
+    }
+
+    function test_JsonWriter_mock() external pure {}
 }
 
 contract JsonReader {
     using stdJson for string;
 
-    string json;
+    VmSafe vmReader;
+    string public jsonReader;
 
-    constructor(VmSafe vm, string memory path) {
-        json = vm.readFile(path);
+    constructor(VmSafe _vmReader, string memory path) {
+        jsonReader = _vmReader.readFile(path);
+        vmReader = _vmReader;
     }
 
     function getAddress(string memory key) public view returns (address) {
-        return json.readAddress(key);
+        return jsonReader.readAddress(key);
     }
 
     function getBool(string memory key) public view returns (bool) {
-        return json.readBool(key);
+        return jsonReader.readBool(key);
     }
 
     function getUint256(string memory key) public view returns (uint256) {
-        return json.readUint(key);
+        return jsonReader.readUint(key);
     }
 
     function getInt256(string memory key) public view returns (int256) {
-        return json.readInt(key);
+        return jsonReader.readInt(key);
     }
 
     function getUint256Array(string memory key) public view returns (uint256[] memory) {
-        return json.readUintArray(key);
+        return jsonReader.readUintArray(key);
     }
 
-    function test_mock() external pure {}
+    function hasKey(string memory key) public view returns (bool) {
+        return vmReader.keyExists(jsonReader, key);
+    }
+
+    function test_JsonReader_mock() external pure {}
+}
+
+contract JsonReadWriter is JsonReader, JsonWriter {
+    constructor(VmSafe vm, string memory path) JsonReader(vm, path) JsonWriter(vm, path) {}
 }

@@ -22,30 +22,30 @@
             "lendingPoolAddressesProvider": "0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5",
             "dai": {
                 "aToken": "0x028171bCA77440897B824Ca71D1c56caC55b68A3",
-                "apy": 21900000000
+                "apy": 59000000000
             },
             "usdc": {
                 "aToken": "0xBcca60bB61934080951369a648Fb03DF4F96263C",
-                "apy": 22900000000
+                "apy": 30400000000
             },
             "usdt": {
                 "aToken": "0x3Ed3B47Dd13EC9a98b44e6204A523E766B225811",
-                "apy": 34500000000
+                "apy": 27700000000
             }
         },
         "compound-v2": {
             "comptroller": "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B",
             "dai": {
                 "cToken": "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643",
-                "apy": 15300000000
+                "apy": 35300000000
             },
             "usdc": {
                 "cToken": "0x39AA39c021dfbaE8faC545936693aC917d5E7563",
-                "apy": 20400000000
+                "apy": 34500000000
             },
             "usdt": {
                 "cToken": "0xf650C3d88D12dB855b8bf7D11Be6C55A4e07dCC9",
-                "apy": 27200000000
+                "apy": 34400000000
             }
         },
         "convex-base": {
@@ -54,23 +54,23 @@
         "convex-3pool": {
             "pid": 9,
             "extraRewards": false,
-            "apy": 16100000000,
-            "positiveYieldLimit": 10000000000,
+            "apy": 20100000000,
+            "positiveYieldLimit": 20000000000,
             "negativeYieldLimit": -1000000000000
         },
         "convex-alusd": {
             "pid": 36,
             "extraRewards": false,
-            "apy": 59200000000,
-            "positiveYieldLimit": 10000000000,
+            "apy": 33600000000,
+            "positiveYieldLimit": 20000000000,
             "negativeYieldLimit": -1000000000000
         },
         "curve-3pool": {
             "gauge": "0xbFcF63294aD7105dEa65aA58F8AE5BE2D9d0952A",
             "pool": "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
             "token": "0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490",
-            "apy": 2700000000,
-            "positiveYieldLimit": 10000000000,
+            "apy": 10000000000,
+            "positiveYieldLimit": 20000000000,
             "negativeYieldLimit": -1000000000000
         },
         "curve-alusd": {
@@ -85,30 +85,33 @@
         "idle-best-yield-senior": {
             "dai": {
                 "idleToken": "0x3fE7940616e5Bc47b0775a0dccf6237893353bB4",
-                "apy": 37300000000
+                "apy": 49700000000
             },
             "usdc": {
                 "idleToken": "0x5274891bEC421B39D23760c04A6755eCB444797C",
-                "apy": 37300000000
+                "apy": 37600000000
             },
             "usdt": {
                 "idleToken": "0xF34842d05A1c888Ca02769A633DF37177415C2f8",
-                "apy": 37300000000
+                "apy": 58400000000
             }
         },
         "morpho-aave-v2": {
             "morpho": "0x777777c9898D384F785Ee44Acfe945efDFf5f3E0",
             "lens": "0x507fA343d0A90786d86C7cd885f5C49263A91FF4",
             "dai": {
-                "positiveYieldLimit": 10000000000,
+                "apy": 71500000000,
+                "positiveYieldLimit": 20000000000,
                 "negativeYieldLimit": -1000000000000
             },
             "usdc": {
-                "positiveYieldLimit": 10000000000,
+                "apy": 34400000000,
+                "positiveYieldLimit": 20000000000,
                 "negativeYieldLimit": -1000000000000
             },
             "usdt": {
-                "positiveYieldLimit": 10000000000,
+                "apy": 38600000000,
+                "positiveYieldLimit": 20000000000,
                 "negativeYieldLimit": -1000000000000
             }
         },
@@ -116,15 +119,18 @@
             "morpho": "0x8888882f8f843896699869179fB6E4f7e3B58888",
             "lens": "0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67",
             "dai": {
-                "positiveYieldLimit": 10000000000,
+                "apy": 35300000000,
+                "positiveYieldLimit": 20000000000,
                 "negativeYieldLimit": -1000000000000
             },
             "usdc": {
-                "positiveYieldLimit": 10000000000,
+                "apy": 34500000000,
+                "positiveYieldLimit": 20000000000,
                 "negativeYieldLimit": -1000000000000
             },
             "usdt": {
-                "positiveYieldLimit": 10000000000,
+                "apy": 42800000000,
+                "positiveYieldLimit": 20000000000,
                 "negativeYieldLimit": -1000000000000
             }
         },
@@ -132,37 +138,37 @@
             "notionalProxy": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
             "dai": {
                 "nToken": "0x6EbcE2453398af200c688C7c4eBD479171231818",
-                "apy": 107800000000
+                "apy": 56500000000
             },
             "usdc": {
                 "nToken": "0x18b0Fc5A233acF1586Da7C199Ca9E3f486305A29",
-                "apy": 141600000000
+                "apy": 69800000000
             }
         },
         "reth-holding": {
             "rocketSwapRouter": "0x16D5A408e807db8eF7c578279BEeEe6b228f1c1C",
-            "apy": 44500000000
+            "apy": 38200000000
         },
         "sfrxeth-holding": {
             "frxEthMinter": "0xbAFA44EFE7901E04E39Dad13167D089C559c1138",
-            "apy": 54200000000
+            "apy": 45300000000
         },
         "steth-holding": {
             "lido": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
-            "apy": 50000000000
+            "apy": 36000000000
         },
         "yearn-v2": {
             "dai": {
                 "tokenVault": "0xdA816459F1AB5631232FE5e97a05BBBb94970c95",
-                "apy": 67400000000
+                "apy": 36900000000
             },
             "usdc": {
                 "tokenVault": "0xa354F35829Ae975e850e23e9615b11Da1B3dC4DE",
-                "apy": 31700000000
+                "apy": 23900000000
             },
             "usdt": {
                 "tokenVault": "0x3B27F92C0e212C671EA351827EDF93DB27cc0c65",
-                "apy": 15300000000
+                "apy": 4500000000
             }
         }
     },
@@ -173,13 +179,13 @@
         "sfrxEth": "0xac3E018457B222d93114458476f3E3416Abbe38F",
         "stkAave": "0x4da27a545c0c5B758a6BA100e3a049001de870f5"
     },
-    "proxyAdminOwner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-    "spoolAdmin": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+    "proxyAdminOwner": "0x1A2921a0ABa58A0199820Cbc01fB361777edE19b",
+    "spoolAdmin": "0x1A2921a0ABa58A0199820Cbc01fB361777edE19b",
     "fees": {
         "ecosystemFeePct": 800,
         "treasuryFeePct": 200,
-        "ecosystemFeeReceiver": "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
-        "treasuryFeeReceiver": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
+        "ecosystemFeeReceiver": "0x1A2921a0ABa58A0199820Cbc01fB361777edE19b",
+        "treasuryFeeReceiver": "0x1A2921a0ABa58A0199820Cbc01fB361777edE19b"
     },
-    "emergencyWithdrawalWallet": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc"
+    "emergencyWithdrawalWallet": "0x1A2921a0ABa58A0199820Cbc01fB361777edE19b"
 }

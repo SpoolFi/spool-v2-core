@@ -20,7 +20,7 @@ contract TestMainnetInitialSetup is MainnetInitialSetup {
         super.init();
 
         _constantsJson = new JsonReader(vm, TEST_CONSTANTS_PATH);
-        _contractsJson = new JsonWriter(TEST_CONTRACTS_PATH);
+        _contractsJson = new JsonReadWriter(vm, TEST_CONTRACTS_PATH);
     }
 
     function postDeploySpool(address deployerAddress) public override {

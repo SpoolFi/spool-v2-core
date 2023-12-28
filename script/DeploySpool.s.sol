@@ -31,7 +31,7 @@ import {UniformAllocationProvider} from "../src/providers/UniformAllocationProvi
 
 contract DeploySpool {
     function constantsJson() internal view virtual returns (JsonReader) {}
-    function contractsJson() internal view virtual returns (JsonWriter) {}
+    function contractsJson() internal view virtual returns (JsonReadWriter) {}
 
     ProxyAdmin public proxyAdmin;
     SpoolAccessControl public spoolAccessControl;
@@ -316,6 +316,34 @@ contract DeploySpool {
         }
 
         spoolAccessControl.renounceRole(ROLE_SPOOL_ADMIN, deployerAddress);
+    }
+
+    function loadSpool() public {
+        proxyAdmin = ProxyAdmin(contractsJson().getAddress(".ProxyAdmin"));
+        spoolAccessControl = SpoolAccessControl(contractsJson().getAddress(".SpoolAccessControl.proxy"));
+        swapper = Swapper(contractsJson().getAddress(".Swapper.proxy"));
+        masterWallet = MasterWallet(contractsJson().getAddress(".MasterWallet.proxy"));
+        actionManager = ActionManager(contractsJson().getAddress(".ActionManager.proxy"));
+        assetGroupRegistry = AssetGroupRegistry(contractsJson().getAddress(".AssetGroupRegistry.proxy"));
+        guardManager = GuardManager(contractsJson().getAddress(".GuardManager.proxy"));
+        rewardManager = RewardManager(contractsJson().getAddress(".RewardManager.proxy"));
+        riskManager = RiskManager(contractsJson().getAddress(".RiskManager.proxy"));
+        usdPriceFeedManager = UsdPriceFeedManager(contractsJson().getAddress(".UsdPriceFeedManager.proxy"));
+        strategyRegistry = StrategyRegistry(contractsJson().getAddress(".StrategyRegistry.proxy"));
+        smartVaultManager = SmartVaultManager(contractsJson().getAddress(".SmartVaultManager.proxy"));
+        depositSwap = DepositSwap(contractsJson().getAddress(".DepositSwap.proxy"));
+        smartVaultFactory = SmartVaultFactory(contractsJson().getAddress(".SmartVaultFactory"));
+        allowlistGuard = AllowlistGuard(contractsJson().getAddress(".AllowlistGuard.proxy"));
+        depositManager = DepositManager(contractsJson().getAddress(".DepositManager.proxy"));
+        withdrawalManager = WithdrawalManager(contractsJson().getAddress(".WithdrawalManager.proxy"));
+        ghostStrategy = IStrategy(contractsJson().getAddress(".GhostStrategy.proxy"));
+        exponentialAllocationProvider =
+            ExponentialAllocationProvider(contractsJson().getAddress(".ExponentialAllocationProvider.proxy"));
+        linearAllocationProvider =
+            LinearAllocationProvider(contractsJson().getAddress(".LinearAllocationProvider.proxy"));
+        uniformAllocationProvider =
+            UniformAllocationProvider(contractsJson().getAddress(".UniformAllocationProvider.proxy"));
+        spoolLens = SpoolLens(contractsJson().getAddress(".SpoolLens.proxy"));
     }
 
     function test_mock_DeploySpool() external pure {}
