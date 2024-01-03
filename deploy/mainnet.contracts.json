@@ -21,7 +21,7 @@
   },
   "ExponentialAllocationProvider": {
     "implementation": "0xbBfAAdf87e4B5b09e429A8869F0941c95ECBcb12",
-    "proxy": "0xcebF2117a483EFf141c25bf8d365B9B81Af9112F"
+    "proxy": "0xc77Ae9D8d99415b06B542E214eeCe9c9E790557E"
   },
   "GhostStrategy": {
     "implementation": "0x086E6C65d5f0c17B8AC744170A67b9F339F20690",
