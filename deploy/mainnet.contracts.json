@@ -20,7 +20,7 @@
     "proxy": "0xd8534197Bd587F8226d12E0C864ef2CaE6f82f5C"
   },
   "ExponentialAllocationProvider": {
-    "implementation": "0xbBfAAdf87e4B5b09e429A8869F0941c95ECBcb12",
+    "implementation": "0xc77Ae9D8d99415b06B542E214eeCe9c9E790557E",
     "proxy": "0xcebF2117a483EFf141c25bf8d365B9B81Af9112F"
   },
   "GhostStrategy": {
