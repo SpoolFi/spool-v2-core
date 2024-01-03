@@ -10,16 +10,20 @@ contract ExponentialAllocationProvider is IAllocationProvider {
     /// @dev If the threshold is not met, strategy will have 0 allocation.
     int256 public constant APY_ALLOCATION_THRESHOLD = YIELD_FULL_PERCENT_INT / 1000;
 
-    /// @notice Apy multiplier.
-    int256 public constant APY_MULTIPLIER = YIELD_FULL_PERCENT_INT / 100;
-
     /// @notice Minimum value signed 64.64-bit fixed point number may have.
     int256 private constant MIN_64x64 = -0x80000000000000000000000000000000;
 
     /// @notice Maximum value signed 64.64-bit fixed point number may have.
     int256 private constant MAX_64x64 = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 
-    function calculateAllocation(AllocationCalculationInput calldata data) external pure returns (uint256[] memory) {
+    /// @notice APY normalization factor.
+    int256 private immutable _normalizationFactor;
+
+    constructor() {
+        _normalizationFactor = fromInt(8);
+    }
+
+    function calculateAllocation(AllocationCalculationInput calldata data) external view returns (uint256[] memory) {
         if (data.apys.length != data.riskScores.length) {
             revert ApysOrRiskScoresLengthMismatch(data.apys.length, data.riskScores.length);
         }
@@ -27,38 +31,34 @@ contract ExponentialAllocationProvider is IAllocationProvider {
         uint256[] memory allocations = new uint256[](data.apys.length);
 
         if (allocations.length == 1) {
-            // if there is only one strategy, is should get full allocation
+            // if there is only one strategy, it should get full allocation
             allocations[0] = FULL_PERCENT;
             return allocations;
         }
 
-        uint8[21] memory riskArray =
-            [10, 19, 28, 37, 46, 55, 64, 73, 82, 91, 100, 109, 118, 127, 136, 145, 154, 163, 172, 181, 190];
+        int256 riskToleranceFactor = _calculateRiskToleranceFactor(data.riskTolerance);
 
-        // NOTE: minumum data.riskTolerance value is 10
-        uint256 riskt = uint8(data.riskTolerance + 10); // from 0 - 20
-        int256 _100 = fromInt(100);
+        // sum APY over all strategies for normalization
+        int256 apySum;
+        for (uint256 i; i < data.apys.length; ++i) {
+            if (data.apys[i] < APY_ALLOCATION_THRESHOLD) {
+                continue;
+            }
 
-        int256 apyMultiplier = fromInt(APY_MULTIPLIER);
+            apySum += data.apys[i];
+        }
+        int256 partApySum = fromInt(apySum);
 
-        int256 partRiskTolerance = div(fromUint(riskArray[riskt]), _100);
-
+        // calculate allocation for each strategy
         uint256 allocationSum;
         for (uint256 i; i < data.apys.length; ++i) {
             if (data.apys[i] < APY_ALLOCATION_THRESHOLD) {
                 continue;
             }
 
-            int256 partApy = fromInt(data.apys[i]);
-
-            partApy = div(partApy, apyMultiplier);
-
-            int256 apy = exp_2(mul(partRiskTolerance, log_2(partApy)));
-            int256 apy2 = exp_2(apy);
-
-            int256 risk = fromUint(data.riskScores[i]);
-
-            allocations[i] = uint256(div(apy2, risk));
+            int256 allocation = div(mul(fromInt(data.apys[i]), _normalizationFactor), partApySum);
+            allocation = exp_2(exp_2(mul(riskToleranceFactor, log_2(allocation))));
+            allocations[i] = uint256(div(allocation, fromUint(data.riskScores[i])));
 
             allocationSum += allocations[i];
         }
@@ -71,6 +71,7 @@ contract ExponentialAllocationProvider is IAllocationProvider {
             allocationSum = allocations.length;
         }
 
+        // normalize allocation to FULL_PERCENT
         uint256 residual = FULL_PERCENT;
         for (uint256 i; i < allocations.length; ++i) {
             allocations[i] = FULL_PERCENT * allocations[i] / allocationSum;
@@ -87,6 +88,14 @@ contract ExponentialAllocationProvider is IAllocationProvider {
         }
 
         return allocations;
+    }
+
+    function _calculateRiskToleranceFactor(int8 riskTolerance) private pure returns (int256) {
+        // NOTE: minimum data.riskTolerance value is -10
+        uint256 positiveRiskTolerance = uint8(riskTolerance + 10); // from 0 to 20
+        unchecked {
+            return div(fromUint(10 + positiveRiskTolerance * 9), fromInt(100));
+        }
     }
 
     function fromInt(int256 x) internal pure returns (int256) {

@@ -161,9 +161,9 @@ contract AllocationProviderTest is Test {
         }
 
         assertEq(sum, FULL_PERCENT);
-        assertEq(results[0], 166);
-        assertEq(results[1], 192);
-        assertEq(results[2], 9642);
+        assertEq(results[0], 106);
+        assertEq(results[1], 139);
+        assertEq(results[2], 9755);
     }
 
     function test_exponentialAllocationProvider_singleStrategy() public {
