@@ -25,6 +25,9 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager, SpoolAccessControllable {
     /// @notice Whether the asset can be used.
     mapping(address => bool) public assetValidity;
 
+    /// @notice max time in which asset price should be updated.
+    mapping(address => uint256) public assetTimeLimit;
+
     /* ========== CONSTRUCTOR ========== */
 
     /**
@@ -34,7 +37,7 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager, SpoolAccessControllable {
 
     /* ========== ADMIN FUNCTIONS ========== */
 
-    function setAsset(address asset, AggregatorV3Interface priceAggregator, bool validity)
+    function setAsset(address asset, AggregatorV3Interface priceAggregator, bool validity, uint256 timeLimit)
         external
         onlyRole(ROLE_SPOOL_ADMIN, msg.sender)
     {
@@ -45,6 +48,11 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager, SpoolAccessControllable {
         assetPriceAggregator[asset] = priceAggregator;
         assetPriceAggregatorMultiplier[asset] = 10 ** (USD_DECIMALS - priceAggregator.decimals());
         assetValidity[asset] = validity;
+        assetTimeLimit[asset] = timeLimit;
+    }
+
+    function updateAssetTimeLimit(address asset, uint256 timeLimit) external onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {
+        assetTimeLimit[asset] = timeLimit;
     }
 
     /* ========== EXTERNAL FUNCTIONS ========== */
@@ -101,15 +109,16 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager, SpoolAccessControllable {
      */
     function _getAssetPriceInUsd(address asset) private view returns (uint256 assetPrice) {
         (
-            uint80 roundId,
+            /* uint80 roundId */
+            ,
             int256 answer,
             /* uint256 startedAt */
             ,
             uint256 updatedAt,
-            uint80 answeredInRound
+            /* uint80 answeredInRound */
         ) = assetPriceAggregator[asset].latestRoundData();
 
-        if (updatedAt == 0 || answeredInRound != roundId) {
+        if (updatedAt == 0 || (updatedAt + assetTimeLimit[asset] < block.timestamp)) {
             revert StalePriceData();
         }
 

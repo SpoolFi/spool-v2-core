@@ -31,15 +31,15 @@ contract UsdPriceFeedManagerTest is Test {
 
     function _setAssets() public {
         vm.mockCall(daiAddress, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(18));
-        usdPriceFeedManager.setAsset(daiAddress, daiUsdPriceAggregator, true);
+        usdPriceFeedManager.setAsset(daiAddress, daiUsdPriceAggregator, true, 1);
         daiUsdPriceAggregator.pushAnswer(1_00007408);
 
         vm.mockCall(usdcAddress, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(6));
-        usdPriceFeedManager.setAsset(usdcAddress, usdcUsdPriceAggregator, true);
+        usdPriceFeedManager.setAsset(usdcAddress, usdcUsdPriceAggregator, true, 1);
         usdcUsdPriceAggregator.pushAnswer(1_00012625);
 
         vm.mockCall(amplAddress, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(9));
-        usdPriceFeedManager.setAsset(amplAddress, amplUsdPriceAggregator, true);
+        usdPriceFeedManager.setAsset(amplAddress, amplUsdPriceAggregator, true, 1);
         amplUsdPriceAggregator.pushAnswer(1_369957781322723900);
     }
 
@@ -74,7 +74,37 @@ contract UsdPriceFeedManagerTest is Test {
 
         vm.prank(address(0x123));
         vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SPOOL_ADMIN, address(0x123)));
-        usdPriceFeedManager.setAsset(daiAddress, daiUsdPriceAggregator, true);
+        usdPriceFeedManager.setAsset(daiAddress, daiUsdPriceAggregator, true, 1);
+    }
+
+    function test_updateAssetTimeLimit_shouldSetAsset() public {
+        _setAssets();
+
+        assertEq(usdPriceFeedManager.assetDecimals(daiAddress), 18);
+        assertEq(usdPriceFeedManager.assetMultiplier(daiAddress), 10 ** 18);
+        assertEq(address(usdPriceFeedManager.assetPriceAggregator(daiAddress)), address(daiUsdPriceAggregator));
+        assertEq(usdPriceFeedManager.assetPriceAggregatorMultiplier(daiAddress), 10 ** 10);
+        assertEq(usdPriceFeedManager.assetValidity(daiAddress), true);
+
+        assertEq(usdPriceFeedManager.assetDecimals(usdcAddress), 6);
+        assertEq(usdPriceFeedManager.assetMultiplier(usdcAddress), 10 ** 6);
+        assertEq(address(usdPriceFeedManager.assetPriceAggregator(usdcAddress)), address(usdcUsdPriceAggregator));
+        assertEq(usdPriceFeedManager.assetPriceAggregatorMultiplier(usdcAddress), 10 ** 10);
+        assertEq(usdPriceFeedManager.assetValidity(usdcAddress), true);
+
+        assertEq(usdPriceFeedManager.assetDecimals(amplAddress), 9);
+        assertEq(usdPriceFeedManager.assetMultiplier(amplAddress), 10 ** 9);
+        assertEq(address(usdPriceFeedManager.assetPriceAggregator(amplAddress)), address(amplUsdPriceAggregator));
+        assertEq(usdPriceFeedManager.assetPriceAggregatorMultiplier(amplAddress), 1);
+        assertEq(usdPriceFeedManager.assetValidity(amplAddress), true);
+    }
+
+    function test_updateAssetTimeLimit_shouldRevertWhenNotCalledByAdmin() public {
+        vm.mockCall(daiAddress, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(18));
+
+        vm.prank(address(0x123));
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SPOOL_ADMIN, address(0x123)));
+        usdPriceFeedManager.updateAssetTimeLimit(daiAddress, 1);
     }
 
     function test_assetToUsd_shouldConvert() public {
@@ -105,6 +135,23 @@ contract UsdPriceFeedManagerTest is Test {
         daiUsdPriceAggregator.pushAnswer(-1);
 
         vm.expectRevert(abi.encodeWithSelector(NonPositivePrice.selector, -1));
+        usdPriceFeedManager.assetToUsd(daiAddress, 1);
+    }
+
+    function test_assetToUsd_shouldRevertWhenUpdatedAtIsZero() public {
+        _setAssets();
+        daiUsdPriceAggregator.setRoundData(2, 1, 0, 0, 0);
+
+        vm.expectRevert(StalePriceData.selector);
+        usdPriceFeedManager.assetToUsd(daiAddress, 1);
+    }
+
+    function test_assetToUsd_shouldRevertWhenTimeLimitHasPassed() public {
+        _setAssets();
+        vm.warp(100);
+        daiUsdPriceAggregator.setRoundData(2, 1, 0, block.timestamp - 2, 0);
+
+        vm.expectRevert(StalePriceData.selector);
         usdPriceFeedManager.assetToUsd(daiAddress, 1);
     }
 
@@ -198,7 +245,7 @@ contract UsdPriceFeedManagerTest is Test {
         address tokenA = address(0xa);
         vm.mockCall(tokenA, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(8));
         MockAggregatorV3 aUsdPriceAggregator = new MockAggregatorV3(8, "A-Usd", 1);
-        usdPriceFeedManager.setAsset(tokenA, aUsdPriceAggregator, true);
+        usdPriceFeedManager.setAsset(tokenA, aUsdPriceAggregator, true, 1);
         initialAmount = 1_11111111;
 
         aUsdPriceAggregator.pushAnswer(11111_11111111);
@@ -220,7 +267,7 @@ contract UsdPriceFeedManagerTest is Test {
         address tokenB = address(0xb);
         vm.mockCall(tokenB, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(18));
         MockAggregatorV3 bUsdPriceAggregator = new MockAggregatorV3(8, "B-Usd", 1);
-        usdPriceFeedManager.setAsset(tokenB, bUsdPriceAggregator, true);
+        usdPriceFeedManager.setAsset(tokenB, bUsdPriceAggregator, true, 1);
         initialAmount = 1_111111111111111111;
 
         bUsdPriceAggregator.pushAnswer(11111_11111111);
@@ -242,7 +289,7 @@ contract UsdPriceFeedManagerTest is Test {
         address tokenC = address(0xc);
         vm.mockCall(tokenC, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(8));
         MockAggregatorV3 cUsdPriceAggregator = new MockAggregatorV3(18, "C-Usd", 1);
-        usdPriceFeedManager.setAsset(tokenC, cUsdPriceAggregator, true);
+        usdPriceFeedManager.setAsset(tokenC, cUsdPriceAggregator, true, 1);
         initialAmount = 1_11111111;
 
         cUsdPriceAggregator.pushAnswer(11111_111111111111111111);
@@ -264,7 +311,7 @@ contract UsdPriceFeedManagerTest is Test {
         address tokenD = address(0xd);
         vm.mockCall(tokenD, abi.encodeWithSelector(IERC20Metadata.decimals.selector), abi.encode(18));
         MockAggregatorV3 dUsdPriceAggregator = new MockAggregatorV3(18, "D-Usd", 1);
-        usdPriceFeedManager.setAsset(tokenD, dUsdPriceAggregator, true);
+        usdPriceFeedManager.setAsset(tokenD, dUsdPriceAggregator, true, 1);
         initialAmount = 1_111111111111111111;
 
         dUsdPriceAggregator.pushAnswer(11111_111111111111111111);

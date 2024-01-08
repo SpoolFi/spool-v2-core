@@ -216,7 +216,7 @@ contract DeploySpool {
 
         {
             DepositSwap implementation = new DepositSwap(
-                IWETH9(constantsJson().getAddress(".assets.weth")),
+                IWETH9(constantsJson().getAddress(".assets.weth.address")),
                 assetGroupRegistry,
                 smartVaultManager,
                 swapper
