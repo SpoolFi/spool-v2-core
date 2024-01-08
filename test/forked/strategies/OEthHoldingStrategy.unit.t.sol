@@ -202,7 +202,7 @@ contract OEthHoldingStrategyTest is TestFixture, ForkTestFixture {
         vm.record();
         uint256 rebasingCreditsPerToken = oEthToken.rebasingCreditsPerTokenHighres();
         (bytes32[] memory reads,) = vm.accesses(address(oEthToken));
-        vm.store(address(oEthToken), reads[1], bytes32(rebasingCreditsPerToken * 10e18 / 12e18));
+        vm.store(address(oEthToken), reads[1], bytes32(rebasingCreditsPerToken * 8e18 / 10e18));
 
         // act
         int256 yieldPercentage = oEthHoldingStrategy.exposed_getYieldPercentage(0);
