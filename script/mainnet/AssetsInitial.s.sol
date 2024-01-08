@@ -32,10 +32,13 @@ contract AssetsInitial {
 
         address[] memory assetAddresses = new address[](assetNames.length);
         address[] memory assetPriceAggregators = new address[](assetNames.length);
+        uint256[] memory assetTimeLimits = new uint256[](assetNames.length);
         for (uint256 i; i < assetNames.length; ++i) {
             assetAddresses[i] = constantsJson().getAddress(string.concat(".assets.", assetNames[i], ".address"));
             assetPriceAggregators[i] =
-                constantsJson().getAddress(string.concat(".assets.", assetNames[i], ".priceAggregator"));
+                constantsJson().getAddress(string.concat(".assets.", assetNames[i], ".priceAggregator.address"));
+            assetTimeLimits[i] =
+                constantsJson().getUint256(string.concat(".assets.", assetNames[i], ".priceAggregator.timeLimit"));
         }
 
         assetGroupRegistry.allowTokenBatch(assetAddresses);
@@ -43,7 +46,9 @@ contract AssetsInitial {
         for (uint256 i; i < assetNames.length; ++i) {
             _assets[assetNames[i]] = assetAddresses[i];
 
-            priceFeedManager.setAsset(assetAddresses[i], AggregatorV3Interface(assetPriceAggregators[i]), true);
+            priceFeedManager.setAsset(
+                assetAddresses[i], AggregatorV3Interface(assetPriceAggregators[i]), true, assetTimeLimits[i]
+            );
         }
     }
 
