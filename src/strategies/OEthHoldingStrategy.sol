@@ -218,7 +218,7 @@ contract OEthHoldingStrategy is Strategy, WethHelper {
     function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {
         uint256 rebasingCreditsPerTokenCurrent = oEthToken.rebasingCreditsPerToken();
 
-        baseYieldPercentage = _calculateYieldPercentage(rebasingCreditsPerTokenCurrent, _rebasingCreditsPerTokenLast);
+        baseYieldPercentage = -_calculateYieldPercentage(_rebasingCreditsPerTokenLast, rebasingCreditsPerTokenCurrent);
 
         _rebasingCreditsPerTokenLast = rebasingCreditsPerTokenCurrent;
     }
