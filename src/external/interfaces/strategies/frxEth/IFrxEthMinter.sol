@@ -3,4 +3,5 @@ pragma solidity 0.8.17;
 
 interface IFrxEthMinter {
     function submitAndDeposit(address recipient) external payable returns (uint256 shares);
+    function submit() external payable;
 }

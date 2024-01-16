@@ -48,6 +48,8 @@ address constant CURVE_FRXETH_POOL = address(0xa1F8A6807c402E4A15ef4EBa36528A3FE
 address constant CURVE_STETH_POOL = address(0xDC24316b9AE028F1497c275EB9192a3Ea0f67022);
 //   oeth
 address constant CURVE_OETH_POOL = address(0x94B17476A93b3262d87B9a326965D1E91f9c13E7);
+//   steth-frxeth
+address constant CURVE_STFRXETH_POOL = address(0x4d9f9D15101EEC665F77210cB999639f760F831E);
 
 // Convex
 address constant CONVEX_BOOSTER = address(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
@@ -56,6 +58,8 @@ address constant CONVEX_BOOSTER = address(0xF403C135812408BFbE8713b5A23a04b3D48A
 uint96 constant CONVEX_3POOL_PID = 9;
 //   alUSD+3Crv - alusd
 uint96 constant CONVEX_ALUSD_PID = 36;
+//   stETH+frxETH - st-frxETH
+uint96 constant CONVEX_STFRXETH_PID = 161;
 
 // Idle
 address constant IDLE_BEST_YIELD_SENIOR_USDC = address(0x5274891bEC421B39D23760c04A6755eCB444797C);
