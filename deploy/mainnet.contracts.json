@@ -111,6 +111,10 @@
       "notional-finance-dai": "0xfbc81d6E3E85462B56EbDaeF71fe26af77cDFfA9",
       "notional-finance-usdc": "0x107D759C58C5933320e636624f4B716d7B199E21"
     },
+    "oeth-holding": {
+      "implementation": "0x4349909E23B4CDdd4d8573D75D21B5E6FBFb36A8",
+      "proxy": "0x39E5c2a796082eB553c1b0656e09E49583D12CB8"
+    },
     "reth-holding": {
       "implementation": "0xefC54333d3Fc82a7BE86ECAB7Eab1E3834B32909",
       "proxy": "0x019834Ef2ec086e495668aa4E06B4d31119beC71"
