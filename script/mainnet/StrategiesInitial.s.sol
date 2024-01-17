@@ -6,6 +6,7 @@ import "@openzeppelin/utils/math/SafeCast.sol";
 import "../../src/libraries/uint16a16Lib.sol";
 import "../../src/strategies/convex/Convex3poolStrategy.sol";
 import "../../src/strategies/convex/ConvexAlusdStrategy.sol";
+import "../../src/strategies/convex/ConvexStFrxEthStrategy.sol";
 import "../../src/strategies/curve/Curve3poolStrategy.sol";
 import "../../src/strategies/AaveV2Strategy.sol";
 import "../../src/strategies/CompoundV2Strategy.sol";
@@ -26,11 +27,13 @@ string constant COMPOUND_V2_KEY = "compound-v2";
 string constant CONVEX_BASE_KEY = "convex-base";
 string constant CONVEX_3POOL_KEY = "convex-3pool";
 string constant CONVEX_ALUSD_KEY = "convex-alusd";
+string constant CONVEX_STFRXETH_KEY = "convex-stfrxeth";
 string constant CURVE_3POOL_KEY = "curve-3pool";
 string constant CURVE_ALUSD_KEY = "curve-alusd";
 string constant CURVE_FRXETH_KEY = "curve-frxeth";
 string constant CURVE_STETH_KEY = "curve-steth";
 string constant CURVE_OETH_KEY = "curve-oeth";
+string constant CURVE_STFRXETH_KEY = "curve-stfrxeth";
 string constant IDLE_BEST_YIELD_SENIOR_KEY = "idle-best-yield-senior";
 string constant MORPHO_AAVE_V2_KEY = "morpho-aave-v2";
 string constant MORPHO_COMPOUND_V2_KEY = "morpho-compound-v2";
@@ -96,6 +99,8 @@ contract StrategiesInitial {
         deployYearnV2(contracts);
 
         deployOeth(contracts, true);
+
+        deployConvexStFrxEth(contracts, true);
     }
 
     function deployAaveV2(StandardContracts memory contracts) public {
@@ -698,6 +703,58 @@ contract StrategiesInitial {
             _registerStrategy(
                 OETH_HOLDING_KEY, address(implementation), proxy, assetGroupId, contracts.strategyRegistry
             );
+        }
+    }
+
+    function deployConvexStFrxEth(StandardContracts memory contracts, bool register) public {
+        {
+            // create implementation contract
+            uint256 assetGroupId = assetGroups(WETH_KEY);
+
+            IBooster booster =
+                IBooster(constantsJson().getAddress(string.concat(".strategies.", CONVEX_BASE_KEY, ".booster")));
+
+            ConvexStFrxEthStrategy implementation = new ConvexStFrxEthStrategy(
+                contracts.assetGroupRegistry,
+                contracts.accessControl,
+                assetGroupId,
+                contracts.swapper,
+                booster
+            );
+
+            // create proxy
+            address payable proxy;
+            {
+                address pool = constantsJson().getAddress(string.concat(".strategies.", CURVE_STFRXETH_KEY, ".pool"));
+                uint96 pid = SafeCast.toUint96(
+                    constantsJson().getUint256(string.concat(".strategies.", CONVEX_STFRXETH_KEY, ".pid"))
+                );
+                bool extraRewards =
+                    constantsJson().getBool(string.concat(".strategies.", CONVEX_STFRXETH_KEY, ".extraRewards"));
+                int128 positiveYieldLimit = SafeCast.toInt128(
+                    constantsJson().getInt256(string.concat(".strategies.", CONVEX_STFRXETH_KEY, ".positiveYieldLimit"))
+                );
+                int128 negativeYieldLimit = SafeCast.toInt128(
+                    constantsJson().getInt256(string.concat(".strategies.", CONVEX_STFRXETH_KEY, ".negativeYieldLimit"))
+                );
+
+                proxy = payable(_newProxy(address(implementation), contracts.proxyAdmin));
+                ConvexStFrxEthStrategy(proxy).initialize(
+                    CONVEX_STFRXETH_KEY,
+                    pool,
+                    assets(WETH_KEY),
+                    pid,
+                    extraRewards,
+                    positiveYieldLimit,
+                    negativeYieldLimit
+                );
+            }
+
+            if (register) {
+                _registerStrategy(
+                    CONVEX_STFRXETH_KEY, address(implementation), proxy, assetGroupId, contracts.strategyRegistry
+                );
+            }
         }
     }
 

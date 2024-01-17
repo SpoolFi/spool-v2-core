@@ -12,11 +12,11 @@ import "../libraries/EthFrxEthAssetGroupAdapter.sol";
 import "../Strategy.sol";
 import "../helpers/StrategyManualYieldVerifier.sol";
 
-error StratBeforeDepositCheckFailed();
-error StratBeforeRedeemalCheckFailed();
-error StratDepositSlippagesFailed();
-error StratRedeemSlippagesFailed();
-error StratCompoundSlippagesFailed();
+error ConvexStFrxEthDepositCheckFailed();
+error ConvexStFrxEthRedeemalCheckFailed();
+error ConvexStFrxEthDepositSlippagesFailed();
+error ConvexStFrxEthRedeemSlippagesFailed();
+error ConvexStFrxEthCompoundSlippagesFailed();
 
 // One asset
 // multiple rewards
@@ -170,7 +170,7 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
             }
 
             if (slippages[0] > 2) {
-                revert StratBeforeDepositCheckFailed();
+                revert ConvexStFrxEthDepositCheckFailed();
             }
 
             if (
@@ -178,13 +178,13 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
                     || (!PackedRange.isWithinRange(slippages[2], ICurvePoolUint256(address(_pool)).balances(0)))
                     || (!PackedRange.isWithinRange(slippages[3], ICurvePoolUint256(address(_pool)).balances(1)))
             ) {
-                revert StratBeforeDepositCheckFailed();
+                revert ConvexStFrxEthDepositCheckFailed();
             }
 
             if (slippages[0] != 1) {
                 // == 0 (DHW with deposit) or == 2 (reallocate)
                 if ((slippages[4] + slippages[5]) != amounts[0]) {
-                    revert StratBeforeDepositCheckFailed();
+                    revert ConvexStFrxEthDepositCheckFailed();
                 }
             }
         }
@@ -204,11 +204,11 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         } else if (slippages[0] == 2) {
             slippage = slippages[1];
         } else {
-            revert StratBeforeRedeemalCheckFailed();
+            revert ConvexStFrxEthRedeemalCheckFailed();
         }
 
         if (!PackedRange.isWithinRange(slippage, ssts)) {
-            revert StratBeforeRedeemalCheckFailed();
+            revert ConvexStFrxEthRedeemalCheckFailed();
         }
     }
 
@@ -217,7 +217,7 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         if (slippages[0] == 0 || slippages[0] == 2) {
             slippageOffset = 4;
         } else {
-            revert StratDepositSlippagesFailed();
+            revert ConvexStFrxEthDepositSlippagesFailed();
         }
 
         uint256[] memory wrappedAmounts = _assetGroupWrap(slippages, slippageOffset);
@@ -236,7 +236,7 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         } else if (slippages[0] == 0 && _isViewExecution()) {
             slippageOffset = 4;
         } else {
-            revert StratRedeemSlippagesFailed();
+            revert ConvexStFrxEthRedeemSlippagesFailed();
         }
 
         uint256[] memory amounts = _redeemInner(ssts, slippages, slippageOffset);
@@ -246,7 +246,7 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
 
     function _emergencyWithdrawImpl(uint256[] calldata slippages, address recipient) internal override {
         if (slippages[0] != 3) {
-            revert StratRedeemSlippagesFailed();
+            revert ConvexStFrxEthRedeemSlippagesFailed();
         }
 
         _redeemInner(totalSupply(), slippages, 1);
@@ -269,7 +269,7 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         } else if (slippages[0] == 1) {
             slippageOffset = 9;
         } else {
-            revert StratCompoundSlippagesFailed();
+            revert ConvexStFrxEthCompoundSlippagesFailed();
         }
 
         if (compoundSwapInfo.length == 0) {
