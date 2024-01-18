@@ -78,16 +78,12 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
             assetGroupRegistry,
             accessControl,
             assetGroupId,
-            swapper,
-            booster
+            swapper
         );
 
         convexStrategy.initialize(
             "convex-stfrxeth-strategy",
-            address(curvePool),
             WETH,
-            pid,
-            false,
             int128(YIELD_FULL_PERCENT_INT),
             int128(-YIELD_FULL_PERCENT_INT)
         );
@@ -358,7 +354,6 @@ contract ConvexStFrxEthStrategyHarness is ConvexStFrxEthStrategy, StrategyHarnes
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         uint256 assetGroupId_,
-        ISwapper swapper_,
-        IBooster booster_
-    ) ConvexStFrxEthStrategy(assetGroupRegistry_, accessControl_, assetGroupId_, swapper_, booster_) {}
+        ISwapper swapper_
+    ) ConvexStFrxEthStrategy(assetGroupRegistry_, accessControl_, assetGroupId_, swapper_) {}
 }

@@ -80,16 +80,16 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
     using SafeERC20 for IERC20;
     using uint16a16Lib for uint16a16;
 
-    ISwapper public immutable swapper;
-    uint256 constant BASE_REWARD_COUNT = 2;
-    IBooster public immutable booster;
-    uint96 public pid;
-    bool extraRewards;
+    ISwapper private immutable _swapper;
 
-    address private _pool;
-    IBaseRewardPool private crvRewards;
-    address private crvRewardToken;
-    address private cvxRewardToken;
+    uint96 private constant _pid = 161;
+    bool private constant _extraRewards = false;
+    IBooster private constant _booster = IBooster(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
+    address private constant _pool = 0x4d9f9D15101EEC665F77210cB999639f760F831E;
+    IBaseRewardPool private constant _crvRewards = IBaseRewardPool(0xC3D0B8170E105d6476fE407934492930CAc3BDAC);
+    address private constant _crvRewardToken = 0xD533a949740bb3306d119CC777fa900bA034cd52;
+    address private constant _cvxRewardToken = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
+
     // curve _tokens
     address[] private _tokens;
 
@@ -97,39 +97,24 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         uint256 assetGroupId_,
-        ISwapper swapper_,
-        IBooster booster_
+        ISwapper swapper_
     ) Strategy(assetGroupRegistry_, accessControl_, assetGroupId_) {
-        swapper = swapper_;
-        booster = booster_;
+        _swapper = swapper_;
     }
 
     function initialize(
         string memory strategyName_,
-        address pool_,
         address weth_,
-        uint96 pid_,
-        bool extraRewards_,
         int128 positiveYieldLimit_,
         int128 negativeYieldLimit_
     ) external initializer {
         __Strategy_init(strategyName_, NULL_ASSET_GROUP_ID);
-
-        _noAddressZero(pool_);
-
-        _pool = pool_;
 
         address[] memory assetGroupTokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
         if (assetGroupTokens.length != 1 || assetGroupTokens[0] != weth_) {
             revert InvalidAssetGroup(assetGroupId());
         }
-
-        pid = pid_;
-        extraRewards = extraRewards_;
-        crvRewards = IBaseRewardPool(booster.poolInfo(pid_).crvRewards);
-        crvRewardToken = crvRewards.rewardToken();
-        cvxRewardToken = booster.minter();
 
         _setPositiveYieldLimit(positiveYieldLimit_);
         _setNegativeYieldLimit(negativeYieldLimit_);
@@ -278,7 +263,7 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
 
         (address[] memory rewardTokens,) = _getProtocolRewardsInternal();
 
-        uint256[] memory swapped = swapper.swap(rewardTokens, compoundSwapInfo, _tokens, address(this));
+        uint256[] memory swapped = _swapper.swap(rewardTokens, compoundSwapInfo, _tokens, address(this));
 
         uint256 lpTokensBefore = _lpTokenBalance();
         _depositInner(swapped, slippages[slippageOffset]);
@@ -318,8 +303,8 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
 
         // to convex
         uint256 lpTokenAmount = IERC20(_pool).balanceOf(address(this));
-        _resetAndApprove(IERC20(_pool), address(booster), lpTokenAmount);
-        booster.deposit(pid, lpTokenAmount, true);
+        _resetAndApprove(IERC20(_pool), address(_booster), lpTokenAmount);
+        _booster.deposit(_pid, lpTokenAmount, true);
 
         if (_isViewExecution()) {
             emit Slippages(true, lpTokenAmount, "");
@@ -331,8 +316,8 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         returns (uint256[] memory bought)
     {
         // from convex
-        uint256 lpTokenAmount = crvRewards.balanceOf(address(this)) * ssts / totalSupply();
-        crvRewards.withdrawAndUnwrap(lpTokenAmount, false);
+        uint256 lpTokenAmount = _crvRewards.balanceOf(address(this)) * ssts / totalSupply();
+        _crvRewards.withdrawAndUnwrap(lpTokenAmount, false);
 
         // from curve base
         lpTokenAmount = IERC20(_pool).balanceOf(address(this));
@@ -352,24 +337,11 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
 
     function _getRewards() private returns (address[] memory) {
         // get CRV and extra rewards
-        crvRewards.getReward(address(this), extraRewards);
+        _crvRewards.getReward(address(this), _extraRewards);
 
-        address[] memory rewardTokens;
-        if (extraRewards) {
-            uint256 extraRewardCount = crvRewards.extraRewardsLength();
-
-            unchecked {
-                rewardTokens = new address[](BASE_REWARD_COUNT + extraRewardCount);
-                for (uint256 i; i < extraRewardCount; ++i) {
-                    rewardTokens[BASE_REWARD_COUNT + i] = crvRewards.extraRewards(i);
-                }
-            }
-        } else {
-            rewardTokens = new address[](BASE_REWARD_COUNT);
-        }
-
-        rewardTokens[0] = crvRewardToken;
-        rewardTokens[1] = cvxRewardToken;
+        address[] memory rewardTokens = new address[](2);
+        rewardTokens[0] = _crvRewardToken;
+        rewardTokens[1] = _cvxRewardToken;
 
         return rewardTokens;
     }
@@ -399,14 +371,14 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
     }
 
     function _lpTokenBalance() internal view returns (uint256) {
-        return crvRewards.balanceOf(address(this));
+        return _crvRewards.balanceOf(address(this));
     }
 
     function _getTokenWorth() internal view returns (uint256[] memory amount) {
         amount = new uint256[](1);
 
         // convex
-        uint256 lpTokenAmount = crvRewards.balanceOf(address(this));
+        uint256 lpTokenAmount = _crvRewards.balanceOf(address(this));
 
         // curve base
         uint256 lpTokenTotalSupply = IERC20(_pool).totalSupply();
@@ -425,7 +397,7 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
             for (uint256 i; i < rewardTokens.length; ++i) {
                 uint256 balance = IERC20(rewardTokens[i]).balanceOf(address(this));
                 if (balance > 0) {
-                    IERC20(rewardTokens[i]).safeTransfer(address(swapper), balance);
+                    IERC20(rewardTokens[i]).safeTransfer(address(_swapper), balance);
 
                     balances[i] = balance;
                 }
@@ -433,12 +405,6 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         }
 
         return (rewardTokens, balances);
-    }
-
-    function _noAddressZero(address addr) private pure {
-        if (addr == address(0)) {
-            revert ConfigurationAddressZero();
-        }
     }
 
     receive() external payable {}

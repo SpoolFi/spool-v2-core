@@ -718,8 +718,7 @@ contract StrategiesInitial {
                 contracts.assetGroupRegistry,
                 contracts.accessControl,
                 assetGroupId,
-                contracts.swapper,
-                booster
+                contracts.swapper
             );
 
             // create proxy
@@ -741,10 +740,7 @@ contract StrategiesInitial {
                 proxy = payable(_newProxy(address(implementation), contracts.proxyAdmin));
                 ConvexStFrxEthStrategy(proxy).initialize(
                     CONVEX_STFRXETH_KEY,
-                    pool,
                     assets(WETH_KEY),
-                    pid,
-                    extraRewards,
                     positiveYieldLimit,
                     negativeYieldLimit
                 );
