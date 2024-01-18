@@ -21,6 +21,7 @@ library EthFrxEthAssetGroupAdapter {
     IWETH9 constant weth = IWETH9(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     function wrap(uint256 amount, uint256 slippage) public returns (uint256 bought) {
+        weth.withdraw(amount);
         if (slippage == type(uint256).max) {
             _stake(amount);
             return amount;
@@ -30,22 +31,20 @@ library EthFrxEthAssetGroupAdapter {
 
     function unwrap(uint256 amount, uint256 slippage) public returns (uint256 bought) {
         bought = _sellOnCurve(amount, slippage);
+        weth.deposit{value: bought}();
     }
 
     function _stake(uint256 amount) private {
-        weth.withdraw(amount);
         frxEthMinter.submit{value: amount}();
     }
 
     function _buyOnCurve(uint256 amount, uint256 slippage) private returns (uint256 bought) {
-        weth.withdraw(amount);
         bought = curve.exchange{value: amount}(CURVE_ETH_POOL_ETH_INDEX, CURVE_ETH_POOL_FRXETH_INDEX, amount, slippage);
     }
 
     function _sellOnCurve(uint256 amount, uint256 slippage) private returns (uint256 bought) {
         _resetAndApprove(IERC20(address(frxEthToken)), address(curve), amount);
         bought = curve.exchange(CURVE_ETH_POOL_FRXETH_INDEX, CURVE_ETH_POOL_ETH_INDEX, amount, slippage);
-        weth.deposit{value: bought}();
     }
 
     function _resetAndApprove(IERC20 token, address spender, uint256 amount) private {
