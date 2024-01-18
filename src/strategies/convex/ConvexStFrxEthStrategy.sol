@@ -347,10 +347,11 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         unwrapEth(amount);
         amounts = new uint[](2);
 
-        uint256 amount0 = amount * _balances(0) / (_balances(0) + _balances(1));
+        uint256 balance0 = _balances(0);
+        uint256 amount0 = amount * balance0 / (balance0 + _balances(1));
         uint256 amount1 = amount - amount0;
-        amounts[0] = EthStEthAssetGroupAdapter.wrap(amount0, slippages[slippageOffset + 1]);
-        amounts[1] = EthFrxEthAssetGroupAdapter.wrap(amount1, slippages[slippageOffset + 2]);
+        amounts[0] = EthStEthAssetGroupAdapter.wrap(amount0, slippages[slippageOffset]);
+        amounts[1] = EthFrxEthAssetGroupAdapter.wrap(amount1, slippages[slippageOffset + 1]);
 
         if (_isViewExecution()) {
             emit Slippages(true, 0, abi.encode(amounts));
