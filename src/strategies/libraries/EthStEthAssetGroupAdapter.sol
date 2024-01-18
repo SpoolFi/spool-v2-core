@@ -6,7 +6,6 @@ import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 
 import "../../external/interfaces/strategies/stEth/ILido.sol";
 import "../../external/interfaces/strategies/curve/ICurvePool.sol";
-import "../../external/interfaces/weth/IWETH9.sol";
 
 library EthStEthAssetGroupAdapter {
     using SafeERC20 for IERC20;
@@ -16,10 +15,8 @@ library EthStEthAssetGroupAdapter {
 
     ILido constant lido = ILido(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
     ICurveEthPool constant curve = ICurveEthPool(0xDC24316b9AE028F1497c275EB9192a3Ea0f67022);
-    IWETH9 constant weth = IWETH9(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     function wrap(uint256 amount, uint256 slippage) public returns (uint256 bought) {
-        weth.withdraw(amount);
         if (slippage == type(uint256).max) {
             _stake(amount);
             return amount;
@@ -29,7 +26,6 @@ library EthStEthAssetGroupAdapter {
 
     function unwrap(uint256 amount, uint256 slippage) public returns (uint256 bought) {
         bought = _sellOnCurve(amount, slippage);
-        weth.deposit{value: bought}();
     }
 
     function _stake(uint256 amount) private {
