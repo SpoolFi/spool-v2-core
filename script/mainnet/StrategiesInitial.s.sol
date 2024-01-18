@@ -711,9 +711,6 @@ contract StrategiesInitial {
             // create implementation contract
             uint256 assetGroupId = assetGroups(WETH_KEY);
 
-            IBooster booster =
-                IBooster(constantsJson().getAddress(string.concat(".strategies.", CONVEX_BASE_KEY, ".booster")));
-
             ConvexStFrxEthStrategy implementation = new ConvexStFrxEthStrategy(
                 contracts.assetGroupRegistry,
                 contracts.accessControl,
@@ -724,12 +721,6 @@ contract StrategiesInitial {
             // create proxy
             address payable proxy;
             {
-                address pool = constantsJson().getAddress(string.concat(".strategies.", CURVE_STFRXETH_KEY, ".pool"));
-                uint96 pid = SafeCast.toUint96(
-                    constantsJson().getUint256(string.concat(".strategies.", CONVEX_STFRXETH_KEY, ".pid"))
-                );
-                bool extraRewards =
-                    constantsJson().getBool(string.concat(".strategies.", CONVEX_STFRXETH_KEY, ".extraRewards"));
                 int128 positiveYieldLimit = SafeCast.toInt128(
                     constantsJson().getInt256(string.concat(".strategies.", CONVEX_STFRXETH_KEY, ".positiveYieldLimit"))
                 );
@@ -738,12 +729,7 @@ contract StrategiesInitial {
                 );
 
                 proxy = payable(_newProxy(address(implementation), contracts.proxyAdmin));
-                ConvexStFrxEthStrategy(proxy).initialize(
-                    CONVEX_STFRXETH_KEY,
-                    assets(WETH_KEY),
-                    positiveYieldLimit,
-                    negativeYieldLimit
-                );
+                ConvexStFrxEthStrategy(proxy).initialize(CONVEX_STFRXETH_KEY, positiveYieldLimit, negativeYieldLimit);
             }
 
             if (register) {

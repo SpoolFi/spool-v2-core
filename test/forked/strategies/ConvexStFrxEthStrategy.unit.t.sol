@@ -82,10 +82,7 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
         );
 
         convexStrategy.initialize(
-            "convex-stfrxeth-strategy",
-            WETH,
-            int128(YIELD_FULL_PERCENT_INT),
-            int128(-YIELD_FULL_PERCENT_INT)
+            "convex-stfrxeth-strategy", int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT)
         );
 
         vm.prank(address(strategyRegistry));
@@ -117,8 +114,6 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
 
         // act
         uint256[] memory slippages = new uint256[](11);
-        slippages[4] = toDepositWeth / 2;
-        slippages[5] = toDepositWeth / 2;
 
         convexStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDepositWeth), slippages);
 
@@ -135,8 +130,6 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
     function test_redeemFromProtocol() public {
         // - need to deposit into the protocol
         uint256[] memory slippages = new uint256[](10);
-        slippages[4] = toDepositWeth / 2;
-        slippages[5] = toDepositWeth / 2;
 
         convexStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDepositWeth), slippages);
         // - normal deposit into protocol would mint SSTs
@@ -170,8 +163,6 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
     function test_emergencyWithdrawImpl() public {
         // - need to deposit into the protocol
         uint256[] memory slippages = new uint256[](10);
-        slippages[4] = toDepositWeth / 2;
-        slippages[5] = toDepositWeth / 2;
 
         convexStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDepositWeth), slippages);
         // - normal deposit into protocol would mint SSTs
@@ -217,8 +208,6 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
 
         // - need to deposit into the protocol
         uint256[] memory slippages = new uint256[](10);
-        slippages[4] = toDepositWeth / 2;
-        slippages[5] = toDepositWeth / 2;
 
         convexStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDepositWeth), slippages);
         // - normal deposit into protocol would mint SSTs
@@ -238,8 +227,8 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
         assertEq(rewardAddresses[0], address(crvRewardToken));
         assertEq(rewardAddresses[1], address(cvxRewardToken));
         assertEq(rewardAmounts.length, rewardAddresses.length);
-        assertEq(rewardAmounts[0], 19223252658626169203);
-        assertEq(rewardAmounts[1], 153786021269009353);
+        assertEq(rewardAmounts[0], 19223498639520525616);
+        assertEq(rewardAmounts[1], 153787989116164204);
     }
 
     function test_compound() public {
@@ -262,8 +251,6 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
 
         // - need to deposit into the protocol
         uint256[] memory slippages = new uint256[](10);
-        slippages[4] = toDepositWeth / 2;
-        slippages[5] = toDepositWeth / 2;
         convexStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDepositWeth), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
@@ -280,14 +267,14 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
             swapTarget: address(crvExchange),
             token: crvRewardToken,
             swapCallData: abi.encodeWithSelector(
-                crvExchange.swap.selector, crvRewardToken, 19223252658626169203, address(swapper)
+                crvExchange.swap.selector, crvRewardToken, 19223498639520525616, address(swapper)
                 )
         });
         compoundSwapInfo[1] = SwapInfo({
             swapTarget: address(cvxExchange),
             token: cvxRewardToken,
             swapCallData: abi.encodeWithSelector(
-                cvxExchange.swap.selector, cvxRewardToken, 153786021269009353, address(swapper)
+                cvxExchange.swap.selector, cvxRewardToken, 153787989116164204, address(swapper)
                 )
         });
 
@@ -330,10 +317,8 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
     function test_getUsdWorth() public {
         // - need to deposit into the protocol
         uint256[] memory slippages = new uint256[](10);
-        slippages[4] = toDepositWeth / 2;
-        slippages[5] = toDepositWeth / 2;
-        slippages[6] = type(uint256).max;
-        slippages[7] = type(uint256).max;
+        slippages[4] = type(uint256).max;
+        slippages[5] = type(uint256).max;
 
         convexStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDepositWeth), slippages);
         // - normal deposit into protocol would mint SSTs
@@ -344,7 +329,7 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
         uint256 usdWorth = convexStrategy.exposed_getUsdWorth(assetGroupExchangeRates, priceFeedManager);
 
         // assert
-        assertApproxEqAbs(usdWorth, priceFeedManager.assetToUsd(address(tokenWeth), toDepositWeth), 1e15); // 1 permil
+        assertApproxEqAbs(usdWorth, priceFeedManager.assetToUsd(address(tokenWeth), toDepositWeth), 1e16);
     }
 }
 

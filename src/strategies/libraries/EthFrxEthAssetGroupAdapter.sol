@@ -7,7 +7,6 @@ import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../../external/interfaces/strategies/frxEth/IFrxEthMinter.sol";
 import "../../external/interfaces/strategies/frxEth/ISfrxEthToken.sol";
 import "../../external/interfaces/strategies/curve/ICurvePool.sol";
-import "../../external/interfaces/weth/IWETH9.sol";
 
 library EthFrxEthAssetGroupAdapter {
     using SafeERC20 for IERC20;
@@ -18,10 +17,8 @@ library EthFrxEthAssetGroupAdapter {
     IERC20 constant frxEthToken = IERC20(0x5E8422345238F34275888049021821E8E08CAa1f);
     IFrxEthMinter constant frxEthMinter = IFrxEthMinter(0xbAFA44EFE7901E04E39Dad13167D089C559c1138);
     ICurveEthPool constant curve = ICurveEthPool(0xa1F8A6807c402E4A15ef4EBa36528A3FED24E577);
-    IWETH9 constant weth = IWETH9(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     function wrap(uint256 amount, uint256 slippage) public returns (uint256 bought) {
-        weth.withdraw(amount);
         if (slippage == type(uint256).max) {
             _stake(amount);
             return amount;
@@ -31,7 +28,6 @@ library EthFrxEthAssetGroupAdapter {
 
     function unwrap(uint256 amount, uint256 slippage) public returns (uint256 bought) {
         bought = _sellOnCurve(amount, slippage);
-        weth.deposit{value: bought}();
     }
 
     function _stake(uint256 amount) private {
