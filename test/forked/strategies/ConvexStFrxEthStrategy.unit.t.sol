@@ -157,7 +157,7 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
         assertApproxEqAbs(crvRewardsBalanceOfStrategyAfter, crvRewardsBalanceOfStrategyExpected, 10);
         assertLt(stEthBalanceOfCurvePoolAfter, stEthBalanceOfCurvePoolBefore);
         assertLt(frxEthBalanceOfCurvePoolAfter, frxEthBalanceOfCurvePoolBefore);
-        assertApproxEqAbs(wethBalanceOfStrategy, toDepositWeth * 60 / 100, 1e18); // .1% tolerance
+        assertApproxEqRel(wethBalanceOfStrategy, toDepositWeth * 60 / 100, 1e15); // .1% tolerance
     }
 
     function test_emergencyWithdrawImpl() public {
@@ -331,8 +331,8 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
         uint256 usdWorth = convexStrategy.exposed_getUsdWorth(assetGroupExchangeRates, priceFeedManager);
 
         // assert
-        assertApproxEqAbs(usdWorthDeposited, priceFeedManager.assetToUsd(address(tokenWeth), toDepositWeth), 1e4);
-        assertApproxEqAbs(usdWorth, priceFeedManager.assetToUsd(address(tokenWeth), toDepositWeth), 1e4);
+        assertApproxEqAbs(usdWorthDeposited, priceFeedManager.assetToUsd(address(tokenWeth), toDepositWeth), 2);
+        assertApproxEqAbs(usdWorth, priceFeedManager.assetToUsd(address(tokenWeth), toDepositWeth), 2);
     }
 
     function test_getUnderlyingAssetAmounts() public {
@@ -351,7 +351,7 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
         uint256 getUnderlyingAssetAmount = getUnderlyingAssetAmounts[0];
 
         // assert
-        assertApproxEqAbs(getUnderlyingAssetAmount, toDepositWeth, 1e4);
+        assertApproxEqAbs(getUnderlyingAssetAmount, toDepositWeth, 1);
     }
 }
 
