@@ -19,11 +19,11 @@ abstract contract Curve2CoinPoolAdapter {
         ICurve2CoinPool(pool()).add_liquidity(curveAmounts, slippage);
     }
 
-    function _removeLiquidity(uint256 lpTokens, uint256[] calldata slippages, uint256 slippageOffset) internal {
+    function _removeLiquidity(uint256 lpTokens, uint256[] memory slippages) internal {
         uint256[N_COINS] memory curveSlippages;
 
         for (uint256 i; i < N_COINS; ++i) {
-            curveSlippages[i] = slippages[slippageOffset + i];
+            curveSlippages[i] = slippages[i];
         }
 
         ICurve2CoinPool(pool()).remove_liquidity(lpTokens, curveSlippages);

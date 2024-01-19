@@ -36,21 +36,24 @@ error ConvexStFrxEthCompoundSlippagesFailed();
 //      - 2, 3: balance checks (pool)
 //      - 4: SSTs check (beforeRedeemalCheck)
 //      - 5: compound
-//      - 6, 7: steth/frxeth: slippages
+//      - 6: steth: mode choice
+//      - 7: frxeth: mode choice
 //      - 8: addLiquidity: slippage
+//      -- mode choice --
+//          - if value == uint256 max -> stake
+//            else -> buy on curve
 //
 // - DHW with withdrawal: slippages[0] == 1
 //   - beforeDepositCheck: slippages[1..3]
 //   - beforeRedeemalCheck: slippages[4]
 //   - compound: slippages[5]
-//   - _redeemFromProtocol: slippages[6..9]
+//   - _redeemFromProtocol: slippages[6]
 //   -- breakdown --
 //      - 1: amount check (eth)
 //      - 2, 3: balance checks (pool)
 //      - 4: ssts check (beforeRedeemalCheck)
 //      - 5: compound
-//      - 6, 7: removeLiquidity: slippages
-//      - 8, 9: steth/frxeth: slippages
+//      - 6: weth output: slippage
 //
 // - reallocate: slippages[0] == 2
 //   - beforeDepositCheck: depositSlippages[1..3]
@@ -193,7 +196,9 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         }
 
         uint256 slippage;
-        if (slippages[0] < 3) {
+        if (slippages[0] < 2) {
+            slippage = slippages[4];
+        } else if (slippages[0] == 2) {
             slippage = slippages[1];
         } else {
             revert ConvexStFrxEthRedeemalCheckFailed();
@@ -219,7 +224,15 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
 
         uint256[] memory wrappedAmounts = _assetGroupWrap(amounts[0], slippages, slippageOffset);
 
-        _depositInner(wrappedAmounts, slippages[slippageOffset + 2]);
+        uint256 lpAmount = _depositInner(wrappedAmounts, slippages[slippageOffset + 2]);
+
+        if (_isViewExecution()) {
+            uint256[] memory bought = new uint256[](3);
+            bought[0] = wrappedAmounts[0];
+            bought[1] = wrappedAmounts[1];
+            bought[2] = lpAmount;
+            emit Slippages(true, 0, abi.encode(bought));
+        }
     }
 
     function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
@@ -236,9 +249,13 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
             revert ConvexStFrxEthRedeemSlippagesFailed();
         }
 
-        uint256[] memory amounts = _redeemInner(ssts, slippages, slippageOffset);
+        uint256[] memory amounts = _redeemInner(ssts, new uint256[](2));
 
-        _assetGroupUnwrap(amounts, slippages, slippageOffset + 2);
+        uint256 bought = _assetGroupUnwrap(amounts, slippages, slippageOffset);
+
+        if (_isViewExecution()) {
+            emit Slippages(false, bought, "");
+        }
     }
 
     function _emergencyWithdrawImpl(uint256[] calldata slippages, address recipient) internal override {
@@ -246,7 +263,11 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
             revert ConvexStFrxEthRedeemSlippagesFailed();
         }
 
-        _redeemInner(totalSupply(), slippages, 1);
+        uint256[] memory bought = _redeemInner(totalSupply(), slippages[1:]);
+
+        if (_isViewExecution()) {
+            emit Slippages(false, 0, abi.encode(bought));
+        }
 
         unchecked {
             for (uint256 i; i < 2; ++i) {
@@ -294,14 +315,12 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         override
         returns (uint256)
     {
-        return priceFeedManager.assetToUsdCustomPriceBulk(
-            _assetGroupRegistry.listAssetGroup(assetGroupId()), _getTokenWorth(), exchangeRates
-        );
+        return priceFeedManager.assetToUsdCustomPrice(weth, _getTokenWorth()[0], exchangeRates[0]);
     }
 
     // specific
 
-    function _depositInner(uint256[] memory amounts, uint256 slippage) private {
+    function _depositInner(uint256[] memory amounts, uint256 slippage) private returns (uint256 lpTokenAmount) {
         // to curve base
         unchecked {
             for (uint256 i; i < 2; ++i) {
@@ -312,36 +331,25 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         _addLiquidity(amounts, slippage);
 
         // to convex
-        uint256 lpTokenAmount = IERC20(_pool).balanceOf(address(this));
+        lpTokenAmount = IERC20(_pool).balanceOf(address(this));
         _resetAndApprove(IERC20(_pool), address(_booster), lpTokenAmount);
         _booster.deposit(_pid, lpTokenAmount, true);
-
-        if (_isViewExecution()) {
-            emit Slippages(true, lpTokenAmount, "");
-        }
     }
 
-    function _redeemInner(uint256 ssts, uint256[] calldata slippages, uint256 slippageOffset)
-        private
-        returns (uint256[] memory bought)
-    {
+    function _redeemInner(uint256 ssts, uint256[] memory slippages) private returns (uint256[] memory bought) {
         // from convex
         uint256 lpTokenAmount = _crvRewards.balanceOf(address(this)) * ssts / totalSupply();
         _crvRewards.withdrawAndUnwrap(lpTokenAmount, false);
 
         // from curve base
         lpTokenAmount = IERC20(_pool).balanceOf(address(this));
-        _removeLiquidity(lpTokenAmount, slippages, slippageOffset);
+        _removeLiquidity(lpTokenAmount, slippages);
 
         bought = new uint256[](_tokens.length);
         unchecked {
             for (uint256 i; i < _tokens.length; ++i) {
                 bought[i] = IERC20(_tokens[i]).balanceOf(address(this));
             }
-        }
-
-        if (_isViewExecution()) {
-            emit Slippages(false, 0, abi.encode(bought));
         }
     }
 
@@ -360,30 +368,23 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         private
         returns (uint256[] memory amounts)
     {
-        unwrapEth(amount);
-        amounts = new uint[](2);
+        amounts = new uint256[](2);
 
+        unwrapEth(amount);
         uint256 balance0 = _balances(0);
         uint256 amount0 = amount * balance0 / (balance0 + _balances(1));
         uint256 amount1 = amount - amount0;
         amounts[0] = EthStEthAssetGroupAdapter.wrap(amount0, slippages[slippageOffset]);
         amounts[1] = EthFrxEthAssetGroupAdapter.wrap(amount1, slippages[slippageOffset + 1]);
-
-        if (_isViewExecution()) {
-            emit Slippages(true, 0, abi.encode(amounts));
-        }
     }
 
     function _assetGroupUnwrap(uint256[] memory amounts, uint256[] calldata slippages, uint256 slippageOffset)
         private
+        returns (uint256 bought)
     {
-        amounts[0] = EthStEthAssetGroupAdapter.unwrap(amounts[0], slippages[slippageOffset]);
-        amounts[1] = EthFrxEthAssetGroupAdapter.unwrap(amounts[1], slippages[slippageOffset + 1]);
-        wrapEth(amounts[0] + amounts[1]);
-
-        if (_isViewExecution()) {
-            emit Slippages(false, 0, abi.encode(amounts));
-        }
+        bought = EthStEthAssetGroupAdapter.unwrap(amounts[0], slippages[slippageOffset]);
+        bought += EthFrxEthAssetGroupAdapter.unwrap(amounts[1], slippages[slippageOffset + 1]);
+        wrapEth(bought);
     }
 
     function _lpTokenBalance() internal view returns (uint256) {
