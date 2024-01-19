@@ -279,7 +279,6 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
         });
 
         slippages = new uint256[](12);
-        slippages[9] = 1;
         int256 compoundYieldPercentage = convexStrategy.exposed_compound(assetGroup, compoundSwapInfo, slippages);
 
         // assert
@@ -317,8 +316,8 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
     function test_getUsdWorth() public {
         // - need to deposit into the protocol
         uint256[] memory slippages = new uint256[](10);
-        slippages[4] = type(uint256).max;
-        slippages[5] = type(uint256).max;
+        slippages[6] = type(uint256).max;
+        slippages[7] = type(uint256).max;
 
         convexStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDepositWeth), slippages);
         // - normal deposit into protocol would mint SSTs

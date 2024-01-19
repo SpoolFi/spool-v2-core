@@ -19,36 +19,38 @@ error ConvexStFrxEthDepositSlippagesFailed();
 error ConvexStFrxEthRedeemSlippagesFailed();
 error ConvexStFrxEthCompoundSlippagesFailed();
 
-// One asset
-// multiple rewards
-// slippages
+// One asset: WETH
+//
+// multiple rewards: CRV, CVX
+//
+// slippages:
 // - mode selection: slippages[0]
 //
 // - DHW with deposit: slippages[0] == 0
 //   - beforeDepositCheck: slippages[1..3]
-//   - beforeRedeemalCheck: slippages[9]
-//   - compound: slippages[10]
-//   - _depositToProtocol: slippages[4..8]
+//   - beforeRedeemalCheck: slippages[4]
+//   - compound: slippages[5]
+//   - _depositToProtocol: slippages[6..8]
 //   -- breakdown --
 //      - 1: amount check (eth)
 //      - 2, 3: balance checks (pool)
-//      - 4, 5: steth/frxeth: slippages
-//      - 6: addLiquidity: slippage
-//      - 7: SSTs check (beforeRedeemalCheck)
-//      - 8: compound
+//      - 4: SSTs check (beforeRedeemalCheck)
+//      - 5: compound
+//      - 6, 7: steth/frxeth: slippages
+//      - 8: addLiquidity: slippage
 //
 // - DHW with withdrawal: slippages[0] == 1
 //   - beforeDepositCheck: slippages[1..3]
-//   - beforeRedeemalCheck: slippages[8]
-//   - compound: slippages[9]
-//   - _redeemFromProtocol: slippages[4..7]
+//   - beforeRedeemalCheck: slippages[4]
+//   - compound: slippages[5]
+//   - _redeemFromProtocol: slippages[6..9]
 //   -- breakdown --
 //      - 1: amount check (eth)
 //      - 2, 3: balance checks (pool)
-//      - 4, 5: removeLiquidity: slippages
-//      - 6, 7: steth/frxeth: slippages
-//      - 8: ssts check (beforeRedeemalCheck)
-//      - 9: compound
+//      - 4: ssts check (beforeRedeemalCheck)
+//      - 5: compound
+//      - 6, 7: removeLiquidity: slippages
+//      - 8, 9: steth/frxeth: slippages
 //
 // - reallocate: slippages[0] == 2
 //   - beforeDepositCheck: depositSlippages[1..3]
@@ -75,6 +77,24 @@ error ConvexStFrxEthCompoundSlippagesFailed();
 //   -- breakdown --
 //     - 1,2: removeLiquidity: slippages
 //     - 3,4: steth/frxeth: slippages
+//
+// Description:
+// This is a Convex strategy. ETH is swapped for stETH (Lido) and frxETH,
+// and used to add proportional liquidity to the Curve st-frxETH Factory
+// Plain Pool, with the outgoing LP token being staked on Convex for boosted
+// rewards.
+//
+// The strategy supports two ways to obtain each of the stETH and frxETH tokens:
+// either by acquiring it directly on their respective protocols, or by buying
+// the token via their respective Curve ETH pools (See the adapter libraries
+// for each token).
+//
+// The do-hard-worker can decide which way to use based on profitability by
+// setting appropriate slippages (see slippages above).
+//
+// Since staked ETH on Lido and Frax is used to spin-up validators, it cannot
+// be unstaked immediately. To exit the protocol, the strategy sells the
+// tokens on their respective Curve ETH pools.
 contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2CoinPoolAdapter, WethHelper {
     using SafeERC20 for IERC20;
     using uint16a16Lib for uint16a16;
@@ -173,11 +193,7 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         }
 
         uint256 slippage;
-        if (slippages[0] == 0) {
-            slippage = slippages[7];
-        } else if (slippages[0] == 1) {
-            slippage = slippages[8];
-        } else if (slippages[0] == 2) {
+        if (slippages[0] < 3) {
             slippage = slippages[1];
         } else {
             revert ConvexStFrxEthRedeemalCheckFailed();
@@ -193,7 +209,9 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         override
     {
         uint256 slippageOffset;
-        if (slippages[0] == 0 || slippages[0] == 2) {
+        if (slippages[0] == 0) {
+            slippageOffset = 6;
+        } else if (slippages[0] == 2) {
             slippageOffset = 4;
         } else {
             revert ConvexStFrxEthDepositSlippagesFailed();
@@ -207,13 +225,13 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
     function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
         uint256 slippageOffset;
         if (slippages[0] == 1) {
-            slippageOffset = 4;
+            slippageOffset = 6;
         } else if (slippages[0] == 2) {
             slippageOffset = 2;
         } else if (slippages[0] == 3) {
             slippageOffset = 1;
         } else if (slippages[0] == 0 && _isViewExecution()) {
-            slippageOffset = 4;
+            slippageOffset = 6;
         } else {
             revert ConvexStFrxEthRedeemSlippagesFailed();
         }
@@ -243,10 +261,8 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         returns (int256 compoundYield)
     {
         uint256 slippageOffset;
-        if (slippages[0] == 0) {
-            slippageOffset = 8;
-        } else if (slippages[0] == 1) {
-            slippageOffset = 9;
+        if (slippages[0] < 2) {
+            slippageOffset = 5;
         } else {
             revert ConvexStFrxEthCompoundSlippagesFailed();
         }
