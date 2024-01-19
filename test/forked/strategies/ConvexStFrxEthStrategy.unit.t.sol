@@ -325,10 +325,33 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
         convexStrategy.exposed_mint(100);
 
         // act
+        uint256 usdWorthDeposited = priceFeedManager.assetToUsdCustomPriceBulk(
+            convexStrategy.assets(), Arrays.toArray(toDepositWeth), assetGroupExchangeRates
+        );
         uint256 usdWorth = convexStrategy.exposed_getUsdWorth(assetGroupExchangeRates, priceFeedManager);
 
         // assert
-        assertApproxEqAbs(usdWorth, priceFeedManager.assetToUsd(address(tokenWeth), toDepositWeth), 1e16);
+        assertApproxEqAbs(usdWorthDeposited, priceFeedManager.assetToUsd(address(tokenWeth), toDepositWeth), 1e4);
+        assertApproxEqAbs(usdWorth, priceFeedManager.assetToUsd(address(tokenWeth), toDepositWeth), 1e4);
+    }
+
+    function test_getUnderlyingAssetAmounts() public {
+        // - need to deposit into the protocol
+        uint256[] memory slippages = new uint256[](10);
+        slippages[6] = type(uint256).max;
+        slippages[7] = type(uint256).max;
+
+        convexStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDepositWeth), slippages);
+        // - normal deposit into protocol would mint SSTs
+        //   which are needed when determining how much to redeem
+        convexStrategy.exposed_mint(100);
+
+        // act
+        uint256[] memory getUnderlyingAssetAmounts = convexStrategy.getUnderlyingAssetAmounts();
+        uint256 getUnderlyingAssetAmount = getUnderlyingAssetAmounts[0];
+
+        // assert
+        assertApproxEqAbs(getUnderlyingAssetAmount, toDepositWeth, 1e4);
     }
 }
 
