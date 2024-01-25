@@ -74,7 +74,7 @@
     "proxy": "0x6f519d997CD2027F164586718Ca248d2384D7dB1"
   },
   "UsdPriceFeedManager": {
-    "implementation": "0x8fACE55e98eA1AfaA36dD55f3196195a4E61477E",
+    "implementation": "0x08eac676ca5448e55c9fac8619bda1e4a71c93f0",
     "proxy": "0x38f1A78ad8956B45b48837657BD0884BA7AB485A"
   },
   "WithdrawalManager": {
