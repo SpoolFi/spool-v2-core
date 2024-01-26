@@ -1,6 +1,6 @@
 # Code Access Controls
 
-In order for the Spool V2 Ecosystem to work there's a subset of roles and owners that can alter state and hold certain privileges. A list of these access controls is compiled below:
+In order for the Spool V2 Ecosystem to work there's a subset of roles and owners that can alter state and hold certain privileges. A list of these access controls is compiled below.
 
 ## Role: *SpoolAdmin (Spool DAO)*
 
@@ -11,11 +11,8 @@ The Spool DAO Multisignature Wallet, which acts exclusively on the conclusion of
 Spool DAO Multisignature Wallet: `0x4e736b96920a0f305022CBaAea493Ce7e49Eee6C`
 
 * The on-chain execution of Snapshot votes will be implemented.
-
 * This is the most powerful role in the Spool Ecosystem and as such should be the most protected. 
-
 * These actions are not called often. 
-
 * As the root role, every rolled action in the system is callable by it. The actions listed below are just the explicit actions listed for this role. 
 
 ### What actions can this role take?
@@ -27,9 +24,7 @@ Spool DAO Multisignature Wallet: `0x4e736b96920a0f305022CBaAea493Ce7e49Eee6C`
 #### `AssetGroupRegistry.sol`
 
 * `allowToken`: permit a token to be used in an `AssetGroup` for a smart vault.
-
 * `allowTokenBatch`: like `allowToken`, but for multiple tokens.
-
 * `registerAssetGroup`: permit a group of tokens (`AssetGroup`) to be used for a smart vault.
 
 #### `ConvexStrategy.sol`
@@ -39,27 +34,20 @@ Spool DAO Multisignature Wallet: `0x4e736b96920a0f305022CBaAea493Ce7e49Eee6C`
 #### `RewardManager.sol`
 
 * `forceRemoveReward`: forcably remove a smart vault reward. Intended to be used in case a reward token ceases to work.
-
 * `removeFromBlacklist`: re-enable a previously removed reward.
 
 #### `StrategyManualYieldVerifier.sol`
 
 * `setPositiveYieldLimit`: For strategies where APY must be manually set by the DoHardWorker, set the maximum APY allowed to be set.
-
 * `setNegativeYieldLimit`: For strategies where APY must be manually set by the DoHardWorker, set the minimum APY allowed to be set.
 
 #### `StrategyRegistry.sol`
 
 * `setEmergencyWithdrawalWallet`: set the wallet to which funds collected via the emergency withdraw procedure will go to.
-
 * `registerStrategy`: Following strategy deployment, adds the strategy to the system.
-
 * `setEcosystemFee`: Set the fee percentage for the ecosystem.
-
 * `setEcosystemFeeReceiver`: Set the address of the ecosystem.
-
 * `setTreasuryFee`: Set the fee percentage for the treasury.
-
 * `setTreasuryFeeReceiver`: Set the address of the treasury.
 
 #### `Swapper.sol`
@@ -73,7 +61,6 @@ Spool DAO Multisignature Wallet: `0x4e736b96920a0f305022CBaAea493Ce7e49Eee6C`
 #### `SmartVaultManager.sol`
 
 * `recoverPendingDeposits`: Sends pending deposits on a smart vault to the emergency withdrawal wallet, in the case of an issue with the smart vault.
-
 * `removeStrategyFromVaults`: remove a strategy from a set of specified vaults.
 
 ## Role: *Smart Vault Integrator*
@@ -96,9 +83,7 @@ Grants permission to integrate a new smart vault into the Spool ecosystem.
 #### `RiskManager.sol`
 
 * `setRiskTolerance`: set the tolerance for risk on the smart vault. must be within prefined bounds.
-
 * `setRiskProvider`: set the address that can set risk on the smart vault.
-
 * `setAllocationProvider`: set the address that can update allocations on the smart vault.
 
 #### `SmartVaultManager.sol`
@@ -118,9 +103,7 @@ Grants permission to integrate a new smart vault into the Spool ecosystem.
  Grants permission to
 
  * manage rewards on smart vaults,
-
  * manage roles on smart vaults,
-
  * redeem for another user of a smart vault.
 
 ### What actions can this role take?
@@ -132,7 +115,6 @@ Grants permission to integrate a new smart vault into the Spool ecosystem.
 #### `SpoolAccessControl.sol`
 
 * `grantSmartVaultRole`: allows vault admin to grant roles to other accounts on this smart vault.
-
 * `revokeSmartVaultRole`: allows vault admin to revoke roles for other accounts on this smart vault.
 
 ## Role: *Smart Vault Manager*
@@ -150,65 +132,43 @@ Marks a contract as a smart vault manager; Is granted to the `SmartVaultManager`
 #### `DepositManager.sol`
 
 * `depositAssets`: during deposit phase, deposit assets to the smart vault.
-
 * `recoverPendingDeposits`: Sends pending deposits on a smart vault to the emergency withdrawal wallet, in the case of an issue with the smart vault.
-
 * `flushSmartVault`: flush smart vault deposits.
-
 * `claimSmartVaultTokens`: during redeem phase, claim user SVTs.
-
 * `syncDeposits`:  during sync phase, ensures SVTs are minted relative to claimed SSTs. 
 
 #### `SmartVault.sol`
 
 * `mintVaultShares`: mints SVTs to account.
-
 * `burnVaultShares`: burns SVTs from account.
-
 * `burnNfts`: burn Deposit/Withdraw NFT(s) from account.
-
 * `claimShares`: transfer SVTs to account.
-
 * `mintDepositNFT`: mint Deposit NFT to account.
-
 * `mintWithdrawalNFT`: mint Deposit NFT to account.
-
 * `transferFromSpender`: transfers SVT's from one account to another.
 
 #### `Strategy.sol`
 
 * `depositFast`: During reallocation phase, deposit funds into this strategy.
-
 * `claimShares`: transfer SSTs from strategy to smart vault.
-
 * `releaseShares`: transfer SSTs from smart vault to strategy.
-
 * `getUsdWorth`: get the value in USD of the assets on the strategy.
-
 * `redeemFast`: withdraw funds, bypassing DHW stage.
 
 #### `StrategyRegistry.sol`
 
 * `removeStrategy`: remove a strategy from the registry.
-
 * `addDeposits`: During flush phase, add the amounts to be deposited to the strategies.
-
 * `addDeposits`: During flush phase, add the amounts to be withdrawn from the strategies.
-
 * `redeemFast`: withdraw funds, bypassing DHW stage.
-
 * `claimWithdrawals`: Claims withdrawals from the strategies.
 
 #### `WithdrawalManager.sol`
 
 * `flushSmartVault`: Flushes smart vaults deposits and withdrawals to the strategies.
-
 * `claimWithdrawal`: after redeem, allows user to claim their withdrawn amount.
-
 * `syncWithdrawals`: Syncs withdrawals between strategies and smart vault after doHardWorks.
-
 * `redeem`: Redeem smart vault shares, to be claimed after the next DHW cycle for this smart vault.
-
 * `redeemFast`: Instantly redeem smart vault shares and claim withdrawn amounts.
 
 ## Role: *Guard Allowlist Manager*
@@ -223,7 +183,6 @@ Grants permission to manage allowlists with `AllowlistGuard` for a smart vault. 
 #### `AllowListGuard.sol`
 
 * `addToAllowList`: Add addresses to allowlist for a smart vault.
-
 * `removeFromAllowList`: Remove addresses from allowlist for a smart vault.
  
 ##  Role: *Master Wallet Manager*
@@ -249,11 +208,8 @@ Marks a contract as a strategy registry. Role assigned to the `StrategyRegistry`
 #### `Strategy.sol`
 
 * `redeemFast`: withdraw funds, bypassing DHW stage.
-
 * `redeemShares`: Instantly redeems strategy shares for assets.
-
 * `emergencyWithdraw`: In the case of emergency, instantly withdraws assets, bypassing shares mechanism.
-
 * `doHardWork`: Does hard work: compounds rewards, and deposits/withdraws from the protocol
  
 ##  Role: *Risk Provider*
@@ -267,7 +223,6 @@ Grants permission to act as a risk provider. Should be granted to whoever is all
 #### `RiskManager.sol`
 
 * `setRiskProvider`: set a risk provider for a smart vault.
-
 * `setRiskScores`: set risk scores for a set of strategies.
  
 #### `SpoolLens.sol`
@@ -333,7 +288,6 @@ Grants permission to manage the rewards payment pool. `SpoolAdmin` is initially 
 #### `RewardPool.sol`
 
 * `updateTreeRoot`: Update the existing root for a given cycle.
-
 * `addTreeRoot`: Add a Merkle tree root for a new cycle.
 
 ## Role: *Reallocator*
@@ -352,7 +306,8 @@ Grants permission to Grants permission to reallocate smart vaults. `SpoolAdmin` 
 
 ### Who controls this role?
 
-Grants permission to be used as a strategy. Is assigned to each strategy as it is added to the system. > Note: Generally this role is used as a check on different operations to tell if a strategy has been added to the system or not, rather than explicitly calling actions.
+Grants permission to be used as a strategy. Is assigned to each strategy as it is added to the system. 
+> Note: Generally this role is used as a check on different operations to tell if a strategy has been added to the system or not, rather than explicitly calling actions.
 
 ### What actions can this role take?
 
