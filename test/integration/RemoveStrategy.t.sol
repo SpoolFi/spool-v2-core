@@ -195,4 +195,52 @@ contract RemoveStrategyTest is IntegrationTestFixture {
         assertGt(withdrawnAssets[1], 0);
         assertGt(withdrawnAssets[2], 0);
     }
+
+    function test_removeStrategy_shouldRevertWhenNotCalledByAdmin() public {
+        address smartVaultOwner = address(0x123);
+        address user = address(0x456);
+
+        smartVaultStrategies = Arrays.toArray(address(strategyA), address(strategyB), address(strategyC));
+        vm.mockCall(
+            address(riskManager),
+            abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+            abi.encode(Arrays.toUint16a16(600, 300, 100))
+        );
+        vm.startPrank(smartVaultOwner);
+        smartVault = smartVaultFactory.deploySmartVault(
+            SmartVaultSpecification({
+                smartVaultName: "MySmartVault",
+                svtSymbol: "MSV",
+                baseURI: "https://token-cdn-domain/",
+                assetGroupId: assetGroupId,
+                actions: new IAction[](0),
+                actionRequestTypes: new RequestType[](0),
+                guards: new GuardDefinition[][](0),
+                guardRequestTypes: new RequestType[](0),
+                strategies: smartVaultStrategies,
+                strategyAllocation: uint16a16.wrap(0),
+                riskTolerance: 4,
+                riskProvider: riskProvider,
+                managementFeePct: 0,
+                depositFeePct: 0,
+                allocationProvider: address(allocationProvider),
+                performanceFeePct: 0,
+                allowRedeemFor: true
+            })
+        );
+        vm.stopPrank();
+
+        address[] memory smartVaultsToRemove = Arrays.toArray(address(smartVault));
+
+        // strategy cannot be removed by user
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SPOOL_ADMIN, user));
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[1], smartVaultsToRemove, true);
+        // strategy cannot be removed by vault owner
+        vm.prank(smartVaultOwner);
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_SPOOL_ADMIN, smartVaultOwner));
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[1], smartVaultsToRemove, true);
+        // strategy can be removed by admin
+        smartVaultManager.removeStrategyFromVaults(smartVaultStrategies[1], smartVaultsToRemove, true);
+    }
 }
