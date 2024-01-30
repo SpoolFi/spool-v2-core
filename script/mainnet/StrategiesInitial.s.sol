@@ -728,8 +728,13 @@ contract StrategiesInitial {
                     constantsJson().getInt256(string.concat(".strategies.", CONVEX_STFRXETH_KEY, ".negativeYieldLimit"))
                 );
 
+                bool extraRewards =
+                    constantsJson().getBool(string.concat(".strategies.", CONVEX_STFRXETH_KEY, ".extraRewards"));
+
                 proxy = payable(_newProxy(address(implementation), contracts.proxyAdmin));
-                ConvexStFrxEthStrategy(proxy).initialize(CONVEX_STFRXETH_KEY, positiveYieldLimit, negativeYieldLimit);
+                ConvexStFrxEthStrategy(proxy).initialize(
+                    CONVEX_STFRXETH_KEY, positiveYieldLimit, negativeYieldLimit, extraRewards
+                );
             }
 
             if (register) {
