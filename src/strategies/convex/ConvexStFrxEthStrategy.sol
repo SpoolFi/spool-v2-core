@@ -123,6 +123,9 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         uint256 assetGroupId_,
         ISwapper swapper_
     ) Strategy(assetGroupRegistry_, accessControl_, assetGroupId_) WethHelper(_weth) {
+        if (address(swapper_) == address(0)) {
+            revert ConfigurationAddressZero();
+        }
         _swapper = swapper_;
     }
 
