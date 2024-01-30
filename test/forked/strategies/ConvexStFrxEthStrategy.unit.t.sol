@@ -82,7 +82,7 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
         );
 
         convexStrategy.initialize(
-            "convex-stfrxeth-strategy", int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT)
+            "convex-stfrxeth-strategy", int128(YIELD_FULL_PERCENT_INT), int128(-YIELD_FULL_PERCENT_INT), false
         );
 
         vm.prank(address(strategyRegistry));

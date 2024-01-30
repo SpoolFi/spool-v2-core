@@ -106,7 +106,6 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
     ISwapper private immutable _swapper;
 
     uint96 private constant _pid = 161;
-    bool private constant _extraRewards = false;
     IBooster private constant _booster = IBooster(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
     address private constant _pool = 0x4d9f9D15101EEC665F77210cB999639f760F831E;
     IBaseRewardPool private constant _crvRewards = IBaseRewardPool(0xC3D0B8170E105d6476fE407934492930CAc3BDAC);
@@ -116,6 +115,7 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
 
     // curve _tokens
     address[] private _tokens;
+    bool private _extraRewards;
 
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
@@ -126,10 +126,12 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         _swapper = swapper_;
     }
 
-    function initialize(string memory strategyName_, int128 positiveYieldLimit_, int128 negativeYieldLimit_)
-        external
-        initializer
-    {
+    function initialize(
+        string memory strategyName_,
+        int128 positiveYieldLimit_,
+        int128 negativeYieldLimit_,
+        bool extraRewards_
+    ) external initializer {
         __Strategy_init(strategyName_, NULL_ASSET_GROUP_ID);
 
         address[] memory assetGroupTokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
@@ -140,6 +142,7 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
 
         _setPositiveYieldLimit(positiveYieldLimit_);
         _setNegativeYieldLimit(negativeYieldLimit_);
+        _extraRewards = extraRewards_;
 
         _tokens = new address[](2);
         _tokens[0] = _coins(0);
