@@ -404,7 +404,7 @@ contract ConvexStFrxEthStrategy is StrategyManualYieldVerifier, Strategy, Curve2
         amount = new uint256[](1);
 
         // convex
-        uint256 lpTokenAmount = _crvRewards.balanceOf(address(this));
+        uint256 lpTokenAmount = _lpTokenBalance();
 
         // curve base
         uint256 lpTokenTotalSupply = IERC20(_pool).totalSupply();
