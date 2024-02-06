@@ -63,7 +63,7 @@ contract GearboxV3StrategyUsdcTest is TestFixture, ForkTestFixture {
         deal(address(tokenUnderlying), to, amount, true);
     }
 
-    function _underlyingBalanceOfStrategy() private returns (uint256) {
+    function _underlyingBalanceOfStrategy() private view returns (uint256) {
         uint256 balanceOfDToken = sdToken.balanceOf(address(gearboxV3Strategy));
         return gearboxV3Strategy.dToken().previewRedeem(balanceOfDToken);
     }
