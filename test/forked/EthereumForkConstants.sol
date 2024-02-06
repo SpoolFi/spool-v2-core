@@ -2,7 +2,8 @@
 pragma solidity 0.8.17;
 
 uint256 constant MAINNET_FORK_BLOCK = 16_683_900;
-uint256 constant MAINNET_FORK_BLOCK_EXTENDED = 18_776_000;
+uint256 constant MAINNET_FORK_BLOCK_EXTENDED_0 = 18_776_000;
+uint256 constant MAINNET_FORK_BLOCK_EXTENDED_1 = 18_963_715;
 
 // tokens
 address constant USDC = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
@@ -85,3 +86,7 @@ address constant ROCKET_SWAP_ROUTER = address(0x16D5A408e807db8eF7c578279BEeEe6b
 // Origin
 address constant OETH_TOKEN = address(0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3);
 address constant OETH_VAULT = address(0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab);
+
+// Gearbox V3
+address constant SDUSDC_TOKEN = address(0x9ef444a6d7F4A5adcd68FD5329aA5240C90E14d2);
+address constant SDWETH_TOKEN = address(0x0418fEB7d0B25C411EB77cD654305d29FcbFf685);
