@@ -32,7 +32,7 @@ contract OEthHoldingStrategyTest is TestFixture, ForkTestFixture {
     uint256[] private assetGroupExchangeRates;
 
     function setUpForkTestFixture() internal override {
-        mainnetForkId = vm.createFork(vm.rpcUrl("mainnet"), MAINNET_FORK_BLOCK_EXTENDED);
+        mainnetForkId = vm.createFork(vm.rpcUrl("mainnet"), MAINNET_FORK_BLOCK_EXTENDED_0);
     }
 
     function setUp() public {
