@@ -88,5 +88,5 @@ address constant OETH_TOKEN = address(0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3
 address constant OETH_VAULT = address(0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab);
 
 // Gearbox V3
-address constant SDUSDC_TOKEN = address(0x9ef444a6d7F4A5adcd68FD5329aA5240C90E14d2);
 address constant SDWETH_TOKEN = address(0x0418fEB7d0B25C411EB77cD654305d29FcbFf685);
+address constant SDUSDC_TOKEN = address(0x9ef444a6d7F4A5adcd68FD5329aA5240C90E14d2);

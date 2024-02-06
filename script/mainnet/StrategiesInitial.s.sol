@@ -19,6 +19,7 @@ import "../../src/strategies/SfrxEthHoldingStrategy.sol";
 import "../../src/strategies/StEthHoldingStrategy.sol";
 import "../../src/strategies/YearnV2Strategy.sol";
 import "../../src/strategies/OEthHoldingStrategy.sol";
+import "../../src/strategies/GearboxV3Strategy.sol";
 import "../helper/JsonHelper.sol";
 import "./AssetsInitial.s.sol";
 
@@ -34,6 +35,7 @@ string constant CURVE_FRXETH_KEY = "curve-frxeth";
 string constant CURVE_STETH_KEY = "curve-steth";
 string constant CURVE_OETH_KEY = "curve-oeth";
 string constant CURVE_STFRXETH_KEY = "curve-stfrxeth";
+string constant GEARBOX_V3_KEY = "gearbox-v3";
 string constant IDLE_BEST_YIELD_SENIOR_KEY = "idle-best-yield-senior";
 string constant MORPHO_AAVE_V2_KEY = "morpho-aave-v2";
 string constant MORPHO_COMPOUND_V2_KEY = "morpho-compound-v2";
@@ -101,6 +103,8 @@ contract StrategiesInitial {
         deployOeth(contracts, true);
 
         deployConvexStFrxEth(contracts, true);
+
+        deployGearboxV3(contracts, true);
     }
 
     function deployAaveV2(StandardContracts memory contracts) public {
@@ -361,6 +365,39 @@ contract StrategiesInitial {
             );
 
             _registerStrategy(CURVE_3POOL_KEY, address(implementation), proxy, assetGroupId, contracts.strategyRegistry);
+        }
+    }
+
+    function deployGearboxV3(StandardContracts memory contracts, bool register) public {
+        // create implementation contract
+        GearboxV3Strategy implementation = new GearboxV3Strategy(
+            contracts.assetGroupRegistry,
+            contracts.accessControl,
+            contracts.swapper
+        );
+
+        contractsJson().addVariantStrategyImplementation(GEARBOX_V3_KEY, address(implementation));
+
+        // create variant proxies
+        string[] memory variants = new string[](2);
+        variants[0] = WETH_KEY;
+        variants[1] = USDC_KEY;
+
+        for (uint256 i; i < variants.length; ++i) {
+            string memory variantName = _getVariantName(GEARBOX_V3_KEY, variants[i]);
+
+            IFarmingPool sdToken = IFarmingPool(
+                constantsJson().getAddress(string.concat(".strategies.", GEARBOX_V3_KEY, ".", variants[i], ".sdToken"))
+            );
+
+            address variant = _newProxy(address(implementation), contracts.proxyAdmin);
+            uint256 assetGroupId = assetGroups(variants[i]);
+            GearboxV3Strategy(variant).initialize(variantName, assetGroupId, sdToken);
+            if (register) {
+                _registerStrategyVariant(GEARBOX_V3_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+            } else {
+                contractsJson().addVariantStrategyVariant(GEARBOX_V3_KEY, variantName, variant);
+            }
         }
     }
 

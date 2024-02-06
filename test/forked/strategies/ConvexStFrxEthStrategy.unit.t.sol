@@ -42,7 +42,7 @@ contract ConvexStFrxEthStrategyTest is TestFixture, ForkTestFixture {
     uint256 toDepositWeth;
 
     function setUpForkTestFixture() internal override {
-        mainnetForkId = vm.createFork(vm.rpcUrl("mainnet"), MAINNET_FORK_BLOCK_EXTENDED);
+        mainnetForkId = vm.createFork(vm.rpcUrl("mainnet"), MAINNET_FORK_BLOCK_EXTENDED_0);
     }
 
     function setUp() public {

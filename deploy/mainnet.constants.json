@@ -107,6 +107,16 @@
         "curve-stfrxeth": {
             "pool": "0x4d9f9D15101EEC665F77210cB999639f760F831E"
         },
+        "gearbox-v3": {
+            "weth": {
+                "sdToken": "0x0418fEB7d0B25C411EB77cD654305d29FcbFf685",
+                "apy": 4638076750
+            },
+            "usdc": {
+                "sdToken": "0x9ef444a6d7F4A5adcd68FD5329aA5240C90E14d2",
+                "apy": 50383793313
+            }
+        },
         "idle-best-yield-senior": {
             "dai": {
                 "idleToken": "0x3fE7940616e5Bc47b0775a0dccf6237893353bB4",
