@@ -4,6 +4,42 @@ pragma solidity 0.8.17;
 import "../../external/interfaces/strategies/curve/ICurvePool.sol";
 import "../../libraries/uint16a16Lib.sol";
 
+abstract contract Curve2CoinPoolAdapter {
+    using uint16a16Lib for uint16a16;
+
+    uint256 constant N_COINS = 2;
+
+    function _addLiquidity(uint256[] memory amounts, uint256 slippage) internal {
+        uint256[N_COINS] memory curveAmounts;
+
+        for (uint256 i; i < amounts.length; ++i) {
+            curveAmounts[i] = amounts[i];
+        }
+
+        ICurve2CoinPool(pool()).add_liquidity(curveAmounts, slippage);
+    }
+
+    function _removeLiquidity(uint256 lpTokens, uint256[] memory slippages) internal {
+        uint256[N_COINS] memory curveSlippages;
+
+        for (uint256 i; i < N_COINS; ++i) {
+            curveSlippages[i] = slippages[i];
+        }
+
+        ICurve2CoinPool(pool()).remove_liquidity(lpTokens, curveSlippages);
+    }
+
+    function _coins(uint256 index) internal view returns (address) {
+        return ICurvePoolUint256(pool()).coins(index);
+    }
+
+    function _balances(uint256 index) internal view returns (uint256) {
+        return ICurvePoolUint256(pool()).balances(index);
+    }
+
+    function pool() public view virtual returns (address);
+}
+
 abstract contract Curve3CoinPoolAdapter {
     using uint16a16Lib for uint16a16;
 

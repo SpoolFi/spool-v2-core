@@ -77,6 +77,13 @@
             "positiveYieldLimit": 20000000000,
             "negativeYieldLimit": -1000000000000
         },
+        "convex-stfrxeth": {
+            "pid": 161,
+            "extraRewards": false,
+            "apy": 41900000000,
+            "positiveYieldLimit": 20000000000,
+            "negativeYieldLimit": -1000000000000
+        },
         "curve-3pool": {
             "gauge": "0xbFcF63294aD7105dEa65aA58F8AE5BE2D9d0952A",
             "pool": "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
@@ -96,6 +103,9 @@
         },
         "curve-oeth": {
             "pool": "0x94B17476A93b3262d87B9a326965D1E91f9c13E7"
+        },
+        "curve-stfrxeth": {
+            "pool": "0x4d9f9D15101EEC665F77210cB999639f760F831E"
         },
         "idle-best-yield-senior": {
             "dai": {
