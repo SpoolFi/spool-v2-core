@@ -144,6 +144,10 @@
     "curve-3pool": {
       "implementation": "0x520AeDDdd3fb45E49ce236Df4c43B6a1a0cc061A",
       "proxy": "0x6EB6251AF926016c60DE17aD976b9C1e2485e1F0"
+    },
+    "convex-stfrxeth": {
+     "implementation": "0xbb141226abA3b1dDfBe5EB03De9138f16198b42c",
+     "proxy": "0x5699181904Ae5781d204a0E189862f8AF9109479"
     }
   }
 }
