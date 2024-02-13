@@ -20,7 +20,7 @@ import "../strategies/Strategy.sol";
 //
 // The dTokens are then deposited into a Gearbox farming pool to receive extra
 // rewards, in the form of GEAR. this process mints sdTokens, 1:1 with dTokens.
-// tf. we consider dTokens and sdTokens to be equivalent in value.
+// Therefore, we consider dTokens and sdTokens to be equivalent in value.
 //
 // Liquidity availability on redeem is subject to Aave/Compound rules.
 contract GearboxV3Strategy is Strategy {
@@ -39,8 +39,8 @@ contract GearboxV3Strategy is Strategy {
     /// @notice sdToken implementation (LP token)
     IFarmingPool public sdToken;
 
-    /// @notice supplyRate at the last DHW.
-    uint256 private _lastSupplyRate;
+    /// @notice exchangeRate at the last DHW.
+    uint256 private _lastExchangeRate;
 
     constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, ISwapper swapper_)
         Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID)
@@ -66,7 +66,7 @@ contract GearboxV3Strategy is Strategy {
             revert InvalidAssetGroup(assetGroupId());
         }
 
-        _lastSupplyRate = dToken.supplyRate();
+        _lastExchangeRate = dToken.previewRedeem(1 ether);
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {
@@ -111,10 +111,10 @@ contract GearboxV3Strategy is Strategy {
     }
 
     function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {
-        uint256 supplyRateCurrent = dToken.supplyRate();
+        uint256 exchangeRateCurrent = dToken.previewRedeem(1 ether);
 
-        baseYieldPercentage = _calculateYieldPercentage(_lastSupplyRate, supplyRateCurrent);
-        _lastSupplyRate = supplyRateCurrent;
+        baseYieldPercentage = _calculateYieldPercentage(_lastExchangeRate, exchangeRateCurrent);
+        _lastExchangeRate = exchangeRateCurrent;
     }
 
     function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
