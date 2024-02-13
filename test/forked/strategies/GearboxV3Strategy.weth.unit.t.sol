@@ -142,18 +142,25 @@ contract GearboxV3StrategyWethTest is TestFixture, ForkTestFixture {
 
     // base yield
     function test_getYieldPercentage() public {
-        // arrange
-        uint256 toDepositYield = (gearboxV3Strategy.dToken().expectedLiquidity() / 5);
-        _deal(address(gearboxV3Strategy), toDepositYield);
+        // - need to deposit into the protocol
+        gearboxV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
 
-        // - yield is based on pool supply. deposit reduces yield
-        gearboxV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDepositYield), new uint256[](0));
+        uint256 balanceOfStrategyBefore = _underlyingBalanceOfStrategy();
+
+        // - yield is gathered over time
+        vm.warp(block.timestamp + 52 weeks);
 
         // act
         int256 yieldPercentage = gearboxV3Strategy.exposed_getYieldPercentage(0);
 
         // assert
-        assertApproxEqRel(yieldPercentage, -(YIELD_FULL_PERCENT_INT / 5), 1e17);
+        uint256 balanceOfStrategyAfter = _underlyingBalanceOfStrategy();
+
+        uint256 calculatedYield = balanceOfStrategyBefore * uint256(yieldPercentage) / YIELD_FULL_PERCENT;
+        uint256 expectedYield = balanceOfStrategyAfter - balanceOfStrategyBefore;
+
+        assertGt(yieldPercentage, 0);
+        assertApproxEqAbs(calculatedYield, expectedYield, 1e10);
     }
 
     function test_getProtocolRewards() public {
@@ -236,7 +243,7 @@ contract GearboxV3StrategyWethTest is TestFixture, ForkTestFixture {
         uint256 usdWorth = gearboxV3Strategy.exposed_getUsdWorth(assetGroupExchangeRates, priceFeedManager);
 
         // assert
-        assertApproxEqRel(usdWorth, priceFeedManager.assetToUsd(address(tokenUnderlying), toDeposit), 10 ** 15);
+        assertApproxEqRel(usdWorth, priceFeedManager.assetToUsd(address(tokenUnderlying), toDeposit), 1e7);
     }
 }
 
