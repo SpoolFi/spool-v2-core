@@ -42,6 +42,9 @@ contract GearboxV3Strategy is Strategy {
     /// @notice exchangeRate at the last DHW.
     uint256 private _lastExchangeRate;
 
+    /// @notice precision for yield calculation
+    uint256 private _mantissa;
+
     constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, ISwapper swapper_)
         Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID)
     {
@@ -66,7 +69,8 @@ contract GearboxV3Strategy is Strategy {
             revert InvalidAssetGroup(assetGroupId());
         }
 
-        _lastExchangeRate = dToken.previewRedeem(1 ether);
+        _mantissa = 10 ** (dToken.decimals() * 2);
+        _lastExchangeRate = (_mantissa * dToken.expectedLiquidity()) / dToken.totalSupply();
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {
@@ -111,7 +115,7 @@ contract GearboxV3Strategy is Strategy {
     }
 
     function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {
-        uint256 exchangeRateCurrent = dToken.previewRedeem(1 ether);
+        uint256 exchangeRateCurrent = (_mantissa * dToken.expectedLiquidity()) / dToken.totalSupply();
 
         baseYieldPercentage = _calculateYieldPercentage(_lastExchangeRate, exchangeRateCurrent);
         _lastExchangeRate = exchangeRateCurrent;

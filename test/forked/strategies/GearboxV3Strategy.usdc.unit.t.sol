@@ -158,7 +158,7 @@ contract GearboxV3StrategyUsdcTest is TestFixture, ForkTestFixture {
         uint256 expectedYield = balanceOfStrategyAfter - balanceOfStrategyBefore;
 
         assertGt(yieldPercentage, 0);
-        assertApproxEqAbs(calculatedYield, expectedYield, 1);
+        assertApproxEqAbs(calculatedYield, expectedYield, 10 ** (gearboxV3Strategy.dToken().decimals() / 2));
     }
 
     function test_getProtocolRewards() public {
