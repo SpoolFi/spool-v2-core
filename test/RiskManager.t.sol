@@ -120,16 +120,25 @@ contract RiskManagerTest is Test {
         riskManager.setRiskScores(riskScores, strategies);
     }
 
-    function test_setRiskScore_revertOutOfBounds() public {
-        address[] memory strategies = Arrays.toArray(address(1), address(2), ghostStrategy);
-        uint8[] memory riskScores = new uint8[](3);
+    function test_setRiskScore_shouldRevertWhenTryingToSetTooHighRiskScore() public {
+        address[] memory strategies = Arrays.toArray(address(1));
+        uint8[] memory riskScores = new uint8[](1);
         riskScores[0] = 150;
-        riskScores[1] = 200;
-        riskScores[2] = 0;
 
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         vm.prank(riskProvider);
         vm.expectRevert(abi.encodeWithSelector(RiskScoreValueOutOfBounds.selector, 150));
+        riskManager.setRiskScores(riskScores, strategies);
+    }
+
+    function test_setRiskScore_shouldRevertWhenTryingToSetTooLowRiskScore() public {
+        address[] memory strategies = Arrays.toArray(address(1));
+        uint8[] memory riskScores = new uint8[](1);
+        riskScores[0] = 0;
+
+        accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
+        vm.prank(riskProvider);
+        vm.expectRevert(abi.encodeWithSelector(RiskScoreValueOutOfBounds.selector, 0));
         riskManager.setRiskScores(riskScores, strategies);
     }
 
