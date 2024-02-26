@@ -10,6 +10,8 @@ import "../interfaces/ISwapper.sol";
 import "../libraries/PackedRange.sol";
 import "../strategies/Strategy.sol";
 
+error GearboxV3BeforeDepositCheckFailed();
+
 // One asset: WETH || USDC
 // One reward: GEAR
 // no slippages needed
@@ -44,6 +46,9 @@ contract GearboxV3Strategy is Strategy {
 
     /// @notice precision for yield calculation
     uint256 private _mantissa;
+
+    /// @notice maximum balance allowed of the staking token
+    uint256 private constant _MAX_BALANCE = 1e32;
 
     constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, ISwapper swapper_)
         Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID)
@@ -173,7 +178,11 @@ contract GearboxV3Strategy is Strategy {
         return dToken.previewRedeem(dTokenAmount);
     }
 
-    function beforeDepositCheck(uint256[] memory, uint256[] calldata) public view override {}
+    function beforeDepositCheck(uint256[] memory, uint256[] calldata) public view override {
+        if (sdToken.balanceOf(address(this)) > _MAX_BALANCE) {
+            revert GearboxV3BeforeDepositCheckFailed();
+        }
+    }
 
     function beforeRedeemalCheck(uint256, uint256[] calldata) public view override {}
 
