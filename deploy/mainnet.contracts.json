@@ -94,6 +94,11 @@
       "compound-v2-usdt": "0xac997F24Ef9f5fc2A3c050eA14d1d017db20a1d1",
       "implementation": "0x6Ab817bD92A1c3075d8f1ceD160984EA4E5F8d89"
     },
+    "gearbox-v3": {
+        "gearbox-v3-usdc":"0xb4a7fb51D06760B5F622643B7276c003418732bD",
+        "gearbox-v3-weth": "0xD92B65d2321076FBAc23FCfC9A9Fd5Ed2E98B758",
+        "implementation":"0x615a54527c08e15d9276EDfb707e7F457aBCF3Ae"
+    },
     "morpho-aave-v2": {
       "implementation": "0x7b2121D7d8699aF6420941AE06834625ce650623",
       "morpho-aave-v2-dai": "0xfE6D982a773F4251dA4Ba04fc8fE7F2717413599",
