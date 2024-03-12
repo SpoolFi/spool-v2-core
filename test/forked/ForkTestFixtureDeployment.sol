@@ -75,11 +75,16 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
 
     uint256 private _rn = 10;
 
+    string config;
+
+    function _setConfig() internal virtual {
+        config = vm.readFile("deploy/mainnet.constants.json");
+    }
+
     function _deploy() internal {
         setUpForkTestFixture();
         vm.selectFork(mainnetForkId);
-
-        string memory config = vm.readFile("deploy/mainnet.constants.json");
+        _setConfig();
 
         vm.writeJson(config, TEST_CONSTANTS_PATH);
         vm.writeJson(Strings.toHexString(_spoolAdmin), TEST_CONSTANTS_PATH, ".proxyAdminOwner");
