@@ -19,7 +19,6 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
     IERC20Metadata private tokenUsdc;
 
     IPoolAddressesProvider private poolAddressesProvider;
-    IRewardsController private incentive;
 
     AaveV3StrategyHarness private aaveStrategy;
 
@@ -42,14 +41,11 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
         assetGroupExchangeRates = SpoolUtils.getExchangeRates(assetGroup, priceFeedManager);
 
         poolAddressesProvider = IPoolAddressesProvider(AAVE_V3_POOL_ADDRESSES_PROVIDER);
-        incentive = IRewardsController(AAVE_V3_REWARDS_CONTROLLER);
 
         aaveStrategy = new AaveV3StrategyHarness(
             assetGroupRegistry,
             accessControl,
-            swapper,
-            poolAddressesProvider,
-            incentive
+            poolAddressesProvider
         );
         aaveStrategy.initialize("aave-v3-strategy", assetGroupId);
     }
@@ -58,6 +54,38 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
         vm.prank(IUSDC(token).masterMinter());
         IUSDC(token).configureMinter(address(this), type(uint256).max);
         IUSDC(token).mint(to, amount);
+    }
+
+    function test_assetRatio() public {
+        // act
+        uint256[] memory assetRatio = aaveStrategy.assetRatio();
+
+        // assert
+        uint256[] memory expectedAssetRatio = new uint256[](1);
+        expectedAssetRatio[0] = 1;
+
+        for (uint256 i; i < assetRatio.length; ++i) {
+            assertEq(assetRatio[i], expectedAssetRatio[i]);
+        }
+    }
+
+    function test_getUnderlyingAssetAmounts() public {
+        // - need to deposit into the protocol
+
+        uint256 toDeposit = 1000 * 10 ** tokenUsdc.decimals();
+        _deal(address(tokenUsdc), address(aaveStrategy), toDeposit);
+
+        aaveStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        // - normal deposit into protocol would mint SSTs
+        //   which are needed when determining how much to redeem
+        aaveStrategy.exposed_mint(100);
+
+        // act
+        uint256[] memory getUnderlyingAssetAmounts = aaveStrategy.getUnderlyingAssetAmounts();
+        uint256 getUnderlyingAssetAmount = getUnderlyingAssetAmounts[0];
+
+        // assert
+        assertApproxEqAbs(getUnderlyingAssetAmount, toDeposit, 1);
     }
 
     function test_depositToProtocol() public {
@@ -176,8 +204,6 @@ contract AaveV3StrategyHarness is AaveV3Strategy, StrategyHarness {
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
-        ISwapper swapper_,
-        IPoolAddressesProvider provider_,
-        IRewardsController incentive_
-    ) AaveV3Strategy(assetGroupRegistry_, accessControl_, swapper_, provider_, incentive_) {}
+        IPoolAddressesProvider provider_
+    ) AaveV3Strategy(assetGroupRegistry_, accessControl_, provider_) {}
 }
