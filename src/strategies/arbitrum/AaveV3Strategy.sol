@@ -8,11 +8,12 @@ import "../../external/interfaces/strategies/arbitrum/aave/v3/IPool.sol";
 import "../../external/interfaces/strategies/arbitrum/aave/v3/IPoolAddressesProvider.sol";
 import "../../external/interfaces/strategies/arbitrum/aave/v3/IRewardsController.sol";
 import "../Strategy.sol";
+import "../helpers/AssetGroupSwapHelper.sol";
 
 // only uses one asset
 // no rewards
 // no slippages needed
-contract AaveV3Strategy is Strategy {
+contract AaveV3Strategy is Strategy, AssetGroupSwapHelper {
     using SafeERC20 for IERC20;
 
     /// @notice Pool addresses provider
@@ -24,13 +25,16 @@ contract AaveV3Strategy is Strategy {
     /// @notice AAVE token recieved after depositing into a lending pool
     IAToken public aToken;
 
+    address[] public underlyings;
+
     uint256 private _lastNormalizedIncome;
 
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
+        ISwapper swapper_,
         IPoolAddressesProvider provider_
-    ) Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID) {
+    ) Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID) AssetGroupSwapHelper(swapper_) {
         if (address(provider_) == address(0)) {
             revert ConfigurationAddressZero();
         }
@@ -53,6 +57,9 @@ contract AaveV3Strategy is Strategy {
 
         _lastNormalizedIncome = pool.getReserveNormalizedIncome(tokens[0]);
         aToken = IAToken(reserve.aTokenAddress);
+
+        underlyings = new address[](1);
+        underlyings[0] = aToken.UNDERLYING_ASSET_ADDRESS();
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {
@@ -70,26 +77,37 @@ contract AaveV3Strategy is Strategy {
 
     function beforeRedeemalCheck(uint256, uint256[] calldata) public view override {}
 
-    function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
+    function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata rawSwapInfo)
         internal
         override
     {
-        _resetAndApprove(IERC20(tokens[0]), address(pool), amounts[0]);
+        if (amounts[0] == 0) {
+            return;
+        }
 
-        pool.supply(tokens[0], amounts[0], address(this), 0);
+        uint256 amount = _assetGroupSwap(tokens, underlyings, amounts, rawSwapInfo);
+        _resetAndApprove(IERC20(underlyings[0]), address(pool), amount);
+
+        pool.supply(underlyings[0], amount, address(this), 0);
     }
 
-    function _redeemFromProtocol(address[] calldata tokens, uint256 ssts, uint256[] calldata) internal override {
+    function _redeemFromProtocol(address[] calldata tokens, uint256 ssts, uint256[] calldata rawSwapInfo)
+        internal
+        override
+    {
         if (ssts == 0) {
             return;
         }
 
         uint256 aTokenWithdrawAmount = _getATokenBalance() * ssts / totalSupply();
-        _redeemFromProtocolInternal(tokens[0], aTokenWithdrawAmount, address(this));
+        uint256[] memory amounts = new uint[](1);
+        amounts[0] = _redeemFromProtocolInternal(underlyings[0], aTokenWithdrawAmount, address(this));
+
+        _assetGroupSwap(underlyings, tokens, amounts, rawSwapInfo);
     }
 
     function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
-        _redeemFromProtocolInternal(assets()[0], _getATokenBalance(), recipient);
+        _redeemFromProtocolInternal(underlyings[0], _getATokenBalance(), recipient);
     }
 
     function _compound(address[] calldata, SwapInfo[] calldata, uint256[] calldata)
@@ -99,7 +117,7 @@ contract AaveV3Strategy is Strategy {
     {}
 
     function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {
-        uint256 currentNormalizedIncome = pool.getReserveNormalizedIncome(assets()[0]);
+        uint256 currentNormalizedIncome = pool.getReserveNormalizedIncome(underlyings[0]);
 
         baseYieldPercentage = _calculateYieldPercentage(_lastNormalizedIncome, currentNormalizedIncome);
         _lastNormalizedIncome = currentNormalizedIncome;
@@ -113,13 +131,13 @@ contract AaveV3Strategy is Strategy {
         override
         returns (uint256)
     {
-        return priceFeedManager.assetToUsdCustomPrice(assets()[0], _getATokenBalance(), exchangeRates[0]);
+        return priceFeedManager.assetToUsdCustomPrice(underlyings[0], _getATokenBalance(), exchangeRates[0]);
     }
 
     function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {}
 
-    function _redeemFromProtocolInternal(address token, uint256 amount, address recipient) private {
-        pool.withdraw(token, amount, recipient);
+    function _redeemFromProtocolInternal(address token, uint256 amount, address recipient) private returns (uint256) {
+        return pool.withdraw(token, amount, recipient);
     }
 
     function _getATokenBalance() private view returns (uint256) {
