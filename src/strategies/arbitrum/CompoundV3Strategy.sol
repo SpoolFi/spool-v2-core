@@ -7,14 +7,11 @@ import "@openzeppelin/utils/math/Math.sol";
 import "../../external/interfaces/strategies/arbitrum/compound/v3/IComet.sol";
 import "../../external/interfaces/strategies/arbitrum/compound/v3/ICToken.sol";
 import "../../external/interfaces/strategies/arbitrum/compound/v3/IRewards.sol";
-import "../../interfaces/ISwapper.sol";
 import "../../strategies/Strategy.sol";
+import "../helpers/AssetGroupSwapHelper.sol";
 
-contract CompoundV3Strategy is Strategy {
+contract CompoundV3Strategy is Strategy, AssetGroupSwapHelper {
     using SafeERC20 for IERC20;
-
-    /// @notice Swapper implementation
-    ISwapper public immutable swapper;
 
     /// @notice COMP token
     /// @dev Reward token when participating in the Compound protocol.
@@ -25,6 +22,8 @@ contract CompoundV3Strategy is Strategy {
     /// @notice Compound market
     IComet public cToken;
 
+    address[] public underlyings;
+
     /// @notice supply rate at the last DHW.
     uint256 private _lastExchangeRate;
 
@@ -34,12 +33,10 @@ contract CompoundV3Strategy is Strategy {
         ISwapper swapper_,
         IERC20 comp_,
         IRewards rewards_
-    ) Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID) {
-        if (address(swapper_) == address(0)) revert ConfigurationAddressZero();
+    ) Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID) AssetGroupSwapHelper(swapper_) {
         if (address(comp_) == address(0)) revert ConfigurationAddressZero();
         if (address(rewards_) == address(0)) revert ConfigurationAddressZero();
 
-        swapper = swapper_;
         comp = comp_;
         rewards = rewards_;
     }
@@ -59,6 +56,9 @@ contract CompoundV3Strategy is Strategy {
 
         cToken = cToken_;
         _lastExchangeRate = _exchangeRateCurrent();
+
+        underlyings = new address[](1);
+        underlyings[0] = cToken.baseToken();
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {
@@ -76,24 +76,30 @@ contract CompoundV3Strategy is Strategy {
 
     function beforeRedeemalCheck(uint256, uint256[] calldata) public view override {}
 
-    function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
+    function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata rawSwapInfo)
         internal
         override
     {
-        _depositToProtocolInternal(tokens[0], amounts[0]);
+        uint256 amount = _assetGroupSwap(tokens, underlyings, amounts, rawSwapInfo);
+        _depositToProtocolInternal(underlyings[0], amount);
     }
 
     /**
      * @notice Withdraw lp tokens from the Compound market
      */
-    function _redeemFromProtocol(address[] calldata tokens, uint256 ssts, uint256[] calldata) internal override {
+    function _redeemFromProtocol(address[] calldata tokens, uint256 ssts, uint256[] calldata rawSwapInfo)
+        internal
+        override
+    {
         if (ssts == 0) {
             return;
         }
 
-        uint256 cTokenWithdrawAmount = (cToken.balanceOf(address(this)) * ssts) / totalSupply();
+        uint256[] memory amounts = new uint[](1);
+        amounts[0] = (cToken.balanceOf(address(this)) * ssts) / totalSupply();
+        _redeemFromProtocolInternal(underlyings[0], amounts[0]);
 
-        _redeemFromProtocolInternal(tokens[0], cTokenWithdrawAmount);
+        _assetGroupSwap(underlyings, tokens, amounts, rawSwapInfo);
     }
 
     /**
@@ -101,7 +107,7 @@ contract CompoundV3Strategy is Strategy {
      */
     function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
-    function _compound(address[] calldata tokens, SwapInfo[] calldata swapInfo, uint256[] calldata)
+    function _compound(address[] calldata, SwapInfo[] calldata swapInfo, uint256[] calldata)
         internal
         override
         returns (int256 compoundedYieldPercentage)
@@ -113,11 +119,11 @@ contract CompoundV3Strategy is Strategy {
                 comp.safeTransfer(address(swapper), compBalance);
                 address[] memory tokensIn = new address[](1);
                 tokensIn[0] = address(comp);
-                uint256 swappedAmount = swapper.swap(tokensIn, swapInfo, tokens, address(this))[0];
+                uint256 swappedAmount = swapper.swap(tokensIn, swapInfo, underlyings, address(this))[0];
 
                 if (swappedAmount > 0) {
                     uint256 cTokenBalanceBefore = cToken.balanceOf(address(this));
-                    _depositToProtocolInternal(tokens[0], swappedAmount);
+                    _depositToProtocolInternal(underlyings[0], swappedAmount);
 
                     compoundedYieldPercentage =
                         _calculateYieldPercentage(cTokenBalanceBefore, cToken.balanceOf(address(this)));
@@ -127,10 +133,8 @@ contract CompoundV3Strategy is Strategy {
     }
 
     function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
-        _redeemFromProtocolInternal(assets()[0], cToken.balanceOf(address(this)));
-
-        IERC20 token = IERC20(assets()[0]);
-
+        IERC20 token = IERC20(underlyings[0]);
+        _redeemFromProtocolInternal(address(token), cToken.balanceOf(address(this)));
         token.safeTransfer(recipient, token.balanceOf(address(this)));
     }
 

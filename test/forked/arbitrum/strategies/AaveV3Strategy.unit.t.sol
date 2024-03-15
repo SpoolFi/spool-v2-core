@@ -45,6 +45,7 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
         aaveStrategy = new AaveV3StrategyHarness(
             assetGroupRegistry,
             accessControl,
+            swapper,
             poolAddressesProvider
         );
         aaveStrategy.initialize("aave-v3-strategy", assetGroupId);
@@ -204,6 +205,7 @@ contract AaveV3StrategyHarness is AaveV3Strategy, StrategyHarness {
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
+        ISwapper swapper_,
         IPoolAddressesProvider provider_
-    ) AaveV3Strategy(assetGroupRegistry_, accessControl_, provider_) {}
+    ) AaveV3Strategy(assetGroupRegistry_, accessControl_, swapper_, provider_) {}
 }
