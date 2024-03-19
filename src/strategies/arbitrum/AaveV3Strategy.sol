@@ -44,7 +44,7 @@ contract AaveV3Strategy is Strategy, AssetGroupSwapHelper {
         provider = provider_;
     }
 
-    function initialize(string memory strategyName_, uint256 assetGroupId_) external initializer {
+    function initialize(string memory strategyName_, uint256 assetGroupId_, IAToken aToken_) external initializer {
         __Strategy_init(strategyName_, assetGroupId_);
 
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
@@ -53,13 +53,11 @@ contract AaveV3Strategy is Strategy, AssetGroupSwapHelper {
             revert InvalidAssetGroup(assetGroupId_);
         }
 
-        IPool.ReserveData memory reserve = pool.getReserveData(tokens[0]);
-
-        _lastNormalizedIncome = pool.getReserveNormalizedIncome(tokens[0]);
-        aToken = IAToken(reserve.aTokenAddress);
-
         underlyings = new address[](1);
-        underlyings[0] = aToken.UNDERLYING_ASSET_ADDRESS();
+        underlyings[0] = aToken_.UNDERLYING_ASSET_ADDRESS();
+
+        aToken = aToken_;
+        _lastNormalizedIncome = pool.getReserveNormalizedIncome(underlyings[0]);
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {

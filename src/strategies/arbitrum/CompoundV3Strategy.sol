@@ -50,15 +50,15 @@ contract CompoundV3Strategy is Strategy, AssetGroupSwapHelper {
 
         address[] memory tokens = assets();
 
-        if (tokens.length != 1 || tokens[0] != cToken_.baseToken()) {
+        if (tokens.length != 1) {
             revert InvalidAssetGroup(assetGroupId());
         }
 
+        underlyings = new address[](1);
+        underlyings[0] = cToken_.baseToken();
+
         cToken = cToken_;
         _lastExchangeRate = _exchangeRateCurrent();
-
-        underlyings = new address[](1);
-        underlyings[0] = cToken.baseToken();
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {
@@ -151,11 +151,8 @@ contract CompoundV3Strategy is Strategy, AssetGroupSwapHelper {
         override
         returns (uint256 usdValue)
     {
-        uint256 tokenValue = cToken.balanceOf(address(this));
-        if (tokenValue > 0) {
-            address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId());
-            usdValue = priceFeedManager.assetToUsdCustomPrice(assetGroup[0], tokenValue, exchangeRates[0]);
-        }
+        usdValue =
+            priceFeedManager.assetToUsdCustomPrice(underlyings[0], cToken.balanceOf(address(this)), exchangeRates[0]);
     }
 
     function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {
@@ -189,6 +186,6 @@ contract CompoundV3Strategy is Strategy, AssetGroupSwapHelper {
     }
 
     function _exchangeRateCurrent() private view returns (uint256) {
-        return (cToken.totalSupply() * 1 ether) / cToken.getCollateralReserves(assets()[0]);
+        return (cToken.totalSupply() * 1 ether) / cToken.getCollateralReserves(underlyings[0]);
     }
 }

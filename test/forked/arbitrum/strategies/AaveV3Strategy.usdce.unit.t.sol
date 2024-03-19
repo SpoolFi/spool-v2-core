@@ -17,6 +17,7 @@ import "../ArbitrumForkConstants.sol";
 
 contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
     IERC20Metadata private tokenUsdc;
+    IERC20Metadata private tokenUsdce;
 
     IPoolAddressesProvider private poolAddressesProvider;
 
@@ -32,8 +33,10 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
         setUpBase();
 
         tokenUsdc = IERC20Metadata(USDC_ARB);
+        tokenUsdce = IERC20Metadata(USDCE_ARB);
 
         priceFeedManager.setExchangeRate(address(tokenUsdc), USD_DECIMALS_MULTIPLIER * 1001 / 1000);
+        priceFeedManager.setExchangeRate(address(tokenUsdce), USD_DECIMALS_MULTIPLIER * 1001 / 1000);
 
         assetGroup = Arrays.toArray(address(tokenUsdc));
         assetGroupRegistry.allowTokenBatch(assetGroup);
@@ -48,13 +51,17 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
             swapper,
             poolAddressesProvider
         );
-        aaveStrategy.initialize("aave-v3-strategy", assetGroupId, IAToken(aUSDC_ARB));
+        aaveStrategy.initialize("aave-v3-strategy", assetGroupId, IAToken(aUSDCE_ARB));
     }
 
     function _deal(address token, address to, uint256 amount) private {
-        vm.prank(IUSDC(token).masterMinter());
-        IUSDC(token).configureMinter(address(this), type(uint256).max);
-        IUSDC(token).mint(to, amount);
+        if (token == USDC_ARB) {
+            vm.prank(IUSDC(token).masterMinter());
+            IUSDC(token).configureMinter(address(this), type(uint256).max);
+            IUSDC(token).mint(to, amount);
+        } else {
+            deal(token, to, amount, true);
+        }
     }
 
     function test_assetRatio() public {
@@ -86,7 +93,8 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
         uint256 getUnderlyingAssetAmount = getUnderlyingAssetAmounts[0];
 
         // assert
-        assertApproxEqAbs(getUnderlyingAssetAmount, toDeposit, 1);
+        uint256 diff = 2e15; // .2%
+        assertApproxEqRel(getUnderlyingAssetAmount, toDeposit, diff);
     }
 
     function test_depositToProtocol() public {
@@ -94,17 +102,18 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
         uint256 toDeposit = 1000 * 10 ** tokenUsdc.decimals();
         _deal(address(tokenUsdc), address(aaveStrategy), toDeposit);
 
-        uint256 usdcBalanceOfATokenBefore = tokenUsdc.balanceOf(address(aaveStrategy.aToken()));
+        uint256 usdceBalanceOfATokenBefore = tokenUsdce.balanceOf(address(aaveStrategy.aToken()));
 
         // act
         aaveStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
 
         // assert
-        uint256 usdcBalanceOfATokenAfter = tokenUsdc.balanceOf(address(aaveStrategy.aToken()));
+        uint256 usdceBalanceOfATokenAfter = tokenUsdce.balanceOf(address(aaveStrategy.aToken()));
         uint256 aTokenBalanceOfStrategy = aaveStrategy.aToken().balanceOf(address(aaveStrategy));
 
-        assertEq(usdcBalanceOfATokenAfter - usdcBalanceOfATokenBefore, toDeposit);
-        assertEq(aTokenBalanceOfStrategy, toDeposit);
+        uint256 diff = 2e15; // .2%
+        assertApproxEqRel(usdceBalanceOfATokenAfter - usdceBalanceOfATokenBefore, toDeposit, diff);
+        assertApproxEqRel(aTokenBalanceOfStrategy, toDeposit, diff);
     }
 
     function test_redeemFromProtocol() public {
@@ -118,19 +127,20 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
         //   which are needed when determining how much to redeem
         aaveStrategy.exposed_mint(100);
 
-        uint256 usdcBalanceOfATokenBefore = tokenUsdc.balanceOf(address(aaveStrategy.aToken()));
+        uint256 usdceBalanceOfATokenBefore = tokenUsdce.balanceOf(address(aaveStrategy.aToken()));
 
         // act
         aaveStrategy.exposed_redeemFromProtocol(assetGroup, 60, new uint256[](0));
 
         // assert
-        uint256 usdcBalanceOfATokenAfter = tokenUsdc.balanceOf(address(aaveStrategy.aToken()));
+        uint256 usdceBalanceOfATokenAfter = tokenUsdce.balanceOf(address(aaveStrategy.aToken()));
         uint256 usdcBalanceOfStrategy = tokenUsdc.balanceOf(address(aaveStrategy));
         uint256 aTokenBalanceOfStrategy = aaveStrategy.aToken().balanceOf(address(aaveStrategy));
 
-        assertEq(usdcBalanceOfATokenBefore - usdcBalanceOfATokenAfter, toDeposit * 60 / 100);
-        assertEq(usdcBalanceOfStrategy, toDeposit * 60 / 100);
-        assertApproxEqAbs(aTokenBalanceOfStrategy, toDeposit * 40 / 100, 10);
+        uint256 diff = 2e15; // .2%
+        assertApproxEqRel(usdceBalanceOfATokenBefore - usdceBalanceOfATokenAfter, toDeposit * 60 / 100, diff);
+        assertApproxEqRel(usdcBalanceOfStrategy, toDeposit * 60 / 100, diff);
+        assertApproxEqRel(aTokenBalanceOfStrategy, toDeposit * 40 / 100, diff);
     }
 
     function test_emergencyWithdrawImpl() public {
@@ -144,18 +154,19 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
         //   which are needed when determining how much to redeem
         aaveStrategy.exposed_mint(100);
 
-        uint256 usdcBalanceOfATokenBefore = tokenUsdc.balanceOf(address(aaveStrategy.aToken()));
+        uint256 usdceBalanceOfATokenBefore = tokenUsdce.balanceOf(address(aaveStrategy.aToken()));
 
         // act
         aaveStrategy.exposed_emergencyWithdrawImpl(new uint256[](0), emergencyWithdrawalRecipient);
 
         // assert
-        uint256 usdcBalanceOfATokenAfter = tokenUsdc.balanceOf(address(aaveStrategy.aToken()));
-        uint256 usdcBalanceOfEmergencyWithdrawalRecipient = tokenUsdc.balanceOf(emergencyWithdrawalRecipient);
+        uint256 usdceBalanceOfATokenAfter = tokenUsdce.balanceOf(address(aaveStrategy.aToken()));
+        uint256 usdceBalanceOfEmergencyWithdrawalRecipient = tokenUsdce.balanceOf(emergencyWithdrawalRecipient);
         uint256 aTokenBalanceOfStrategy = aaveStrategy.aToken().balanceOf(address(aaveStrategy));
 
-        assertEq(usdcBalanceOfATokenBefore - usdcBalanceOfATokenAfter, toDeposit);
-        assertEq(usdcBalanceOfEmergencyWithdrawalRecipient, toDeposit);
+        uint256 diff = 2e15; // .2%
+        assertApproxEqRel(usdceBalanceOfATokenBefore - usdceBalanceOfATokenAfter, toDeposit, diff);
+        assertApproxEqRel(usdceBalanceOfEmergencyWithdrawalRecipient, toDeposit, diff);
         assertEq(aTokenBalanceOfStrategy, 0);
     }
 
@@ -196,7 +207,8 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
         uint256 usdWorth = aaveStrategy.exposed_getUsdWorth(assetGroupExchangeRates, priceFeedManager);
 
         // assert
-        assertEq(usdWorth, priceFeedManager.assetToUsd(address(tokenUsdc), toDeposit));
+        uint256 diff = 2e15; // .2%
+        assertApproxEqRel(usdWorth, priceFeedManager.assetToUsd(address(tokenUsdc), toDeposit), diff);
     }
 }
 
