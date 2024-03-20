@@ -72,7 +72,8 @@ contract StrategiesInitial {
         IAssetGroupRegistry assetGroupRegistry,
         ISwapper swapper,
         address proxyAdmin,
-        IStrategyRegistry strategyRegistry
+        IStrategyRegistry strategyRegistry,
+        bool extended
     ) public {
         StandardContracts memory contracts = StandardContracts({
             accessControl: accessControl,
@@ -100,11 +101,13 @@ contract StrategiesInitial {
 
         deployYearnV2(contracts);
 
-        deployOeth(contracts, true);
+        if(extended) {
+            deployOeth(contracts, true);
 
-        deployConvexStFrxEth(contracts, true);
+            deployConvexStFrxEth(contracts, true);
 
-        deployGearboxV3(contracts, true);
+            deployGearboxV3(contracts, true);
+        }
     }
 
     function deployAaveV2(StandardContracts memory contracts) public {

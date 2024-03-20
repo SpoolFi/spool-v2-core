@@ -15,3 +15,4 @@
 !/deploy/sample.constants.json
 !/deploy/mainnet.constants.json
 !/deploy/mainnet.contracts.json
+!/deploy/arbitrum.constants.json

@@ -13,6 +13,7 @@ import "../../external/interfaces/strategies/arbitrum/gamma-camelot/IXGrail.sol"
 import "../../interfaces/ISwapper.sol";
 import "../../libraries/PackedRange.sol";
 import "../../strategies/Strategy.sol";
+import "forge-std/console.sol";
 
 error GammaCamelotDepositCheckFailed();
 error GammaCamelotRedeemalCheckFailed();
@@ -89,6 +90,11 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         address token1 = underlyingPool.token1();
 
         // checks
+        console.log("asset group length: %s", assetGroup.length);
+        console.log("token0: %s", token0);
+        console.log("token1: %s", token1);
+        console.log("assetGroup[0]: %s", assetGroup[0]);
+        console.log("assetGroup[1]: %s", assetGroup[1]);
         if (assetGroup.length != 2 || !(assetGroup[0] == token0) || !(assetGroup[1] == token1)) {
             revert InvalidAssetGroup(assetGroupId());
         }

@@ -13,6 +13,7 @@ import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/CommonErrors.sol";
 import "../interfaces/Constants.sol";
 import "../access/SpoolAccessControllable.sol";
+import "forge-std/console.sol";
 
 /**
  * @notice Used when initial locked strategy shares are already minted and strategy usd value is zero.
@@ -92,12 +93,14 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     function doHardWork(StrategyDhwParameterBag calldata dhwParams) external returns (DhwInfo memory dhwInfo) {
+        console.log("doHardWork..");
         _checkRole(ROLE_STRATEGY_REGISTRY, msg.sender);
 
         bool depositNeeded;
         uint256[] memory assetsToDeposit = new uint256[](dhwParams.assetGroup.length);
         unchecked {
             for (uint256 i; i < dhwParams.assetGroup.length; ++i) {
+                console.log("check assets to deposit..");
                 assetsToDeposit[i] = IERC20(dhwParams.assetGroup[i]).balanceOf(address(this));
 
                 if (assetsToDeposit[i] > 0) {
@@ -106,7 +109,9 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
             }
         }
 
+        console.log("before deposit check..");
         beforeDepositCheck(assetsToDeposit, dhwParams.slippages);
+        console.log("before redeem check..");
         beforeRedeemalCheck(dhwParams.withdrawnShares, dhwParams.slippages);
 
         // usdWorth[0]: usd worth before deposit / withdrawal
@@ -115,14 +120,19 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
         // Compound and get USD value.
         {
+            console.log("get yield percentage..");
             dhwInfo.yieldPercentage = _getYieldPercentage(dhwParams.baseYield);
+            console.log("compound..");
             int256 compoundYield = _compound(dhwParams.assetGroup, dhwParams.compoundSwapInfo, dhwParams.slippages);
+            console.log("add to yield percentge..");
             dhwInfo.yieldPercentage += compoundYield + compoundYield * dhwInfo.yieldPercentage / YIELD_FULL_PERCENT_INT;
         }
 
         // collect fees, mint SVTs relative to the yield generated
+        console.log("collect platform fees..");
         _collectPlatformFees(dhwInfo.yieldPercentage, dhwParams.platformFees);
 
+        console.log("get usd worth..");
         usdWorth[0] = _getUsdWorth(dhwParams.exchangeRates, dhwParams.priceFeedManager);
 
         uint256 matchedShares;
@@ -131,10 +141,13 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         uint256 withdrawnShares = dhwParams.withdrawnShares;
 
         // Calculate deposit share equivalent.
+        console.log("checking depoist needed..");
         if (depositNeeded) {
+            console.log("assetToUsd..");
             uint256 valueToDeposit = dhwParams.priceFeedManager.assetToUsdCustomPriceBulk(
                 dhwParams.assetGroup, assetsToDeposit, dhwParams.exchangeRates
             );
+            console.log("done..");
 
             if (totalSupply() < INITIAL_LOCKED_SHARES) {
                 depositShareEquivalent = INITIAL_SHARE_MULTIPLIER * valueToDeposit;
@@ -247,6 +260,8 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         dhwInfo.assetsWithdrawn = withdrawnAssets;
         dhwInfo.valueAtDhw = usdWorth[1];
         dhwInfo.totalSstsAtDhw = totalSupply();
+
+        console.log("doHardWork done..");
     }
 
     function redeemFast(

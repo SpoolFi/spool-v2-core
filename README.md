@@ -17,7 +17,7 @@ To run tests execute
 forge test
 ```
 
-This will only execute tests can run locally. To run tests that require forking, first set `NETWORK` and `<NETWORK>_RPC_URL` in `.env` file. See `.env.sample`.
+This will only execute tests that can run locally. To run tests that require forking, first set `NETWORK` and `<NETWORK>_RPC_URL` in `.env` file. See `.env.sample`.
 
 then run the tests by executing
 

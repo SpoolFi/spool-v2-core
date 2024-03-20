@@ -83,7 +83,9 @@ contract AaveV3Strategy is Strategy, AssetGroupSwapHelper {
             return;
         }
 
+        console.log("depositToProtocol: assetGroupSwap..");
         uint256 amount = _assetGroupSwap(tokens, underlyings, amounts, rawSwapInfo);
+        console.log("done..");
         _resetAndApprove(IERC20(underlyings[0]), address(pool), amount);
 
         pool.supply(underlyings[0], amount, address(this), 0);
@@ -101,7 +103,9 @@ contract AaveV3Strategy is Strategy, AssetGroupSwapHelper {
         uint256[] memory amounts = new uint[](1);
         amounts[0] = _redeemFromProtocolInternal(underlyings[0], aTokenWithdrawAmount, address(this));
 
+        console.log("redeemFromProtocol: assetGroupSwap..");
         _assetGroupSwap(underlyings, tokens, amounts, rawSwapInfo);
+        console.log("done..");
     }
 
     function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
@@ -129,7 +133,7 @@ contract AaveV3Strategy is Strategy, AssetGroupSwapHelper {
         override
         returns (uint256)
     {
-        return priceFeedManager.assetToUsdCustomPrice(underlyings[0], _getATokenBalance(), exchangeRates[0]);
+        return priceFeedManager.assetToUsdCustomPrice(assets()[0], _getATokenBalance(), exchangeRates[0]);
     }
 
     function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {}

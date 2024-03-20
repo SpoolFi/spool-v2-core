@@ -6,9 +6,14 @@ import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../../external/interfaces/strategies/uniswap/v3/IV3SwapRouter.sol";
 import "../../interfaces/ISwapper.sol";
 import "../../interfaces/CommonErrors.sol";
+import "forge-std/console.sol";
 
 error InvalidSwapInfo();
 
+
+// - mode selection: rawSwapInfo[0]
+//
+// - default swap: rawSwapInfo[0] == 0
 abstract contract AssetGroupSwapHelper {
     using SafeERC20 for IERC20;
 
@@ -73,7 +78,10 @@ abstract contract AssetGroupSwapHelper {
         address token = address(uint160(rawSwapInfo[1]));
         uint256 swapCallDataSize = rawSwapInfo[2];
         bytes memory swapCallData = new bytes(swapCallDataSize);
-
+        
+        console.log("rawSwapInfo.length: %s", rawSwapInfo.length);
+        console.log("token: %s", token);
+        console.log("tokensIn[0]: %s", tokensIn[0]);
         if (rawSwapInfo.length < MIN_SWAP_INFO_SIZE || token != tokensIn[0]) {
             revert InvalidSwapInfo();
         }

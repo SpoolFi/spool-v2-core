@@ -3,19 +3,20 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/utils/Strings.sol";
-import "../../src/interfaces/Constants.sol";
-import "../../src/SmartVaultFactory.sol";
-import "../../src/external/interfaces/chainlink/AggregatorV3Interface.sol";
-import "../../script/mainnet/MainnetInitialSetup.s.sol";
-import "../libraries/Arrays.sol";
-import "./ForkTestFixture.sol";
-import "../libraries/TimeUtils.sol";
-import "../libraries/VaultValueHelpers.sol";
+import "../../../src/interfaces/Constants.sol";
+import "../../../src/SmartVaultFactory.sol";
+import "../../../src/external/interfaces/chainlink/AggregatorV3Interface.sol";
+import "../../../script/arbitrum/ArbitrumInitialSetup.s.sol";
+import "../../libraries/Arrays.sol";
+import "../ForkTestFixture.sol";
+import "../../libraries/TimeUtils.sol";
+import "../../libraries/VaultValueHelpers.sol";
+import "../../external/interfaces/IUSDC.sol";
 
-string constant TEST_CONSTANTS_PATH = "deploy/fork-test.constants.json";
-string constant TEST_CONTRACTS_PATH = "deploy/fork-test.contracts.json";
+string constant TEST_CONSTANTS_PATH = "deploy/fork-test-arbitrum.constants.json";
+string constant TEST_CONTRACTS_PATH = "deploy/fork-test-arbitrum.contracts.json";
 
-contract TestMainnetInitialSetup is MainnetInitialSetup {
+contract TestArbitrumInitialSetup is ArbitrumInitialSetup {
     function init() public virtual override {
         super.init();
 
@@ -37,7 +38,7 @@ contract TestMainnetInitialSetup is MainnetInitialSetup {
         spoolAccessControl.renounceRole(ROLE_SPOOL_ADMIN, deployerAddress);
     }
 
-    function test_mock_TestMainnetInitialSetup() external pure {}
+    function test_mock_TestArbitrumInitialSetup() external pure {}
 }
 
 struct DoHardWorkStrategyParameters {
@@ -63,7 +64,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
     bytes32 internal constant EVENT_BEFORE_DEPOSIT_CHECK_SLIPPAGES = keccak256("BeforeDepositCheckSlippages(uint256[])");
     bytes32 internal constant EVENT_BEFORE_REDEEMAL_CHECK_SLIPPAGES = keccak256("BeforeRedeemalCheckSlippages(uint256)");
 
-    TestMainnetInitialSetup internal _deploySpool;
+    TestArbitrumInitialSetup internal _deploySpool;
 
     SmartVaultManager internal _smartVaultManager;
     StrategyRegistry internal _strategyRegistry;
@@ -78,11 +79,11 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
     string config;
 
     function _setConfig() internal virtual {
-        config = vm.readFile("deploy/mainnet.constants.json");
+        config = vm.readFile("deploy/arbitrum.constants.json");
     }
 
     function _deploy() internal {
-        setUpForkTestFixture();
+        setUpForkTestFixtureArbitrum();
         vm.selectFork(mainnetForkId);
         _setConfig();
 
@@ -93,25 +94,17 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         vm.writeJson(Strings.toHexString(_feeRecipient), TEST_CONSTANTS_PATH, ".fees.ecosystemFeeReceiver");
         vm.writeJson(Strings.toHexString(_feeRecipient), TEST_CONSTANTS_PATH, ".fees.treasuryFeeReceiver");
 
-        _deploySpool = new TestMainnetInitialSetup();
+        _deploySpool = new TestArbitrumInitialSetup();
         _deploySpool.init();
-        _deploySpool.doSetup(address(_deploySpool), false);
+        _deploySpool.doSetup(address(_deploySpool));
 
         {
             uint256 assetGroupId;
             address[] memory assetGroup;
 
-            assetGroupId = _deploySpool.assetGroups(DAI_KEY);
-            assetGroup = _deploySpool.assetGroupRegistry().listAssetGroup(assetGroupId);
-            dai = IERC20(assetGroup[0]);
-
             assetGroupId = _deploySpool.assetGroups(USDC_KEY);
             assetGroup = _deploySpool.assetGroupRegistry().listAssetGroup(assetGroupId);
             usdc = IERC20(assetGroup[0]);
-
-            assetGroupId = _deploySpool.assetGroups(USDT_KEY);
-            assetGroup = _deploySpool.assetGroupRegistry().listAssetGroup(assetGroupId);
-            usdt = IERC20(assetGroup[0]);
 
             assetGroupId = _deploySpool.assetGroups(WETH_KEY);
             assetGroup = _deploySpool.assetGroupRegistry().listAssetGroup(assetGroupId);
@@ -556,9 +549,10 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
     }
 
     function _dealTokens(address account) internal {
-        deal(address(dai), account, 1e18 * 1e6, true);
-        deal(address(usdc), account, 1e6 * 1e6, true);
-        deal(address(usdt), account, 1e6 * 1e6, true);
+        IUSDC token = IUSDC(address(usdc));
+        vm.prank(token.masterMinter());
+        token.configureMinter(address(this), type(uint256).max);
+        token.mint(account, 1e6 * 1e6);
 
         IWETH9(address(weth)).deposit{value: 1e18 * 1e6}();
         weth.safeTransfer(address(account), 1e18 * 1e6);
@@ -642,32 +636,16 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
 
                 string memory strategyKey = _deploySpool.addressToStrategyKey(strategy);
 
-                if (Strings.equal(strategyKey, AAVE_V2_KEY)) {
+                if (Strings.equal(strategyKey, AAVE_V3_AUSDC_KEY)) {
                     // continue
-                } else if (Strings.equal(strategyKey, COMPOUND_V2_KEY)) {
+                } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDC_KEY)) {
                     // continue
-                } else if (Strings.equal(strategyKey, CONVEX_3POOL_KEY)) {
-                    _setInitialDhwParametersGeneric(parameters, i, j, 12);
-                } else if (Strings.equal(strategyKey, CONVEX_ALUSD_KEY)) {
-                    _setInitialDhwParametersGeneric(parameters, i, j, 14);
-                } else if (Strings.equal(strategyKey, CURVE_3POOL_KEY)) {
-                    _setInitialDhwParametersGeneric(parameters, i, j, 12);
-                } else if (Strings.equal(strategyKey, IDLE_BEST_YIELD_SENIOR_KEY)) {
-                    _setInitialDhwParametersGeneric(parameters, i, j, 5);
-                } else if (Strings.equal(strategyKey, MORPHO_AAVE_V2_KEY)) {
+                } else if (Strings.equal(strategyKey, AAVE_V3_AUSDCE_KEY)) {
                     // continue
-                } else if (Strings.equal(strategyKey, MORPHO_COMPOUND_V2_KEY)) {
+                } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDCE_KEY)) {
                     // continue
-                } else if (Strings.equal(strategyKey, NOTIONAL_FINANCE_KEY)) {
-                    // continue
-                } else if (Strings.equal(strategyKey, RETH_HOLDING_KEY)) {
+                } else if (Strings.equal(strategyKey, GAMMA_CAMELOT_KEY)) {
                     _setInitialDhwParametersGeneric(parameters, i, j, 7);
-                } else if (Strings.equal(strategyKey, SFRXETH_HOLDING_KEY)) {
-                    _setInitialDhwParametersGeneric(parameters, i, j, 4);
-                } else if (Strings.equal(strategyKey, STETH_HOLDING_KEY)) {
-                    _setInitialDhwParametersGeneric(parameters, i, j, 4);
-                } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
-                    _setInitialDhwParametersGeneric(parameters, i, j, 4);
                 } else {
                     revert(string.concat("Strategy '", strategyKey, "' not handled."));
                 }
@@ -679,6 +657,8 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
 
     function _updateDhwParameterBag(DoHardWorkParameterBag memory parameters, Vm.Log[] memory logs) internal view {
         // loop over strategy groups
+
+        // _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
         for (uint256 i; i < parameters.strategies.length; ++i) {
             // loop over strategies in a group
             for (uint256 j; j < parameters.strategies[i].length; ++j) {
@@ -686,34 +666,16 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
 
                 string memory strategyKey = _deploySpool.addressToStrategyKey(strategy);
 
-                if (Strings.equal(strategyKey, AAVE_V2_KEY)) {
+                if (Strings.equal(strategyKey, AAVE_V3_AUSDC_KEY)) {
                     // continue
-                } else if (Strings.equal(strategyKey, COMPOUND_V2_KEY)) {
+                } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDC_KEY)) {
                     // continue
-                } else if (Strings.equal(strategyKey, CONVEX_3POOL_KEY)) {
+                } else if (Strings.equal(strategyKey, AAVE_V3_AUSDCE_KEY)) {
+                    // continue
+                } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDCE_KEY)) {
+                    // continue
+                } else if (Strings.equal(strategyKey, GAMMA_CAMELOT_KEY)) {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
-                } else if (Strings.equal(strategyKey, CONVEX_ALUSD_KEY)) {
-                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
-                } else if (Strings.equal(strategyKey, CURVE_3POOL_KEY)) {
-                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
-                } else if (Strings.equal(strategyKey, IDLE_BEST_YIELD_SENIOR_KEY)) {
-                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
-                } else if (Strings.equal(strategyKey, MORPHO_AAVE_V2_KEY)) {
-                    // continue
-                } else if (Strings.equal(strategyKey, MORPHO_COMPOUND_V2_KEY)) {
-                    // continue
-                } else if (Strings.equal(strategyKey, NOTIONAL_FINANCE_KEY)) {
-                    // continue
-                } else if (Strings.equal(strategyKey, RETH_HOLDING_KEY)) {
-                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
-                } else if (Strings.equal(strategyKey, SFRXETH_HOLDING_KEY)) {
-                    // not production ready - approximation
-                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
-                } else if (Strings.equal(strategyKey, STETH_HOLDING_KEY)) {
-                    // not production ready - approximation
-                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
-                } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
-                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
                 } else {
                     revert(string.concat("Strategy '", strategyKey, "' not handled."));
                 }
@@ -885,31 +847,15 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         for (uint256 i; i < strategies.length; ++i) {
             string memory strategyKey = _deploySpool.addressToStrategyKey(strategies[i]);
 
-            if (Strings.equal(strategyKey, AAVE_V2_KEY)) {
+            if (Strings.equal(strategyKey, AAVE_V3_AUSDC_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, CONVEX_3POOL_KEY)) {
-                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
-            } else if (Strings.equal(strategyKey, CONVEX_ALUSD_KEY)) {
-                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
-            } else if (Strings.equal(strategyKey, CURVE_3POOL_KEY)) {
-                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
-            } else if (Strings.equal(strategyKey, COMPOUND_V2_KEY)) {
+            } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDC_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, IDLE_BEST_YIELD_SENIOR_KEY)) {
-                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
-            } else if (Strings.equal(strategyKey, MORPHO_AAVE_V2_KEY)) {
+            } else if (Strings.equal(strategyKey, AAVE_V3_AUSDCE_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, MORPHO_COMPOUND_V2_KEY)) {
+            } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDCE_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, NOTIONAL_FINANCE_KEY)) {
-                // continue
-            } else if (Strings.equal(strategyKey, RETH_HOLDING_KEY)) {
-                strategySlippages[i] = _getRedeemFastSlippagesREthHoldingStrategy(strategies[i]);
-            } else if (Strings.equal(strategyKey, SFRXETH_HOLDING_KEY)) {
-                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
-            } else if (Strings.equal(strategyKey, STETH_HOLDING_KEY)) {
-                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
-            } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
+            } else if (Strings.equal(strategyKey, GAMMA_CAMELOT_KEY)) {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else {
                 revert(string.concat("Strategy '", strategyKey, "' not handled."));
@@ -990,31 +936,15 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         for (uint256 i; i < strategies.length; ++i) {
             string memory strategyKey = _deploySpool.addressToStrategyKey(strategies[i]);
 
-            if (Strings.equal(strategyKey, AAVE_V2_KEY)) {
+            if (Strings.equal(strategyKey, AAVE_V3_AUSDC_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, COMPOUND_V2_KEY)) {
+            } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDC_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, CONVEX_3POOL_KEY)) {
-                _setInitialReallocateParamsGeneric(params, i, 8, 5);
-            } else if (Strings.equal(strategyKey, CONVEX_ALUSD_KEY)) {
-                _setInitialReallocateParamsGeneric(params, i, 10, 5);
-            } else if (Strings.equal(strategyKey, CURVE_3POOL_KEY)) {
-                _setInitialReallocateParamsGeneric(params, i, 8, 5);
-            } else if (Strings.equal(strategyKey, IDLE_BEST_YIELD_SENIOR_KEY)) {
-                _setInitialReallocateParamsGeneric(params, i, 3, 3);
-            } else if (Strings.equal(strategyKey, MORPHO_AAVE_V2_KEY)) {
+            } else if (Strings.equal(strategyKey, AAVE_V3_AUSDCE_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, MORPHO_COMPOUND_V2_KEY)) {
+            } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDCE_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, NOTIONAL_FINANCE_KEY)) {
-                // continue
-            } else if (Strings.equal(strategyKey, RETH_HOLDING_KEY)) {
-                _setInitialReallocateParamsGeneric(params, i, 6, 6);
-            } else if (Strings.equal(strategyKey, SFRXETH_HOLDING_KEY)) {
-                _setInitialReallocateParamsGeneric(params, i, 3, 3);
-            } else if (Strings.equal(strategyKey, STETH_HOLDING_KEY)) {
-                _setInitialReallocateParamsGeneric(params, i, 3, 3);
-            } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
+            } else if (Strings.equal(strategyKey, GAMMA_CAMELOT_KEY)) {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
             } else {
                 revert(string.concat("_generateReallocateParamBag:: Strategy '", strategyKey, "' not handled."));
@@ -1028,34 +958,15 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
             address strategy = params.strategies[i];
             string memory strategyKey = _deploySpool.addressToStrategyKey(strategy);
 
-            // strategy specific update
-            if (Strings.equal(strategyKey, AAVE_V2_KEY)) {
+            if (Strings.equal(strategyKey, AAVE_V3_AUSDC_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, COMPOUND_V2_KEY)) {
+            } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDC_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, CONVEX_3POOL_KEY)) {
-                _updateReallocateParamsGeneric(params, i, strategy, logs);
-            } else if (Strings.equal(strategyKey, CONVEX_ALUSD_KEY)) {
-                _updateReallocateParamsGeneric(params, i, strategy, logs);
-            } else if (Strings.equal(strategyKey, CURVE_3POOL_KEY)) {
-                _updateReallocateParamsGeneric(params, i, strategy, logs);
-            } else if (Strings.equal(strategyKey, IDLE_BEST_YIELD_SENIOR_KEY)) {
-                _updateReallocateParamsGeneric(params, i, strategy, logs);
-            } else if (Strings.equal(strategyKey, MORPHO_AAVE_V2_KEY)) {
+            } else if (Strings.equal(strategyKey, AAVE_V3_AUSDCE_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, MORPHO_COMPOUND_V2_KEY)) {
+            } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDCE_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, NOTIONAL_FINANCE_KEY)) {
-                // continue
-            } else if (Strings.equal(strategyKey, RETH_HOLDING_KEY)) {
-                _updateReallocateParamsGeneric(params, i, strategy, logs);
-            } else if (Strings.equal(strategyKey, SFRXETH_HOLDING_KEY)) {
-                // not production ready - approximation
-                _updateReallocateParamsGeneric(params, i, strategy, logs);
-            } else if (Strings.equal(strategyKey, STETH_HOLDING_KEY)) {
-                // not production ready - approximation
-                _updateReallocateParamsGeneric(params, i, strategy, logs);
-            } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
+            } else if (Strings.equal(strategyKey, GAMMA_CAMELOT_KEY)) {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else {
                 revert(string.concat("_updateReallocateParamBag:: Strategy '", strategyKey, "' not handled."));

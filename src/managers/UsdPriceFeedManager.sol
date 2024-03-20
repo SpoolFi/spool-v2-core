@@ -6,6 +6,7 @@ import "../external/interfaces/chainlink/AggregatorV3Interface.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../access/Roles.sol";
 import "../access/SpoolAccessControllable.sol";
+import "forge-std/console.sol";
 
 contract UsdPriceFeedManager is IUsdPriceFeedManager, SpoolAccessControllable {
     /* ========== STATE VARIABLES ========== */
@@ -75,6 +76,7 @@ contract UsdPriceFeedManager is IUsdPriceFeedManager, SpoolAccessControllable {
         onlyValidAsset(asset)
         returns (uint256)
     {
+        console.log("asset: %s", asset);
         return assetAmount * price / assetMultiplier[asset];
     }
 
