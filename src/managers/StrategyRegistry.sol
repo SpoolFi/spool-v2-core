@@ -13,6 +13,7 @@ import "../interfaces/Constants.sol";
 import "../access/SpoolAccessControllable.sol";
 import "../libraries/ArrayMapping.sol";
 import "../libraries/SpoolUtils.sol";
+import "forge-std/console.sol";
 
 /**
  * @notice Used when strategy apy is out of bounds.
@@ -259,6 +260,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     }
 
     function doHardWork(DoHardWorkParameterBag calldata dhwParams) external whenNotPaused nonReentrant {
+        console.log("doHardWork -registry...");
         unchecked {
             // Check if is run after the expiry time
             if (dhwParams.validUntil < block.timestamp) revert DoHardWorkParametersExpired();
@@ -392,6 +394,9 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                 }
             }
         }
+
+
+        console.log("doHardWork -registry -end...");
     }
 
     function addDeposits(address[] calldata strategies_, uint256[][] calldata amounts)

@@ -152,7 +152,7 @@ contract CompoundV3Strategy is Strategy, AssetGroupSwapHelper {
         returns (uint256 usdValue)
     {
         usdValue =
-            priceFeedManager.assetToUsdCustomPrice(underlyings[0], cToken.balanceOf(address(this)), exchangeRates[0]);
+            priceFeedManager.assetToUsdCustomPrice(assets()[0], cToken.balanceOf(address(this)), exchangeRates[0]);
     }
 
     function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {
