@@ -29,8 +29,8 @@ contract E2E is ForkTestFixtureDeployment {
     function test_deploySpool() public {
         uint256 assetGroupIdUSDC = _getAssetGroupId(USDC_KEY);
 
-        address aaveStrategy = _getStrategyAddress(AAVE_V3_AUSDC_KEY, assetGroupIdUSDC);
-        address compoundStrategy = _getStrategyAddress(COMPOUND_V3_CUSDC_KEY, assetGroupIdUSDC);
+        address aaveStrategy = _getStrategyAddress(AAVE_V3_KEY, assetGroupIdUSDC);
+        address compoundStrategy = _getStrategyAddress(COMPOUND_V3_KEY, assetGroupIdUSDC);
 
         address[] memory strategies = Arrays.toArray(aaveStrategy, compoundStrategy);
 
@@ -78,21 +78,16 @@ contract E2E is ForkTestFixtureDeployment {
 
         address[] memory strategies;
         {
-            address aaveAusdcStrategy = _getStrategyAddress(AAVE_V3_AUSDC_KEY, assetGroupId);
-            address compoundCusdcStrategy = _getStrategyAddress(COMPOUND_V3_CUSDC_KEY, assetGroupId);
-            address aaveAusdceStrategy = _getStrategyAddress(AAVE_V3_AUSDCE_KEY, assetGroupId);
-            address compoundCusdceStrategy = _getStrategyAddress(COMPOUND_V3_CUSDCE_KEY, assetGroupId);
+            address aaveStrategy = _getStrategyAddress(AAVE_V3_KEY, assetGroupId);
+            address compoundStrategy = _getStrategyAddress(COMPOUND_V3_KEY, assetGroupId);
+            address aaveSwapStrategy = _getStrategyAddress(AAVE_V3_SWAP_KEY, assetGroupId);
+            address compoundSwapStrategy = _getStrategyAddress(COMPOUND_V3_SWAP_KEY, assetGroupId);
 
-            strategies = Arrays.toArray(
-                aaveAusdcStrategy,
-                compoundCusdcStrategy,
-                aaveAusdceStrategy,
-                compoundCusdceStrategy
-            );
+            strategies = Arrays.toArray(aaveStrategy, compoundStrategy, aaveSwapStrategy, compoundSwapStrategy);
         }
 
         _setRandomRiskScores(strategies);
-        
+
         console.log("create vault..");
         ISmartVault vault = _createVault(
             0, 0, assetGroupId, strategies, uint16a16.wrap(0), address(_deploySpool.uniformAllocationProvider())
@@ -220,24 +215,20 @@ contract E2E is ForkTestFixtureDeployment {
     function test_reallocate_usdc() public {
         uint256 assetGroupId = _getAssetGroupId(USDC_KEY);
 
-        address aaveAusdcStrategy      = _getStrategyAddress(AAVE_V3_AUSDC_KEY, assetGroupId);
-        address compoundCusdcStrategy  = _getStrategyAddress(COMPOUND_V3_CUSDC_KEY, assetGroupId);
-        address aaveAusdceStrategy     = _getStrategyAddress(AAVE_V3_AUSDCE_KEY, assetGroupId);
-        address compoundCusdceStrategy = _getStrategyAddress(COMPOUND_V3_CUSDCE_KEY, assetGroupId);
+        address aaveStrategy = _getStrategyAddress(AAVE_V3_KEY, assetGroupId);
+        address compoundStrategy = _getStrategyAddress(COMPOUND_V3_KEY, assetGroupId);
+        address aaveSwapStrategy = _getStrategyAddress(AAVE_V3_SWAP_KEY, assetGroupId);
+        address compoundSwapStrategy = _getStrategyAddress(COMPOUND_V3_SWAP_KEY, assetGroupId);
 
-        address[] memory strategies = Arrays.toArray(
-            aaveAusdcStrategy,
-            compoundCusdcStrategy,
-            aaveAusdceStrategy,
-            compoundCusdceStrategy
-        );
+        address[] memory strategies =
+            Arrays.toArray(aaveStrategy, compoundStrategy, aaveSwapStrategy, compoundSwapStrategy);
 
         _setRandomRiskScores(strategies);
 
-        mockAllocationProvider.setWeight(aaveAusdcStrategy, 30);
-        mockAllocationProvider.setWeight(compoundCusdcStrategy, 30);
-        mockAllocationProvider.setWeight(aaveAusdceStrategy, 20);
-        mockAllocationProvider.setWeight(compoundCusdceStrategy, 20);
+        mockAllocationProvider.setWeight(aaveStrategy, 30);
+        mockAllocationProvider.setWeight(compoundStrategy, 30);
+        mockAllocationProvider.setWeight(aaveSwapStrategy, 20);
+        mockAllocationProvider.setWeight(compoundSwapStrategy, 20);
 
         ISmartVault vault =
             _createVault(0, 0, assetGroupId, strategies, uint16a16.wrap(0), address(mockAllocationProvider));
@@ -265,10 +256,10 @@ contract E2E is ForkTestFixtureDeployment {
         _assertAllocationApproxRel(vault, 1e12);
 
         // REALLOCATE
-        mockAllocationProvider.setWeight(aaveAusdcStrategy, 20);
-        mockAllocationProvider.setWeight(compoundCusdcStrategy, 20);
-        mockAllocationProvider.setWeight(aaveAusdceStrategy, 30);
-        mockAllocationProvider.setWeight(compoundCusdceStrategy, 30);
+        mockAllocationProvider.setWeight(aaveStrategy, 20);
+        mockAllocationProvider.setWeight(compoundStrategy, 20);
+        mockAllocationProvider.setWeight(aaveSwapStrategy, 30);
+        mockAllocationProvider.setWeight(compoundSwapStrategy, 30);
 
         _reallocate(vault);
 
@@ -278,10 +269,10 @@ contract E2E is ForkTestFixtureDeployment {
         vm.roll(block.number + 1);
 
         // REALLOCATE BACK
-        mockAllocationProvider.setWeight(aaveAusdcStrategy, 30);
-        mockAllocationProvider.setWeight(compoundCusdcStrategy, 30);
-        mockAllocationProvider.setWeight(aaveAusdceStrategy, 20);
-        mockAllocationProvider.setWeight(compoundCusdceStrategy, 20);
+        mockAllocationProvider.setWeight(aaveStrategy, 30);
+        mockAllocationProvider.setWeight(compoundStrategy, 30);
+        mockAllocationProvider.setWeight(aaveSwapStrategy, 20);
+        mockAllocationProvider.setWeight(compoundSwapStrategy, 20);
 
         _reallocate(vault);
 

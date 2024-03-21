@@ -395,7 +395,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
             }
         }
 
-
         console.log("doHardWork -registry -end...");
     }
 

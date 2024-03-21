@@ -183,7 +183,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         // next run is with correct parameters
         // - update parameters
         _updateDhwParameterBag(parameters, logs);
-        // - run DHW as do-hard-worker with correct parametes
+        // - run DHW as do-hard-worker with correct parameters
         _prank(_doHardWorker);
         _strategyRegistry.doHardWork(parameters);
         vm.stopPrank();
@@ -636,14 +636,14 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
 
                 string memory strategyKey = _deploySpool.addressToStrategyKey(strategy);
 
-                if (Strings.equal(strategyKey, AAVE_V3_AUSDC_KEY)) {
+                if (Strings.equal(strategyKey, AAVE_V3_KEY)) {
                     // continue
-                } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDC_KEY)) {
+                } else if (Strings.equal(strategyKey, COMPOUND_V3_KEY)) {
                     // continue
-                } else if (Strings.equal(strategyKey, AAVE_V3_AUSDCE_KEY)) {
-                    // continue
-                } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDCE_KEY)) {
-                    // continue
+                } else if (Strings.equal(strategyKey, AAVE_V3_SWAP_KEY)) {
+                    _setInitialDhwParametersGeneric(parameters, i, j, 4);
+                } else if (Strings.equal(strategyKey, COMPOUND_V3_SWAP_KEY)) {
+                    _setInitialDhwParametersGeneric(parameters, i, j, 4);
                 } else if (Strings.equal(strategyKey, GAMMA_CAMELOT_KEY)) {
                     _setInitialDhwParametersGeneric(parameters, i, j, 7);
                 } else {
@@ -658,7 +658,6 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
     function _updateDhwParameterBag(DoHardWorkParameterBag memory parameters, Vm.Log[] memory logs) internal view {
         // loop over strategy groups
 
-        // _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
         for (uint256 i; i < parameters.strategies.length; ++i) {
             // loop over strategies in a group
             for (uint256 j; j < parameters.strategies[i].length; ++j) {
@@ -666,14 +665,14 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
 
                 string memory strategyKey = _deploySpool.addressToStrategyKey(strategy);
 
-                if (Strings.equal(strategyKey, AAVE_V3_AUSDC_KEY)) {
+                if (Strings.equal(strategyKey, AAVE_V3_KEY)) {
                     // continue
-                } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDC_KEY)) {
+                } else if (Strings.equal(strategyKey, COMPOUND_V3_KEY)) {
                     // continue
-                } else if (Strings.equal(strategyKey, AAVE_V3_AUSDCE_KEY)) {
-                    // continue
-                } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDCE_KEY)) {
-                    // continue
+                } else if (Strings.equal(strategyKey, AAVE_V3_SWAP_KEY)) {
+                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
+                } else if (Strings.equal(strategyKey, COMPOUND_V3_SWAP_KEY)) {
+                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
                 } else if (Strings.equal(strategyKey, GAMMA_CAMELOT_KEY)) {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
                 } else {
@@ -847,13 +846,13 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         for (uint256 i; i < strategies.length; ++i) {
             string memory strategyKey = _deploySpool.addressToStrategyKey(strategies[i]);
 
-            if (Strings.equal(strategyKey, AAVE_V3_AUSDC_KEY)) {
+            if (Strings.equal(strategyKey, AAVE_V3_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDC_KEY)) {
+            } else if (Strings.equal(strategyKey, COMPOUND_V3_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, AAVE_V3_AUSDCE_KEY)) {
+            } else if (Strings.equal(strategyKey, AAVE_V3_SWAP_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDCE_KEY)) {
+            } else if (Strings.equal(strategyKey, COMPOUND_V3_SWAP_KEY)) {
                 // continue
             } else if (Strings.equal(strategyKey, GAMMA_CAMELOT_KEY)) {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
@@ -936,13 +935,13 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         for (uint256 i; i < strategies.length; ++i) {
             string memory strategyKey = _deploySpool.addressToStrategyKey(strategies[i]);
 
-            if (Strings.equal(strategyKey, AAVE_V3_AUSDC_KEY)) {
+            if (Strings.equal(strategyKey, AAVE_V3_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDC_KEY)) {
+            } else if (Strings.equal(strategyKey, COMPOUND_V3_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, AAVE_V3_AUSDCE_KEY)) {
+            } else if (Strings.equal(strategyKey, AAVE_V3_SWAP_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDCE_KEY)) {
+            } else if (Strings.equal(strategyKey, COMPOUND_V3_SWAP_KEY)) {
                 // continue
             } else if (Strings.equal(strategyKey, GAMMA_CAMELOT_KEY)) {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
@@ -958,13 +957,13 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
             address strategy = params.strategies[i];
             string memory strategyKey = _deploySpool.addressToStrategyKey(strategy);
 
-            if (Strings.equal(strategyKey, AAVE_V3_AUSDC_KEY)) {
+            if (Strings.equal(strategyKey, AAVE_V3_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDC_KEY)) {
+            } else if (Strings.equal(strategyKey, COMPOUND_V3_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, AAVE_V3_AUSDCE_KEY)) {
+            } else if (Strings.equal(strategyKey, AAVE_V3_SWAP_KEY)) {
                 // continue
-            } else if (Strings.equal(strategyKey, COMPOUND_V3_CUSDCE_KEY)) {
+            } else if (Strings.equal(strategyKey, COMPOUND_V3_SWAP_KEY)) {
                 // continue
             } else if (Strings.equal(strategyKey, GAMMA_CAMELOT_KEY)) {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);

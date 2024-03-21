@@ -6,7 +6,7 @@ import "../../../../src/access/SpoolAccessControl.sol";
 import "../../../../src/interfaces/Constants.sol";
 import "../../../../src/libraries/SpoolUtils.sol";
 import "../../../../src/managers/AssetGroupRegistry.sol";
-import "../../../../src/strategies/arbitrum/AaveV3Strategy.sol";
+import "../../../../src/strategies/arbitrum/AaveV3SwapStrategy.sol";
 import "../../../external/interfaces/IUSDC.sol";
 import "../../../libraries/Arrays.sol";
 import "../../../libraries/Constants.sol";
@@ -15,13 +15,13 @@ import "../../ForkTestFixture.sol";
 import "../../StrategyHarness.sol";
 import "../ArbitrumForkConstants.sol";
 
-contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
+contract AaveV3SwapStrategyTest is TestFixture, ForkTestFixture {
     IERC20Metadata private tokenUsdc;
     IERC20Metadata private tokenUsdce;
 
     IPoolAddressesProvider private poolAddressesProvider;
 
-    AaveV3StrategyHarness private aaveStrategy;
+    AaveV3SwapStrategyHarness private aaveStrategy;
 
     address[] private assetGroup;
     uint256 private assetGroupId;
@@ -45,7 +45,7 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
 
         poolAddressesProvider = IPoolAddressesProvider(AAVE_V3_POOL_ADDRESSES_PROVIDER);
 
-        aaveStrategy = new AaveV3StrategyHarness(
+        aaveStrategy = new AaveV3SwapStrategyHarness(
             assetGroupRegistry,
             accessControl,
             swapper,
@@ -213,11 +213,11 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
 }
 
 // Exposes protocol-specific functions for unit-testing.
-contract AaveV3StrategyHarness is AaveV3Strategy, StrategyHarness {
+contract AaveV3SwapStrategyHarness is AaveV3SwapStrategy, StrategyHarness {
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         ISwapper swapper_,
         IPoolAddressesProvider provider_
-    ) AaveV3Strategy(assetGroupRegistry_, accessControl_, swapper_, provider_) {}
+    ) AaveV3SwapStrategy(assetGroupRegistry_, accessControl_, swapper_, provider_) {}
 }
