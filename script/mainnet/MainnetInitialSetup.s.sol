@@ -32,7 +32,9 @@ contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
 
         setupAssets(assetGroupRegistry, usdPriceFeedManager);
 
-        deployStrategies(spoolAccessControl, assetGroupRegistry, swapper, address(proxyAdmin), strategyRegistry, extended);
+        deployStrategies(
+            spoolAccessControl, assetGroupRegistry, swapper, address(proxyAdmin), strategyRegistry, extended
+        );
 
         postDeploySpool(deployerAddress);
     }

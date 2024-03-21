@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "../../../../src/interfaces/Constants.sol";
 import "../../../../src/libraries/SpoolUtils.sol";
-import "../../../../src/strategies/arbitrum/CompoundV3Strategy.sol";
+import "../../../../src/strategies/arbitrum/CompoundV3SwapStrategy.sol";
 import "../../../external/interfaces/IUSDC.sol";
 import "../../../fixtures/TestFixture.sol";
 import "../../../libraries/Arrays.sol";
@@ -14,7 +14,7 @@ import "../../ForkTestFixture.sol";
 import "../../StrategyHarness.sol";
 import "../ArbitrumForkConstants.sol";
 
-contract CompoundV3StrategyUSDCETest is TestFixture, ForkTestFixture {
+contract CompoundV3SwapStrategyTest is TestFixture, ForkTestFixture {
     IERC20Metadata private tokenUsdc;
     IERC20Metadata private tokenUsdce;
 
@@ -22,7 +22,7 @@ contract CompoundV3StrategyUSDCETest is TestFixture, ForkTestFixture {
     uint256 private assetGroupId;
     uint256[] private assetGroupExchangeRates;
 
-    CompoundV3StrategyHarness compoundV3Strategy;
+    CompoundV3SwapStrategyHarness compoundV3Strategy;
     address[] smartVaultStrategies;
 
     uint256 TIME_TO_YIELD = 52 weeks;
@@ -43,7 +43,7 @@ contract CompoundV3StrategyUSDCETest is TestFixture, ForkTestFixture {
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         assetGroupExchangeRates = SpoolUtils.getExchangeRates(assetGroup, priceFeedManager);
 
-        compoundV3Strategy = new CompoundV3StrategyHarness(
+        compoundV3Strategy = new CompoundV3SwapStrategyHarness(
             assetGroupRegistry,
             accessControl,
             swapper,
@@ -67,52 +67,6 @@ contract CompoundV3StrategyUSDCETest is TestFixture, ForkTestFixture {
         }
     }
 
-    function bytesToUintArray(bytes calldata val) public pure returns (uint256[] memory arr) {
-        arr = new uint[](((val.length - 1) / 32) + 1);
-
-        bytes32 word;
-        for (uint256 i = 0; i < arr.length; i++) {
-            if (i < arr.length - 1 || val.length % 32 == 0) {
-                word = bytes32(val[(i * 32):((i + 1) * 32)]);
-            } else {
-                // final word, and uneven val size.
-                bytes memory remaining = val[(i * 32):val.length];
-                bytes memory zeros = new bytes(32 - (val.length % 32));
-                word = bytes32(bytes.concat(remaining, zeros));
-            }
-
-            arr[i] = uint256(word);
-        }
-    }
-
-    function _buildRawSwapInfo(IERC20Metadata fromToken, IERC20Metadata toToken, uint256 amount)
-        private
-        returns (uint256[] memory)
-    {
-        MockExchange exchange = new MockExchange(fromToken, toToken, priceFeedManager);
-        _deal(address(fromToken), address(exchange), 1_000_000 * 10 ** fromToken.decimals());
-        _deal(address(toToken), address(exchange), 1_000_000 * 10 ** toToken.decimals());
-
-        swapper.updateExchangeAllowlist(Arrays.toArray(address(exchange)), Arrays.toArray(true));
-
-        // create swapCallData
-        bytes memory swapCallData = abi.encodeWithSelector(exchange.swap.selector, fromToken, amount, address(swapper));
-
-        // convert to uint array
-        uint256[] memory swapCallDataUint = CompoundV3StrategyUSDCETest(address(this)).bytesToUintArray(swapCallData);
-        // create rawSwapInfo
-        uint256[] memory rawSwapInfo = new uint[](swapCallDataUint.length + 3);
-        rawSwapInfo[0] = uint256(uint160(address(exchange)));
-        rawSwapInfo[1] = uint256(uint160(address(fromToken)));
-        rawSwapInfo[2] = swapCallData.length;
-
-        for (uint256 i; i < swapCallDataUint.length; ++i) {
-            rawSwapInfo[i + 3] = swapCallDataUint[i];
-        }
-
-        return rawSwapInfo;
-    }
-
     function test_assetRatio() public {
         // act
         uint256[] memory assetRatio = compoundV3Strategy.assetRatio();
@@ -134,14 +88,15 @@ contract CompoundV3StrategyUSDCETest is TestFixture, ForkTestFixture {
         uint256 usdceBalanceOfCTokenBefore = tokenUsdce.balanceOf(address(compoundV3Strategy.cToken()));
 
         // act
-        uint256[] memory rawSwapInfo = _buildRawSwapInfo(tokenUsdc, tokenUsdce, toDeposit);
-        compoundV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), rawSwapInfo);
+        uint256[] memory slippages = new uint256[](4);
+        compoundV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // assert
         uint256 usdceBalanceOfCTokenAfter = tokenUsdce.balanceOf(address(compoundV3Strategy.cToken()));
 
-        assertEq(usdceBalanceOfCTokenAfter - usdceBalanceOfCTokenBefore, toDeposit);
-        assertApproxEqAbs(compoundV3Strategy.cToken().balanceOf(address(compoundV3Strategy)), toDeposit, 1);
+        uint256 diff = 2e15; // .2%
+        assertApproxEqRel(usdceBalanceOfCTokenAfter - usdceBalanceOfCTokenBefore, toDeposit, diff);
+        assertApproxEqRel(compoundV3Strategy.cToken().balanceOf(address(compoundV3Strategy)), toDeposit, diff);
     }
 
     function test_redeemFromProtocol() public {
@@ -153,8 +108,8 @@ contract CompoundV3StrategyUSDCETest is TestFixture, ForkTestFixture {
         _deal(address(tokenUsdc), address(compoundV3Strategy), toDeposit);
 
         // - need to deposit into the protocol
-        uint256[] memory rawSwapInfo = _buildRawSwapInfo(tokenUsdc, tokenUsdce, toDeposit);
-        compoundV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), rawSwapInfo);
+        uint256[] memory slippages = new uint256[](4);
+        compoundV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
         compoundV3Strategy.exposed_mint(mintedShares);
@@ -162,19 +117,21 @@ contract CompoundV3StrategyUSDCETest is TestFixture, ForkTestFixture {
         uint256 strategyDepositBalanceBefore = compoundV3Strategy.cToken().balanceOf(address(compoundV3Strategy));
 
         // act
-        uint256 toWithdraw = strategyDepositBalanceBefore * withdrawnShares / mintedShares;
-        uint256[] memory rawSwapInfoWithdraw = _buildRawSwapInfo(tokenUsdce, tokenUsdc, toWithdraw);
-        compoundV3Strategy.exposed_redeemFromProtocol(assetGroup, withdrawnShares, rawSwapInfoWithdraw);
+        slippages[0] = 1;
+        compoundV3Strategy.exposed_redeemFromProtocol(assetGroup, withdrawnShares, slippages);
 
         // assert
         uint256 usdcBalanceOfStrategy = tokenUsdc.balanceOf(address(compoundV3Strategy));
         uint256 strategyDepositBalanceAfter = compoundV3Strategy.cToken().balanceOf(address(compoundV3Strategy));
 
-        assertApproxEqAbs(
-            strategyDepositBalanceBefore - strategyDepositBalanceAfter, toDeposit * withdrawnShares / mintedShares, 1
+        uint256 diff = 2e15; // .2%
+        assertApproxEqRel(
+            strategyDepositBalanceBefore - strategyDepositBalanceAfter, toDeposit * withdrawnShares / mintedShares, diff
         );
-        assertApproxEqAbs(usdcBalanceOfStrategy, toDeposit * withdrawnShares / mintedShares, 1);
-        assertApproxEqAbs(strategyDepositBalanceAfter, toDeposit * (mintedShares - withdrawnShares) / mintedShares, 1);
+        assertApproxEqRel(usdcBalanceOfStrategy, toDeposit * withdrawnShares / mintedShares, diff);
+        assertApproxEqRel(
+            strategyDepositBalanceAfter, toDeposit * (mintedShares - withdrawnShares) / mintedShares, diff
+        );
     }
 
     function test_emergencyWithdrawImpl() public {
@@ -184,8 +141,8 @@ contract CompoundV3StrategyUSDCETest is TestFixture, ForkTestFixture {
         _deal(address(tokenUsdc), address(compoundV3Strategy), toDeposit);
 
         // - need to deposit into the protocol
-        uint256[] memory rawSwapInfo = _buildRawSwapInfo(tokenUsdc, tokenUsdce, toDeposit);
-        compoundV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), rawSwapInfo);
+        uint256[] memory slippages = new uint256[](4);
+        compoundV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
         compoundV3Strategy.exposed_mint(mintedShares);
@@ -201,8 +158,9 @@ contract CompoundV3StrategyUSDCETest is TestFixture, ForkTestFixture {
 
         uint256 cTokenBalanceOfStrategy = compoundV3Strategy.cToken().balanceOf(address(compoundV3Strategy));
 
-        assertApproxEqAbs(usdceBalanceOfCTokenBefore - usdceBalanceOfCTokenAfter, toDeposit, 1);
-        assertApproxEqAbs(usdceBalanceOfEmergencyWithdrawalRecipient, toDeposit, 1);
+        uint256 diff = 2e15; // .2%
+        assertApproxEqRel(usdceBalanceOfCTokenBefore - usdceBalanceOfCTokenAfter, toDeposit, diff);
+        assertApproxEqRel(usdceBalanceOfEmergencyWithdrawalRecipient, toDeposit, diff);
         assertEq(cTokenBalanceOfStrategy, 0);
     }
 
@@ -213,8 +171,8 @@ contract CompoundV3StrategyUSDCETest is TestFixture, ForkTestFixture {
         _deal(address(tokenUsdc), address(compoundV3Strategy), toDeposit);
 
         // - need to deposit into the protocol
-        uint256[] memory rawSwapInfo = _buildRawSwapInfo(tokenUsdc, tokenUsdce, toDeposit);
-        compoundV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), rawSwapInfo);
+        uint256[] memory slippages = new uint256[](4);
+        compoundV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         uint256 balanceOfStrategyBefore = compoundV3Strategy.cToken().balanceOf(address(compoundV3Strategy));
 
@@ -241,8 +199,8 @@ contract CompoundV3StrategyUSDCETest is TestFixture, ForkTestFixture {
         _deal(address(tokenUsdc), address(compoundV3Strategy), toDeposit);
 
         // - need to deposit into the protocol
-        uint256[] memory rawSwapInfo = _buildRawSwapInfo(tokenUsdc, tokenUsdce, toDeposit);
-        compoundV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), rawSwapInfo);
+        uint256[] memory slippages = new uint256[](4);
+        compoundV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // - mint some reward tokens by skipping time
         vm.warp(block.timestamp + TIME_TO_YIELD);
@@ -267,8 +225,8 @@ contract CompoundV3StrategyUSDCETest is TestFixture, ForkTestFixture {
         _deal(address(tokenUsdc), address(compoundV3Strategy), toDeposit);
 
         // - need to deposit into the protocol
-        uint256[] memory rawSwapInfo = _buildRawSwapInfo(tokenUsdc, tokenUsdce, toDeposit);
-        compoundV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), rawSwapInfo);
+        uint256[] memory slippages = new uint256[](4);
+        compoundV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // act
         uint256 usdWorth = compoundV3Strategy.exposed_getUsdWorth(assetGroupExchangeRates, priceFeedManager);
@@ -279,12 +237,12 @@ contract CompoundV3StrategyUSDCETest is TestFixture, ForkTestFixture {
 }
 
 // Exposes protocol-specific functions for unit-testing.
-contract CompoundV3StrategyHarness is CompoundV3Strategy, StrategyHarness {
+contract CompoundV3SwapStrategyHarness is CompoundV3SwapStrategy, StrategyHarness {
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         ISwapper swapper_,
         IERC20 comp_,
         IRewards rewards_
-    ) CompoundV3Strategy(assetGroupRegistry_, accessControl_, swapper_, comp_, rewards_) {}
+    ) CompoundV3SwapStrategy(assetGroupRegistry_, accessControl_, swapper_, comp_, rewards_) {}
 }

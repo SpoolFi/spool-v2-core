@@ -101,7 +101,7 @@ contract StrategiesInitial {
 
         deployYearnV2(contracts);
 
-        if(extended) {
+        if (extended) {
             deployOeth(contracts, true);
 
             deployConvexStFrxEth(contracts, true);

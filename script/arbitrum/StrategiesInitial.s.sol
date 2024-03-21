@@ -5,15 +5,17 @@ import "@openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/utils/math/SafeCast.sol";
 import "../../src/libraries/uint16a16Lib.sol";
 import "../../src/strategies/arbitrum/AaveV3Strategy.sol";
+import "../../src/strategies/arbitrum/AaveV3SwapStrategy.sol";
 import "../../src/strategies/arbitrum/CompoundV3Strategy.sol";
+import "../../src/strategies/arbitrum/CompoundV3SwapStrategy.sol";
 import "../../src/strategies/arbitrum/GammaCamelotStrategy.sol";
 import "../helper/JsonHelper.sol";
 import "./AssetsInitial.s.sol";
 
-string constant AAVE_V3_AUSDC_KEY = "aave-v3-ausdc";
-string constant AAVE_V3_AUSDCE_KEY = "aave-v3-ausdce";
-string constant COMPOUND_V3_CUSDC_KEY = "compound-v3-cusdc";
-string constant COMPOUND_V3_CUSDCE_KEY = "compound-v3-cusdce";
+string constant AAVE_V3_KEY = "aave-v3";
+string constant AAVE_V3_SWAP_KEY = "aave-v3-swap";
+string constant COMPOUND_V3_KEY = "compound-v3";
+string constant COMPOUND_V3_SWAP_KEY = "compound-v3-swap";
 string constant GAMMA_CAMELOT_KEY = "gamma-camelot";
 
 struct StandardContracts {
@@ -54,7 +56,11 @@ contract StrategiesInitial {
 
         deployAaveV3(contracts);
 
+        deployAaveV3Swap(contracts);
+
         deployCompoundV3(contracts);
+
+        deployCompoundV3Swap(contracts);
 
         deployGammaCamelot(contracts);
     }
@@ -62,34 +68,53 @@ contract StrategiesInitial {
     function deployAaveV3(StandardContracts memory contracts) public {
         // create implementation contract
         IPoolAddressesProvider provider = IPoolAddressesProvider(
-            constantsJson().getAddress(string.concat(".strategies.aave-v3.poolAddressesProvider"))
+            constantsJson().getAddress(string.concat(".strategies.", AAVE_V3_KEY, ".lendingPoolAddressesProvider"))
         );
 
         AaveV3Strategy implementation = new AaveV3Strategy(
+            contracts.assetGroupRegistry,
+            contracts.accessControl,
+            provider
+        );
+
+        contractsJson().addVariantStrategyImplementation(AAVE_V3_KEY, address(implementation));
+
+        string memory variantName = _getVariantName(AAVE_V3_KEY, USDC_KEY);
+
+        address variant = _newProxy(address(implementation), contracts.proxyAdmin);
+        uint256 assetGroupId = assetGroups(USDC_KEY);
+
+        IAToken aToken =
+            IAToken(constantsJson().getAddress(string.concat(".strategies.", AAVE_V3_KEY, ".", USDC_KEY, ".aToken")));
+        AaveV3Strategy(variant).initialize(variantName, assetGroupId, aToken);
+        _registerStrategyVariant(AAVE_V3_KEY, USDC_KEY, variant, assetGroupId, contracts.strategyRegistry);
+    }
+
+    function deployAaveV3Swap(StandardContracts memory contracts) public {
+        // create implementation contract
+        IPoolAddressesProvider provider = IPoolAddressesProvider(
+            constantsJson().getAddress(string.concat(".strategies.", AAVE_V3_KEY, ".poolAddressesProvider"))
+        );
+
+        AaveV3SwapStrategy implementation = new AaveV3SwapStrategy(
             contracts.assetGroupRegistry,
             contracts.accessControl,
             contracts.swapper,
             provider
         );
 
-        // create different strategies for USDC asset group
-        string[] memory strategies_ = new string[](2);
-        strategies_[0] = AAVE_V3_AUSDC_KEY;
-        strategies_[1] = AAVE_V3_AUSDCE_KEY;
+        contractsJson().addVariantStrategyImplementation(AAVE_V3_SWAP_KEY, address(implementation));
 
+        string memory variantName = _getVariantName(AAVE_V3_SWAP_KEY, USDC_KEY);
+
+        address variant = _newProxy(address(implementation), contracts.proxyAdmin);
         uint256 assetGroupId = assetGroups(USDC_KEY);
 
-        for (uint256 i; i < strategies_.length; ++i) {
-            contractsJson().addVariantStrategyImplementation(strategies_[i], address(implementation));
-            string memory variantName = _getVariantName(strategies_[i], USDC_KEY);
-
-            IAToken aToken =
-                IAToken(constantsJson().getAddress(string.concat(".strategies.", strategies_[i], ".", USDC_KEY, ".aToken")));
-
-            address variant = _newProxy(address(implementation), contracts.proxyAdmin);
-            AaveV3Strategy(variant).initialize(variantName, assetGroupId, aToken);
-            _registerStrategyVariant(strategies_[i], USDC_KEY, variant, assetGroupId, contracts.strategyRegistry);
-        }
+        IAToken aToken = IAToken(
+            constantsJson().getAddress(string.concat(".strategies.", AAVE_V3_SWAP_KEY, ".", USDC_KEY, ".aToken"))
+        );
+        AaveV3SwapStrategy(variant).initialize(variantName, assetGroupId, aToken);
+        _registerStrategyVariant(AAVE_V3_SWAP_KEY, USDC_KEY, variant, assetGroupId, contracts.strategyRegistry);
     }
 
     function deployCompoundV3(StandardContracts memory contracts) public {
@@ -105,23 +130,44 @@ contract StrategiesInitial {
             rewards
         );
 
-        // create different strategies for USDC asset group
-        string[] memory strategies_ = new string[](2);
-        strategies_[0] = COMPOUND_V3_CUSDC_KEY;
-        strategies_[1] = COMPOUND_V3_CUSDCE_KEY;
+        contractsJson().addVariantStrategyImplementation(COMPOUND_V3_KEY, address(implementation));
 
+        string memory variantName = _getVariantName(COMPOUND_V3_KEY, USDC_KEY);
+
+        IComet cToken =
+            IComet(constantsJson().getAddress(string.concat(".strategies.", COMPOUND_V3_KEY, ".", USDC_KEY, ".cToken")));
+
+        address variant = _newProxy(address(implementation), contracts.proxyAdmin);
         uint256 assetGroupId = assetGroups(USDC_KEY);
+        CompoundV3Strategy(variant).initialize(variantName, assetGroupId, cToken);
+        _registerStrategyVariant(COMPOUND_V3_KEY, USDC_KEY, variant, assetGroupId, contracts.strategyRegistry);
+    }
 
-        for (uint256 i; i < strategies_.length; ++i) {
-            contractsJson().addVariantStrategyImplementation(strategies_[i], address(implementation));
-            string memory variantName = _getVariantName(strategies_[i], USDC_KEY);
+    function deployCompoundV3Swap(StandardContracts memory contracts) public {
+        // create implementation contract
+        IERC20 comp = IERC20(constantsJson().getAddress(string.concat(".tokens.comp")));
+        IRewards rewards = IRewards(constantsJson().getAddress(string.concat(".strategies.compound-v3.rewards")));
 
-            IComet cToken = IComet(constantsJson().getAddress(string.concat(".strategies.", strategies_[i], ".", USDC_KEY,  ".cToken")));
+        CompoundV3SwapStrategy implementation = new CompoundV3SwapStrategy(
+            contracts.assetGroupRegistry,
+            contracts.accessControl,
+            contracts.swapper,
+            comp,
+            rewards
+        );
 
-            address variant = _newProxy(address(implementation), contracts.proxyAdmin);
-            CompoundV3Strategy(variant).initialize(variantName, assetGroupId, cToken);
-            _registerStrategyVariant(strategies_[i], USDC_KEY, variant, assetGroupId, contracts.strategyRegistry);
-        }
+        contractsJson().addVariantStrategyImplementation(COMPOUND_V3_SWAP_KEY, address(implementation));
+
+        string memory variantName = _getVariantName(COMPOUND_V3_SWAP_KEY, USDC_KEY);
+
+        IComet cToken = IComet(
+            constantsJson().getAddress(string.concat(".strategies.", COMPOUND_V3_SWAP_KEY, ".", USDC_KEY, ".cToken"))
+        );
+
+        address variant = _newProxy(address(implementation), contracts.proxyAdmin);
+        uint256 assetGroupId = assetGroups(USDC_KEY);
+        CompoundV3SwapStrategy(variant).initialize(variantName, assetGroupId, cToken);
+        _registerStrategyVariant(COMPOUND_V3_KEY, USDC_KEY, variant, assetGroupId, contracts.strategyRegistry);
     }
 
     function deployGammaCamelot(StandardContracts memory contracts) public {
@@ -133,32 +179,20 @@ contract StrategiesInitial {
 
         contractsJson().addVariantStrategyImplementation(GAMMA_CAMELOT_KEY, address(implementation));
 
-        // create variant proxies
-        string[] memory variants = new string[](1);
-        variants[0] = WETH_USDC_KEY;
+        string memory variantName = _getVariantName(GAMMA_CAMELOT_KEY, WETH_USDC_KEY);
 
-        for (uint256 i; i < variants.length; ++i) {
-            string memory variantName = _getVariantName(GAMMA_CAMELOT_KEY, variants[i]);
+        IHypervisor hypervisor =
+            IHypervisor(constantsJson().getAddress(string.concat(".strategies.", GAMMA_CAMELOT_KEY, ".hypervisor")));
 
-            IHypervisor hypervisor = IHypervisor(
-                constantsJson().getAddress(
-                    string.concat(".strategies.", GAMMA_CAMELOT_KEY, ".hypervisor")
-                )
-            );
+        INitroPool nitroPool =
+            INitroPool(constantsJson().getAddress(string.concat(".strategies.", GAMMA_CAMELOT_KEY, ".nitroPool")));
 
-            INitroPool nitroPool = INitroPool(
-                constantsJson().getAddress(
-                    string.concat(".strategies.", GAMMA_CAMELOT_KEY, ".nitroPool")
-                )
-            );
-
-            address variant = _newProxy(address(implementation), contracts.proxyAdmin);
-            uint256 assetGroupId = assetGroups(variants[i]);
-            console.log("assetGroupId: %s", assetGroupId);
-            GammaCamelotStrategy(variant).initialize(variantName, assetGroupId, hypervisor, nitroPool);
-            console.log("register strategy..");
-            _registerStrategyVariant(GAMMA_CAMELOT_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
-        }
+        address variant = _newProxy(address(implementation), contracts.proxyAdmin);
+        uint256 assetGroupId = assetGroups(WETH_USDC_KEY);
+        console.log("assetGroupId: %s", assetGroupId);
+        GammaCamelotStrategy(variant).initialize(variantName, assetGroupId, hypervisor, nitroPool);
+        console.log("register strategy..");
+        _registerStrategyVariant(GAMMA_CAMELOT_KEY, WETH_USDC_KEY, variant, assetGroupId, contracts.strategyRegistry);
     }
 
     function _newProxy(address implementation, address proxyAdmin) private returns (address) {

@@ -8,91 +8,50 @@ import "../../interfaces/ISwapper.sol";
 import "../../interfaces/CommonErrors.sol";
 import "forge-std/console.sol";
 
-error InvalidSwapInfo();
-
-
-// - mode selection: rawSwapInfo[0]
-//
-// - default swap: rawSwapInfo[0] == 0
+// Description:
+// This contract is a helper contract for swapping between an asset group token and a different strategy token.
+// we do this so that we can have multiple strategies under one asset group, even if the strategy uses a different
+// base token that the asset group token.
+// For example, in Arbitrum Aave V3, we use USDC as an asset group, but we have both a USDC pool, and a USDC.e pool.
+// Both tokens are extremely close in price and swapping them is cheap (in terms of both gas and swap fees). We would
+// like to have both strategies under the same asset group to maximise the amount of strategies in vaults under USDC,
+// and in the case of the USDC.e pool in this example, accept that there will be some fee for swapping.
+// The contract defaults to a Uniswap V3 swap, with a default fee of 0.01% set. The inheriting contract can override the
+// fee, or override the default method and implement it's own.
 abstract contract AssetGroupSwapHelper {
     using SafeERC20 for IERC20;
 
-    ISwapper public immutable swapper;
     IV3SwapRouter public immutable swapRouter = IV3SwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
-    uint256 constant MIN_SWAP_INFO_SIZE = 4;
-
-    constructor(ISwapper swapper_) {
-        if (address(swapper_) == address(0)) {
-            revert ConfigurationAddressZero();
-        }
-
-        swapper = swapper_;
+    function _assetGroupSwap(address tokenIn, address tokenOut, uint256 amount, uint256 slippage)
+        internal
+        virtual
+        returns (uint256)
+    {
+        return _defaultSwap(tokenIn, tokenOut, amount, slippage);
     }
 
-    function _defaultSwap(address tokenIn, address tokenOut, uint256 amount) private returns (uint256) {
+    function _defaultSwap(address tokenIn, address tokenOut, uint256 amount, uint256 slippage)
+        internal
+        virtual
+        returns (uint256)
+    {
         IERC20(tokenIn).safeApprove(address(swapRouter), amount);
         IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter.ExactInputSingleParams({
             tokenIn: tokenIn,
             tokenOut: tokenOut,
-            fee: 100,
+            fee: _getFee(),
             recipient: address(this),
             deadline: block.timestamp,
             amountIn: amount,
-            amountOutMinimum: 0,
+            amountOutMinimum: slippage,
             sqrtPriceLimitX96: 0
         });
 
         return swapRouter.exactInputSingle(params);
     }
 
-    function _assetGroupSwap(
-        address[] memory tokensIn,
-        address[] memory tokensOut,
-        uint256[] memory amounts,
-        uint256[] calldata rawSwapInfo
-    ) internal virtual returns (uint256) {
-        // only swap if tokens are different.
-        if (tokensIn[0] == tokensOut[0]) {
-            return amounts[0];
-        }
-
-        // fallback on default swapper (Uniswap V3) for empty swap Info
-        if (rawSwapInfo.length == 0) {
-            return _defaultSwap(tokensIn[0], tokensOut[0], amounts[0]);
-        }
-
-        SwapInfo[] memory swapInfo = _buildSwapInfo(tokensIn, rawSwapInfo);
-
-        IERC20(tokensIn[0]).safeTransfer(address(swapper), amounts[0]);
-
-        return swapper.swap(tokensIn, swapInfo, tokensOut, address(this))[0];
-    }
-
-    function _buildSwapInfo(address[] memory tokensIn, uint256[] calldata rawSwapInfo)
-        internal
-        virtual
-        returns (SwapInfo[] memory swapInfo)
-    {
-        address swapTarget = address(uint160(rawSwapInfo[0]));
-        address token = address(uint160(rawSwapInfo[1]));
-        uint256 swapCallDataSize = rawSwapInfo[2];
-        bytes memory swapCallData = new bytes(swapCallDataSize);
-        
-        console.log("rawSwapInfo.length: %s", rawSwapInfo.length);
-        console.log("token: %s", token);
-        console.log("tokensIn[0]: %s", tokensIn[0]);
-        if (rawSwapInfo.length < MIN_SWAP_INFO_SIZE || token != tokensIn[0]) {
-            revert InvalidSwapInfo();
-        }
-
-        assembly {
-            calldatacopy(add(swapCallData, 0x20), add(rawSwapInfo.offset, 0x60), swapCallDataSize)
-        }
-
-        swapInfo = new SwapInfo[](1);
-        swapInfo[0].swapTarget = swapTarget;
-        swapInfo[0].token = token;
-        swapInfo[0].swapCallData = swapCallData;
+    function _getFee() internal virtual returns (uint24) {
+        return 100;
     }
 }
