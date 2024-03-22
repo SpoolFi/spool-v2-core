@@ -6,6 +6,7 @@ import "../libraries/Arrays.sol";
 import "../libraries/Constants.sol";
 import "../fixtures/TestFixture.sol";
 import "../mocks/MockStrategy2.sol";
+import "../../src/SmartVaultFactoryHpf.sol";
 
 contract PlatformFeesTest is TestFixture {
     address private alice;
@@ -2996,6 +2997,316 @@ contract AllFeesTest is TestFixture {
                 5.05 ether + (0.06 ether + 0.404 ether) + (1.01 ether + 6.800666666666666666 ether),
                 10 ** 12
             );
+        }
+    }
+}
+
+contract HighPerformanceFeesTest is TestFixture {
+    address private alice;
+    address private bob;
+    address private charlie;
+    address private vaultOwner;
+
+    MockStrategy2 private strategyA;
+    MockStrategy2 private strategyB;
+
+    address[] private strategiesA;
+
+    SmartVaultFactoryHpf private smartVaultFactoryHpf;
+
+    ISmartVault private smartVaultA;
+
+    uint256 private assetGroupId;
+    address[] private assetGroup;
+
+    uint256 private ecosystemFeePct = 6_00;
+    uint256 private treasuryFeePct = 4_00;
+    uint16 private managementFeePct = 0;
+    uint16 private depositFeePct = 0;
+    uint16 private performanceFeePct = 90_00;
+
+    function setUp() public {
+        setUpBase();
+
+        alice = address(0xa);
+        bob = address(0xb);
+        charlie = address(0xc);
+        vaultOwner = address(0xf);
+
+        strategyRegistry.setEcosystemFee(uint96(ecosystemFeePct));
+        strategyRegistry.setTreasuryFee(uint96(treasuryFeePct));
+
+        priceFeedManager.setExchangeRate(address(token), 1 * USD_DECIMALS_MULTIPLIER);
+        assetGroup = Arrays.toArray(address(token));
+        assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+
+        address smartVaultImplementation = address(new SmartVault(accessControl, guardManager));
+        smartVaultFactoryHpf = new SmartVaultFactoryHpf(
+            smartVaultImplementation,
+            accessControl,
+            actionManager,
+            guardManager,
+            smartVaultManager,
+            assetGroupRegistry,
+            riskManager
+        );
+        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactoryHpf));
+        accessControl.grantRole(ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM, address(smartVaultFactoryHpf));
+        accessControl.grantRole(ROLE_HPF_SMART_VAULT_DEPLOYER, vaultOwner);
+
+        // strategies
+        {
+            strategyA = new MockStrategy2(assetGroupRegistry, accessControl, assetGroupId);
+            strategyA.initialize("StratA");
+            strategyRegistry.registerStrategy(address(strategyA), 0);
+
+            strategyB = new MockStrategy2(assetGroupRegistry, accessControl, assetGroupId);
+            strategyB.initialize("StratB");
+            strategyRegistry.registerStrategy(address(strategyB), 0);
+
+            strategiesA = Arrays.toArray(address(strategyA), address(strategyB));
+        }
+
+        // smart vaults
+        {
+            SmartVaultSpecification memory specification = SmartVaultSpecification({
+                smartVaultName: "SmartVaultA",
+                svtSymbol: "SVA",
+                baseURI: "https://token-cdn-domain/",
+                assetGroupId: assetGroupId,
+                actions: new IAction[](0),
+                actionRequestTypes: new RequestType[](0),
+                guards: new GuardDefinition[][](0),
+                guardRequestTypes: new RequestType[](0),
+                strategies: strategiesA,
+                strategyAllocation: Arrays.toUint16a16(FULL_PERCENT / 2, FULL_PERCENT / 2),
+                riskTolerance: 0,
+                riskProvider: address(0),
+                allocationProvider: address(0),
+                managementFeePct: managementFeePct,
+                depositFeePct: depositFeePct,
+                performanceFeePct: performanceFeePct,
+                allowRedeemFor: false
+            });
+            vm.prank(vaultOwner);
+            smartVaultA = smartVaultFactoryHpf.deploySmartVault(specification);
+        }
+
+        // initial state
+        {
+            deal(address(token), alice, 1000 ether, true);
+            deal(address(token), bob, 1000 ether, true);
+            deal(address(token), charlie, 1000 ether, true);
+
+            // deposit
+            vm.startPrank(alice);
+            token.approve(address(smartVaultManager), 100 ether);
+            uint256 depositNftAlice = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVaultA),
+                    assets: Arrays.toArray(100 ether),
+                    receiver: alice,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+
+            // flush
+            smartVaultManager.flushSmartVault(address(smartVaultA));
+
+            // dhw
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(strategiesA, assetGroup));
+            vm.stopPrank();
+
+            // sync
+            smartVaultManager.syncSmartVault(address(smartVaultA), true);
+
+            // claim
+            vm.startPrank(alice);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVaultA), Arrays.toArray(depositNftAlice), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+        }
+    }
+
+    function _getUserVaultValue(address user, ISmartVault smartVault) private view returns (uint256) {
+        uint256 totalVaultShares = smartVault.totalSupply();
+        uint256 userVaultShares = smartVault.balanceOf(user);
+        address[] memory strategies = smartVaultManager.strategies(address(smartVault));
+
+        uint256 userUnderlying;
+        for (uint256 i; i < strategies.length; ++i) {
+            MockStrategy2 strategy = MockStrategy2(strategies[i]);
+
+            uint256 totalStrategyShares = strategy.totalSupply();
+            uint256 vaultStrategyShares = strategy.balanceOf(address(smartVault));
+
+            MockProtocol2 protocol = MockStrategy2(strategies[i]).protocol();
+            uint256 totalUnderlying = token.balanceOf(address(protocol));
+
+            userUnderlying +=
+                totalUnderlying * vaultStrategyShares * userVaultShares / totalStrategyShares / totalVaultShares;
+        }
+
+        return userUnderlying;
+    }
+
+    function _getUserStrategyValue(address user, address[] memory strategies) private view returns (uint256) {
+        uint256 userUnderlying;
+        for (uint256 i; i < strategies.length; ++i) {
+            MockStrategy2 strategy = MockStrategy2(strategies[i]);
+
+            uint256 totalShares = strategy.totalSupply();
+            uint256 userShares = strategy.balanceOf(user);
+
+            MockProtocol2 protocol = strategy.protocol();
+            uint256 totalUnderlying = token.balanceOf(address(protocol));
+
+            userUnderlying += totalUnderlying * userShares / totalShares;
+        }
+
+        return userUnderlying;
+    }
+
+    function test_initialState() public {
+        // check initial state
+        {
+            // - assets were routed to strategy
+            assertEq(token.balanceOf(address(strategyA.protocol())), 50 ether);
+            assertEq(token.balanceOf(address(strategyB.protocol())), 50 ether);
+            assertEq(token.balanceOf(address(masterWallet)), 0 ether);
+            // - strategy tokens were minted
+            assertEq(strategyA.totalSupply(), 50_000000000000000000000);
+            assertEq(strategyB.totalSupply(), 50_000000000000000000000);
+            // - strategy tokens were distributed
+            assertApproxEqRel(strategyA.balanceOf(address(smartVaultA)), 50_000000000000000000000, 10 ** 12);
+            assertApproxEqRel(strategyB.balanceOf(address(smartVaultA)), 50_000000000000000000000, 10 ** 12);
+            // - smart vault tokens were minted
+            assertApproxEqRel(smartVaultA.totalSupply(), 100_000000000000000000000, 10 ** 12);
+            // - smart vault tokens were distributed
+            assertApproxEqRel(smartVaultA.balanceOf(alice), 100_000000000000000000000, 10 ** 12);
+        }
+    }
+
+    function test_shouldCaptureWholeYield() public {
+        // generate yield - round 1
+        {
+            vm.startPrank(charlie);
+            // generate 20% yield
+            // - strategy A
+            uint256 yield = token.balanceOf(address(strategyA.protocol())) * 20 / 100;
+            token.approve(address(strategyA.protocol()), yield);
+            strategyA.protocol().donate(yield);
+            // - strategy B
+            yield = token.balanceOf(address(strategyB.protocol())) * 20 / 100;
+            token.approve(address(strategyB.protocol()), yield);
+            strategyB.protocol().donate(yield);
+
+            // must make a small deposit so that vault can be flushed
+            token.approve(address(smartVaultManager), 2);
+            smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVaultA),
+                    assets: Arrays.toArray(2),
+                    receiver: charlie,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+
+            // flush
+            smartVaultManager.flushSmartVault(address(smartVaultA));
+
+            // dhw
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(strategiesA, assetGroup));
+            vm.stopPrank();
+
+            // sync
+            smartVaultManager.syncSmartVault(address(smartVaultA), true);
+        }
+
+        // check state and fees
+        {
+            // there was 20 eth yield generated
+            // - 1.2 eth (= 6%) for ecosystem fees (strat)
+            // - 0.8 eth (= 4%) for treasury fees (strat)
+            // - 18 eth (= 90%) for performance fees (vault)
+            assertEq(token.balanceOf(address(strategyA.protocol())), 60 ether + 1);
+            assertEq(token.balanceOf(address(strategyB.protocol())), 60 ether + 1);
+            assertApproxEqAbs(_getUserStrategyValue(ecosystemFeeRecipient, strategiesA), 1.2 ether, 10);
+            assertApproxEqAbs(_getUserStrategyValue(treasuryFeeRecipient, strategiesA), 0.8 ether, 10);
+            assertApproxEqRel(_getUserStrategyValue(address(smartVaultA), strategiesA), 100 ether + 18 ether, 10 ** 12);
+            assertApproxEqRel(_getUserVaultValue(alice, smartVaultA), 100 ether, 10 ** 12);
+            assertApproxEqRel(_getUserVaultValue(vaultOwner, smartVaultA), 18 ether, 10 ** 12);
+        }
+
+        // generate yield - round 2
+        {
+            vm.startPrank(charlie);
+            // generate 20% yield
+            // - strategy A
+            uint256 yield = token.balanceOf(address(strategyA.protocol())) * 20 / 100;
+            token.approve(address(strategyA.protocol()), yield);
+            strategyA.protocol().donate(yield);
+            // - strategy B
+            yield = token.balanceOf(address(strategyB.protocol())) * 20 / 100;
+            token.approve(address(strategyB.protocol()), yield);
+            strategyB.protocol().donate(yield);
+
+            // must make a small deposit so that vault can be flushed
+            token.approve(address(smartVaultManager), 2);
+            smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVaultA),
+                    assets: Arrays.toArray(2),
+                    receiver: charlie,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+
+            // flush
+            smartVaultManager.flushSmartVault(address(smartVaultA));
+
+            // dhw
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(generateDhwParameterBag(strategiesA, assetGroup));
+            vm.stopPrank();
+
+            // sync
+            smartVaultManager.syncSmartVault(address(smartVaultA), true);
+        }
+
+        // check state and fees
+        {
+            // there was 24 eth yield generated
+            // - 1.44 eth (= 6%) for ecosystem fees (strat)
+            // - 0.96 eth (= 4%) for treasury fees (strat)
+            // - 21.6 eth (= 90%) for strategy users
+            //   - 0.216 eth  (= 21.6 * 1.2 / 120) for ecosystem fees (strat)
+            //   - 0.144 eth  (= 21.6 * 0.8 / 120) for treasury fees (strat)
+            //   - 21.24 eth (= 21.6 * 118 / 120) for smart vault (i.e. performance fees)
+            assertEq(token.balanceOf(address(strategyA.protocol())), 72 ether + 2);
+            assertEq(token.balanceOf(address(strategyB.protocol())), 72 ether + 2);
+            assertApproxEqRel(
+                _getUserStrategyValue(ecosystemFeeRecipient, strategiesA),
+                1.2 ether + 1.44 ether + 0.216 ether,
+                10 ** 12
+            );
+            assertApproxEqRel(
+                _getUserStrategyValue(treasuryFeeRecipient, strategiesA), 0.8 ether + 0.96 ether + 0.144 ether, 10 ** 12
+            );
+            assertApproxEqRel(
+                _getUserStrategyValue(address(smartVaultA), strategiesA), 118 ether + 21.24 ether, 10 ** 12
+            );
+            assertApproxEqRel(_getUserVaultValue(alice, smartVaultA), 100 ether, 10 ** 12);
+            assertApproxEqRel(_getUserVaultValue(vaultOwner, smartVaultA), 18 ether + 21.24 ether, 10 ** 12);
         }
     }
 }

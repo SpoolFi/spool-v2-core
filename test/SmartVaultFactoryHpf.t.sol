@@ -12,7 +12,7 @@ import "../src/interfaces/ISmartVaultManager.sol";
 import "../src/interfaces/ISpoolAccessControl.sol";
 import "../src/interfaces/IStrategy.sol";
 import "../src/SmartVault.sol";
-import "../src/SmartVaultFactory.sol";
+import "../src/SmartVaultFactoryHpf.sol";
 import "./libraries/Arrays.sol";
 import "../src/managers/RiskManager.sol";
 import "../src/access/SpoolAccessControl.sol";
@@ -33,7 +33,7 @@ contract SmartVaultVariant is SmartVault {
     }
 }
 
-contract SmartVaultFactoryTest is Test {
+contract SmartVaultFactoryHpfTest is Test {
     using uint16a16Lib for uint16a16;
 
     event SmartVaultDeployed(address indexed smartVault, address indexed deployer);
@@ -44,7 +44,7 @@ contract SmartVaultFactoryTest is Test {
     address riskProvider = address(0x7);
     address allocProviderAddress = address(0x8);
 
-    SmartVaultFactory private factory;
+    SmartVaultFactoryHpf private factory;
 
     SpoolAccessControl accessControl;
     IActionManager actionManager;
@@ -99,7 +99,7 @@ contract SmartVaultFactoryTest is Test {
         riskManager = new RiskManager(accessControl, strategyRegistry, address(0xabc));
         address implementation1 = address(new SmartVaultVariant(accessControl, guardManager, 1));
 
-        factory = new SmartVaultFactory(
+        factory = new SmartVaultFactoryHpf(
             implementation1,
             accessControl,
             actionManager,
@@ -115,6 +115,7 @@ contract SmartVaultFactoryTest is Test {
         accessControl.grantRole(ROLE_STRATEGY, anotherStrategy);
         accessControl.grantRole(ROLE_RISK_PROVIDER, riskProvider);
         accessControl.grantRole(ROLE_ALLOCATION_PROVIDER, allocProviderAddress);
+        accessControl.grantRole(ROLE_HPF_SMART_VAULT_DEPLOYER, address(this));
 
         address[] memory strategies = Arrays.toArray(strategy, anotherStrategy);
         uint8[] memory riskScores = new uint8[](2);
@@ -205,7 +206,7 @@ contract SmartVaultFactoryTest is Test {
         {
             vm.mockCall(
                 address(accessControl),
-                abi.encodeWithSelector(IAccessControlUpgradeable.hasRole.selector),
+                abi.encodeWithSelector(IAccessControlUpgradeable.hasRole.selector, ROLE_STRATEGY),
                 abi.encode(false)
             );
 
@@ -214,7 +215,7 @@ contract SmartVaultFactoryTest is Test {
 
             vm.mockCall(
                 address(accessControl),
-                abi.encodeWithSelector(IAccessControlUpgradeable.hasRole.selector),
+                abi.encodeWithSelector(IAccessControlUpgradeable.hasRole.selector, ROLE_STRATEGY),
                 abi.encode(true)
             );
         }
@@ -249,7 +250,7 @@ contract SmartVaultFactoryTest is Test {
 
             before = specification.performanceFeePct;
 
-            specification.performanceFeePct = uint16(SV_PERFORMANCE_FEE_MAX) + 1;
+            specification.performanceFeePct = uint16(SV_PERFORMANCE_FEE_HIGH_MAX) + 1;
             vm.expectRevert(abi.encodeWithSelector(PerformanceFeeTooLarge.selector, specification.performanceFeePct));
             factory.deploySmartVault(specification);
 
@@ -365,6 +366,15 @@ contract SmartVaultFactoryTest is Test {
         }
     }
 
+    function test_deploySmartVault_shouldDeploySmartVaultWithHighPerformanceFee() public {
+        SmartVaultSpecification memory specification = _getSpecification();
+        specification.performanceFeePct = uint16(SV_PERFORMANCE_FEE_HIGH_MAX);
+
+        ISmartVault mySmartVault = factory.deploySmartVault(specification);
+
+        assertEq(mySmartVault.vaultName(), "MySmartVault");
+    }
+
     function test_deploySmartVault_shouldIntegrateSmartVault() public {
         // - set actions
         vm.expectCall(address(actionManager), abi.encodeWithSelector(IActionManager.setActions.selector));
@@ -392,6 +402,15 @@ contract SmartVaultFactoryTest is Test {
         emit SmartVaultDeployed(address(0x0), address(0x0));
 
         factory.deploySmartVault(specification);
+    }
+
+    function test_deploySmartVault_shouldNotDeployWhenDeployerIsNotAuthorized() public {
+        SmartVaultSpecification memory specification = _getSpecification();
+
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_HPF_SMART_VAULT_DEPLOYER, address(0xa)));
+        vm.startPrank(address(0xa));
+        factory.deploySmartVault(specification);
+        vm.stopPrank();
     }
 
     function test_deploySmartVault_shouldReturnCorrectURI() public {
@@ -466,7 +485,7 @@ contract SmartVaultFactoryTest is Test {
         {
             vm.mockCall(
                 address(accessControl),
-                abi.encodeWithSelector(IAccessControlUpgradeable.hasRole.selector),
+                abi.encodeWithSelector(IAccessControlUpgradeable.hasRole.selector, ROLE_STRATEGY),
                 abi.encode(false)
             );
 
@@ -475,7 +494,7 @@ contract SmartVaultFactoryTest is Test {
 
             vm.mockCall(
                 address(accessControl),
-                abi.encodeWithSelector(IAccessControlUpgradeable.hasRole.selector),
+                abi.encodeWithSelector(IAccessControlUpgradeable.hasRole.selector, ROLE_STRATEGY),
                 abi.encode(true)
             );
         }
@@ -510,12 +529,21 @@ contract SmartVaultFactoryTest is Test {
 
             before = specification.performanceFeePct;
 
-            specification.performanceFeePct = uint16(SV_PERFORMANCE_FEE_MAX) + 1;
+            specification.performanceFeePct = uint16(SV_PERFORMANCE_FEE_HIGH_MAX) + 1;
             vm.expectRevert(abi.encodeWithSelector(PerformanceFeeTooLarge.selector, specification.performanceFeePct));
             factory.deploySmartVault(specification);
 
             specification.performanceFeePct = before;
         }
+    }
+
+    function test_deploySmartVaultDeterministically_shouldDeploySmartVaultWithHighPerformanceFee() public {
+        SmartVaultSpecification memory specification = _getSpecification();
+        specification.performanceFeePct = uint16(SV_PERFORMANCE_FEE_HIGH_MAX);
+
+        ISmartVault mySmartVault = factory.deploySmartVaultDeterministically(specification, bytes32(uint256(123)));
+
+        assertEq(mySmartVault.vaultName(), "MySmartVault");
     }
 
     function test_deploySmartVaultDeterministically_shouldIntegrateSmartVault() public {
@@ -538,6 +566,15 @@ contract SmartVaultFactoryTest is Test {
         emit SmartVaultDeployed(address(0x0), address(0x0));
 
         factory.deploySmartVaultDeterministically(specification, bytes32(uint256(123)));
+    }
+
+    function test_deploySmartVaultDeterministically_shouldNotDeployWhenDeployerIsNotAuthorized() public {
+        SmartVaultSpecification memory specification = _getSpecification();
+
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_HPF_SMART_VAULT_DEPLOYER, address(0xa)));
+        vm.startPrank(address(0xa));
+        factory.deploySmartVaultDeterministically(specification, bytes32(uint256(123)));
+        vm.stopPrank();
     }
 
     /* ========== predictDeterministicAddress ========== */
