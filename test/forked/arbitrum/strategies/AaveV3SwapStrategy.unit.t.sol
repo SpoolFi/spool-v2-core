@@ -35,13 +35,13 @@ contract AaveV3SwapStrategyTest is TestFixture, ForkTestFixture {
         tokenUsdc = IERC20Metadata(USDC_ARB);
         tokenUsdce = IERC20Metadata(USDCE_ARB);
 
-        priceFeedManager.setExchangeRate(address(tokenUsdc), USD_DECIMALS_MULTIPLIER * 1001 / 1000);
-        priceFeedManager.setExchangeRate(address(tokenUsdce), USD_DECIMALS_MULTIPLIER * 1001 / 1000);
+        priceFeedManager.setExchangeRate(address(tokenUsdc), USD_DECIMALS_MULTIPLIER * 2000 / 1000);
 
         assetGroup = Arrays.toArray(address(tokenUsdc));
         assetGroupRegistry.allowTokenBatch(assetGroup);
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         assetGroupExchangeRates = SpoolUtils.getExchangeRates(assetGroup, priceFeedManager);
+        console.log("assetGroupExchangeRates[0]", assetGroupExchangeRates[0]);
 
         poolAddressesProvider = IPoolAddressesProvider(AAVE_V3_POOL_ADDRESSES_PROVIDER);
 
@@ -83,7 +83,8 @@ contract AaveV3SwapStrategyTest is TestFixture, ForkTestFixture {
         uint256 toDeposit = 1000 * 10 ** tokenUsdc.decimals();
         _deal(address(tokenUsdc), address(aaveStrategy), toDeposit);
 
-        aaveStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](4);
+        aaveStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
         aaveStrategy.exposed_mint(100);
@@ -105,7 +106,8 @@ contract AaveV3SwapStrategyTest is TestFixture, ForkTestFixture {
         uint256 usdceBalanceOfATokenBefore = tokenUsdce.balanceOf(address(aaveStrategy.aToken()));
 
         // act
-        aaveStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](4);
+        aaveStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // assert
         uint256 usdceBalanceOfATokenAfter = tokenUsdce.balanceOf(address(aaveStrategy.aToken()));
@@ -122,7 +124,8 @@ contract AaveV3SwapStrategyTest is TestFixture, ForkTestFixture {
         _deal(address(tokenUsdc), address(aaveStrategy), toDeposit);
 
         // - need to deposit into the protocol
-        aaveStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](4);
+        aaveStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
         aaveStrategy.exposed_mint(100);
@@ -130,7 +133,8 @@ contract AaveV3SwapStrategyTest is TestFixture, ForkTestFixture {
         uint256 usdceBalanceOfATokenBefore = tokenUsdce.balanceOf(address(aaveStrategy.aToken()));
 
         // act
-        aaveStrategy.exposed_redeemFromProtocol(assetGroup, 60, new uint256[](0));
+        slippages[0] = 1;
+        aaveStrategy.exposed_redeemFromProtocol(assetGroup, 60, slippages);
 
         // assert
         uint256 usdceBalanceOfATokenAfter = tokenUsdce.balanceOf(address(aaveStrategy.aToken()));
@@ -149,7 +153,8 @@ contract AaveV3SwapStrategyTest is TestFixture, ForkTestFixture {
         _deal(address(tokenUsdc), address(aaveStrategy), toDeposit);
 
         // - need to deposit into the protocol
-        aaveStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](4);
+        aaveStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
         aaveStrategy.exposed_mint(100);
@@ -176,9 +181,12 @@ contract AaveV3SwapStrategyTest is TestFixture, ForkTestFixture {
         _deal(address(tokenUsdc), address(aaveStrategy), toDeposit);
 
         // - need to deposit into the protocol
-        aaveStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](4);
+        aaveStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         uint256 aTokenBalanceOfStrategyBefore = aaveStrategy.aToken().balanceOf(address(aaveStrategy));
+
+        console.log("aTokenBalanceOfStrategyBefore: %s", aTokenBalanceOfStrategyBefore);
 
         // - yield is gathered over time
         skip(SECONDS_IN_YEAR);
@@ -188,6 +196,7 @@ contract AaveV3SwapStrategyTest is TestFixture, ForkTestFixture {
 
         // assert
         uint256 aTokenBalanceOfStrategyAfter = aaveStrategy.aToken().balanceOf(address(aaveStrategy));
+        console.log("aTokenBalanceOfStrategyAfter: %s", aTokenBalanceOfStrategyAfter);
         uint256 calculatedYield = aTokenBalanceOfStrategyBefore * uint256(yieldPercentage) / YIELD_FULL_PERCENT;
         uint256 expectedYield = aTokenBalanceOfStrategyAfter - aTokenBalanceOfStrategyBefore;
 
@@ -201,14 +210,14 @@ contract AaveV3SwapStrategyTest is TestFixture, ForkTestFixture {
         _deal(address(tokenUsdc), address(aaveStrategy), toDeposit);
 
         // - need to deposit into the protocol
-        aaveStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](4);
+        aaveStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // act
         uint256 usdWorth = aaveStrategy.exposed_getUsdWorth(assetGroupExchangeRates, priceFeedManager);
 
         // assert
-        uint256 diff = 2e15; // .2%
-        assertApproxEqRel(usdWorth, priceFeedManager.assetToUsd(address(tokenUsdc), toDeposit), diff);
+        assertApproxEqRel(usdWorth, priceFeedManager.assetToUsd(address(tokenUsdc), toDeposit), 10 ** 15);
     }
 }
 

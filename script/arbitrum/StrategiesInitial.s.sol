@@ -68,7 +68,7 @@ contract StrategiesInitial {
     function deployAaveV3(StandardContracts memory contracts) public {
         // create implementation contract
         IPoolAddressesProvider provider = IPoolAddressesProvider(
-            constantsJson().getAddress(string.concat(".strategies.", AAVE_V3_KEY, ".lendingPoolAddressesProvider"))
+            constantsJson().getAddress(string.concat(".strategies.", AAVE_V3_KEY, ".poolAddressesProvider"))
         );
 
         AaveV3Strategy implementation = new AaveV3Strategy(
@@ -167,7 +167,7 @@ contract StrategiesInitial {
         address variant = _newProxy(address(implementation), contracts.proxyAdmin);
         uint256 assetGroupId = assetGroups(USDC_KEY);
         CompoundV3SwapStrategy(variant).initialize(variantName, assetGroupId, cToken);
-        _registerStrategyVariant(COMPOUND_V3_KEY, USDC_KEY, variant, assetGroupId, contracts.strategyRegistry);
+        _registerStrategyVariant(COMPOUND_V3_SWAP_KEY, USDC_KEY, variant, assetGroupId, contracts.strategyRegistry);
     }
 
     function deployGammaCamelot(StandardContracts memory contracts) public {
@@ -189,9 +189,7 @@ contract StrategiesInitial {
 
         address variant = _newProxy(address(implementation), contracts.proxyAdmin);
         uint256 assetGroupId = assetGroups(WETH_USDC_KEY);
-        console.log("assetGroupId: %s", assetGroupId);
         GammaCamelotStrategy(variant).initialize(variantName, assetGroupId, hypervisor, nitroPool);
-        console.log("register strategy..");
         _registerStrategyVariant(GAMMA_CAMELOT_KEY, WETH_USDC_KEY, variant, assetGroupId, contracts.strategyRegistry);
     }
 

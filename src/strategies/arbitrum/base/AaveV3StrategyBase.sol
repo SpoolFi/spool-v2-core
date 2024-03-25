@@ -49,10 +49,9 @@ abstract contract AaveV3StrategyBase is Strategy {
             revert InvalidAssetGroup(assetGroupId_);
         }
 
-        aToken = aToken_;
-        _lastNormalizedIncome = pool.getReserveNormalizedIncome(tokens[0]);
-
         underlying = aToken_.UNDERLYING_ASSET_ADDRESS();
+        _lastNormalizedIncome = pool.getReserveNormalizedIncome(underlying);
+        aToken = aToken_;
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {
@@ -86,11 +85,11 @@ abstract contract AaveV3StrategyBase is Strategy {
         }
 
         uint256 aTokenWithdrawAmount = _getATokenBalance() * ssts / totalSupply();
-        _redeemFromProtocolInternal(underlying, aTokenWithdrawAmount, address(this));
+        _redeemFromProtocolInternal(aTokenWithdrawAmount, address(this));
     }
 
     function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal virtual override {
-        _redeemFromProtocolInternal(underlying, _getATokenBalance(), recipient);
+        _redeemFromProtocolInternal(_getATokenBalance(), recipient);
     }
 
     function _compound(address[] calldata, SwapInfo[] calldata, uint256[] calldata)
@@ -119,8 +118,8 @@ abstract contract AaveV3StrategyBase is Strategy {
 
     function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {}
 
-    function _redeemFromProtocolInternal(address token, uint256 amount, address recipient) private {
-        pool.withdraw(token, amount, recipient);
+    function _redeemFromProtocolInternal(uint256 amount, address recipient) private {
+        pool.withdraw(underlying, amount, recipient);
     }
 
     function _getATokenBalance() private view returns (uint256) {

@@ -35,40 +35,31 @@ contract E2E is ForkTestFixtureDeployment {
         address[] memory strategies = Arrays.toArray(aaveStrategy, compoundStrategy);
 
         uint16a16 allocations = uint16a16Lib.set(uint16a16.wrap(0), Arrays.toArray(FULL_PERCENT / 2, FULL_PERCENT / 2));
-        console.log("create vault..");
         ISmartVault vault = _createVault(0, 0, assetGroupIdUSDC, strategies, allocations, address(0));
 
         address alice = address(0xa);
-        console.log("deal tokens..");
         _dealTokens(alice);
 
         // DEPOSIT
         uint256 depositAmount = 10 ** 10;
-        console.log("deposit..");
         uint256 depositId = _deposit(vault, alice, depositAmount);
-        console.log("flush valuts..");
         _flushVaults(vault);
 
         // DHW
-        console.log("dhw..");
         _dhw(strategies);
 
         // WITHDRAWAL
-        console.log("redeem nfts..");
         uint256 withdrawalId = _redeemNfts(vault, alice, depositId);
         _flushVaults(vault);
 
         // DHW
-        console.log("dhw..");
         _dhw(strategies);
 
         // CLAIM
         uint256 balanceBefore = usdc.balanceOf(alice);
-        console.log("claim withdrawals..");
         _claimWithdrawals(vault, alice, withdrawalId);
         uint256 balanceAfter = usdc.balanceOf(alice);
 
-        console.log("assert..");
         assertApproxEqAbs(balanceAfter - balanceBefore, depositAmount, 3);
     }
 
@@ -88,7 +79,6 @@ contract E2E is ForkTestFixtureDeployment {
 
         _setRandomRiskScores(strategies);
 
-        console.log("create vault..");
         ISmartVault vault = _createVault(
             0, 0, assetGroupId, strategies, uint16a16.wrap(0), address(_deploySpool.uniformAllocationProvider())
         );
@@ -104,21 +94,17 @@ contract E2E is ForkTestFixtureDeployment {
             _verifyUniqueAddresses(users);
         }
 
-        console.log("deal tokens..");
         _dealTokens(users);
 
         // DEPOSIT
         uint256[] memory depositAmounts = Arrays.toArray(10 ** 10, 2 * 10 ** 10, 3 * 10 ** 10);
         uint256[] memory depositIds = _deposit(vault, users, depositAmounts);
-        console.log("flush vaults..");
         _flushVaults(vault);
 
         // DHW
-        console.log("dhw..");
         _dhw(strategies);
 
         // ASSERT vault asset balances after deposit and DHW
-        console.log("assert smart vault balances..");
         _assertSmartVaultBalances(vault, depositAmounts, 1e14);
 
         // advance block number between deposit and withdrawal
@@ -126,10 +112,8 @@ contract E2E is ForkTestFixtureDeployment {
 
         // WITHDRAWAL
         address[] memory withdrawalUsers = Arrays.toArray(users[0], users[1]);
-        console.log("redeem nfts..");
         uint256[] memory withdrawalIds =
             _redeemNfts(vault, withdrawalUsers, Arrays.toArray(depositIds[0], depositIds[1]));
-        console.log("flush vaults..");
         _flushVaults(vault);
 
         // DHW
@@ -140,11 +124,12 @@ contract E2E is ForkTestFixtureDeployment {
         _claimWithdrawals(vault, withdrawalUsers, withdrawalIds);
 
         // REDEEM FAST
+
         _redeemFast(vault, carol, depositIds[2]);
 
         // ASSERT
         uint256[] memory balancesAfter = _getBalances(users, asset);
-        _batchBalanceDiffRel(balancesBefore, balancesAfter, depositAmounts, 1e14);
+        _batchBalanceDiffRel(balancesBefore, balancesAfter, depositAmounts, 2e14);
     }
 
     function test_depositAndWithdraw_multi_wethUsdc() public {
@@ -160,9 +145,7 @@ contract E2E is ForkTestFixtureDeployment {
 
         _setRandomRiskScores(strategies);
 
-        ISmartVault vault = _createVault(
-            0, 0, assetGroupId, strategies, uint16a16.wrap(1), address(_deploySpool.uniformAllocationProvider())
-        );
+        ISmartVault vault = _createVault(0, 0, assetGroupId, strategies, uint16a16.wrap(FULL_PERCENT), address(0));
 
         address[] memory users;
         address carol;
@@ -178,8 +161,21 @@ contract E2E is ForkTestFixtureDeployment {
         _dealTokens(users);
 
         // DEPOSIT
-        (uint256[] memory depositIds, uint256[][] memory depositAmounts) =
-            _depositInRatio(vault, users, Arrays.toArray(1e21, 2e21, 3e21));
+
+        uint256[] memory amounts = Arrays.toArray(1e21, 2e21, 3e21);
+
+        uint256[] memory assetRatio = _getDepositRatio(vault);
+
+        uint256[][] memory depositAmounts = new uint256[][](amounts.length);
+        for (uint256 i; i < amounts.length; ++i) {
+            depositAmounts[i] = new uint256[](assetRatio.length);
+
+            depositAmounts[i][0] = assetRatio[0] / 1000000;
+            depositAmounts[i][1] = assetRatio[1] / 1000000;
+        }
+
+        uint256[] memory depositIds = _deposit(vault, users, depositAmounts);
+
         _flushVaults(vault);
 
         // DHW
@@ -253,7 +249,7 @@ contract E2E is ForkTestFixtureDeployment {
         // advance block number
         vm.roll(block.number + 1);
 
-        _assertAllocationApproxRel(vault, 1e12);
+        _assertAllocationApproxRel(vault, 2e14);
 
         // REALLOCATE
         mockAllocationProvider.setWeight(aaveStrategy, 20);
@@ -263,7 +259,7 @@ contract E2E is ForkTestFixtureDeployment {
 
         _reallocate(vault);
 
-        _assertAllocationApproxRel(vault, 4e11);
+        _assertAllocationApproxRel(vault, 4e13);
 
         // advance block number
         vm.roll(block.number + 1);

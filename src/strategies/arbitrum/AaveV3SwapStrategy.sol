@@ -29,7 +29,8 @@ error AaveV3RedeemalSlippagesFailed();
 //   - _redeemFromProtocol: withdrawalSlippages[2]
 // - redeemFast: slippages[0] == 3
 //   - _redeemFromProtocol: slippages[1]
-// NOTE: As with other strategies (eg. Convex-StFrxEth), For emergency withdraw, we withdraw pool token balance directly, so no slippages needed (we are not swapping back to asset group token).
+// NOTE: As with other strategies (eg. Convex-StFrxEth), For emergency withdraw, we withdraw pool token balance
+// directly, so no slippages needed (we are not swapping back to asset group token).
 // Different asset group token and underlying token on the Aave pool.
 contract AaveV3SwapStrategy is AaveV3StrategyBase, AssetGroupSwapHelper {
     constructor(
@@ -124,7 +125,7 @@ contract AaveV3SwapStrategy is AaveV3StrategyBase, AssetGroupSwapHelper {
         uint256 bought = _assetGroupSwap(underlying, tokens[0], amount, slippage);
 
         if (_isViewExecution()) {
-            emit Slippages(true, bought, "");
+            emit Slippages(false, bought, "");
         }
     }
 }
