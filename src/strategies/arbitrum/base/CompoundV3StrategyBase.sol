@@ -74,36 +74,32 @@ abstract contract CompoundV3StrategyBase is Strategy {
 
     function getUnderlyingAssetAmounts() external view returns (uint256[] memory amounts) {
         amounts = new uint256[](1);
-        amounts[0] = cToken.balanceOf(address(this));
+        amounts[0] = _getCTokenBalance();
     }
 
     function beforeDepositCheck(uint256[] memory, uint256[] calldata) public virtual override {}
 
     function beforeRedeemalCheck(uint256, uint256[] calldata) public virtual override {}
 
-    function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
+    function _depositToProtocol(address[] calldata, uint256[] memory amounts, uint256[] calldata)
         internal
         virtual
         override
     {
-        _depositToProtocolInternal(tokens[0], amounts[0]);
+        _depositToProtocolInternal(amounts[0]);
     }
 
     /**
      * @notice Withdraw lp tokens from the Compound market
      */
-    function _redeemFromProtocol(address[] calldata tokens, uint256 ssts, uint256[] calldata)
-        internal
-        virtual
-        override
-    {
+    function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata) internal virtual override {
         if (ssts == 0) {
             return;
         }
 
-        uint256 cTokenWithdrawAmount = (cToken.balanceOf(address(this)) * ssts) / totalSupply();
+        uint256 cTokenWithdrawAmount = (_getCTokenBalance() * ssts) / totalSupply();
 
-        _redeemFromProtocolInternal(tokens[0], cTokenWithdrawAmount);
+        _redeemFromProtocolInternal(cTokenWithdrawAmount);
     }
 
     /**
@@ -111,7 +107,7 @@ abstract contract CompoundV3StrategyBase is Strategy {
      */
     function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
-    function _compound(address[] calldata tokens, SwapInfo[] calldata swapInfo, uint256[] calldata)
+    function _compound(address[] calldata, SwapInfo[] calldata swapInfo, uint256[] calldata)
         internal
         override
         returns (int256 compoundedYieldPercentage)
@@ -128,18 +124,17 @@ abstract contract CompoundV3StrategyBase is Strategy {
                 uint256 swappedAmount = swapper.swap(tokensIn, swapInfo, tokensOut, address(this))[0];
 
                 if (swappedAmount > 0) {
-                    uint256 cTokenBalanceBefore = cToken.balanceOf(address(this));
-                    _depositToProtocolInternal(tokens[0], swappedAmount);
+                    uint256 cTokenBalanceBefore = _getCTokenBalance();
+                    _depositToProtocolInternal(swappedAmount);
 
-                    compoundedYieldPercentage =
-                        _calculateYieldPercentage(cTokenBalanceBefore, cToken.balanceOf(address(this)));
+                    compoundedYieldPercentage = _calculateYieldPercentage(cTokenBalanceBefore, _getCTokenBalance());
                 }
             }
         }
     }
 
     function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
-        _redeemFromProtocolInternal(underlying, cToken.balanceOf(address(this)));
+        _redeemFromProtocolInternal(_getCTokenBalance());
 
         IERC20 token = IERC20(underlying);
 
@@ -159,8 +154,7 @@ abstract contract CompoundV3StrategyBase is Strategy {
         override
         returns (uint256 usdValue)
     {
-        usdValue =
-            priceFeedManager.assetToUsdCustomPrice(assets()[0], cToken.balanceOf(address(this)), exchangeRates[0]);
+        usdValue = priceFeedManager.assetToUsdCustomPrice(assets()[0], _getCTokenBalance(), exchangeRates[0]);
     }
 
     function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {
@@ -173,17 +167,17 @@ abstract contract CompoundV3StrategyBase is Strategy {
         return (tokens, amounts);
     }
 
-    function _depositToProtocolInternal(address token, uint256 amount) private {
+    function _depositToProtocolInternal(uint256 amount) private {
         if (amount > 0) {
-            _resetAndApprove(IERC20(token), address(cToken), amount);
+            _resetAndApprove(IERC20(underlying), address(cToken), amount);
 
-            cToken.supply(token, amount);
+            cToken.supply(underlying, amount);
         }
     }
 
-    function _redeemFromProtocolInternal(address token, uint256 amount) private {
+    function _redeemFromProtocolInternal(uint256 amount) private {
         if (amount > 0) {
-            cToken.withdraw(token, amount);
+            cToken.withdraw(underlying, amount);
         }
     }
 
@@ -195,5 +189,9 @@ abstract contract CompoundV3StrategyBase is Strategy {
 
     function _exchangeRateCurrent() private view returns (uint256) {
         return (cToken.totalSupply() * 1 ether) / cToken.getCollateralReserves(underlying);
+    }
+
+    function _getCTokenBalance() private view returns (uint256) {
+        return cToken.balanceOf(address(this));
     }
 }

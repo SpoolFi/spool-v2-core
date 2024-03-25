@@ -246,6 +246,10 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         depositId = _deposit(vault, user, amounts);
     }
 
+    function _getDepositRatio(ISmartVault vault) internal view returns (uint256[] memory assetRatio) {
+        assetRatio = _smartVaultManager.depositRatio(address(vault));
+    }
+
     function _deposit(ISmartVault vault, address user, uint256[] memory amounts)
         internal
         prank(user)
@@ -554,8 +558,8 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         token.configureMinter(address(this), type(uint256).max);
         token.mint(account, 1e6 * 1e6);
 
-        IWETH9(address(weth)).deposit{value: 1e18 * 1e6}();
-        weth.safeTransfer(address(account), 1e18 * 1e6);
+        IWETH9(address(weth)).deposit{value: 1e6 ether}();
+        weth.safeTransfer(address(account), 1e6 ether);
     }
 
     function _setRiskScores(uint8[] memory risks, address[] memory strategies) internal prank(_riskProvider) {
@@ -670,9 +674,9 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 } else if (Strings.equal(strategyKey, COMPOUND_V3_KEY)) {
                     // continue
                 } else if (Strings.equal(strategyKey, AAVE_V3_SWAP_KEY)) {
-                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
+                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
                 } else if (Strings.equal(strategyKey, COMPOUND_V3_SWAP_KEY)) {
-                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
+                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
                 } else if (Strings.equal(strategyKey, GAMMA_CAMELOT_KEY)) {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
                 } else {
@@ -810,7 +814,6 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 }
 
                 (bool isDeposit, uint256 slippage, bytes memory data) = abi.decode(logs[i].data, (bool, uint256, bytes));
-
                 if (data.length == 0) {
                     strategySlippages[currentSlippageIndex++] = slippage;
                 } else {
@@ -851,9 +854,9 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
             } else if (Strings.equal(strategyKey, COMPOUND_V3_KEY)) {
                 // continue
             } else if (Strings.equal(strategyKey, AAVE_V3_SWAP_KEY)) {
-                // continue
+                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else if (Strings.equal(strategyKey, COMPOUND_V3_SWAP_KEY)) {
-                // continue
+                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else if (Strings.equal(strategyKey, GAMMA_CAMELOT_KEY)) {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else {
@@ -940,11 +943,11 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
             } else if (Strings.equal(strategyKey, COMPOUND_V3_KEY)) {
                 // continue
             } else if (Strings.equal(strategyKey, AAVE_V3_SWAP_KEY)) {
-                // continue
-            } else if (Strings.equal(strategyKey, COMPOUND_V3_SWAP_KEY)) {
-                // continue
-            } else if (Strings.equal(strategyKey, GAMMA_CAMELOT_KEY)) {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
+            } else if (Strings.equal(strategyKey, COMPOUND_V3_SWAP_KEY)) {
+                _setInitialReallocateParamsGeneric(params, i, 3, 3);
+            } else if (Strings.equal(strategyKey, GAMMA_CAMELOT_KEY)) {
+                _setInitialReallocateParamsGeneric(params, i, 4, 4);
             } else {
                 revert(string.concat("_generateReallocateParamBag:: Strategy '", strategyKey, "' not handled."));
             }
@@ -962,9 +965,9 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
             } else if (Strings.equal(strategyKey, COMPOUND_V3_KEY)) {
                 // continue
             } else if (Strings.equal(strategyKey, AAVE_V3_SWAP_KEY)) {
-                // continue
+                _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else if (Strings.equal(strategyKey, COMPOUND_V3_SWAP_KEY)) {
-                // continue
+                _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else if (Strings.equal(strategyKey, GAMMA_CAMELOT_KEY)) {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else {

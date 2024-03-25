@@ -40,7 +40,7 @@ contract CompoundV3SwapStrategy is CompoundV3StrategyBase, AssetGroupSwapHelper 
         ISwapper swapper_,
         IERC20 comp_,
         IRewards rewards_
-    ) CompoundV3StrategyBase(assetGroupRegistry_, accessControl_, swapper_, comp_, rewards) AssetGroupSwapHelper() {}
+    ) CompoundV3StrategyBase(assetGroupRegistry_, accessControl_, swapper_, comp_, rewards_) AssetGroupSwapHelper() {}
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
         if (_isViewExecution()) {
@@ -130,7 +130,7 @@ contract CompoundV3SwapStrategy is CompoundV3StrategyBase, AssetGroupSwapHelper 
         uint256 bought = _assetGroupSwap(underlying, tokens[0], amount, slippage);
 
         if (_isViewExecution()) {
-            emit Slippages(true, bought, "");
+            emit Slippages(false, bought, "");
         }
     }
 }

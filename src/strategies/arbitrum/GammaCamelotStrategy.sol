@@ -13,12 +13,11 @@ import "../../external/interfaces/strategies/arbitrum/gamma-camelot/IXGrail.sol"
 import "../../interfaces/ISwapper.sol";
 import "../../libraries/PackedRange.sol";
 import "../../strategies/Strategy.sol";
-import "forge-std/console.sol";
 
 error GammaCamelotDepositCheckFailed();
 error GammaCamelotRedeemalCheckFailed();
 error GammaCamelotDepositSlippagesFailed();
-error GammaCamelotRedeemSlippagesFailed();
+error GammaCamelotRedeemalSlippagesFailed();
 error GammaCamelotCompoundSlippagesFailed();
 
 // Two assets: WETH/USDC
@@ -48,8 +47,6 @@ error GammaCamelotCompoundSlippagesFailed();
 // - redeemFast or emergencyWithdraw: slippages[0] == 3
 //   - _redeemFromProtocol: slippages[1..2]
 //   - _emergencyWithdrawImpl: slippages[1..2]
-//
-// Description:
 contract GammaCamelotStrategy is Strategy, IERC721Receiver {
     using SafeERC20 for IERC20;
 
@@ -66,7 +63,7 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
     // ID of the position. set to uint256.max when
     // - no position is opened (initially)
     // - we fully remove value from the current NFT, so new one needs to be created.
-    uint256 public nftId = type(uint256).max;
+    uint256 public nftId;
 
     constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, ISwapper swapper_)
         Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID)
@@ -90,11 +87,6 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         address token1 = underlyingPool.token1();
 
         // checks
-        console.log("asset group length: %s", assetGroup.length);
-        console.log("token0: %s", token0);
-        console.log("token1: %s", token1);
-        console.log("assetGroup[0]: %s", assetGroup[0]);
-        console.log("assetGroup[1]: %s", assetGroup[1]);
         if (assetGroup.length != 2 || !(assetGroup[0] == token0) || !(assetGroup[1] == token1)) {
             revert InvalidAssetGroup(assetGroupId());
         }
@@ -112,6 +104,8 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         rewardTokens.push(rewardToken0); // GRAIL
         rewardTokens.push(rewardToken1); // ARB
         xGRAIL = IXGrail(_xGRAIL);
+
+        nftId = type(uint256).max;
     }
 
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
@@ -185,11 +179,6 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         return _getPoolBalance();
     }
 
-    function _getPoolBalance() private view returns (uint256 amount) {
-        // will just return 0 if the nft does not exist.
-        (amount,,,,,,,) = nftPool.getStakingPosition(nftId);
-    }
-
     function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata slippages)
         internal
         override
@@ -220,7 +209,7 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         } else if (slippages[0] == 0 && _isViewExecution()) {
             slippageOffset = 5;
         } else {
-            revert GammaCamelotRedeemSlippagesFailed();
+            revert GammaCamelotRedeemalSlippagesFailed();
         }
 
         uint256 tokenWithdrawAmount = (_getPoolBalance() * ssts) / totalSupply();
@@ -232,7 +221,7 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         if (slippages[0] == 3) {
             slippageOffset = 1;
         } else {
-            revert GammaCamelotRedeemSlippagesFailed();
+            revert GammaCamelotRedeemalSlippagesFailed();
         }
         _redeemFromProtocolInternal(_getPoolBalance(), slippages, slippageOffset);
 
@@ -243,7 +232,7 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         _transferToRecipient(tokens, amounts, recipient);
     }
 
-    function _compound(address[] calldata tokens, SwapInfo[] calldata swapInfo, uint256[] calldata slippages)
+    function _compound(address[] calldata tokens, SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
         internal
         override
         returns (int256 compoundYield)
@@ -255,9 +244,13 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
             revert GammaCamelotCompoundSlippagesFailed();
         }
 
+        if (nftId == type(uint256).max || compoundSwapInfo.length == 0) {
+            return compoundYield;
+        }
+
         _getProtocolRewardsInternal();
 
-        uint256[] memory swapped = swapper.swap(rewardTokens, swapInfo, tokens, address(this));
+        uint256[] memory swapped = swapper.swap(rewardTokens, compoundSwapInfo, tokens, address(this));
 
         uint256 sharesBefore = _getPoolBalance();
         uint256 shares = _depositToProtocolInternal(tokens, swapped, slippages[slippageOffset]);
@@ -268,7 +261,7 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         compoundYield = int256(YIELD_FULL_PERCENT * (_getPoolBalance() - sharesBefore) / sharesBefore);
     }
 
-    function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {}
+    function _getYieldPercentage(int256) internal override returns (int256) {}
 
     function _swapAssets(address[] memory tokens, uint256[] memory amountsIn, SwapInfo[] calldata swapInfo)
         internal
@@ -291,6 +284,9 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         internal
         returns (uint256 shares)
     {
+        if (amounts[0] == 0 && amounts[1] == 0) {
+            return 0;
+        }
         _resetAndApprove(IERC20(tokens[0]), address(pool), amounts[0]);
         _resetAndApprove(IERC20(tokens[1]), address(pool), amounts[1]);
         uint256[4] memory minAmounts;
@@ -356,6 +352,11 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         }
 
         return (rewardTokens, balances);
+    }
+
+    function _getPoolBalance() private view returns (uint256 amount) {
+        // will just return 0 if the nft does not exist.
+        (amount,,,,,,,) = nftPool.getStakingPosition(nftId);
     }
 
     function _getRewards() private {
