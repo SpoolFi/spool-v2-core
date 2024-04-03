@@ -20,4 +20,6 @@ interface IXGrail {
         );
 
     function getUserRedeemsLength(address userAddress) external view returns (uint256);
+
+    function dividendsAddress() external view returns (address);
 }

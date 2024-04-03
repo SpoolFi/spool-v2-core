@@ -11,6 +11,8 @@ contract AaveV3Strategy is AaveV3StrategyBase {
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
-        IPoolAddressesProvider provider_
-    ) AaveV3StrategyBase(assetGroupRegistry_, accessControl_, provider_) {}
+        ISwapper swapper_,
+        IPoolAddressesProvider provider_,
+        IRewardsController incentive_
+    ) AaveV3StrategyBase(assetGroupRegistry_, accessControl_, swapper_, provider_, incentive_) {}
 }

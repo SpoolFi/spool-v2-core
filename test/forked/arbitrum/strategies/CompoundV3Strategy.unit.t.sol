@@ -247,7 +247,6 @@ contract CompoundV3StrategyTest is TestFixture, ForkTestFixture {
         // assert
         uint256 balanceOfStrategyAfter = compoundV3Strategy.cToken().balanceOf(address(compoundV3Strategy));
 
-        // uint256 idleTokenBalanceOfStrategyAfter = idleToken.balanceOf(address(idleStrategy));
         int256 compoundYieldPercentageExpected =
             int256((balanceOfStrategyAfter - balanceOfStrategyBefore) * YIELD_FULL_PERCENT / balanceOfStrategyBefore);
 

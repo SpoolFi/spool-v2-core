@@ -10,6 +10,7 @@ import "../../../../src/strategies/arbitrum/AaveV3Strategy.sol";
 import "../../../external/interfaces/IUSDC.sol";
 import "../../../libraries/Arrays.sol";
 import "../../../libraries/Constants.sol";
+import "../../../mocks/MockExchange.sol";
 import "../../../fixtures/TestFixture.sol";
 import "../../ForkTestFixture.sol";
 import "../../StrategyHarness.sol";
@@ -19,12 +20,17 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
     IERC20Metadata private tokenUsdc;
 
     IPoolAddressesProvider private poolAddressesProvider;
+    IRewardsController private incentive;
 
     AaveV3StrategyHarness private aaveStrategy;
 
     address[] private assetGroup;
     uint256 private assetGroupId;
     uint256[] private assetGroupExchangeRates;
+
+    function setUpForkTestFixtureArbitrum() internal override {
+        mainnetForkId = vm.createFork(vm.rpcUrl("arbitrum"), 197166000);
+    }
 
     function setUp() public {
         setUpForkTestFixtureArbitrum();
@@ -41,13 +47,19 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
         assetGroupExchangeRates = SpoolUtils.getExchangeRates(assetGroup, priceFeedManager);
 
         poolAddressesProvider = IPoolAddressesProvider(AAVE_V3_POOL_ADDRESSES_PROVIDER);
+        incentive = IRewardsController(AAVE_V3_REWARDS_CONTROLLER);
 
         aaveStrategy = new AaveV3StrategyHarness(
             assetGroupRegistry,
             accessControl,
-            poolAddressesProvider
+            swapper,
+            poolAddressesProvider,
+            incentive
         );
         aaveStrategy.initialize("aave-v3-strategy", assetGroupId, IAToken(aUSDC_ARB));
+
+        vm.prank(address(strategyRegistry));
+        accessControl.grantRole(ROLE_STRATEGY, address(aaveStrategy));
     }
 
     function _deal(address token, address to, uint256 amount) private {
@@ -70,8 +82,7 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
     }
 
     function test_getUnderlyingAssetAmounts() public {
-        // - need to deposit into the protocol
-
+        // - arrange
         uint256 toDeposit = 1000 * 10 ** tokenUsdc.decimals();
         _deal(address(tokenUsdc), address(aaveStrategy), toDeposit);
 
@@ -183,6 +194,83 @@ contract AaveV3StrategyTest is TestFixture, ForkTestFixture {
         assertEq(calculatedYield, expectedYield);
     }
 
+    function test_getProtocolRewards() public {
+        // arrange
+        IERC20 arbToken = IERC20(ARB);
+
+        uint256 toDeposit = 1000 * 10 ** tokenUsdc.decimals();
+        _deal(address(tokenUsdc), address(aaveStrategy), toDeposit);
+
+        // - need to deposit into the protocol
+        aaveStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+
+        // yield is gathered over time
+        skip(SECONDS_IN_YEAR);
+
+        // act
+        vm.startPrank(address(0), address(0));
+        (address[] memory rewardAddresses, uint256[] memory rewardAmounts) = aaveStrategy.getProtocolRewards();
+        vm.stopPrank();
+
+        // assert
+        assertEq(rewardAddresses.length, 1);
+        assertEq(rewardAddresses[0], address(arbToken));
+        assertEq(rewardAmounts.length, rewardAddresses.length);
+        assertGt(rewardAmounts[0], 0);
+    }
+
+    function test_compound() public {
+        // arrange
+        IERC20 arbToken = IERC20(ARB);
+
+        priceFeedManager.setExchangeRate(address(arbToken), USD_DECIMALS_MULTIPLIER * 50); // ARB
+
+        MockExchange exchange = new MockExchange(arbToken, tokenUsdc, priceFeedManager);
+
+        deal(
+            address(arbToken), address(exchange), 1_000_000 * 10 ** IERC20Metadata(address(arbToken)).decimals(), false
+        );
+        _deal(address(tokenUsdc), address(exchange), 1_000_000 * 10 ** tokenUsdc.decimals());
+
+        swapper.updateExchangeAllowlist(Arrays.toArray(address(exchange)), Arrays.toArray(true));
+
+        uint256 toDeposit = 100000 * 10 ** tokenUsdc.decimals();
+        _deal(address(tokenUsdc), address(aaveStrategy), toDeposit);
+
+        // - need to deposit into the protocol
+        aaveStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+
+        // yield is gathered over time
+        skip(SECONDS_IN_YEAR);
+
+        uint256 balanceOfStrategyBefore = aaveStrategy.aToken().balanceOf(address(aaveStrategy));
+
+        vm.startPrank(address(0), address(0));
+        (, uint256[] memory rewardAmount) = aaveStrategy.getProtocolRewards();
+
+        // act
+        SwapInfo[] memory compoundSwapInfo = new SwapInfo[](1);
+        compoundSwapInfo[0] = SwapInfo({
+            swapTarget: address(exchange),
+            token: address(arbToken),
+            swapCallData: abi.encodeCall(exchange.swap, (address(arbToken), rewardAmount[0], address(swapper)))
+        });
+
+        uint256[] memory slippages = new uint256[](1);
+        slippages[0] = 1;
+
+        int256 compoundYieldPercentage = aaveStrategy.exposed_compound(assetGroup, compoundSwapInfo, slippages);
+
+        // assert
+        uint256 balanceOfStrategyAfter = aaveStrategy.aToken().balanceOf(address(aaveStrategy));
+
+        int256 compoundYieldPercentageExpected =
+            int256((balanceOfStrategyAfter - balanceOfStrategyBefore) * YIELD_FULL_PERCENT / balanceOfStrategyBefore);
+
+        assertGt(compoundYieldPercentage, 0);
+        assertEq(compoundYieldPercentage, compoundYieldPercentageExpected);
+    }
+
     function test_getUsdWorth() public {
         // arrange
         uint256 toDeposit = 1000 * 10 ** tokenUsdc.decimals();
@@ -204,6 +292,8 @@ contract AaveV3StrategyHarness is AaveV3Strategy, StrategyHarness {
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
-        IPoolAddressesProvider provider_
-    ) AaveV3Strategy(assetGroupRegistry_, accessControl_, provider_) {}
+        ISwapper swapper_,
+        IPoolAddressesProvider provider_,
+        IRewardsController incentive_
+    ) AaveV3Strategy(assetGroupRegistry_, accessControl_, swapper_, provider_, incentive_) {}
 }

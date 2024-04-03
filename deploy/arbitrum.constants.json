@@ -58,11 +58,16 @@
             }
         },
         "gamma-camelot": {
-            "hypervisor": "0xd7Ef5Ac7fd4AAA7994F3bc1D273eAb1d1013530E",
-            "nitroPool": "0x84EDB15BcBf6818879C6FDf26A69700D43100A74",
             "camelotV3Router": "0x1F721E2E82F6676FCE4eA07A5958cF098D339e18",
             "weth-usdc": {
-                "apy": 0
+                "hypervisor": "0xd7Ef5Ac7fd4AAA7994F3bc1D273eAb1d1013530E",
+                "nitroPool": "0x84EDB15BcBf6818879C6FDf26A69700D43100A74",
+                "narrow": {
+                    "apy": 0,
+                    "positiveYieldLimit": 20000000000,
+                    "negativeYieldLimit": -1000000000000,
+                    "extraRewards": false
+                }
             }
         }
     },

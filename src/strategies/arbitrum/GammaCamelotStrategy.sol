@@ -5,14 +5,18 @@ import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/token/ERC721/IERC721Receiver.sol";
 import "../../external/interfaces/strategies/arbitrum/gamma-camelot/IAlgebraPool.sol";
+import "../../external/interfaces/strategies/arbitrum/gamma-camelot/ICamelotPair.sol";
 import "../../external/interfaces/strategies/arbitrum/gamma-camelot/IHypervisor.sol";
 import "../../external/interfaces/strategies/arbitrum/gamma-camelot/INFTPool.sol";
 import "../../external/interfaces/strategies/arbitrum/gamma-camelot/INitroPool.sol";
 import "../../external/interfaces/strategies/arbitrum/gamma-camelot/IUniProxy.sol";
 import "../../external/interfaces/strategies/arbitrum/gamma-camelot/IXGrail.sol";
+
 import "../../interfaces/ISwapper.sol";
 import "../../libraries/PackedRange.sol";
 import "../../strategies/Strategy.sol";
+import "../helpers/StrategyManualYieldVerifier.sol";
+import "../interfaces/helpers/IGammaCamelotRewards.sol";
 
 error GammaCamelotDepositCheckFailed();
 error GammaCamelotRedeemalCheckFailed();
@@ -21,7 +25,9 @@ error GammaCamelotRedeemalSlippagesFailed();
 error GammaCamelotCompoundSlippagesFailed();
 
 // Two assets: WETH/USDC
-// Three rewards: ARB, GRAIL, xGRAIL
+// Two base rewards: ARB, GRAIL
+// see GammaCamelotRewards for extra rewards description.
+//
 // slippages:
 //
 // - mode selection: slippages[0]
@@ -47,17 +53,29 @@ error GammaCamelotCompoundSlippagesFailed();
 // - redeemFast or emergencyWithdraw: slippages[0] == 3
 //   - _redeemFromProtocol: slippages[1..2]
 //   - _emergencyWithdrawImpl: slippages[1..2]
-contract GammaCamelotStrategy is Strategy, IERC721Receiver {
+//
+// Description:
+// This is an ALM (Active Liquidity Management) strategy, where WETH/USDC are deposited into Camelot DEX (Uniswap
+// V3-like DEX) via Gamma protocol.
+//
+// Depositing is done via a Gamma proxy contract, and returns ERC20 shares of the Gamma 'Hypervisor' pool
+// (which manages a global 'base' and 'limit' position on Camelot).
+//
+// Gamma is a whitelisted strategy for Camelot liquidity provision, and so these shares can be used to create
+// Camelot 'spNFTs', on the Camelot NFT Pool. spNFTs earn rewards in the form of GRAIL and xGRAIL (in a 20:80 split),
+// and can be deposited into the Camelot Nitro Pool to earn further rewards in the form of ARB (Arbitrum token).
+//
+// xGRAIL reward management is handled by the GammaCamelotRewards contract (see GammaCamelotRewards.sol for
+// extensive details).
+contract GammaCamelotStrategy is StrategyManualYieldVerifier, Strategy, IERC721Receiver {
     using SafeERC20 for IERC20;
 
     ISwapper public immutable swapper;
     IUniProxy public gammaUniProxy;
     IHypervisor public pool;
-    INFTPool public nftPool; // for $GRAIL rewards
-    INitroPool public nitroPool; // for $ARB rewards
-    IXGrail public xGRAIL; // governance token (for $GRAIL rewards)
-
-    address[] public rewardTokens;
+    INFTPool public nftPool;
+    INitroPool public nitroPool;
+    IGammaCamelotRewards public rewards;
 
     // Pool data
     // ID of the position. set to uint256.max when
@@ -65,18 +83,27 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
     // - we fully remove value from the current NFT, so new one needs to be created.
     uint256 public nftId;
 
-    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, ISwapper swapper_)
-        Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID)
-    {
+    constructor(
+        IAssetGroupRegistry assetGroupRegistry_,
+        ISpoolAccessControl accessControl_,
+        ISwapper swapper_,
+        IGammaCamelotRewards rewards_
+    ) Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID) {
         if (address(swapper_) == address(0)) revert ConfigurationAddressZero();
+        if (address(rewards_) == address(0)) revert ConfigurationAddressZero();
 
         swapper = swapper_;
+        rewards = rewards_;
     }
 
-    function initialize(string memory strategyName_, uint256 assetGroupId_, IHypervisor pool_, INitroPool nitroPool_)
-        external
-        initializer
-    {
+    function initialize(
+        string memory strategyName_,
+        uint256 assetGroupId_,
+        IHypervisor pool_,
+        INitroPool nitroPool_,
+        int128 positiveYieldLimit_,
+        int128 negativeYieldLimit_
+    ) external initializer {
         __Strategy_init(strategyName_, assetGroupId_);
 
         // local variables
@@ -97,15 +124,11 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         nftPool = INFTPool(nitroPool_.nftPool());
         nitroPool = nitroPool_;
 
-        // assign reward and governance tokens
-        (, address rewardToken0, address _xGRAIL,,,,,) = nftPool.getPoolInfo();
-        address rewardToken1 = nitroPool_.rewardsToken1();
-
-        rewardTokens.push(rewardToken0); // GRAIL
-        rewardTokens.push(rewardToken1); // ARB
-        xGRAIL = IXGrail(_xGRAIL);
-
         nftId = type(uint256).max;
+
+        // assign limits
+        _setPositiveYieldLimit(positiveYieldLimit_);
+        _setNegativeYieldLimit(negativeYieldLimit_);
     }
 
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
@@ -248,9 +271,13 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
             return compoundYield;
         }
 
-        _getProtocolRewardsInternal();
+        (address[] memory rewardTokens,) = _getProtocolRewardsInternal();
 
-        uint256[] memory swapped = swapper.swap(rewardTokens, compoundSwapInfo, tokens, address(this));
+        swapper.swap(rewardTokens, compoundSwapInfo, tokens, address(this));
+        // handle getting WETH/USDC rewards
+        uint256[] memory swapped = new uint256[](2);
+        swapped[0] = IERC20(tokens[0]).balanceOf(address(this));
+        swapped[1] = IERC20(tokens[1]).balanceOf(address(this));
 
         uint256 sharesBefore = _getPoolBalance();
         uint256 shares = _depositToProtocolInternal(tokens, swapped, slippages[slippageOffset]);
@@ -261,7 +288,10 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         compoundYield = int256(YIELD_FULL_PERCENT * (_getPoolBalance() - sharesBefore) / sharesBefore);
     }
 
-    function _getYieldPercentage(int256) internal override returns (int256) {}
+    function _getYieldPercentage(int256 manualYield) internal view override returns (int256) {
+        _verifyManualYieldPercentage(manualYield);
+        return manualYield;
+    }
 
     function _swapAssets(address[] memory tokens, uint256[] memory amountsIn, SwapInfo[] calldata swapInfo)
         internal
@@ -290,7 +320,8 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         _resetAndApprove(IERC20(tokens[0]), address(pool), amounts[0]);
         _resetAndApprove(IERC20(tokens[1]), address(pool), amounts[1]);
         uint256[4] memory minAmounts;
-        (shares) = gammaUniProxy.deposit(amounts[0], amounts[1], address(this), address(pool), minAmounts);
+        gammaUniProxy.deposit(amounts[0], amounts[1], address(this), address(pool), minAmounts);
+        shares = pool.balanceOf(address(this));
 
         if (shares < slippage) {
             revert GammaCamelotDepositSlippagesFailed();
@@ -337,7 +368,7 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
     }
 
     function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {
-        _getRewards();
+        address[] memory rewardTokens = _getRewards();
         uint256[] memory balances = new uint256[](rewardTokens.length);
 
         unchecked {
@@ -359,35 +390,16 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         (amount,,,,,,,) = nftPool.getStakingPosition(nftId);
     }
 
-    function _getRewards() private {
+    function _getRewards() private returns (address[] memory rewardTokens) {
         // harvest $ARB rewards
         nitroPool.harvest();
         // must withdraw NFT from Nitro pool to harvest position
         nitroPool.withdraw(nftId);
-        nftPool.harvestPosition(nftId);
+        // harvest to the xGRAIL handler (xGRAIL is non-transferable)
+        nftPool.harvestPositionTo(nftId, address(rewards));
         nftPool.safeTransferFrom(address(this), address(nitroPool), nftId);
-        _handleXGrailRedemption();
-    }
 
-    function _handleXGrailRedemption() private {
-        // redeem any finalized entries first.
-        uint256 redeemsLength = xGRAIL.getUserRedeemsLength(address(this));
-        for (uint256 i = 0; i < redeemsLength;) {
-            (,, uint256 endTime,,) = xGRAIL.getUserRedeem(address(this), i);
-            if (block.timestamp >= endTime) {
-                xGRAIL.finalizeRedeem(i);
-                redeemsLength -= 1;
-            } else {
-                i++;
-            }
-        }
-
-        // add new entry.
-        uint256 xGRAILBalance = IERC20(address(xGRAIL)).balanceOf(address(this));
-        if (xGRAILBalance > 0) {
-            uint256 minRedeemDuration = xGRAIL.minRedeemDuration();
-            xGRAIL.redeem(xGRAILBalance, minRedeemDuration);
-        }
+        rewardTokens = rewards.handle();
     }
 
     function _getTokenWorth() private view returns (uint256[] memory amounts) {

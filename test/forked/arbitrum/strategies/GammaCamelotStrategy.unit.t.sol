@@ -7,6 +7,7 @@ import "../../../../src/external/interfaces/weth/IWETH9.sol";
 import "../../../../src/interfaces/Constants.sol";
 import "../../../../src/libraries/SpoolUtils.sol";
 import "../../../../src/managers/AssetGroupRegistry.sol";
+import "../../../../src/strategies/arbitrum/helpers/GammaCamelotRewards.sol";
 import "../../../../src/strategies/arbitrum/GammaCamelotStrategy.sol";
 import "../../../external/interfaces/IUSDC.sol";
 import "../../../external/interfaces/ISwapRouter.sol";
@@ -33,6 +34,7 @@ contract GammaCamelotStrategyTest is TestFixture, ForkTestFixture {
     ISwapRouter public router;
 
     GammaCamelotStrategyHarness private gammaCamelotStrategy;
+    GammaCamelotRewards private rewards;
 
     address[] private assetGroup;
     uint256 private assetGroupId;
@@ -64,10 +66,12 @@ contract GammaCamelotStrategyTest is TestFixture, ForkTestFixture {
         underlyingPool = IERC20(pool.pool());
         router = ISwapRouter(CAMELOT_V3_ROUTER);
 
+        rewards = new GammaCamelotRewards(accessControl);
         gammaCamelotStrategy = new GammaCamelotStrategyHarness(
             assetGroupRegistry,
             accessControl,
-            swapper
+            swapper,
+            rewards
         );
 
         vm.prank(address(strategyRegistry));
@@ -81,7 +85,15 @@ contract GammaCamelotStrategyTest is TestFixture, ForkTestFixture {
     }
 
     function _initialize() private {
-        gammaCamelotStrategy.initialize("gamma-camelot-strategy", assetGroupId, pool, nitroPool);
+        gammaCamelotStrategy.initialize(
+            "gamma-camelot-strategy",
+            assetGroupId,
+            pool,
+            nitroPool,
+            int128(YIELD_FULL_PERCENT_INT),
+            int128(-YIELD_FULL_PERCENT_INT)
+        );
+        rewards.initialize(pool, nitroPool, gammaCamelotStrategy, true);
     }
 
     function _deal(address token, address to, uint256 amount) private {
@@ -125,7 +137,9 @@ contract GammaCamelotStrategyTest is TestFixture, ForkTestFixture {
         uint256 bad_assetGroupId = assetGroupRegistry.registerAssetGroup(bad_assetGroup);
 
         vm.expectRevert(abi.encodeWithSelector(InvalidAssetGroup.selector, bad_assetGroupId));
-        gammaCamelotStrategy.initialize("gamma-camelot-strategy", bad_assetGroupId, pool, nitroPool);
+        gammaCamelotStrategy.initialize(
+            "gamma-camelot-strategy", bad_assetGroupId, pool, nitroPool, 20000000000, -1000000000000
+        );
     }
 
     function test_assetRatio() public initializer {
@@ -142,8 +156,25 @@ contract GammaCamelotStrategyTest is TestFixture, ForkTestFixture {
     }
 
     function test_getYieldPercentage() public initializer {
-        int256 yieldPercentage = gammaCamelotStrategy.exposed_getYieldPercentage(type(int256).max);
-        assertEq(yieldPercentage, 0);
+        // arrange
+        int128 positiveLimit = int128(YIELD_FULL_PERCENT_INT / 100);
+        int128 negativeLimit = int128(-YIELD_FULL_PERCENT_INT);
+
+        gammaCamelotStrategy.setPositiveYieldLimit(positiveLimit);
+        gammaCamelotStrategy.setNegativeYieldLimit(negativeLimit);
+
+        // act / assert
+        int256 zeroManualYield = 123;
+        int256 yieldPercentage = gammaCamelotStrategy.exposed_getYieldPercentage(zeroManualYield);
+        assertEq(zeroManualYield, yieldPercentage);
+
+        int256 tooBigYield = positiveLimit + 1;
+        vm.expectRevert(abi.encodeWithSelector(ManualYieldTooBig.selector, int256(tooBigYield)));
+        gammaCamelotStrategy.exposed_getYieldPercentage(tooBigYield);
+
+        int256 tooSmallYield = negativeLimit - 1;
+        vm.expectRevert(abi.encodeWithSelector(ManualYieldTooSmall.selector, int256(tooSmallYield)));
+        gammaCamelotStrategy.exposed_getYieldPercentage(tooSmallYield);
     }
 
     function test_depositToProtocol() public initializer {
@@ -267,7 +298,7 @@ contract GammaCamelotStrategyTest is TestFixture, ForkTestFixture {
         address[] memory underlyingTokens = gammaCamelotStrategy.assets();
         MockExchange[] memory exchanges = new MockExchange[](4);
         for (uint256 i = 0; i < exchanges.length; i++) {
-            IERC20Metadata rewardToken = IERC20Metadata(gammaCamelotStrategy.rewardTokens(i / 2));
+            IERC20Metadata rewardToken = IERC20Metadata(rewards.baseRewardTokens(i / 2));
             IERC20Metadata underlyingToken = IERC20Metadata(underlyingTokens[i % 2]);
             exchanges[i] = new MockExchange(rewardToken, underlyingToken, priceFeedManager);
             _deal(address(rewardToken), address(exchanges[i]), 1_000_000 * (10 ** rewardToken.decimals()));
@@ -314,7 +345,7 @@ contract GammaCamelotStrategyTest is TestFixture, ForkTestFixture {
         // act
         SwapInfo[] memory compoundSwapInfo = new SwapInfo[](4);
         for (uint256 i = 0; i < exchanges.length; i++) {
-            address rewardToken = gammaCamelotStrategy.rewardTokens(i / 2);
+            address rewardToken = rewards.baseRewardTokens(i / 2);
             uint256 rewardAmountReceived = rewardAmountsReceived[i];
             compoundSwapInfo[i] = SwapInfo({
                 swapTarget: address(exchanges[i]),
@@ -358,7 +389,10 @@ contract GammaCamelotStrategyTest is TestFixture, ForkTestFixture {
 
 // Exposes protocol-specific functions for unit-testing.
 contract GammaCamelotStrategyHarness is GammaCamelotStrategy, StrategyHarness {
-    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, ISwapper swapper_)
-        GammaCamelotStrategy(assetGroupRegistry_, accessControl_, swapper_)
-    {}
+    constructor(
+        IAssetGroupRegistry assetGroupRegistry_,
+        ISpoolAccessControl accessControl_,
+        ISwapper swapper_,
+        IGammaCamelotRewards rewards_
+    ) GammaCamelotStrategy(assetGroupRegistry_, accessControl_, swapper_, rewards_) {}
 }
