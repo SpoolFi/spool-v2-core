@@ -20,5 +20,13 @@ library ArraysHelper {
         return array;
     }
 
+    function toArray(string memory x1, string memory x2, string memory x3) public pure returns (string[] memory) {
+        string[] memory result = new string[](3);
+        result[0] = x1;
+        result[1] = x2;
+        result[2] = x3;
+        return result;
+    }
+
     function test_mock() external pure {}
 }

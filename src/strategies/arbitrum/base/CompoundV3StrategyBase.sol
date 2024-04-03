@@ -5,7 +5,6 @@ import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/utils/math/Math.sol";
 import "../../../external/interfaces/strategies/arbitrum/compound/v3/IComet.sol";
-import "../../../external/interfaces/strategies/arbitrum/compound/v3/ICToken.sol";
 import "../../../external/interfaces/strategies/arbitrum/compound/v3/IRewards.sol";
 import "../../../interfaces/ISwapper.sol";
 import "../../../strategies/Strategy.sol";
@@ -25,11 +24,11 @@ abstract contract CompoundV3StrategyBase is Strategy {
     /// @notice Compound market
     IComet public cToken;
 
-    // @notice underlying pool token (USDC for aUSDC, USDC.e for aUSDC.e etc)
-    address underlying;
+    /// @notice underlying pool token (USDC for aUSDC, USDC.e for aUSDC.e etc)
+    address public underlying;
 
     /// @notice supply rate at the last DHW.
-    uint256 private _lastExchangeRate;
+    uint256 private _lastBaseSupplyIndex;
 
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
@@ -63,7 +62,7 @@ abstract contract CompoundV3StrategyBase is Strategy {
         underlying = cToken_.baseToken();
 
         cToken = cToken_;
-        _lastExchangeRate = _exchangeRateCurrent();
+        _lastBaseSupplyIndex = _baseSupplyIndexCurrent();
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {
@@ -142,10 +141,10 @@ abstract contract CompoundV3StrategyBase is Strategy {
     }
 
     function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {
-        uint256 exchangeRateCurrent = _exchangeRateCurrent();
+        uint256 baseSupplyIndexCurrent = _baseSupplyIndexCurrent();
 
-        baseYieldPercentage = _calculateYieldPercentage(_lastExchangeRate, exchangeRateCurrent);
-        _lastExchangeRate = exchangeRateCurrent;
+        baseYieldPercentage = _calculateYieldPercentage(_lastBaseSupplyIndex, baseSupplyIndexCurrent);
+        _lastBaseSupplyIndex = baseSupplyIndexCurrent;
     }
 
     function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
@@ -187,8 +186,10 @@ abstract contract CompoundV3StrategyBase is Strategy {
         return comp.balanceOf(address(this));
     }
 
-    function _exchangeRateCurrent() private view returns (uint256) {
-        return (cToken.totalSupply() * 1 ether) / cToken.getCollateralReserves(underlying);
+    /// @notice accrueAccount only needed to bump baseSupplyIndex (via accrueInternal()) on the Comet contract.
+    function _baseSupplyIndexCurrent() private returns (uint256) {
+        cToken.accrueAccount(address(this));
+        return cToken.totalsBasic().baseSupplyIndex;
     }
 
     function _getCTokenBalance() private view returns (uint256) {

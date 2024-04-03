@@ -20,6 +20,7 @@ contract AaveV3SwapStrategyTest is TestFixture, ForkTestFixture {
     IERC20Metadata private tokenUsdce;
 
     IPoolAddressesProvider private poolAddressesProvider;
+    IRewardsController private incentive;
 
     AaveV3SwapStrategyHarness private aaveStrategy;
 
@@ -41,15 +42,16 @@ contract AaveV3SwapStrategyTest is TestFixture, ForkTestFixture {
         assetGroupRegistry.allowTokenBatch(assetGroup);
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         assetGroupExchangeRates = SpoolUtils.getExchangeRates(assetGroup, priceFeedManager);
-        console.log("assetGroupExchangeRates[0]", assetGroupExchangeRates[0]);
 
         poolAddressesProvider = IPoolAddressesProvider(AAVE_V3_POOL_ADDRESSES_PROVIDER);
+        incentive = IRewardsController(AAVE_V3_REWARDS_CONTROLLER);
 
         aaveStrategy = new AaveV3SwapStrategyHarness(
             assetGroupRegistry,
             accessControl,
             swapper,
-            poolAddressesProvider
+            poolAddressesProvider,
+            incentive
         );
         aaveStrategy.initialize("aave-v3-strategy", assetGroupId, IAToken(aUSDCE_ARB));
     }
@@ -186,8 +188,6 @@ contract AaveV3SwapStrategyTest is TestFixture, ForkTestFixture {
 
         uint256 aTokenBalanceOfStrategyBefore = aaveStrategy.aToken().balanceOf(address(aaveStrategy));
 
-        console.log("aTokenBalanceOfStrategyBefore: %s", aTokenBalanceOfStrategyBefore);
-
         // - yield is gathered over time
         skip(SECONDS_IN_YEAR);
 
@@ -196,7 +196,6 @@ contract AaveV3SwapStrategyTest is TestFixture, ForkTestFixture {
 
         // assert
         uint256 aTokenBalanceOfStrategyAfter = aaveStrategy.aToken().balanceOf(address(aaveStrategy));
-        console.log("aTokenBalanceOfStrategyAfter: %s", aTokenBalanceOfStrategyAfter);
         uint256 calculatedYield = aTokenBalanceOfStrategyBefore * uint256(yieldPercentage) / YIELD_FULL_PERCENT;
         uint256 expectedYield = aTokenBalanceOfStrategyAfter - aTokenBalanceOfStrategyBefore;
 
@@ -227,6 +226,7 @@ contract AaveV3SwapStrategyHarness is AaveV3SwapStrategy, StrategyHarness {
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         ISwapper swapper_,
-        IPoolAddressesProvider provider_
-    ) AaveV3SwapStrategy(assetGroupRegistry_, accessControl_, swapper_, provider_) {}
+        IPoolAddressesProvider provider_,
+        IRewardsController incentive_
+    ) AaveV3SwapStrategy(assetGroupRegistry_, accessControl_, swapper_, provider_, incentive_) {}
 }

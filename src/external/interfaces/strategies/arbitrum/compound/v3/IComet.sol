@@ -49,6 +49,7 @@ library CometStructs {
 }
 
 interface IComet {
+    function accrueAccount(address) external;
     function balanceOf(address) external view returns (uint256);
     function baseScale() external view returns (uint256);
     function supply(address asset, uint256 amount) external;

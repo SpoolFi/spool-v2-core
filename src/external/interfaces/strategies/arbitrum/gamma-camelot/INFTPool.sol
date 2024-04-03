@@ -40,7 +40,7 @@ interface INFTPool {
 
     function withdrawFromPosition(uint256 tokenId, uint256 amountToWithdraw) external;
 
-    function harvestPosition(uint256 tokenId) external;
+    function harvestPositionTo(uint256 tokenId, address to) external;
 
     function lastTokenId() external view returns (uint256);
 

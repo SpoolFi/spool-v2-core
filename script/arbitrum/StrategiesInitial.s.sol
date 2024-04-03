@@ -9,7 +9,9 @@ import "../../src/strategies/arbitrum/AaveV3SwapStrategy.sol";
 import "../../src/strategies/arbitrum/CompoundV3Strategy.sol";
 import "../../src/strategies/arbitrum/CompoundV3SwapStrategy.sol";
 import "../../src/strategies/arbitrum/GammaCamelotStrategy.sol";
+import "../../src/strategies/arbitrum/helpers/GammaCamelotRewards.sol";
 import "../helper/JsonHelper.sol";
+import "../helper/ArraysHelper.sol";
 import "./AssetsInitial.s.sol";
 
 string constant AAVE_V3_KEY = "aave-v3";
@@ -24,6 +26,16 @@ struct StandardContracts {
     ISwapper swapper;
     address proxyAdmin;
     IStrategyRegistry strategyRegistry;
+}
+
+struct GammaCamelotData {
+    IHypervisor hypervisor;
+    INitroPool nitroPool;
+    bool extraRewards;
+    int128 positiveYieldLimit;
+    int128 negativeYieldLimit;
+    uint256 assetGroupId;
+    int256 apy;
 }
 
 contract StrategiesInitial {
@@ -71,10 +83,16 @@ contract StrategiesInitial {
             constantsJson().getAddress(string.concat(".strategies.", AAVE_V3_KEY, ".poolAddressesProvider"))
         );
 
+        IRewardsController incentive = IRewardsController(
+            constantsJson().getAddress(string.concat(".strategies.", AAVE_V3_KEY, ".rewardsController"))
+        );
+
         AaveV3Strategy implementation = new AaveV3Strategy(
             contracts.assetGroupRegistry,
             contracts.accessControl,
-            provider
+            contracts.swapper,
+            provider,
+            incentive
         );
 
         contractsJson().addVariantStrategyImplementation(AAVE_V3_KEY, address(implementation));
@@ -96,11 +114,16 @@ contract StrategiesInitial {
             constantsJson().getAddress(string.concat(".strategies.", AAVE_V3_KEY, ".poolAddressesProvider"))
         );
 
+        IRewardsController incentive = IRewardsController(
+            constantsJson().getAddress(string.concat(".strategies.", AAVE_V3_KEY, ".rewardsController"))
+        );
+
         AaveV3SwapStrategy implementation = new AaveV3SwapStrategy(
             contracts.assetGroupRegistry,
             contracts.accessControl,
             contracts.swapper,
-            provider
+            provider,
+            incentive
         );
 
         contractsJson().addVariantStrategyImplementation(AAVE_V3_SWAP_KEY, address(implementation));
@@ -171,26 +194,75 @@ contract StrategiesInitial {
     }
 
     function deployGammaCamelot(StandardContracts memory contracts) public {
+        _deployGammaCamelot(contracts, ArraysHelper.toArray(WETH_KEY, USDC_KEY, "narrow"));
+    }
+
+    function _deployGammaCamelot(StandardContracts memory contracts, string[] memory poolKeySplit) private {
+        // create
+        GammaCamelotRewards rewards = new GammaCamelotRewards(contracts.accessControl);
         GammaCamelotStrategy implementation = new GammaCamelotStrategy(
             contracts.assetGroupRegistry,
             contracts.accessControl,
-            contracts.swapper
+            contracts.swapper,
+            rewards
         );
 
-        contractsJson().addVariantStrategyImplementation(GAMMA_CAMELOT_KEY, address(implementation));
+        // get data
+        string memory key = _getVariantName(poolKeySplit);
+        string memory variantName = _getVariantName(GAMMA_CAMELOT_KEY, key);
+        GammaCamelotData memory data = _getGammaCamelotData(poolKeySplit);
 
-        string memory variantName = _getVariantName(GAMMA_CAMELOT_KEY, WETH_USDC_KEY);
-
-        IHypervisor hypervisor =
-            IHypervisor(constantsJson().getAddress(string.concat(".strategies.", GAMMA_CAMELOT_KEY, ".hypervisor")));
-
-        INitroPool nitroPool =
-            INitroPool(constantsJson().getAddress(string.concat(".strategies.", GAMMA_CAMELOT_KEY, ".nitroPool")));
-
+        // initialize
         address variant = _newProxy(address(implementation), contracts.proxyAdmin);
-        uint256 assetGroupId = assetGroups(WETH_USDC_KEY);
-        GammaCamelotStrategy(variant).initialize(variantName, assetGroupId, hypervisor, nitroPool);
-        _registerStrategyVariant(GAMMA_CAMELOT_KEY, WETH_USDC_KEY, variant, assetGroupId, contracts.strategyRegistry);
+        rewards.initialize(data.hypervisor, data.nitroPool, IStrategy(variant), data.extraRewards);
+        GammaCamelotStrategy(variant).initialize(
+            variantName,
+            data.assetGroupId,
+            data.hypervisor,
+            data.nitroPool,
+            data.positiveYieldLimit,
+            data.negativeYieldLimit
+        );
+
+        // add to json file and register
+        contractsJson().addVariantStrategyImplementation(GAMMA_CAMELOT_KEY, address(implementation));
+        _registerStrategyVariant(
+            GAMMA_CAMELOT_KEY, key, variant, data.assetGroupId, data.apy, contracts.strategyRegistry
+        );
+    }
+
+    function _getGammaCamelotData(string[] memory poolKeySplit) private view returns (GammaCamelotData memory data) {
+        string memory poolKey = _getVariantName(poolKeySplit[0], poolKeySplit[1]);
+        string memory rangeKey = poolKeySplit[2];
+
+        data.hypervisor = IHypervisor(
+            constantsJson().getAddress(string.concat(".strategies.", GAMMA_CAMELOT_KEY, ".", poolKey, ".hypervisor"))
+        );
+
+        data.nitroPool = INitroPool(
+            constantsJson().getAddress(string.concat(".strategies.", GAMMA_CAMELOT_KEY, ".", poolKey, ".nitroPool"))
+        );
+
+        data.extraRewards = constantsJson().getBool(
+            string.concat(".strategies.", GAMMA_CAMELOT_KEY, ".", poolKey, ".", rangeKey, ".extraRewards")
+        );
+
+        data.positiveYieldLimit = SafeCast.toInt128(
+            constantsJson().getInt256(
+                string.concat(".strategies.", GAMMA_CAMELOT_KEY, ".", poolKey, ".", rangeKey, ".positiveYieldLimit")
+            )
+        );
+
+        data.negativeYieldLimit = SafeCast.toInt128(
+            constantsJson().getInt256(
+                string.concat(".strategies.", GAMMA_CAMELOT_KEY, ".", poolKey, ".", rangeKey, ".negativeYieldLimit")
+            )
+        );
+
+        data.apy = constantsJson().getInt256(
+            string.concat(".strategies.", GAMMA_CAMELOT_KEY, ".", poolKey, ".", rangeKey, ".apy")
+        );
+        data.assetGroupId = assetGroups(poolKey);
     }
 
     function _newProxy(address implementation, address proxyAdmin) private returns (address) {
@@ -232,12 +304,36 @@ contract StrategiesInitial {
         contractsJson().addVariantStrategyVariant(strategyKey, variantName, variant);
     }
 
+    function _registerStrategyVariant(
+        string memory strategyKey,
+        string memory variantKey,
+        address variant,
+        uint256 assetGroupId,
+        int256 apy,
+        IStrategyRegistry strategyRegistry
+    ) private {
+        string memory variantName = _getVariantName(strategyKey, variantKey);
+
+        strategyRegistry.registerStrategy(variant, apy);
+
+        strategies[strategyKey][assetGroupId] = variant;
+        addressToStrategyKey[variant] = strategyKey;
+        contractsJson().addVariantStrategyVariant(strategyKey, variantName, variant);
+    }
+
     function _getVariantName(string memory strategyKey, string memory variantKey)
         private
         pure
         returns (string memory)
     {
         return string.concat(strategyKey, "-", variantKey);
+    }
+
+    function _getVariantName(string[] memory assetNames) private pure returns (string memory key) {
+        key = assetNames[0];
+        for (uint256 i = 1; i < assetNames.length; ++i) {
+            key = string.concat(key, "-", assetNames[i]);
+        }
     }
 
     function test_mock_StrategiesInitial() external pure {}

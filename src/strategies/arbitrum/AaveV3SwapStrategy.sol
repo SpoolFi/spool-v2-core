@@ -37,8 +37,9 @@ contract AaveV3SwapStrategy is AaveV3StrategyBase, AssetGroupSwapHelper {
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         ISwapper swapper_,
-        IPoolAddressesProvider provider_
-    ) AaveV3StrategyBase(assetGroupRegistry_, accessControl_, provider_) AssetGroupSwapHelper() {}
+        IPoolAddressesProvider provider_,
+        IRewardsController incentive_
+    ) AaveV3StrategyBase(assetGroupRegistry_, accessControl_, swapper_, provider_, incentive_) AssetGroupSwapHelper() {}
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
         if (_isViewExecution()) {
