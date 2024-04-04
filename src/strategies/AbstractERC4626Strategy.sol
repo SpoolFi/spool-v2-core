@@ -2,18 +2,11 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/interfaces/IERC4626.sol";
-import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import "../strategies/Strategy.sol";
 import "./AbstractERC4626Module.sol";
 
-import "forge-std/console.sol";
-
-abstract contract AbstractERC4626Strategy is
-    Strategy,
-    AbstractERC4626Module,
-    UUPSUpgradeable
-{
+abstract contract AbstractERC4626Strategy is Strategy, AbstractERC4626Module {
     using SafeERC20 for IERC20;
 
     /// @custom:storage-location erc7201:spool.storage.ERC4626Strategy
@@ -31,36 +24,27 @@ abstract contract AbstractERC4626Strategy is
     /// @notice precision for yield calculation
     uint256 private immutable _mantissa;
 
-    constructor(
-        IAssetGroupRegistry assetGroupRegistry_,
-        ISpoolAccessControl accessControl_,
-        IERC4626 vault_
-    ) Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID) {
+    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, IERC4626 vault_)
+        Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID)
+    {
         vault = vault_;
         _mantissa = 10 ** (vault.decimals() * 2);
     }
 
-    function _getERC4626StrategyStorage()
-        private
-        pure
-        returns (ERC4626StrategyStorage storage $)
-    {
+    function _getERC4626StrategyStorage() private pure returns (ERC4626StrategyStorage storage $) {
         assembly {
             $.slot := ERC4626StrategyStorageLocation
         }
     }
 
-    function __ERC4626Strategy_init(
-        string memory strategyName_,
-        uint256 assetGroupId_
-    ) internal onlyInitializing {
+    function __ERC4626Strategy_init(string memory strategyName_, uint256 assetGroupId_) internal onlyInitializing {
         __ERC4626Strategy_init_unchained(strategyName_, assetGroupId_);
     }
 
-    function __ERC4626Strategy_init_unchained(
-        string memory strategyName_,
-        uint256 assetGroupId_
-    ) internal onlyInitializing {
+    function __ERC4626Strategy_init_unchained(string memory strategyName_, uint256 assetGroupId_)
+        internal
+        onlyInitializing
+    {
         __Strategy_init(strategyName_, assetGroupId_);
         address[] memory tokens = assets();
         if (tokens.length != 1 || tokens[0] != vault.asset()) {
@@ -68,9 +52,7 @@ abstract contract AbstractERC4626Strategy is
         }
 
         ERC4626StrategyStorage storage $ = _getERC4626StrategyStorage();
-        $._lastExchangeRate =
-            (_mantissa * vault.totalAssets()) /
-            vault.totalSupply();
+        $._lastExchangeRate = (_mantissa * vault.totalAssets()) / vault.totalSupply();
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {
@@ -79,26 +61,16 @@ abstract contract AbstractERC4626Strategy is
         return _assetRatio;
     }
 
-    function getUnderlyingAssetAmounts()
-        external
-        view
-        returns (uint256[] memory amounts)
-    {
+    function getUnderlyingAssetAmounts() external view returns (uint256[] memory amounts) {
         amounts = new uint256[](1);
         amounts[0] = _underlyingAssetAmount();
     }
 
-    function beforeDepositCheck(
-        uint256[] memory amounts,
-        uint256[] calldata slippages
-    ) public override {
+    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
         beforeDepositCheck_(amounts, slippages);
     }
 
-    function beforeRedeemalCheck(
-        uint256 ssts,
-        uint256[] calldata slippages
-    ) public override {
+    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public override {
         beforeRedeemalCheck_(ssts, slippages);
     }
 
@@ -106,33 +78,26 @@ abstract contract AbstractERC4626Strategy is
         return vault.previewRedeem(vaultShareBalance_());
     }
 
-    function _getYieldPercentage(
-        int256
-    ) internal override returns (int256 baseYieldPercentage) {
-        uint256 exchangeRateCurrent = (_mantissa * vault.totalAssets()) /
-            vault.totalSupply();
+    function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {
+        uint256 exchangeRateCurrent = (_mantissa * vault.totalAssets()) / vault.totalSupply();
 
         ERC4626StrategyStorage storage $ = _getERC4626StrategyStorage();
-        baseYieldPercentage = _calculateYieldPercentage(
-            $._lastExchangeRate,
-            exchangeRateCurrent
-        );
+        baseYieldPercentage = _calculateYieldPercentage($._lastExchangeRate, exchangeRateCurrent);
         $._lastExchangeRate = exchangeRateCurrent;
     }
 
-    function _compound(
-        address[] calldata tokens,
-        SwapInfo[] calldata compoundSwapInfo,
-        uint256[] calldata slippages
-    ) internal override returns (int256 compoundYield) {
+    function _compound(address[] calldata tokens, SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
+        internal
+        override
+        returns (int256 compoundYield)
+    {
         return compound_(tokens, compoundSwapInfo, slippages);
     }
 
-    function _depositToProtocol(
-        address[] calldata tokens,
-        uint256[] memory amounts,
-        uint256[] calldata
-    ) internal override {
+    function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
+        internal
+        override
+    {
         _depositToProtocolInternal(IERC20(tokens[0]), amounts[0]);
     }
 
@@ -144,38 +109,26 @@ abstract contract AbstractERC4626Strategy is
         }
     }
 
-    function _redeemFromProtocol(
-        address[] calldata,
-        uint256 ssts,
-        uint256[] calldata
-    ) internal override {
-        uint256 dTokenWithdrawAmount = (vaultShareBalance_() * ssts) /
-            totalSupply();
+    function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata) internal override {
+        uint256 dTokenWithdrawAmount = (vaultShareBalance_() * ssts) / totalSupply();
         _redeemFromProtocolInternal(dTokenWithdrawAmount);
     }
 
-    function _emergencyWithdrawImpl(
-        uint256[] calldata,
-        address recipient
-    ) internal override {
+    function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
         withdraw_();
         vault.redeem(vault.balanceOf(address(this)), recipient, address(this));
     }
 
-    function _getUsdWorth(
-        uint256[] memory exchangeRates,
-        IUsdPriceFeedManager priceFeedManager
-    ) internal view override returns (uint256 usdValue) {
+    function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
+        internal
+        view
+        override
+        returns (uint256 usdValue)
+    {
         uint256 assetAmount = _underlyingAssetAmount();
         if (assetAmount > 0) {
-            address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(
-                assetGroupId()
-            );
-            usdValue = priceFeedManager.assetToUsdCustomPrice(
-                assetGroup[0],
-                assetAmount,
-                exchangeRates[0]
-            );
+            address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId());
+            usdValue = priceFeedManager.assetToUsdCustomPrice(assetGroup[0], assetAmount, exchangeRates[0]);
         }
     }
 
@@ -186,11 +139,7 @@ abstract contract AbstractERC4626Strategy is
         }
     }
 
-    function _getProtocolRewardsInternal()
-        internal
-        override
-        returns (address[] memory, uint256[] memory)
-    {
+    function _getProtocolRewardsInternal() internal override returns (address[] memory, uint256[] memory) {
         address[] memory tokens = new address[](1);
         uint256[] memory amounts = new uint256[](1);
 
@@ -199,70 +148,9 @@ abstract contract AbstractERC4626Strategy is
         return (tokens, amounts);
     }
 
-    function _swapAssets(
-        address[] memory,
-        uint256[] memory,
-        SwapInfo[] calldata
-    ) internal override {}
+    function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
-    function vaultShareBalance_()
-        internal
-        view
-        virtual
-        override
-        returns (uint256)
-    {
+    function vaultShareBalance_() internal view virtual override returns (uint256) {
         return vault.balanceOf(address(this));
     }
-
-    /// @notice Upgrade functionality
-    // only Spool admin can update this kind of strategy
-    // there are new functions upgradeToWithModuleExchange and upgradeToAndCallWithModuleExchange
-    // which will withdraw vault shares from secondary protocol and after successful upgrade deposit those in a new one
-
-    modifier withModuleExchange() {
-        withdraw_();
-        _;
-    }
-
-    /// @notice deposit during upgradeToWithModuleExchange
-    function onUpgrade(bytes calldata data) external onlyProxy {
-        if (data.length > 0) {
-            (bool success, bytes memory returndata) = address(this)
-                .delegatecall(data);
-            AddressUpgradeable.verifyCallResult(
-                success,
-                returndata,
-                "Address: low-level delegate call failed"
-            );
-        }
-        deposit_();
-    }
-
-    function upgradeToWithModuleExchange(
-        address newImplementation
-    ) external onlyProxy withModuleExchange {
-        _authorizeUpgrade(newImplementation);
-        _upgradeToAndCallUUPS(
-            newImplementation,
-            abi.encodeWithSignature("onUpgrade(bytes)", ""),
-            true
-        );
-    }
-
-    function upgradeToAndCallWithModuleExchange(
-        address newImplementation,
-        bytes calldata data
-    ) external payable onlyProxy withModuleExchange {
-        _authorizeUpgrade(newImplementation);
-        _upgradeToAndCallUUPS(
-            newImplementation,
-            abi.encodeWithSignature("onUpgrade(bytes)", data),
-            true
-        );
-    }
-
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyRole(ROLE_SPOOL_ADMIN, msg.sender) {}
 }

@@ -35,10 +35,7 @@ contract GearboxV3ERC4626 is AbstractERC4626Strategy {
         sdToken = sdToken_;
     }
 
-    function initialize(
-        string memory strategyName_,
-        uint256 assetGroupId_
-    ) external initializer {
+    function initialize(string memory strategyName_, uint256 assetGroupId_) external initializer {
         __ERC4626Strategy_init(strategyName_, assetGroupId_);
     }
 
@@ -46,19 +43,13 @@ contract GearboxV3ERC4626 is AbstractERC4626Strategy {
         return sdToken.balanceOf(address(this));
     }
 
-    function beforeDepositCheck_(
-        uint256[] memory,
-        uint256[] calldata
-    ) internal view override {
+    function beforeDepositCheck_(uint256[] memory, uint256[] calldata) internal view override {
         if (sdToken.balanceOf(address(this)) > _MAX_BALANCE) {
             revert GearboxV3BeforeDepositCheckFailed();
         }
     }
 
-    function beforeRedeemalCheck_(
-        uint256 ssts,
-        uint256[] calldata slippages
-    ) internal view override {}
+    function beforeRedeemalCheck_(uint256 ssts, uint256[] calldata slippages) internal view override {}
 
     function deposit_() internal override {
         deposit_(vault.balanceOf(address(this)));
@@ -78,11 +69,11 @@ contract GearboxV3ERC4626 is AbstractERC4626Strategy {
         sdToken.withdraw(sharesToGet);
     }
 
-    function compound_(
-        address[] calldata tokens,
-        SwapInfo[] calldata swapInfo,
-        uint256[] calldata
-    ) internal override returns (int256 compoundedYieldPercentage) {
+    function compound_(address[] calldata tokens, SwapInfo[] calldata swapInfo, uint256[] calldata)
+        internal
+        override
+        returns (int256 compoundedYieldPercentage)
+    {
         if (swapInfo.length > 0) {
             uint256 gearBalance = _claimReward();
 
@@ -90,25 +81,13 @@ contract GearboxV3ERC4626 is AbstractERC4626Strategy {
                 gear.safeTransfer(address(swapper), gearBalance);
                 address[] memory tokensIn = new address[](1);
                 tokensIn[0] = address(gear);
-                uint256 swappedAmount = swapper.swap(
-                    tokensIn,
-                    swapInfo,
-                    tokens,
-                    address(this)
-                )[0];
+                uint256 swappedAmount = swapper.swap(tokensIn, swapInfo, tokens, address(this))[0];
 
                 if (swappedAmount > 0) {
-                    uint256 sdTokenBalanceBefore = sdToken.balanceOf(
-                        address(this)
-                    );
-                    _depositToProtocolInternal(
-                        IERC20(tokens[0]),
-                        swappedAmount
-                    );
-                    compoundedYieldPercentage = _calculateYieldPercentage(
-                        sdTokenBalanceBefore,
-                        sdToken.balanceOf(address(this))
-                    );
+                    uint256 sdTokenBalanceBefore = sdToken.balanceOf(address(this));
+                    _depositToProtocolInternal(IERC20(tokens[0]), swappedAmount);
+                    compoundedYieldPercentage =
+                        _calculateYieldPercentage(sdTokenBalanceBefore, sdToken.balanceOf(address(this)));
                 }
             }
         }
