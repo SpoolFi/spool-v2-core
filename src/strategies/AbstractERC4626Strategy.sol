@@ -9,6 +9,9 @@ import "./AbstractERC4626Module.sol";
 abstract contract AbstractERC4626Strategy is Strategy, AbstractERC4626Module {
     using SafeERC20 for IERC20;
 
+    error BeforeDepositCheck();
+    error BeforeRedeemalCheck();
+
     /// @custom:storage-location erc7201:spool.storage.ERC4626Strategy
     struct ERC4626StrategyStorage {
         /// @notice exchangeRate at the last DHW.
@@ -67,11 +70,29 @@ abstract contract AbstractERC4626Strategy is Strategy, AbstractERC4626Module {
     }
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
-        beforeDepositCheck_(amounts, slippages);
+        // TODO: not sure it is necessary
+        uint256 maxDeposit = vault.maxDeposit(address(this));
+        if (maxDeposit < amounts[0]) revert BeforeDepositCheck();
+        uint256 shares = vault.previewDeposit(amounts[0]);
+        beforeDepositCheck_(amounts[0], slippages[0], shares);
+
+        // TODO: should we put something like that too?
+        // if (slippages[0] > 2) {
+        //     revert SfrxEthHoldingBeforeDepositCheckFailed();
+        // }
+
+        // if (!PackedRange.isWithinRange(slippages[1], amounts[0])) {
+        //     revert SfrxEthHoldingBeforeDepositCheckFailed();
+        // }
     }
 
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public override {
-        beforeRedeemalCheck_(ssts, slippages);
+        // TODO: not sure it is necessary
+        uint256 maxRedeem = vault.maxRedeem(address(this));
+        uint256 shares = previewRedeemSsts_(ssts);
+        if (maxRedeem < shares) revert BeforeRedeemalCheck();
+        // TODO: not sure it is necessary
+        beforeRedeemalCheck_(ssts, slippages[0], 0);
     }
 
     function _underlyingAssetAmount() internal view returns (uint256) {
@@ -79,7 +100,10 @@ abstract contract AbstractERC4626Strategy is Strategy, AbstractERC4626Module {
     }
 
     function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {
-        uint256 exchangeRateCurrent = (_mantissa * vault.totalAssets()) / vault.totalSupply();
+        // We should account for possible reward gains for shares as well
+        // e.g. Share token is deposited into another yield generating vault
+        uint256 shares = vaultShareBalance_();
+        uint256 exchangeRateCurrent = (_mantissa * vault.previewRedeem(shares)) / shares;
 
         ERC4626StrategyStorage storage $ = _getERC4626StrategyStorage();
         baseYieldPercentage = _calculateYieldPercentage($._lastExchangeRate, exchangeRateCurrent);
@@ -110,12 +134,12 @@ abstract contract AbstractERC4626Strategy is Strategy, AbstractERC4626Module {
     }
 
     function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata) internal override {
-        uint256 dTokenWithdrawAmount = (vaultShareBalance_() * ssts) / totalSupply();
-        _redeemFromProtocolInternal(dTokenWithdrawAmount);
+        uint256 shares = previewRedeemSsts_(ssts);
+        _redeemFromProtocolInternal(shares);
     }
 
     function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
-        withdraw_();
+        redeem_();
         vault.redeem(vault.balanceOf(address(this)), recipient, address(this));
     }
 
@@ -132,9 +156,10 @@ abstract contract AbstractERC4626Strategy is Strategy, AbstractERC4626Module {
         }
     }
 
-    function _redeemFromProtocolInternal(uint256 shares) internal {
-        if (shares > 0) {
-            withdraw_(shares);
+    function _redeemFromProtocolInternal(uint256 shares_) internal {
+        if (shares_ > 0) {
+            // shares is equal shares_ in case there is no rewards
+            uint256 shares = redeem_(shares_);
             vault.redeem(shares, address(this), address(this));
         }
     }
@@ -149,8 +174,4 @@ abstract contract AbstractERC4626Strategy is Strategy, AbstractERC4626Module {
     }
 
     function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
-
-    function vaultShareBalance_() internal view virtual override returns (uint256) {
-        return vault.balanceOf(address(this));
-    }
 }

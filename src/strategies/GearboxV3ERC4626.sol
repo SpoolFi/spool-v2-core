@@ -43,30 +43,36 @@ contract GearboxV3ERC4626 is AbstractERC4626Strategy {
         return sdToken.balanceOf(address(this));
     }
 
-    function beforeDepositCheck_(uint256[] memory, uint256[] calldata) internal view override {
+    function previewRedeemSsts_(uint256 ssts) internal view override returns (uint256) {
+        return (sdToken.balanceOf(address(this)) * ssts) / totalSupply();
+    }
+
+    function beforeDepositCheck_(uint256, uint256, uint256) internal view override {
         if (sdToken.balanceOf(address(this)) > _MAX_BALANCE) {
             revert GearboxV3BeforeDepositCheckFailed();
         }
     }
 
-    function beforeRedeemalCheck_(uint256 ssts, uint256[] calldata slippages) internal view override {}
+    function beforeRedeemalCheck_(uint256, uint256, uint256) internal view override {}
 
     function deposit_() internal override {
         deposit_(vault.balanceOf(address(this)));
     }
 
-    function deposit_(uint256 amount) internal override {
+    function deposit_(uint256 amount) internal override returns (uint256) {
         _resetAndApprove(vault, address(sdToken), amount);
         sdToken.deposit(amount);
+        return amount;
     }
 
-    function withdraw_() internal override {
+    function redeem_() internal override {
         _claimReward();
-        withdraw_(sdToken.balanceOf(address(this)));
+        redeem_(sdToken.balanceOf(address(this)));
     }
 
-    function withdraw_(uint256 sharesToGet) internal override {
-        sdToken.withdraw(sharesToGet);
+    function redeem_(uint256 shares) internal override returns (uint256) {
+        sdToken.withdraw(shares);
+        return shares;
     }
 
     function compound_(address[] calldata tokens, SwapInfo[] calldata swapInfo, uint256[] calldata)

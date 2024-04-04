@@ -108,17 +108,21 @@ contract MetamorphoERC4626Test is TestFixture, ForkTestFixture {
         uint256 underlyingAfter = tokenUnderlying.balanceOf(address(metamorphoStrategy));
         uint256 sharesAfter = vault.balanceOf(address(metamorphoStrategy));
 
-        assertApproxEqAbs(underlyingAfter - underlyingBefore, (toDeposit * withdrawnShares) / mintedShares, 1);
+        assertApproxEqAbs(underlyingAfter - underlyingBefore, (toDeposit * withdrawnShares) / mintedShares, 1, "1");
         assertApproxEqAbs(
-            underlyingAfter, (toDeposit * withdrawnShares) / mintedShares, 1 * 10 * tokenUnderlying.decimals()
+            underlyingAfter, (toDeposit * withdrawnShares) / mintedShares, 1 * 10 * tokenUnderlying.decimals(), "2"
         );
         assertApproxEqAbs(
             vault.previewRedeem(sharesAfter),
             (toDeposit * (mintedShares - withdrawnShares)) / mintedShares,
-            1 * 10 * tokenUnderlying.decimals()
+            1 * 10 * tokenUnderlying.decimals(),
+            "3"
         );
         assertApproxEqAbs(
-            (sharesBefore * 10 ** 18) / sharesAfter, (mintedShares * 10 ** 18) / (mintedShares - withdrawnShares), 1
+            (sharesBefore * 10 ** 18) / sharesAfter,
+            (mintedShares * 10 ** 18) / (mintedShares - withdrawnShares),
+            1,
+            "4"
         );
     }
 
@@ -152,20 +156,22 @@ contract MetamorphoERC4626Test is TestFixture, ForkTestFixture {
         // - need to deposit into the protocol
         metamorphoStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
 
-        uint256 balanceOfStrategyBefore = vault.previewRedeem(vault.balanceOf((address(metamorphoStrategy))));
+        uint256 balanceOfStrategyBefore = metamorphoStrategy.exposed_underlyingAssetAmount();
 
         // - yield is gathered over time
-        vm.warp(block.timestamp + 52 weeks);
+        vm.warp(block.timestamp + 5200 weeks);
 
         // act
         int256 yieldPercentage = metamorphoStrategy.exposed_getYieldPercentage(0);
 
         // assert
-        uint256 balanceOfStrategyAfter = vault.previewRedeem(vault.balanceOf((address(metamorphoStrategy))));
+        uint256 balanceOfStrategyAfter = metamorphoStrategy.exposed_underlyingAssetAmount();
 
         uint256 calculatedYield = (balanceOfStrategyBefore * uint256(yieldPercentage)) / YIELD_FULL_PERCENT;
         uint256 expectedYield = balanceOfStrategyAfter - balanceOfStrategyBefore;
 
+        console.log(calculatedYield);
+        console.log(expectedYield);
         assertGt(yieldPercentage, 0);
         assertApproxEqAbs(calculatedYield, expectedYield, 10 ** (metamorphoStrategy.vault().decimals() / 2));
     }
@@ -205,4 +211,8 @@ contract MetamorphoERC4626Harness is ERC4626Strategy, StrategyHarness {
     constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, IERC4626 vault_)
         ERC4626Strategy(assetGroupRegistry_, accessControl_, vault_)
     {}
+
+    function exposed_underlyingAssetAmount() external view returns (uint256) {
+        return _underlyingAssetAmount();
+    }
 }

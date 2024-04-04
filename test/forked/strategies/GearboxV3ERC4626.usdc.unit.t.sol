@@ -157,7 +157,7 @@ contract GearboxV3ERC4626Test is TestFixture, ForkTestFixture {
         uint256 balanceOfStrategyBefore = _underlyingBalanceOfStrategy();
 
         // - yield is gathered over time
-        vm.warp(block.timestamp + 52 weeks);
+        vm.warp(block.timestamp + 5200 weeks);
 
         // act
         int256 yieldPercentage = gearboxV3Strategy.exposed_getYieldPercentage(0);

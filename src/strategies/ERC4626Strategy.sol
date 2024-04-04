@@ -15,17 +15,13 @@ contract ERC4626Strategy is AbstractERC4626Strategy {
         __ERC4626Strategy_init(strategyName_, assetGroupId_);
     }
 
-    function beforeDepositCheck_(uint256[] memory, uint256[] calldata) internal view override {}
+    function beforeDepositCheck_(uint256, uint256, uint256) internal view override {}
 
-    function beforeRedeemalCheck_(uint256 ssts, uint256[] calldata slippages) internal view override {}
+    function beforeRedeemalCheck_(uint256, uint256, uint256) internal view override {}
 
     function deposit_() internal override {}
 
-    function deposit_(uint256 amount) internal override {}
-
-    function withdraw_() internal override {}
-
-    function withdraw_(uint256 sharesToGet) internal override {}
+    function redeem_() internal override {}
 
     function compound_(address[] calldata tokens, SwapInfo[] calldata swapInfo, uint256[] calldata)
         internal
@@ -34,4 +30,12 @@ contract ERC4626Strategy is AbstractERC4626Strategy {
     {}
 
     function rewardInfo_() internal override returns (address, uint256) {}
+
+    function vaultShareBalance_() internal view virtual override returns (uint256) {
+        return vault.balanceOf(address(this));
+    }
+
+    function previewRedeemSsts_(uint256 ssts) internal view override returns (uint256) {
+        return (vault.balanceOf(address(this)) * ssts) / totalSupply();
+    }
 }
