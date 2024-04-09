@@ -7,26 +7,30 @@ import "@openzeppelin/interfaces/IERC4626.sol";
 import "./AbstractERC4626Strategy.sol";
 import "../interfaces/ISwapper.sol";
 
-contract ERC4626Module is AbstractERC4626Strategy {
-    IERC4626 public immutable erc4626;
+contract YearnV3ERC4626 is AbstractERC4626Strategy {
+    IERC4626 public immutable harvester;
 
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         IERC4626 vault_,
-        IERC4626 erc4626_
+        IERC4626 harvester_
     ) AbstractERC4626Strategy(assetGroupRegistry_, accessControl_, vault_) {
         _disableInitializers();
-        erc4626 = erc4626_;
+        harvester = harvester_;
+    }
+
+    function initialize(string memory strategyName_, uint256 assetGroupId_) external initializer {
+        __ERC4626Strategy_init(strategyName_, assetGroupId_);
     }
 
     function beforeDepositCheck_(uint256, uint256, uint256 shares) internal view override {
-        uint256 maxDeposit = erc4626.maxDeposit(address(this));
+        uint256 maxDeposit = harvester.maxDeposit(address(this));
         if (maxDeposit < shares) revert BeforeDepositCheck();
     }
 
     function beforeRedeemalCheck_(uint256, uint256, uint256 shares) internal view override {
-        uint256 maxRedeem = erc4626.maxRedeem(address(this));
+        uint256 maxRedeem = harvester.maxRedeem(address(this));
         if (maxRedeem < shares) revert BeforeRedeemalCheck();
     }
 
@@ -35,16 +39,16 @@ contract ERC4626Module is AbstractERC4626Strategy {
     }
 
     function deposit_(uint256 shares) internal override returns (uint256) {
-        _resetAndApprove(vault, address(erc4626), shares);
-        return erc4626.deposit(shares, address(this));
+        _resetAndApprove(vault, address(harvester), shares);
+        return harvester.deposit(shares, address(this));
     }
 
     function redeem_() internal override {
-        redeem_(erc4626.balanceOf(address(this)));
+        redeem_(harvester.balanceOf(address(this)));
     }
 
     function redeem_(uint256 shares) internal override returns (uint256) {
-        return erc4626.redeem(shares, address(this), address(this));
+        return harvester.redeem(shares, address(this), address(this));
     }
 
     function rewardInfo_() internal override returns (address, uint256) {}
@@ -56,10 +60,10 @@ contract ERC4626Module is AbstractERC4626Strategy {
     {}
 
     function vaultShareBalance_() internal view override returns (uint256) {
-        return erc4626.previewRedeem(erc4626.balanceOf(address(this)));
+        return harvester.previewRedeem(harvester.balanceOf(address(this)));
     }
 
     function previewRedeemSsts_(uint256 ssts) internal view override returns (uint256) {
-        return (erc4626.balanceOf(address(this)) * ssts) / totalSupply();
+        return (harvester.balanceOf(address(this)) * ssts) / totalSupply();
     }
 }

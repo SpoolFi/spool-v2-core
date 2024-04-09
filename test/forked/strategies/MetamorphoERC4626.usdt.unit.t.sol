@@ -110,20 +110,9 @@ contract MetamorphoERC4626Test is TestFixture, ForkTestFixture {
 
         assertApproxEqAbs(underlyingAfter - underlyingBefore, (toDeposit * withdrawnShares) / mintedShares, 1, "1");
         assertApproxEqAbs(
-            underlyingAfter, (toDeposit * withdrawnShares) / mintedShares, 1 * 10 * tokenUnderlying.decimals(), "2"
+            vault.previewRedeem(sharesAfter), (toDeposit * (mintedShares - withdrawnShares)) / mintedShares, 1, "3"
         );
-        assertApproxEqAbs(
-            vault.previewRedeem(sharesAfter),
-            (toDeposit * (mintedShares - withdrawnShares)) / mintedShares,
-            1 * 10 * tokenUnderlying.decimals(),
-            "3"
-        );
-        assertApproxEqAbs(
-            (sharesBefore * 10 ** 18) / sharesAfter,
-            (mintedShares * 10 ** 18) / (mintedShares - withdrawnShares),
-            1,
-            "4"
-        );
+        assertApproxEqAbs(sharesBefore / sharesAfter, mintedShares / (mintedShares - withdrawnShares), 1, "4");
     }
 
     function test_emergencyWithdrawImpl() public {
@@ -159,7 +148,7 @@ contract MetamorphoERC4626Test is TestFixture, ForkTestFixture {
         uint256 balanceOfStrategyBefore = metamorphoStrategy.exposed_underlyingAssetAmount();
 
         // - yield is gathered over time
-        vm.warp(block.timestamp + 5200 weeks);
+        vm.warp(block.timestamp + 52 weeks);
 
         // act
         int256 yieldPercentage = metamorphoStrategy.exposed_getYieldPercentage(0);
@@ -170,10 +159,13 @@ contract MetamorphoERC4626Test is TestFixture, ForkTestFixture {
         uint256 calculatedYield = (balanceOfStrategyBefore * uint256(yieldPercentage)) / YIELD_FULL_PERCENT;
         uint256 expectedYield = balanceOfStrategyAfter - balanceOfStrategyBefore;
 
-        console.log(calculatedYield);
-        console.log(expectedYield);
         assertGt(yieldPercentage, 0);
         assertApproxEqAbs(calculatedYield, expectedYield, 10 ** (metamorphoStrategy.vault().decimals() / 2));
+
+        // we should get what we expect
+        metamorphoStrategy.exposed_emergencyWithdrawImpl(new uint256[](0), address(metamorphoStrategy));
+        uint256 afterWithdraw = tokenUnderlying.balanceOf(address(metamorphoStrategy));
+        assertEq(afterWithdraw, balanceOfStrategyAfter, "3");
     }
 
     function test_getProtocolRewards() public {

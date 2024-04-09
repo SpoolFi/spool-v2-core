@@ -157,7 +157,7 @@ contract GearboxV3ERC4626Test is TestFixture, ForkTestFixture {
         uint256 balanceOfStrategyBefore = _underlyingBalanceOfStrategy();
 
         // - yield is gathered over time
-        vm.warp(block.timestamp + 5200 weeks);
+        vm.warp(block.timestamp + 52 weeks);
 
         // act
         int256 yieldPercentage = gearboxV3Strategy.exposed_getYieldPercentage(0);
@@ -170,6 +170,11 @@ contract GearboxV3ERC4626Test is TestFixture, ForkTestFixture {
 
         assertGt(yieldPercentage, 0);
         assertApproxEqAbs(calculatedYield, expectedYield, 10 ** (gearboxV3Strategy.vault().decimals() / 2));
+
+        // we should get what we expect
+        gearboxV3Strategy.exposed_emergencyWithdrawImpl(new uint256[](0), address(gearboxV3Strategy));
+        uint256 afterWithdraw = tokenUnderlying.balanceOf(address(gearboxV3Strategy));
+        assertEq(afterWithdraw, balanceOfStrategyAfter, "3");
     }
 
     function test_getProtocolRewards() public {
