@@ -148,7 +148,9 @@ contract MetamorphoERC4626Test is TestFixture, ForkTestFixture {
         uint256 balanceOfStrategyBefore = metamorphoStrategy.exposed_underlyingAssetAmount();
 
         // - yield is gathered over time
-        vm.warp(block.timestamp + 52 weeks);
+        // with current block number APY is insane and it is not possible to emergencyWithdraw of all funds
+        // therefore only 2 weeks
+        vm.warp(block.timestamp + 2 weeks);
 
         // act
         int256 yieldPercentage = metamorphoStrategy.exposed_getYieldPercentage(0);
@@ -160,7 +162,7 @@ contract MetamorphoERC4626Test is TestFixture, ForkTestFixture {
         uint256 expectedYield = balanceOfStrategyAfter - balanceOfStrategyBefore;
 
         assertGt(yieldPercentage, 0);
-        assertApproxEqAbs(calculatedYield, expectedYield, 10 ** (metamorphoStrategy.vault().decimals() / 2));
+        assertApproxEqAbs(calculatedYield, expectedYield, 10 ** (tokenUnderlying.decimals() - 3));
 
         // we should get what we expect
         metamorphoStrategy.exposed_emergencyWithdrawImpl(new uint256[](0), address(metamorphoStrategy));

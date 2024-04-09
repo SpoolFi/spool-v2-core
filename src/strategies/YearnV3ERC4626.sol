@@ -15,7 +15,7 @@ contract YearnV3ERC4626 is AbstractERC4626Strategy {
         ISpoolAccessControl accessControl_,
         IERC4626 vault_,
         IERC4626 harvester_
-    ) AbstractERC4626Strategy(assetGroupRegistry_, accessControl_, vault_) {
+    ) AbstractERC4626Strategy(assetGroupRegistry_, accessControl_, vault_, 10 ** (harvester_.decimals() * 2)) {
         _disableInitializers();
         harvester = harvester_;
     }
@@ -58,6 +58,10 @@ contract YearnV3ERC4626 is AbstractERC4626Strategy {
         override
         returns (int256 compoundYield)
     {}
+
+    function _previewConstantRedeem() internal view override returns (uint256) {
+        return vault.previewRedeem(harvester.previewRedeem(CONSTANT_SHARE_AMOUNT));
+    }
 
     function vaultShareBalance_() internal view override returns (uint256) {
         return harvester.previewRedeem(harvester.balanceOf(address(this)));

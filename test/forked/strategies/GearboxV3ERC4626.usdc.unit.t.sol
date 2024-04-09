@@ -169,7 +169,7 @@ contract GearboxV3ERC4626Test is TestFixture, ForkTestFixture {
         uint256 expectedYield = balanceOfStrategyAfter - balanceOfStrategyBefore;
 
         assertGt(yieldPercentage, 0);
-        assertApproxEqAbs(calculatedYield, expectedYield, 10 ** (gearboxV3Strategy.vault().decimals() / 2));
+        assertApproxEqAbs(calculatedYield, expectedYield, 10 ** (tokenUnderlying.decimals() - 3));
 
         // we should get what we expect
         gearboxV3Strategy.exposed_emergencyWithdrawImpl(new uint256[](0), address(gearboxV3Strategy));

@@ -14,8 +14,8 @@ abstract contract AbstractERC4626Strategy is Strategy, AbstractERC4626Module {
 
     /// @custom:storage-location erc7201:spool.storage.ERC4626Strategy
     struct ERC4626StrategyStorage {
-        /// @notice exchangeRate at the last DHW.
-        uint256 _lastExchangeRate;
+        /// @notice redeem at the last DHW.
+        uint256 lastConstantRedeem;
     }
 
     // keccak256(abi.encode(uint256(keccak256("spool.storage.ERC4626Strategy")) - 1)) & ~bytes32(uint256(0xff))
@@ -24,14 +24,17 @@ abstract contract AbstractERC4626Strategy is Strategy, AbstractERC4626Module {
 
     /// @notice vault implementation (staking token)
     IERC4626 public immutable vault;
-    /// @notice precision for yield calculation
-    uint256 private immutable _mantissa;
 
-    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, IERC4626 vault_)
-        Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID)
-    {
+    uint256 immutable CONSTANT_SHARE_AMOUNT;
+
+    constructor(
+        IAssetGroupRegistry assetGroupRegistry_,
+        ISpoolAccessControl accessControl_,
+        IERC4626 vault_,
+        uint256 constantShareAmount_
+    ) Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID) {
         vault = vault_;
-        _mantissa = 10 ** (vault.decimals() * 2);
+        CONSTANT_SHARE_AMOUNT = constantShareAmount_;
     }
 
     function _getERC4626StrategyStorage() private pure returns (ERC4626StrategyStorage storage $) {
@@ -55,7 +58,7 @@ abstract contract AbstractERC4626Strategy is Strategy, AbstractERC4626Module {
         }
 
         ERC4626StrategyStorage storage $ = _getERC4626StrategyStorage();
-        $._lastExchangeRate = (_mantissa * vault.totalAssets()) / vault.totalSupply();
+        $.lastConstantRedeem = _previewConstantRedeem();
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {
@@ -102,12 +105,10 @@ abstract contract AbstractERC4626Strategy is Strategy, AbstractERC4626Module {
     function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {
         // We should account for possible reward gains for shares as well
         // e.g. Share token is deposited into another yield generating vault
-        uint256 shares = vaultShareBalance_();
-        uint256 exchangeRateCurrent = (_mantissa * vault.previewRedeem(shares)) / shares;
-
+        uint256 currentRedeem = _previewConstantRedeem();
         ERC4626StrategyStorage storage $ = _getERC4626StrategyStorage();
-        baseYieldPercentage = _calculateYieldPercentage($._lastExchangeRate, exchangeRateCurrent);
-        $._lastExchangeRate = exchangeRateCurrent;
+        baseYieldPercentage = _calculateYieldPercentage($.lastConstantRedeem, currentRedeem);
+        $.lastConstantRedeem = currentRedeem;
     }
 
     function _compound(address[] calldata tokens, SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
@@ -140,7 +141,14 @@ abstract contract AbstractERC4626Strategy is Strategy, AbstractERC4626Module {
 
     function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
         redeem_();
-        vault.redeem(vault.balanceOf(address(this)), recipient, address(this));
+        // not all funds can be available for withdrawal
+        uint256 maxRedeem = vault.maxRedeem(address(this));
+        uint256 totalShares = vault.balanceOf(address(this));
+        // maxRedeem can be slightly lower so check for minimal difference - 3 decimals
+        if (totalShares - maxRedeem < 10 ** vault.decimals() / 1000) {
+            maxRedeem = totalShares;
+        }
+        vault.redeem(maxRedeem, recipient, address(this));
     }
 
     function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
@@ -171,6 +179,10 @@ abstract contract AbstractERC4626Strategy is Strategy, AbstractERC4626Module {
         (tokens[0], amounts[0]) = rewardInfo_();
 
         return (tokens, amounts);
+    }
+
+    function _previewConstantRedeem() internal view virtual returns (uint256) {
+        return vault.previewRedeem(CONSTANT_SHARE_AMOUNT);
     }
 
     function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}

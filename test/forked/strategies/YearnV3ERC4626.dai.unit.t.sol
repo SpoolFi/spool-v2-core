@@ -164,27 +164,18 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
 
     // TODO: getYieldPercentage is broken need to debug further
     function test_getYieldPercentage() public {
-        // basic report for rewards
+        // basic report for some rewards
         vm.startPrank(harvester.keeper());
         harvester.report();
         vm.stopPrank();
 
-        // deposit more dai from another user so that strategy could collect interest
-        address anotherUser = vm.addr(1);
-        vm.startPrank(anotherUser);
-        _deal(anotherUser, toDeposit);
-        tokenUnderlying.approve(address(vault), toDeposit);
-        vault.deposit(toDeposit, anotherUser);
-        vm.stopPrank();
-
         // - need to deposit into the protocol
         yearnV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
-        // yearnV3Strategy.exposed_getYieldPercentage(0);
 
         uint256 balanceOfStrategyBefore = yearnV3Strategy.exposed_underlyingAssetAmount();
 
         // - yield is gathered over time
-        vm.warp(block.timestamp + 300 weeks);
+        vm.warp(block.timestamp + 52 weeks);
 
         // act
         int256 yieldPercentage = yearnV3Strategy.exposed_getYieldPercentage(0);
@@ -192,35 +183,15 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
         // assert
         uint256 balanceOfStrategyAfter = yearnV3Strategy.exposed_underlyingAssetAmount();
 
-        uint256 calculatedYield = (balanceOfStrategyBefore * uint256(yieldPercentage)) / YIELD_FULL_PERCENT;
-
         uint256 expectedYield = balanceOfStrategyAfter - balanceOfStrategyBefore;
 
-        console.log("balanceOfStrategyBefore");
-        console.log(balanceOfStrategyBefore);
-
-        console.log("balanceOfStrategyAfter");
-        console.log(balanceOfStrategyAfter);
-
-        console.log("yieldPercentage");
-        console.log(uint256(yieldPercentage));
-
-        console.log("calculatedYieldPercentage");
         uint256 calculatedYieldPercentage = (expectedYield * YIELD_FULL_PERCENT) / balanceOfStrategyBefore;
-        console.log(calculatedYieldPercentage);
-        //   yieldPercentage = int256((currentValue - previousValue) * YIELD_FULL_PERCENT / previousValue);
-        console.log("calculated check");
-        uint256 check = (balanceOfStrategyBefore * uint256(calculatedYieldPercentage)) / YIELD_FULL_PERCENT;
-        console.log(check);
 
-        console.log("calculatedYield");
-        console.log(calculatedYield);
-
-        console.log("expectedYield");
-        console.log(expectedYield);
+        uint256 calculatedYield = (balanceOfStrategyBefore * uint256(yieldPercentage)) / YIELD_FULL_PERCENT;
 
         assertGt(yieldPercentage, 0, "1");
-        assertApproxEqAbs(calculatedYield, expectedYield, 10 ** (yearnV3Strategy.vault().decimals() / 2), "2");
+        assertEq(uint256(yieldPercentage), calculatedYieldPercentage, "2");
+        assertApproxEqAbs(calculatedYield, expectedYield, 10 ** (tokenUnderlying.decimals() - 3));
 
         // we should get what we expect
         yearnV3Strategy.exposed_emergencyWithdrawImpl(new uint256[](0), address(yearnV3Strategy));

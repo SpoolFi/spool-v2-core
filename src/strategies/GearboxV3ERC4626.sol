@@ -28,7 +28,7 @@ contract GearboxV3ERC4626 is AbstractERC4626Strategy {
         ISwapper swapper_,
         IFarmingPool sdToken_,
         IERC4626 vault_
-    ) AbstractERC4626Strategy(assetGroupRegistry_, accessControl_, vault_) {
+    ) AbstractERC4626Strategy(assetGroupRegistry_, accessControl_, vault_, 10 ** (vault_.decimals() * 2)) {
         _disableInitializers();
         swapper = swapper_;
         gear = IERC20(sdToken_.rewardsToken());

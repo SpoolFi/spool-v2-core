@@ -6,7 +6,7 @@ import "../external/interfaces/strategies/gearbox/v3/IFarmingPool.sol";
 
 contract ERC4626Strategy is AbstractERC4626Strategy {
     constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, IERC4626 vault_)
-        AbstractERC4626Strategy(assetGroupRegistry_, accessControl_, vault_)
+        AbstractERC4626Strategy(assetGroupRegistry_, accessControl_, vault_, 10 ** (vault_.decimals() * 2))
     {
         _disableInitializers();
     }
