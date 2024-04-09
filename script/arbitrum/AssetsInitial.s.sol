@@ -64,8 +64,6 @@ contract AssetsInitial {
         assetGroup[0] = _assets[WETH_KEY];
         assetGroup[1] = _assets[USDC_KEY];
         assetGroup = ArraysHelper.sort(assetGroup);
-        console.log("assetGroup[0]: %s", assetGroup[0]);
-        console.log("assetGroup[1]: %s", assetGroup[1]);
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         _assetGroups[WETH_USDC_KEY] = assetGroupId;
     }
