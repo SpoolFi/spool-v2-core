@@ -47,6 +47,10 @@ abstract contract AaveV3StrategyBase is Strategy {
             revert ConfigurationAddressZero();
         }
 
+        if (address(swapper_) == address(0)) {
+            revert ConfigurationAddressZero();
+        }
+
         pool = provider_.getPool();
 
         provider = provider_;

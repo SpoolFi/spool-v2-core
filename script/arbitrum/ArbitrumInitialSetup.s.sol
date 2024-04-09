@@ -28,19 +28,13 @@ contract ArbitrumInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesI
     }
 
     function doSetup(address deployerAddress) public {
-        console.log("deploy spool..");
         deploySpool();
 
-        console.log("setup assets..");
         setupAssets(assetGroupRegistry, usdPriceFeedManager);
 
-        console.log("deploy strategies..");
         deployStrategies(spoolAccessControl, assetGroupRegistry, swapper, address(proxyAdmin), strategyRegistry);
 
-        console.log("post deploy..");
         postDeploySpool(deployerAddress);
-
-        console.log("done..");
     }
 
     function assets(string memory assetKey) public view virtual override returns (address) {

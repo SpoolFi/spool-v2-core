@@ -69,6 +69,7 @@ contract GammaCamelotRewards is IGammaCamelotRewards, Initializable, SpoolAccess
     address[] public baseRewardTokens;
 
     /// @notice unknown reward tokens added to dividends, to be handled via swap
+    /// @notice Temporary storage - for simplifying calculations at runtime only.
     address[] public extraRewardTokens;
 
     /// @notice reward tokens received via dividends for which we handle explicitly (ie. no swap)
@@ -135,19 +136,23 @@ contract GammaCamelotRewards is IGammaCamelotRewards, Initializable, SpoolAccess
     }
 
     function _handleXGrailRedemption() private {
-        // redeem any finalized entries first.
+        _xGrailFinalize();
+        _xGrailRedeem();
+    }
+
+    function _xGrailFinalize() private {
         uint256 redeemsLength = xGRAIL.getUserRedeemsLength(address(this));
-        for (uint256 i = 0; i < redeemsLength;) {
+        if (redeemsLength == 0) return;
+        for (uint256 i = (redeemsLength - 1); i >= 0; --i) {
             (,, uint256 endTime, address dividendsAddress,) = xGRAIL.getUserRedeem(address(this), i);
             if (block.timestamp >= endTime) {
                 _handleDividends(dividendsAddress);
                 xGRAIL.finalizeRedeem(i);
-                redeemsLength -= 1;
-            } else {
-                i++;
             }
         }
+    }
 
+    function _xGrailRedeem() private {
         // add new entry.
         uint256 xGRAILBalance = IERC20(address(xGRAIL)).balanceOf(address(this));
         if (xGRAILBalance > 0) {
@@ -158,9 +163,9 @@ contract GammaCamelotRewards is IGammaCamelotRewards, Initializable, SpoolAccess
 
     function _handleDividends(address dividendsAddress) private {
         IDividendsV2 dividends = IDividendsV2(dividendsAddress);
-        uint256 tokensLength = dividends.distributedTokensLength();
         if (extraRewards) {
-            for (uint256 i = 0; i < tokensLength; i++) {
+            uint256 tokensLength = dividends.distributedTokensLength();
+            for (uint256 i = 0; i < tokensLength; ++i) {
                 address token = dividends.distributedToken(i);
                 // ignore if:
                 // - known reward, already handled by the contract
@@ -185,12 +190,12 @@ contract GammaCamelotRewards is IGammaCamelotRewards, Initializable, SpoolAccess
 
     function _handleRewardTokens() private returns (address[] memory rewardTokens) {
         rewardTokens = new address[](baseRewardTokens.length + extraRewardTokens.length);
-        for (uint256 i = 0; i < baseRewardTokens.length; i++) {
+        for (uint256 i = 0; i < baseRewardTokens.length; ++i) {
             rewardTokens[i] = baseRewardTokens[i];
         }
 
         if (extraRewards) {
-            for (uint256 i = 0; i < extraRewardTokens.length; i++) {
+            for (uint256 i = 0; i < extraRewardTokens.length; ++i) {
                 rewardTokens[baseRewardTokens.length + i] = extraRewardTokens[i];
             }
 
@@ -200,7 +205,7 @@ contract GammaCamelotRewards is IGammaCamelotRewards, Initializable, SpoolAccess
     }
 
     function _transferToStrategy(address[] memory tokens) private {
-        for (uint256 i = 0; i < tokens.length; i++) {
+        for (uint256 i = 0; i < tokens.length; ++i) {
             _transferToStrategy(tokens[i]);
         }
     }

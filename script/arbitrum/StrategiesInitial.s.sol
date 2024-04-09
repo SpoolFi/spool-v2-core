@@ -198,8 +198,10 @@ contract StrategiesInitial {
     }
 
     function _deployGammaCamelot(StandardContracts memory contracts, string[] memory poolKeySplit) private {
-        // create
-        GammaCamelotRewards rewards = new GammaCamelotRewards(contracts.accessControl);
+        // create rewards proxy
+        address rewards_implementation = address(new GammaCamelotRewards(contracts.accessControl));
+        GammaCamelotRewards rewards = GammaCamelotRewards(_newProxy(rewards_implementation, contracts.proxyAdmin));
+
         GammaCamelotStrategy implementation = new GammaCamelotStrategy(
             contracts.assetGroupRegistry,
             contracts.accessControl,
