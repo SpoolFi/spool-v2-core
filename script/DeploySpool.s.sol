@@ -349,6 +349,7 @@ contract DeploySpool {
         smartVaultManager = SmartVaultManager(contractsJson().getAddress(".SmartVaultManager.proxy"));
         depositSwap = DepositSwap(contractsJson().getAddress(".DepositSwap.proxy"));
         smartVaultFactory = SmartVaultFactory(contractsJson().getAddress(".SmartVaultFactory"));
+        smartVaultFactoryHpf = SmartVaultFactoryHpf(contractsJson().getAddress(".SmartVaultFactoryHpf"));
         allowlistGuard = AllowlistGuard(contractsJson().getAddress(".AllowlistGuard.proxy"));
         depositManager = DepositManager(contractsJson().getAddress(".DepositManager.proxy"));
         withdrawalManager = WithdrawalManager(contractsJson().getAddress(".WithdrawalManager.proxy"));
