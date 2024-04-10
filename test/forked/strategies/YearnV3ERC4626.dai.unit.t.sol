@@ -9,12 +9,11 @@ import "../../../src/external/interfaces/weth/IWETH9.sol";
 import "../../../src/libraries/SpoolUtils.sol";
 import "../../../src/interfaces/Constants.sol";
 import "../../../src/strategies/GearboxV3ERC4626.sol";
-import "../../../src/strategies/YearnV3ERC4626.sol";
+import "../../../src/strategies/ERC4626StrategyDouble.sol";
 import "../../fixtures/TestFixture.sol";
 import "../../libraries/Arrays.sol";
 import "../../libraries/Constants.sol";
 import "../../mocks/MockExchange.sol";
-import "../../mocks/MockERC4626ReInitializer.sol";
 import "../ForkTestFixture.sol";
 import "../StrategyHarness.sol";
 import "../EthereumForkConstants.sol";
@@ -86,7 +85,10 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
         uint256 harvesterSharesToMint = harvester.previewDeposit(sharesToMint);
         uint256 harvesterSharesBefore = harvester.balanceOf(address(yearnV3Strategy));
         // act
-        yearnV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](5);
+        slippages[0] = 0;
+        slippages[4] = 1;
+        yearnV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // assert
         uint256 underlyingBalanceOfVaultAfter = vault.totalAssets();
@@ -112,7 +114,10 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
         uint256 withdrawnShares = 60 * 10 ** 18;
 
         // - need to deposit into the protocol
-        yearnV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](5);
+        slippages[0] = 0;
+        slippages[4] = 1;
+        yearnV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
         yearnV3Strategy.exposed_mint(mintedShares);
@@ -120,7 +125,8 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
         uint256 underlyingBefore = tokenUnderlying.balanceOf(address(yearnV3Strategy));
         uint256 sharesBefore = harvester.balanceOf(address(yearnV3Strategy));
         // act
-        yearnV3Strategy.exposed_redeemFromProtocol(assetGroup, withdrawnShares, new uint256[](0));
+        slippages[0] = 1;
+        yearnV3Strategy.exposed_redeemFromProtocol(assetGroup, withdrawnShares, slippages);
 
         uint256 underlyingAfter = tokenUnderlying.balanceOf(address(yearnV3Strategy));
         uint256 sharesAfter = harvester.balanceOf(address(yearnV3Strategy));
@@ -141,7 +147,10 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
         uint256 mintedShares = 100;
 
         // - need to deposit into the protocol
-        yearnV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](5);
+        slippages[0] = 0;
+        slippages[4] = 1;
+        yearnV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
         yearnV3Strategy.exposed_mint(mintedShares);
@@ -151,7 +160,10 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
         uint256 sharesToBurn = harvester.previewWithdraw(vault.previewWithdraw(toDeposit));
 
         // act
-        yearnV3Strategy.exposed_emergencyWithdrawImpl(new uint256[](0), emergencyWithdrawalRecipient);
+        slippages = new uint256[](2);
+        slippages[0] = 3;
+        slippages[1] = 1;
+        yearnV3Strategy.exposed_emergencyWithdrawImpl(slippages, emergencyWithdrawalRecipient);
 
         uint256 recipientUnderlyingBalance = tokenUnderlying.balanceOf(emergencyWithdrawalRecipient);
 
@@ -170,7 +182,10 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
         vm.stopPrank();
 
         // - need to deposit into the protocol
-        yearnV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](5);
+        slippages[0] = 0;
+        slippages[4] = 1;
+        yearnV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         uint256 balanceOfStrategyBefore = yearnV3Strategy.exposed_underlyingAssetAmount();
 
@@ -194,14 +209,20 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
         assertApproxEqAbs(calculatedYield, expectedYield, 10 ** (tokenUnderlying.decimals() - 3));
 
         // we should get what we expect
-        yearnV3Strategy.exposed_emergencyWithdrawImpl(new uint256[](0), address(yearnV3Strategy));
+        slippages = new uint256[](2);
+        slippages[0] = 3;
+        slippages[1] = 1;
+        yearnV3Strategy.exposed_emergencyWithdrawImpl(slippages, address(yearnV3Strategy));
         uint256 afterWithdraw = tokenUnderlying.balanceOf(address(yearnV3Strategy));
         assertEq(afterWithdraw, balanceOfStrategyAfter, "3");
     }
 
     function test_getProtocolRewards() public {
         // - need to deposit into the protocol
-        yearnV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](5);
+        slippages[0] = 0;
+        slippages[4] = 1;
+        yearnV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         vm.warp(block.timestamp + 1 weeks);
 
@@ -219,7 +240,10 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
 
     function test_getUsdWorth() public {
         // - need to deposit into the protocol
-        yearnV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](5);
+        slippages[0] = 0;
+        slippages[4] = 1;
+        yearnV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // act
         uint256 usdWorth = yearnV3Strategy.exposed_getUsdWorth(assetGroupExchangeRates, priceFeedManager);
@@ -230,15 +254,15 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
 }
 
 // Exposes protocol-specific functions for unit-testing.
-contract YearnV3ERC4626Harness is YearnV3ERC4626, StrategyHarness {
+contract YearnV3ERC4626Harness is ERC4626StrategyDouble, StrategyHarness {
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
         IERC4626 vault_,
         IERC4626 harvester_
-    ) YearnV3ERC4626(assetGroupRegistry_, accessControl_, vault_, harvester_) {}
+    ) ERC4626StrategyDouble(assetGroupRegistry_, accessControl_, vault_, harvester_) {}
 
     function exposed_underlyingAssetAmount() external view returns (uint256) {
-        return _underlyingAssetAmount();
+        return underlyingAssetAmount_();
     }
 }

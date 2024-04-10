@@ -9,12 +9,10 @@ import "../../../src/external/interfaces/weth/IWETH9.sol";
 import "../../../src/libraries/SpoolUtils.sol";
 import "../../../src/interfaces/Constants.sol";
 import "../../../src/strategies/GearboxV3ERC4626.sol";
-import "../../../src/strategies/ERC4626Strategy.sol";
 import "../../fixtures/TestFixture.sol";
 import "../../libraries/Arrays.sol";
 import "../../libraries/Constants.sol";
 import "../../mocks/MockExchange.sol";
-import "../../mocks/MockERC4626ReInitializer.sol";
 import "../ForkTestFixture.sol";
 import "../StrategyHarness.sol";
 import "../EthereumForkConstants.sol";
@@ -84,7 +82,10 @@ contract GearboxV3ERC4626Test is TestFixture, ForkTestFixture {
         uint256 underlyingBalanceOfDTokenBefore = tokenUnderlying.balanceOf(address(gearboxV3Strategy.vault()));
 
         // act
-        gearboxV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](5);
+        slippages[0] = 0;
+        slippages[4] = 1;
+        gearboxV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // assert
         uint256 underlyingBalanceOfDTokenAfter = tokenUnderlying.balanceOf(address(gearboxV3Strategy.vault()));
@@ -99,7 +100,10 @@ contract GearboxV3ERC4626Test is TestFixture, ForkTestFixture {
         uint256 withdrawnShares = 60;
 
         // - need to deposit into the protocol
-        gearboxV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](5);
+        slippages[0] = 0;
+        slippages[4] = 1;
+        gearboxV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
         gearboxV3Strategy.exposed_mint(mintedShares);
@@ -107,7 +111,8 @@ contract GearboxV3ERC4626Test is TestFixture, ForkTestFixture {
         uint256 strategyDepositBalanceBefore = _underlyingBalanceOfStrategy();
 
         // act
-        gearboxV3Strategy.exposed_redeemFromProtocol(assetGroup, withdrawnShares, new uint256[](0));
+        slippages[0] = 1;
+        gearboxV3Strategy.exposed_redeemFromProtocol(assetGroup, withdrawnShares, slippages);
 
         // assert
         uint256 underlyingBalanceOfStrategy = tokenUnderlying.balanceOf(address(gearboxV3Strategy));
@@ -125,7 +130,10 @@ contract GearboxV3ERC4626Test is TestFixture, ForkTestFixture {
         uint256 mintedShares = 100;
 
         // - need to deposit into the protocol
-        gearboxV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](5);
+        slippages[0] = 0;
+        slippages[4] = 1;
+        gearboxV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
         // - normal deposit into protocol would mint SSTs
         //   which are needed when determining how much to redeem
         gearboxV3Strategy.exposed_mint(mintedShares);
@@ -133,7 +141,10 @@ contract GearboxV3ERC4626Test is TestFixture, ForkTestFixture {
         uint256 underlyingBalanceOfDTokenBefore = tokenUnderlying.balanceOf(address(gearboxV3Strategy.vault()));
 
         // act
-        gearboxV3Strategy.exposed_emergencyWithdrawImpl(new uint256[](0), emergencyWithdrawalRecipient);
+        slippages = new uint256[](2);
+        slippages[0] = 3;
+        slippages[1] = 1;
+        gearboxV3Strategy.exposed_emergencyWithdrawImpl(slippages, emergencyWithdrawalRecipient);
 
         // assert
         uint256 underlyingBalanceOfDTokenAfter = tokenUnderlying.balanceOf(address(gearboxV3Strategy.vault()));
@@ -152,7 +163,10 @@ contract GearboxV3ERC4626Test is TestFixture, ForkTestFixture {
     // base yield
     function test_getYieldPercentage() public {
         // - need to deposit into the protocol
-        gearboxV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](5);
+        slippages[0] = 0;
+        slippages[4] = 1;
+        gearboxV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         uint256 balanceOfStrategyBefore = _underlyingBalanceOfStrategy();
 
@@ -172,7 +186,10 @@ contract GearboxV3ERC4626Test is TestFixture, ForkTestFixture {
         assertApproxEqAbs(calculatedYield, expectedYield, 10 ** (tokenUnderlying.decimals() - 3));
 
         // we should get what we expect
-        gearboxV3Strategy.exposed_emergencyWithdrawImpl(new uint256[](0), address(gearboxV3Strategy));
+        slippages = new uint256[](2);
+        slippages[0] = 3;
+        slippages[1] = 1;
+        gearboxV3Strategy.exposed_emergencyWithdrawImpl(slippages, address(gearboxV3Strategy));
         uint256 afterWithdraw = tokenUnderlying.balanceOf(address(gearboxV3Strategy));
         assertEq(afterWithdraw, balanceOfStrategyAfter, "3");
     }
@@ -182,7 +199,10 @@ contract GearboxV3ERC4626Test is TestFixture, ForkTestFixture {
         IERC20 gearToken = gearboxV3Strategy.gear();
 
         // - need to deposit into the protocol
-        gearboxV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](5);
+        slippages[0] = 0;
+        slippages[4] = 1;
+        gearboxV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // - mint some reward tokens by skipping blocks (should be `rewardTokenAmount` GEAR, depends on the forked block number)
         vm.warp(block.timestamp + 1 weeks);
@@ -219,7 +239,10 @@ contract GearboxV3ERC4626Test is TestFixture, ForkTestFixture {
         swapper.updateExchangeAllowlist(Arrays.toArray(address(exchange)), Arrays.toArray(true));
 
         // - need to deposit into the protocol
-        gearboxV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](5);
+        slippages[0] = 0;
+        slippages[4] = 1;
+        gearboxV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // - mint some reward tokens by skipping blocks (should be `rewardTokenAmount` GEAR, depends on the forked block number)
         vm.warp(block.timestamp + 1 weeks);
@@ -234,9 +257,8 @@ contract GearboxV3ERC4626Test is TestFixture, ForkTestFixture {
             swapCallData: abi.encodeCall(exchange.swap, (address(gearToken), rewardTokenAmount, address(swapper)))
         });
 
-        uint256[] memory slippages = new uint256[](1);
-        slippages[0] = 1;
-
+        slippages = new uint256[](4);
+        slippages[3] = 1;
         int256 compoundYieldPercentage = gearboxV3Strategy.exposed_compound(assetGroup, compoundSwapInfo, slippages);
 
         // assert
@@ -251,7 +273,10 @@ contract GearboxV3ERC4626Test is TestFixture, ForkTestFixture {
 
     function test_getUsdWorth() public {
         // - need to deposit into the protocol
-        gearboxV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+        uint256[] memory slippages = new uint256[](5);
+        slippages[0] = 0;
+        slippages[4] = 1;
+        gearboxV3Strategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         // act
         uint256 usdWorth = gearboxV3Strategy.exposed_getUsdWorth(assetGroupExchangeRates, priceFeedManager);
