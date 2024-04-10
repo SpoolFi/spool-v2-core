@@ -198,9 +198,18 @@ contract StrategiesInitial {
     }
 
     function _deployGammaCamelot(StandardContracts memory contracts, string[] memory poolKeySplit) private {
+        // get data
+        string memory key = _getVariantName(poolKeySplit);
+        string memory variantName = _getVariantName(GAMMA_CAMELOT_KEY, key);
+        GammaCamelotData memory data = _getGammaCamelotData(poolKeySplit);
+
         // create rewards proxy
         address rewards_implementation = address(new GammaCamelotRewards(contracts.accessControl));
         GammaCamelotRewards rewards = GammaCamelotRewards(_newProxy(rewards_implementation, contracts.proxyAdmin));
+        // add rewards to json
+        string memory rewardsKey = string.concat(GAMMA_CAMELOT_KEY, "-rewards");
+        contractsJson().addVariantStrategyHelpersImplementation(rewardsKey, address(rewards_implementation));
+        contractsJson().addVariantStrategyHelpersVariant(rewardsKey, key, address(rewards));
 
         GammaCamelotStrategy implementation = new GammaCamelotStrategy(
             contracts.assetGroupRegistry,
@@ -208,11 +217,6 @@ contract StrategiesInitial {
             contracts.swapper,
             rewards
         );
-
-        // get data
-        string memory key = _getVariantName(poolKeySplit);
-        string memory variantName = _getVariantName(GAMMA_CAMELOT_KEY, key);
-        GammaCamelotData memory data = _getGammaCamelotData(poolKeySplit);
 
         // initialize
         address variant = _newProxy(address(implementation), contracts.proxyAdmin);
