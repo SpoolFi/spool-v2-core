@@ -8,12 +8,17 @@ contract MetamorphoStrategy is ERC4626StrategyBase {
     using SafeERC20 for IERC20;
 
     ISwapper public immutable swapper;
-    /// @custom:storage-location erc7201:spool.storage.ERC4626Strategy
 
+    /// @custom:storage-location erc7201:spool.storage.MetamorphoStrategy
     struct MetamorphoStrategyStorage {
         // we will set reward tokens for each strategy separately
         // rewards are claimed off-chain via UniversalRewardsDistributor
-        // so for yield accrual we only need to know which tokens to swap and redeposit into metamorpho
+        // so for yield accrual we only need to know which tokens to swap and redeposit them back into metamorpho
+        //
+        // MORPHO token should not be included here for the time being
+        // since it is not transferable right now
+        // but we should claim it anyway and store in Strategy Contract
+        // to decide ho to deal with it once transfers are enabled
         address[] rewards;
     }
 
@@ -46,6 +51,11 @@ contract MetamorphoStrategy is ERC4626StrategyBase {
         $.rewards = rewards_;
     }
 
+    /**
+     * @dev spool admin is able to change reward tokens just in case
+     * @notice in case vault shares are used elsewhere this function should be overwritten
+     * @param rewards_ new array of reward tokens
+     */
     function setRewards(address[] calldata rewards_) external {
         _checkRole(ROLE_SPOOL_ADMIN, msg.sender);
         MetamorphoStrategyStorage storage $ = _getMetamorphoStrategyStorage();

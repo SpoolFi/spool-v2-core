@@ -28,6 +28,10 @@ import "../libraries/ERC4626Lib.sol";
 //   - _redeemFromProtocol: withdrawalSlippages[2]
 // - redeemFast or emergencyWithdraw: slippages[0] == 3
 //   - _redeemFromProtocol or _emergencyWithdrawImpl: slippages[1]
+//
+/// @dev This is a base contract to use for creation of strategies using ERC4626 vaults
+// in best case only logic for handling rewards should be overwritten
+//
 contract ERC4626StrategyBase is Strategy {
     using SafeERC20 for IERC20;
 
@@ -37,20 +41,23 @@ contract ERC4626StrategyBase is Strategy {
     error RedeemalSlippage();
     error CompoundSlippage();
 
-    /// @custom:storage-location erc7201:spool.storage.ERC4626Strategy
+    /// @custom:storage-location erc7201:spool.storage.ERC4626StrategyBase
     struct ERC4626StrategyStorage {
-        /// @notice redeem at the last DHW.
+        /// @notice previewRedeem of CONSTANT_SHARE_AMOUNT at the last DHW
         uint256 lastPreviewRedeem;
     }
 
-    // keccak256(abi.encode(uint256(keccak256("spool.storage.ERC4626Strategy")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant ERC4626StrategyStorageLocation =
-        0x93937936ec2af9f038740e119e305f1ce13a5edce385c29ed1b1822d9fac4700;
+    // keccak256(abi.encode(uint256(keccak256("spool.storage.ERC4626StrategyBase")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant ERC4626StrategyBaseStorageLocation =
+        0x11ba5c891c7881610cf5544a7d19e9392b2a209b7a1ec9171f5d610e59221100;
 
     /// @notice vault implementation
     IERC4626 public immutable vault;
 
     /// @notice constant amount of shares to calculate vault performance
+    // by converting this shares to assets via previewRedeem which includes fees
+    // we will get data for assessing the yield of the strategy
+    // feels like amount of 10 ** (vault.decimals() * 2) should be good enough
     uint256 immutable CONSTANT_SHARE_AMOUNT;
 
     constructor(
@@ -63,9 +70,9 @@ contract ERC4626StrategyBase is Strategy {
         CONSTANT_SHARE_AMOUNT = constantShareAmount_;
     }
 
-    function _getERC4626StrategyStorage() private pure returns (ERC4626StrategyStorage storage $) {
+    function _getERC4626StrategyBaseStorage() private pure returns (ERC4626StrategyStorage storage $) {
         assembly {
-            $.slot := ERC4626StrategyStorageLocation
+            $.slot := ERC4626StrategyBaseStorageLocation
         }
     }
 
@@ -83,7 +90,7 @@ contract ERC4626StrategyBase is Strategy {
             revert InvalidAssetGroup(assetGroupId());
         }
 
-        ERC4626StrategyStorage storage $ = _getERC4626StrategyStorage();
+        ERC4626StrategyStorage storage $ = _getERC4626StrategyBaseStorage();
         $.lastPreviewRedeem = previewConstantRedeem_();
     }
 
@@ -145,7 +152,7 @@ contract ERC4626StrategyBase is Strategy {
         // We should account for possible reward gains for shares as well
         // e.g. Share token is deposited into another yield generating vault
         uint256 currentRedeem = previewConstantRedeem_();
-        ERC4626StrategyStorage storage $ = _getERC4626StrategyStorage();
+        ERC4626StrategyStorage storage $ = _getERC4626StrategyBaseStorage();
         baseYieldPercentage = _calculateYieldPercentage($.lastPreviewRedeem, currentRedeem);
         $.lastPreviewRedeem = currentRedeem;
     }
@@ -251,34 +258,80 @@ contract ERC4626StrategyBase is Strategy {
         return (new address[](0), new uint256[](0));
     }
 
+    /**
+     * @notice Nothing to swap as it's only one asset.
+     */
     function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal virtual override {}
 
-    /// @notice Internal functions specific to Modules for ERC4626 base strategy
+    // ==========================================================================
+    // Internal functions specific to Modules for ERC4626 base strategy
+    // ==========================================================================
 
+    /**
+     * @notice in case vault shares are used elsewhere this function should be overwritten
+     */
     function beforeDepositCheck_(uint256 assets) internal virtual {}
 
+    /**
+     * @dev by default returns unchanged assets amount
+     * @notice in case vault shares are used elsewhere this function should be overwritten
+     * @param shares amount to redeem
+     * @return assets amount
+     */
     function beforeRedeemalCheck_(uint256 shares) internal virtual returns (uint256 assets) {
         return shares;
     }
 
+    /**
+     * @dev by default returns unchanged assets amount
+     * @notice in case vault shares are used elsewhere this function should be overwritten
+     * @param assets amount to redeem
+     * @return shares amount
+     */
     function deposit_(uint256 assets) internal virtual returns (uint256 shares) {
         return assets;
     }
 
+    /**
+     * @dev  full redeem, should use redeem_(uint256 shares) under the hood
+     * @notice in case vault shares are used elsewhere this function should be overwritten
+     */
     function redeem_() internal virtual {}
 
+    /**
+     * @dev by default returns unchanged amount
+     * @notice in case vault shares are used elsewhere this function should be overwritten
+     * @param shares amount to redeem
+     * @return assets amount
+     */
     function redeem_(uint256 shares) internal virtual returns (uint256 assets) {
         return shares;
     }
 
+    /**
+     * @dev used for calculation of yield
+     * @notice in case vault shares are used elsewhere this function should be overwritten
+     * @return amount of assets which will be obtained from constant amount of shares
+     */
     function previewConstantRedeem_() internal view virtual returns (uint256) {
         return vault.previewRedeem(CONSTANT_SHARE_AMOUNT);
     }
 
+    /**
+     * @dev convert SSTs to vault shares or its derivative shares
+     * @notice in case vault shares are used elsewhere this function should be overwritten
+     * @param ssts amount of SSTs to burn
+     * @return amount of assets the strategy will get
+     */
     function previewRedeemSSTs_(uint256 ssts) internal view virtual returns (uint256) {
         return (vault.balanceOf(address(this)) * ssts) / totalSupply();
     }
 
+    /**
+     * @dev get the total underlying asset amount
+     * @notice in case vault shares are used elsewhere this function should be overwritten
+     * @return amount of assets which strategy will get in case of full redeem
+     */
     function underlyingAssetAmount_() internal view virtual returns (uint256) {
         return vault.previewRedeem(vault.balanceOf(address(this)));
     }

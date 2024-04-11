@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
-import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/interfaces/IERC4626.sol";
 
 import "./ERC4626StrategyBase.sol";
 import "../libraries/ERC4626Lib.sol";
-import "../interfaces/ISwapper.sol";
 
+//
+/// @dev module for reinvesting vault shares in another ERC4626 vault
+// all rewards are automatically included into secondaryVault
+// therefore there is no explicit compounding
+// for instance Yearn V3 vaults have this implementation and call it "juiced yield"
+//
 contract ERC4626StrategyDouble is ERC4626StrategyBase {
     IERC4626 public immutable secondaryVault;
 
