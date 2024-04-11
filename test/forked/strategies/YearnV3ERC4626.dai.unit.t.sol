@@ -232,10 +232,8 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
         vm.stopPrank();
 
         // assert
-        assertEq(rewardAddresses.length, 1);
-        assertEq(rewardAddresses[0], address(0));
+        assertEq(rewardAddresses.length, 0);
         assertEq(rewardAmounts.length, rewardAddresses.length);
-        assertEq(rewardAmounts[0], 0);
     }
 
     function test_getUsdWorth() public {

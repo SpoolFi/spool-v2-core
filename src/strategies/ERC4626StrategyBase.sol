@@ -40,7 +40,7 @@ contract ERC4626StrategyBase is Strategy {
     /// @custom:storage-location erc7201:spool.storage.ERC4626Strategy
     struct ERC4626StrategyStorage {
         /// @notice redeem at the last DHW.
-        uint256 lastConstantRedeem;
+        uint256 lastPreviewRedeem;
     }
 
     // keccak256(abi.encode(uint256(keccak256("spool.storage.ERC4626Strategy")) - 1)) & ~bytes32(uint256(0xff))
@@ -84,7 +84,7 @@ contract ERC4626StrategyBase is Strategy {
         }
 
         ERC4626StrategyStorage storage $ = _getERC4626StrategyStorage();
-        $.lastConstantRedeem = previewConstantRedeem_();
+        $.lastPreviewRedeem = previewConstantRedeem_();
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {
@@ -99,16 +99,37 @@ contract ERC4626StrategyBase is Strategy {
     }
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
-        if (slippages[0] > 2) {
-            revert BeforeDepositCheck();
-        }
-        if (!PackedRange.isWithinRange(slippages[1], amounts[0])) revert BeforeDepositCheck();
-
+        _beforeDepositCheckSlippage(amounts, slippages);
         if (ERC4626Lib.depositFull(vault, amounts[0])) revert BeforeDepositCheck();
         beforeDepositCheck_(vault.previewDeposit(amounts[0]));
     }
 
+    /// @dev can be overwritten in particular strategy to remove slippages
+    function _beforeDepositCheckSlippage(uint256[] memory amounts, uint256[] calldata slippages) internal virtual {
+        if (_isViewExecution()) {
+            uint256[] memory beforeDepositCheckSlippageAmounts = new uint256[](1);
+            beforeDepositCheckSlippageAmounts[0] = amounts[0];
+            emit BeforeDepositCheckSlippages(beforeDepositCheckSlippageAmounts);
+            return;
+        }
+        if (slippages[0] > 2) {
+            revert BeforeDepositCheck();
+        }
+        if (!PackedRange.isWithinRange(slippages[1], amounts[0])) revert BeforeDepositCheck();
+    }
+
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public override {
+        _beforeRedeemalCheckSlippages(ssts, slippages);
+        uint256 shares = beforeRedeemalCheck_(previewRedeemSSTs_(ssts));
+        if (ERC4626Lib.redeemNotEnough(vault, shares)) revert BeforeRedeemalCheck();
+    }
+
+    /// @dev can be overwritten in particular strategy to remove slippages
+    function _beforeRedeemalCheckSlippages(uint256 ssts, uint256[] calldata slippages) internal virtual {
+        if (_isViewExecution()) {
+            emit BeforeRedeemalCheckSlippages(ssts);
+            return;
+        }
         uint256 slippage;
         if (slippages[0] < 2) {
             slippage = slippages[2];
@@ -117,11 +138,7 @@ contract ERC4626StrategyBase is Strategy {
         } else {
             revert BeforeRedeemalCheck();
         }
-
         if (!PackedRange.isWithinRange(slippage, ssts)) revert BeforeRedeemalCheck();
-
-        uint256 shares = beforeRedeemalCheck_(previewRedeemSSTs_(ssts));
-        if (ERC4626Lib.redeemNotEnough(vault, shares)) revert BeforeRedeemalCheck();
     }
 
     function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {
@@ -129,8 +146,8 @@ contract ERC4626StrategyBase is Strategy {
         // e.g. Share token is deposited into another yield generating vault
         uint256 currentRedeem = previewConstantRedeem_();
         ERC4626StrategyStorage storage $ = _getERC4626StrategyStorage();
-        baseYieldPercentage = _calculateYieldPercentage($.lastConstantRedeem, currentRedeem);
-        $.lastConstantRedeem = currentRedeem;
+        baseYieldPercentage = _calculateYieldPercentage($.lastPreviewRedeem, currentRedeem);
+        $.lastPreviewRedeem = currentRedeem;
     }
 
     function _compound(address[] calldata tokens, SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
@@ -144,7 +161,12 @@ contract ERC4626StrategyBase is Strategy {
         internal
         override
     {
-        uint256 slippage;
+        uint256 slippage = _depositToProtocolSlippages(slippages);
+        _depositToProtocolInternal(IERC20(tokens[0]), amounts[0], slippage);
+    }
+
+    /// @dev can be overwritten in particular strategy to remove slippages
+    function _depositToProtocolSlippages(uint256[] calldata slippages) internal pure returns (uint256 slippage) {
         if (slippages[0] == 0) {
             slippage = slippages[4];
         } else if (slippages[0] == 2) {
@@ -152,49 +174,64 @@ contract ERC4626StrategyBase is Strategy {
         } else {
             revert DepositSlippage();
         }
-        _depositToProtocolInternal(IERC20(tokens[0]), amounts[0], slippage);
     }
 
-    function _depositToProtocolInternal(IERC20 token, uint256 amount, uint256 slippage) internal {
+    function _depositToProtocolInternal(IERC20 token, uint256 amount, uint256 slippage)
+        internal
+        returns (uint256 shares)
+    {
         if (amount > 0) {
             _resetAndApprove(token, address(vault), amount);
-            uint256 shares = deposit_(vault.deposit(amount, address(this)));
-            if (shares < slippage) revert DepositSlippage();
+            shares = deposit_(vault.deposit(amount, address(this)));
+            _depositToProtocolInternalSlippages(shares, slippage);
+        }
+    }
+
+    /// @dev can be overwritten in particular strategy to remove slippages
+    function _depositToProtocolInternalSlippages(uint256 shares, uint256 slippage) internal {
+        if (shares < slippage) revert DepositSlippage();
+        if (_isViewExecution()) {
+            emit Slippages(true, shares, "");
         }
     }
 
     function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
-        uint256 slippage;
+        uint256 slippage = _redeemFromProtocolSlippages(slippages);
+        uint256 shares = previewRedeemSSTs_(ssts);
+        _redeemFromProtocolInternal(shares, slippage);
+    }
+
+    /// @dev can be overwritten in particular strategy to remove slippages
+    function _redeemFromProtocolSlippages(uint256[] calldata slippages) internal view returns (uint256 slippage) {
         if (slippages[0] == 1) {
             slippage = slippages[4];
         } else if (slippages[0] == 2) {
             slippage = slippages[2];
         } else if (slippages[0] == 3) {
             slippage = slippages[1];
-        } else {
+        } else if (_isViewExecution()) {} else {
             revert RedeemalSlippage();
         }
-        uint256 shares = previewRedeemSSTs_(ssts);
-        _redeemFromProtocolInternal(shares, slippage);
     }
 
     function _redeemFromProtocolInternal(uint256 shares, uint256 slippage) internal {
         if (shares > 0) {
             uint256 assets = vault.redeem(redeem_(shares), address(this), address(this));
-            if (assets < slippage) revert RedeemalSlippage();
+            _redeemFromProtocolInternalSlippages(assets, slippage);
+        }
+    }
+
+    /// @dev can be overwritten in particular strategy to remove slippages
+    function _redeemFromProtocolInternalSlippages(uint256 assets, uint256 slippage) internal {
+        if (assets < slippage) revert RedeemalSlippage();
+        if (_isViewExecution()) {
+            emit Slippages(false, assets, "");
         }
     }
 
     function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
         redeem_();
-        // not all funds can be available for withdrawal
-        uint256 maxRedeem = vault.maxRedeem(address(this));
-        uint256 totalShares = vault.balanceOf(address(this));
-        // maxRedeem can be slightly lower so check for minimal difference - 3 decimals
-        if (totalShares - maxRedeem < 10 ** vault.decimals() / 1000) {
-            maxRedeem = totalShares;
-        }
-        vault.redeem(maxRedeem, recipient, address(this));
+        vault.redeem(ERC4626Lib.getMaxRedeem(vault), recipient, address(this));
     }
 
     function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
@@ -210,13 +247,8 @@ contract ERC4626StrategyBase is Strategy {
         }
     }
 
-    function _getProtocolRewardsInternal() internal override returns (address[] memory, uint256[] memory) {
-        address[] memory tokens = new address[](1);
-        uint256[] memory amounts = new uint256[](1);
-
-        (tokens[0], amounts[0]) = rewardInfo_();
-
-        return (tokens, amounts);
+    function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {
+        return (new address[](0), new uint256[](0));
     }
 
     function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal virtual override {}
@@ -246,8 +278,6 @@ contract ERC4626StrategyBase is Strategy {
     function previewRedeemSSTs_(uint256 ssts) internal view virtual returns (uint256) {
         return (vault.balanceOf(address(this)) * ssts) / totalSupply();
     }
-
-    function rewardInfo_() internal virtual returns (address, uint256) {}
 
     function underlyingAssetAmount_() internal view virtual returns (uint256) {
         return vault.previewRedeem(vault.balanceOf(address(this)));

@@ -78,6 +78,15 @@ contract GearboxV3ERC4626 is ERC4626StrategyBase {
         }
     }
 
+    function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {
+        address[] memory tokens = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        (tokens[0], amounts[0]) = (address(gear), _claimReward());
+
+        return (tokens, amounts);
+    }
+
     function previewRedeemSSTs_(uint256 ssts) internal view override returns (uint256) {
         return (sdToken.balanceOf(address(this)) * ssts) / totalSupply();
     }
@@ -90,10 +99,6 @@ contract GearboxV3ERC4626 is ERC4626StrategyBase {
     function redeem_(uint256 shares) internal override returns (uint256) {
         sdToken.withdraw(shares);
         return shares;
-    }
-
-    function rewardInfo_() internal override returns (address, uint256) {
-        return (address(gear), _claimReward());
     }
 
     function underlyingAssetAmount_() internal view override returns (uint256) {

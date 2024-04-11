@@ -2,7 +2,6 @@
 pragma solidity 0.8.17;
 
 import "./ERC4626StrategyBase.sol";
-import "../external/interfaces/strategies/gearbox/v3/IFarmingPool.sol";
 
 contract ERC4626StrategyPure is ERC4626StrategyBase {
     constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, IERC4626 vault_)

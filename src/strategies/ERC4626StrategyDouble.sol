@@ -48,7 +48,7 @@ contract ERC4626StrategyDouble is ERC4626StrategyBase {
     }
 
     function redeem_() internal override {
-        redeem_(secondaryVault.balanceOf(address(this)));
+        redeem_(ERC4626Lib.getMaxRedeem(secondaryVault));
     }
 
     function redeem_(uint256 shares) internal override returns (uint256) {
