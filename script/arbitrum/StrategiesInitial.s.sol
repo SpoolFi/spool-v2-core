@@ -32,8 +32,6 @@ struct GammaCamelotData {
     IHypervisor hypervisor;
     INitroPool nitroPool;
     bool extraRewards;
-    int128 positiveYieldLimit;
-    int128 negativeYieldLimit;
     uint256 assetGroupId;
     int256 apy;
 }
@@ -221,14 +219,7 @@ contract StrategiesInitial {
         // initialize
         address variant = _newProxy(address(implementation), contracts.proxyAdmin);
         rewards.initialize(data.hypervisor, data.nitroPool, IStrategy(variant), data.extraRewards);
-        GammaCamelotStrategy(variant).initialize(
-            variantName,
-            data.assetGroupId,
-            data.hypervisor,
-            data.nitroPool,
-            data.positiveYieldLimit,
-            data.negativeYieldLimit
-        );
+        GammaCamelotStrategy(variant).initialize(variantName, data.assetGroupId, data.hypervisor, data.nitroPool);
 
         // add to json file and register
         contractsJson().addVariantStrategyImplementation(GAMMA_CAMELOT_KEY, address(implementation));
@@ -251,18 +242,6 @@ contract StrategiesInitial {
 
         data.extraRewards = constantsJson().getBool(
             string.concat(".strategies.", GAMMA_CAMELOT_KEY, ".", poolKey, ".", rangeKey, ".extraRewards")
-        );
-
-        data.positiveYieldLimit = SafeCast.toInt128(
-            constantsJson().getInt256(
-                string.concat(".strategies.", GAMMA_CAMELOT_KEY, ".", poolKey, ".", rangeKey, ".positiveYieldLimit")
-            )
-        );
-
-        data.negativeYieldLimit = SafeCast.toInt128(
-            constantsJson().getInt256(
-                string.concat(".strategies.", GAMMA_CAMELOT_KEY, ".", poolKey, ".", rangeKey, ".negativeYieldLimit")
-            )
         );
 
         data.apy = constantsJson().getInt256(
