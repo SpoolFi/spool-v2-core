@@ -413,12 +413,22 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         amounts[1] = (amount1 * poolBalance) / poolSupply;
     }
 
+    /// @notice We use hypervisor shares for yield percentage as fees are autocompounded into the shares in the
+    /// Hypervisor contract.
+    /// For Uniswap v3 and it's derivatives, the price is quoted as the current exchange from token 0 to token
+    /// 1 and is found in sqrtPriceX96. sqrtPriceX96 is the first entry in slot0/globalState (Uniswap V3/Algebra
+    /// Pool respectively).
+    /// You can convert sqrtPriceX96 to sqrtPrice by dividing by 2^96: sqrtPrice == sqrtPriceX96/2^96
+    /// price is then derived by squaring sqrtPrice: price == sqrtPrice ** 2
+    /// putting these equations together: price == (sqrtPriceX96 / 2^96)^2 == sqrtPriceX96^2 / (2^96)^2.
+    /// Having derived token0 -> token1 rate, we can then derive amount of token0 as priced in token1.
+    /// The final rate is amounts priced in token1 divided by the total supply of the pool. we use 10**18 as precision.
     function _getHypervisorSharePrice() private view returns (uint256 hypervisorSharePrice) {
         uint256 precision = pool.PRECISION();
         IAlgebraPool underlyingPool = IAlgebraPool(pool.pool());
 
-        (uint160 sqrtPrice,,,,,,,) = underlyingPool.globalState();
-        uint256 price = FullMath.mulDiv(uint256(sqrtPrice) * uint256(sqrtPrice), precision, 2 ** (96 * 2));
+        (uint160 sqrtPriceX96,,,,,,,) = underlyingPool.globalState();
+        uint256 price = FullMath.mulDiv(uint256(sqrtPriceX96) * uint256(sqrtPriceX96), precision, 2 ** 192);
         (uint256 amount0, uint256 amount1) = pool.getTotalAmounts();
         uint256 amount0PricedInAmount1 = (amount0 * price) / precision;
 
