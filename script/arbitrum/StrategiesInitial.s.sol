@@ -95,15 +95,24 @@ contract StrategiesInitial {
 
         contractsJson().addVariantStrategyImplementation(AAVE_V3_KEY, address(implementation));
 
-        string memory variantName = _getVariantName(AAVE_V3_KEY, USDC_KEY);
+        // create variant proxies
+        string[] memory variants = new string[](3);
+        variants[0] = DAI_KEY;
+        variants[1] = USDC_KEY;
+        variants[2] = USDT_KEY;
 
-        address variant = _newProxy(address(implementation), contracts.proxyAdmin);
-        uint256 assetGroupId = assetGroups(USDC_KEY);
+        for (uint256 i; i < variants.length; ++i) {
+            string memory variantName = _getVariantName(AAVE_V3_KEY, variants[i]);
 
-        IAToken aToken =
-            IAToken(constantsJson().getAddress(string.concat(".strategies.", AAVE_V3_KEY, ".", USDC_KEY, ".aToken")));
-        AaveV3Strategy(variant).initialize(variantName, assetGroupId, aToken);
-        _registerStrategyVariant(AAVE_V3_KEY, USDC_KEY, variant, assetGroupId, contracts.strategyRegistry);
+            address variant = _newProxy(address(implementation), contracts.proxyAdmin);
+            uint256 assetGroupId = assetGroups(variants[i]);
+
+            IAToken aToken = IAToken(
+                constantsJson().getAddress(string.concat(".strategies.", AAVE_V3_KEY, ".", variants[i], ".aToken"))
+            );
+            AaveV3Strategy(variant).initialize(variantName, assetGroupId, aToken);
+            _registerStrategyVariant(AAVE_V3_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+        }
     }
 
     function deployAaveV3Swap(StandardContracts memory contracts) public {
@@ -153,15 +162,22 @@ contract StrategiesInitial {
 
         contractsJson().addVariantStrategyImplementation(COMPOUND_V3_KEY, address(implementation));
 
-        string memory variantName = _getVariantName(COMPOUND_V3_KEY, USDC_KEY);
+        // create variant proxies
+        string[] memory variants = new string[](1);
+        variants[0] = USDC_KEY;
 
-        IComet cToken =
-            IComet(constantsJson().getAddress(string.concat(".strategies.", COMPOUND_V3_KEY, ".", USDC_KEY, ".cToken")));
+        for (uint256 i; i < variants.length; ++i) {
+            string memory variantName = _getVariantName(COMPOUND_V3_KEY, variants[i]);
 
-        address variant = _newProxy(address(implementation), contracts.proxyAdmin);
-        uint256 assetGroupId = assetGroups(USDC_KEY);
-        CompoundV3Strategy(variant).initialize(variantName, assetGroupId, cToken);
-        _registerStrategyVariant(COMPOUND_V3_KEY, USDC_KEY, variant, assetGroupId, contracts.strategyRegistry);
+            IComet cToken = IComet(
+                constantsJson().getAddress(string.concat(".strategies.", COMPOUND_V3_KEY, ".", variants[i], ".cToken"))
+            );
+
+            address variant = _newProxy(address(implementation), contracts.proxyAdmin);
+            uint256 assetGroupId = assetGroups(variants[i]);
+            CompoundV3Strategy(variant).initialize(variantName, assetGroupId, cToken);
+            _registerStrategyVariant(COMPOUND_V3_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+        }
     }
 
     function deployCompoundV3Swap(StandardContracts memory contracts) public {
