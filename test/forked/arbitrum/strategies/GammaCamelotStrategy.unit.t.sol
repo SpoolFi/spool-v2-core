@@ -85,14 +85,7 @@ contract GammaCamelotStrategyTest is TestFixture, ForkTestFixture {
     }
 
     function _initialize() private {
-        gammaCamelotStrategy.initialize(
-            "gamma-camelot-strategy",
-            assetGroupId,
-            pool,
-            nitroPool,
-            int128(YIELD_FULL_PERCENT_INT),
-            int128(-YIELD_FULL_PERCENT_INT)
-        );
+        gammaCamelotStrategy.initialize("gamma-camelot-strategy", assetGroupId, pool, nitroPool);
         rewards.initialize(pool, nitroPool, gammaCamelotStrategy, true);
     }
 
@@ -137,9 +130,7 @@ contract GammaCamelotStrategyTest is TestFixture, ForkTestFixture {
         uint256 bad_assetGroupId = assetGroupRegistry.registerAssetGroup(bad_assetGroup);
 
         vm.expectRevert(abi.encodeWithSelector(InvalidAssetGroup.selector, bad_assetGroupId));
-        gammaCamelotStrategy.initialize(
-            "gamma-camelot-strategy", bad_assetGroupId, pool, nitroPool, 20000000000, -1000000000000
-        );
+        gammaCamelotStrategy.initialize("gamma-camelot-strategy", bad_assetGroupId, pool, nitroPool);
     }
 
     function test_assetRatio() public initializer {
@@ -156,25 +147,41 @@ contract GammaCamelotStrategyTest is TestFixture, ForkTestFixture {
     }
 
     function test_getYieldPercentage() public initializer {
-        // arrange
-        int128 positiveLimit = int128(YIELD_FULL_PERCENT_INT / 100);
-        int128 negativeLimit = int128(-YIELD_FULL_PERCENT_INT);
+        // Executes large swaps back and forth, which will accumulate fees to be collected.
+        ISwapRouter.ExactInputParams memory params;
+        uint256 toSwapWeth = 1000 * tokenWethMultiplier;
+        _deal(address(tokenWeth), address(this), toSwapWeth);
+        tokenWeth.approve(address(router), toSwapWeth);
+        params = ISwapRouter.ExactInputParams({
+            path: abi.encodePacked(address(tokenWeth), address(tokenUsdc)),
+            recipient: address(this),
+            deadline: block.timestamp + 1,
+            amountIn: toSwapWeth,
+            amountOutMinimum: 0
+        });
+        router.exactInput(params);
 
-        gammaCamelotStrategy.setPositiveYieldLimit(positiveLimit);
-        gammaCamelotStrategy.setNegativeYieldLimit(negativeLimit);
+        uint256 toSwapUsdc = 1000 * 3891 * tokenUsdcMultiplier;
+        _deal(address(tokenUsdc), address(this), toSwapUsdc);
+        tokenUsdc.approve(address(router), toSwapUsdc);
+        params = ISwapRouter.ExactInputParams({
+            path: abi.encodePacked(address(tokenUsdc), address(tokenWeth)),
+            recipient: address(this),
+            deadline: block.timestamp + 1,
+            amountIn: toSwapUsdc,
+            amountOutMinimum: 0
+        });
+        router.exactInput(params);
 
-        // act / assert
-        int256 zeroManualYield = 123;
-        int256 yieldPercentage = gammaCamelotStrategy.exposed_getYieldPercentage(zeroManualYield);
-        assertEq(zeroManualYield, yieldPercentage);
+        // compound the fees into the position from the owner
+        uint256[4] memory minAmounts;
+        address poolOwner = pool.owner();
+        vm.prank(poolOwner);
+        pool.compound(minAmounts);
 
-        int256 tooBigYield = positiveLimit + 1;
-        vm.expectRevert(abi.encodeWithSelector(ManualYieldTooBig.selector, int256(tooBigYield)));
-        gammaCamelotStrategy.exposed_getYieldPercentage(tooBigYield);
-
-        int256 tooSmallYield = negativeLimit - 1;
-        vm.expectRevert(abi.encodeWithSelector(ManualYieldTooSmall.selector, int256(tooSmallYield)));
-        gammaCamelotStrategy.exposed_getYieldPercentage(tooSmallYield);
+        // act
+        int256 yieldPercentage = gammaCamelotStrategy.exposed_getYieldPercentage(0);
+        assertTrue(yieldPercentage > 0);
     }
 
     function test_depositToProtocol() public initializer {

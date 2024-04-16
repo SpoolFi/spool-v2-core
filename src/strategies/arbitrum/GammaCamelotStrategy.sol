@@ -12,10 +12,11 @@ import "../../external/interfaces/strategies/arbitrum/gamma-camelot/INitroPool.s
 import "../../external/interfaces/strategies/arbitrum/gamma-camelot/IUniProxy.sol";
 import "../../external/interfaces/strategies/arbitrum/gamma-camelot/IXGrail.sol";
 
+import "../../external/libraries/uniswap/FullMath.sol";
+
 import "../../interfaces/ISwapper.sol";
 import "../../libraries/PackedRange.sol";
 import "../../strategies/Strategy.sol";
-import "../helpers/StrategyManualYieldVerifier.sol";
 import "../interfaces/helpers/IGammaCamelotRewards.sol";
 
 error GammaCamelotDepositCheckFailed();
@@ -67,7 +68,7 @@ error GammaCamelotCompoundSlippagesFailed();
 //
 // xGRAIL reward management is handled by the GammaCamelotRewards contract (see GammaCamelotRewards.sol for
 // extensive details).
-contract GammaCamelotStrategy is StrategyManualYieldVerifier, Strategy, IERC721Receiver {
+contract GammaCamelotStrategy is Strategy, IERC721Receiver {
     using SafeERC20 for IERC20;
 
     ISwapper public immutable swapper;
@@ -83,6 +84,9 @@ contract GammaCamelotStrategy is StrategyManualYieldVerifier, Strategy, IERC721R
     // - we fully remove value from the current NFT, so new one needs to be created.
     uint256 public nftId;
 
+    /// @notice Hypervisor share price at the last DHW.
+    uint256 private _lastSharePrice;
+
     constructor(
         IAssetGroupRegistry assetGroupRegistry_,
         ISpoolAccessControl accessControl_,
@@ -96,14 +100,10 @@ contract GammaCamelotStrategy is StrategyManualYieldVerifier, Strategy, IERC721R
         rewards = rewards_;
     }
 
-    function initialize(
-        string memory strategyName_,
-        uint256 assetGroupId_,
-        IHypervisor pool_,
-        INitroPool nitroPool_,
-        int128 positiveYieldLimit_,
-        int128 negativeYieldLimit_
-    ) external initializer {
+    function initialize(string memory strategyName_, uint256 assetGroupId_, IHypervisor pool_, INitroPool nitroPool_)
+        external
+        initializer
+    {
         __Strategy_init(strategyName_, assetGroupId_);
 
         // local variables
@@ -126,9 +126,7 @@ contract GammaCamelotStrategy is StrategyManualYieldVerifier, Strategy, IERC721R
 
         nftId = type(uint256).max;
 
-        // assign limits
-        _setPositiveYieldLimit(positiveYieldLimit_);
-        _setNegativeYieldLimit(negativeYieldLimit_);
+        _lastSharePrice = _getHypervisorSharePrice();
     }
 
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
@@ -288,9 +286,11 @@ contract GammaCamelotStrategy is StrategyManualYieldVerifier, Strategy, IERC721R
         compoundYield = int256(YIELD_FULL_PERCENT * (_getPoolBalance() - sharesBefore) / sharesBefore);
     }
 
-    function _getYieldPercentage(int256 manualYield) internal view override returns (int256) {
-        _verifyManualYieldPercentage(manualYield);
-        return manualYield;
+    function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {
+        uint256 sharePriceCurrent = _getHypervisorSharePrice();
+
+        baseYieldPercentage = _calculateYieldPercentage(_lastSharePrice, sharePriceCurrent);
+        _lastSharePrice = sharePriceCurrent;
     }
 
     function _swapAssets(address[] memory tokens, uint256[] memory amountsIn, SwapInfo[] calldata swapInfo)
@@ -411,6 +411,18 @@ contract GammaCamelotStrategy is StrategyManualYieldVerifier, Strategy, IERC721R
 
         amounts[0] = (amount0 * poolBalance) / poolSupply;
         amounts[1] = (amount1 * poolBalance) / poolSupply;
+    }
+
+    function _getHypervisorSharePrice() private view returns (uint256 hypervisorSharePrice) {
+        uint256 precision = pool.PRECISION();
+        IAlgebraPool underlyingPool = IAlgebraPool(pool.pool());
+
+        (uint160 sqrtPrice,,,,,,,) = underlyingPool.globalState();
+        uint256 price = FullMath.mulDiv(uint256(sqrtPrice) * uint256(sqrtPrice), precision, 2 ** (96 * 2));
+        (uint256 amount0, uint256 amount1) = pool.getTotalAmounts();
+        uint256 amount0PricedInAmount1 = (amount0 * price) / precision;
+
+        hypervisorSharePrice = ((amount0PricedInAmount1 + amount1) * 1 ether) / (pool.totalSupply());
     }
 
     function _transferToRecipient(address[] memory tokens, uint256[] memory amounts, address recipient) private {

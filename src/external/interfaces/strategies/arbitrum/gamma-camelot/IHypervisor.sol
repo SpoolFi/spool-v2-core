@@ -21,4 +21,10 @@ interface IHypervisor {
     function totalSupply() external view returns (uint256);
 
     function balanceOf(address) external view returns (uint256);
+
+    function PRECISION() external view returns (uint256);
+
+    function owner() external view returns (address);
+
+    function compound(uint256[4] memory) external;
 }

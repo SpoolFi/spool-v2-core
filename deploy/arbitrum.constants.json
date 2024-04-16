@@ -64,8 +64,6 @@
                 "nitroPool": "0x84EDB15BcBf6818879C6FDf26A69700D43100A74",
                 "narrow": {
                     "apy": 0,
-                    "positiveYieldLimit": 20000000000,
-                    "negativeYieldLimit": -1000000000000,
                     "extraRewards": false
                 }
             }
