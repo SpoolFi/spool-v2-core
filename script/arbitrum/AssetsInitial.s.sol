@@ -6,7 +6,9 @@ import "../../src/managers/UsdPriceFeedManager.sol";
 import "../helper/ArraysHelper.sol";
 import "../helper/JsonHelper.sol";
 
+string constant DAI_KEY = "dai";
 string constant USDC_KEY = "usdc";
+string constant USDT_KEY = "usdt";
 string constant WETH_KEY = "weth";
 string constant WETH_USDC_KEY = "weth-usdc";
 
@@ -22,9 +24,11 @@ contract AssetsInitial {
     }
 
     function setAssets(IAssetGroupRegistry assetGroupRegistry, UsdPriceFeedManager priceFeedManager) public {
-        string[] memory assetNames = new string[](2);
-        assetNames[0] = USDC_KEY;
-        assetNames[1] = WETH_KEY;
+        string[] memory assetNames = new string[](4);
+        assetNames[0] = DAI_KEY;
+        assetNames[1] = USDC_KEY;
+        assetNames[2] = USDT_KEY;
+        assetNames[3] = WETH_KEY;
 
         address[] memory assetAddresses = new address[](assetNames.length);
         address[] memory assetPriceAggregators = new address[](assetNames.length);
@@ -52,9 +56,17 @@ contract AssetsInitial {
         address[] memory assetGroup = new address[](1);
         uint256 assetGroupId;
 
+        assetGroup[0] = _assets[DAI_KEY];
+        assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+        _assetGroups[DAI_KEY] = assetGroupId;
+
         assetGroup[0] = _assets[USDC_KEY];
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         _assetGroups[USDC_KEY] = assetGroupId;
+
+        assetGroup[0] = _assets[USDT_KEY];
+        assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+        _assetGroups[USDT_KEY] = assetGroupId;
 
         assetGroup[0] = _assets[WETH_KEY];
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
@@ -75,8 +87,10 @@ contract AssetsInitial {
 
     function loadAssets() public {
         string[] memory assetNames = new string[](4);
-        assetNames[0] = USDC_KEY;
-        assetNames[1] = WETH_USDC_KEY;
+        assetNames[0] = DAI_KEY;
+        assetNames[1] = USDC_KEY;
+        assetNames[2] = USDT_KEY;
+        assetNames[3] = WETH_KEY;
 
         for (uint256 i; i < assetNames.length; ++i) {
             _assets[assetNames[i]] = constantsJson().getAddress(string.concat(".assets.", assetNames[i], ".address"));
@@ -86,8 +100,14 @@ contract AssetsInitial {
     function loadAssetGroups(IAssetGroupRegistry assetGroupRegistry) public {
         address[] memory assetGroup = new address[](1);
 
+        assetGroup[0] = _assets[DAI_KEY];
+        _assetGroups[DAI_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
+
         assetGroup[0] = _assets[USDC_KEY];
         _assetGroups[USDC_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
+
+        assetGroup[0] = _assets[USDT_KEY];
+        _assetGroups[USDT_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
 
         assetGroup[0] = _assets[WETH_KEY];
         _assetGroups[WETH_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
