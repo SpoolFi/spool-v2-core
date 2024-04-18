@@ -60,7 +60,7 @@ contract MetamorphoERC4626Test is TestFixture, ForkTestFixture {
 
         address[] memory rewards = new address[](2);
         rewards[0] = DAI;
-        rewards[1] = WETH;
+        rewards[1] = USDT;
         metamorphoStrategy.initialize("MetamorphoStrategy", assetGroupId, rewards);
 
         vm.prank(address(strategyRegistry));
@@ -206,7 +206,7 @@ contract MetamorphoERC4626Test is TestFixture, ForkTestFixture {
             assertEq(rewardAddresses.length, 2);
             assertEq(rewardAmounts.length, rewardAddresses.length);
             assertEq(rewardAddresses[0], address(DAI));
-            assertEq(rewardAddresses[1], address(WETH));
+            assertEq(rewardAddresses[1], address(USDT));
             assertEq(rewardAmounts[0], 0);
             assertEq(rewardAmounts[1], 0);
         }
@@ -214,9 +214,9 @@ contract MetamorphoERC4626Test is TestFixture, ForkTestFixture {
             // rewards for Morpho should be claimed by an off-chain service
             // so we will emulate simple transfer of tokens
             uint256 daiReward = 987 * 10 ** 6;
-            uint256 wethReward = 13 * 10 ** 18;
+            uint256 usdtReward = 10_000 * 10 ** 6;
             deal(DAI, address(metamorphoStrategy), daiReward);
-            deal(WETH, address(metamorphoStrategy), wethReward);
+            deal(USDT, address(metamorphoStrategy), usdtReward);
 
             vm.startPrank(address(0), address(0));
             (address[] memory rewardAddresses, uint256[] memory rewardAmounts) = metamorphoStrategy.getProtocolRewards();
@@ -225,57 +225,49 @@ contract MetamorphoERC4626Test is TestFixture, ForkTestFixture {
             assertEq(rewardAddresses.length, 2);
             assertEq(rewardAmounts.length, rewardAddresses.length);
             assertEq(rewardAddresses[0], address(DAI));
-            assertEq(rewardAddresses[1], address(WETH));
+            assertEq(rewardAddresses[1], address(USDT));
             assertEq(rewardAmounts[0], daiReward);
-            assertEq(rewardAmounts[1], wethReward);
+            // USDT is underlying therefore its reward amount should be zero
+            assertEq(rewardAmounts[1], 0);
         }
     }
 
     function test_compound() public {
         // arrange
         priceFeedManager.setExchangeRate(DAI, USD_DECIMALS_MULTIPLIER * 1);
-        priceFeedManager.setExchangeRate(WETH, USD_DECIMALS_MULTIPLIER * 3000);
 
         MockExchange exchangeDai = new MockExchange(IERC20(DAI), tokenUnderlying, priceFeedManager);
         deal(address(DAI), address(exchangeDai), 1_000_000 * 10 ** IERC20Metadata(address(DAI)).decimals(), false);
         deal(address(tokenUnderlying), address(exchangeDai), 1_000_000 * 10 ** tokenUnderlying.decimals(), false);
-        MockExchange exchangeWeth = new MockExchange(IERC20(WETH), tokenUnderlying, priceFeedManager);
-        deal(address(WETH), address(exchangeWeth), 1_000_000 * 10 ** IERC20Metadata(address(DAI)).decimals(), false);
-        deal(address(tokenUnderlying), address(exchangeWeth), 1_000_000 * 10 ** tokenUnderlying.decimals(), false);
 
-        swapper.updateExchangeAllowlist(
-            Arrays.toArray(address(exchangeDai), address(exchangeWeth)), Arrays.toArray(true, true)
-        );
+        swapper.updateExchangeAllowlist(Arrays.toArray(address(exchangeDai)), Arrays.toArray(true));
 
         // - need to deposit into the protocol
-        uint256[] memory slippages = new uint256[](5);
+        uint256[] memory slippages = new uint256[](6);
         slippages[0] = 0;
         slippages[4] = 1;
         metamorphoStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), slippages);
 
         uint256 balanceOfStrategyBefore = metamorphoStrategy.exposed_underlyingAssetAmount();
 
-        // act
         // rewards for Morpho should be claimed by an off-chain service
         // so we will emulate simple transfer of tokens
         uint256 daiReward = 987 * 10 ** 6;
-        uint256 wethReward = 13 * 10 ** 18;
+        uint256 usdtReward = 1000 * 10 ** 6;
         deal(DAI, address(metamorphoStrategy), daiReward);
-        deal(WETH, address(metamorphoStrategy), wethReward);
-        SwapInfo[] memory compoundSwapInfo = new SwapInfo[](2);
+        // simulate USDT transfer for user deposits + reward
+        deal(USDT, address(metamorphoStrategy), toDeposit + usdtReward);
+        SwapInfo[] memory compoundSwapInfo = new SwapInfo[](1);
         compoundSwapInfo[0] = SwapInfo({
             swapTarget: address(exchangeDai),
             token: DAI,
             swapCallData: abi.encodeCall(exchangeDai.swap, (DAI, daiReward, address(swapper)))
         });
-        compoundSwapInfo[1] = SwapInfo({
-            swapTarget: address(exchangeWeth),
-            token: WETH,
-            swapCallData: abi.encodeCall(exchangeDai.swap, (WETH, wethReward, address(swapper)))
-        });
 
-        slippages = new uint256[](5);
+        slippages = new uint256[](6);
         slippages[3] = 1;
+        // we need to pass USDT reward here
+        slippages[5] = usdtReward;
 
         int256 compoundYieldPercentage = metamorphoStrategy.exposed_compound(assetGroup, compoundSwapInfo, slippages);
 
@@ -285,8 +277,10 @@ contract MetamorphoERC4626Test is TestFixture, ForkTestFixture {
         int256 compoundYieldPercentageExpected =
             int256((balanceOfStrategyAfter - balanceOfStrategyBefore) * YIELD_FULL_PERCENT / balanceOfStrategyBefore);
 
-        assertGt(compoundYieldPercentage, 0);
-        assertApproxEqAbs(compoundYieldPercentage, compoundYieldPercentageExpected, 10);
+        // deposit part should be not touched upon compounding
+        assertEq(tokenUnderlying.balanceOf(address(metamorphoStrategy)), toDeposit, "1");
+        assertGt(compoundYieldPercentage, 0, "2");
+        assertApproxEqAbs(compoundYieldPercentage, compoundYieldPercentageExpected, 10, "3");
     }
 
     function test_getUsdWorth() public {

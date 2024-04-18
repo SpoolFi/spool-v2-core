@@ -4,6 +4,9 @@ pragma solidity 0.8.17;
 import "./ERC4626StrategyBase.sol";
 import "../access/Roles.sol";
 
+// slippages extension
+// - for all actions
+// - compound|underlyingRewardAmount: slippages[5]
 contract MetamorphoStrategy is ERC4626StrategyBase {
     using SafeERC20 for IERC20;
 
@@ -65,8 +68,13 @@ contract MetamorphoStrategy is ERC4626StrategyBase {
     function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {
         MetamorphoStrategyStorage memory $ = _getMetamorphoStrategyStorage();
         uint256[] memory amounts = new uint256[]($.rewards.length);
+        address underlyingAsset = assets()[0];
         for (uint256 i; i < $.rewards.length; i++) {
-            amounts[i] = IERC20($.rewards[i]).balanceOf(address(this));
+            // for reward like underlying asset we will return 0
+            // it should be calculated separately in DHW
+            if (underlyingAsset != $.rewards[i]) {
+                amounts[i] = IERC20($.rewards[i]).balanceOf(address(this));
+            }
         }
         return ($.rewards, amounts);
     }
@@ -83,16 +91,27 @@ contract MetamorphoStrategy is ERC4626StrategyBase {
             revert CompoundSlippage();
         }
         MetamorphoStrategyStorage memory $ = _getMetamorphoStrategyStorage();
+        address underlyingAsset = assets()[0];
         for (uint256 i; i < $.rewards.length; ++i) {
-            uint256 balance = IERC20($.rewards[i]).balanceOf(address(this));
-            if (balance > 0) {
-                IERC20($.rewards[i]).safeTransfer(address(swapper), balance);
+            // we do not need to send underlying for swap
+            if (underlyingAsset != $.rewards[i]) {
+                uint256 balance = IERC20($.rewards[i]).balanceOf(address(this));
+                if (balance > 0) {
+                    IERC20($.rewards[i]).safeTransfer(address(swapper), balance);
+                }
             }
         }
 
         uint256 swappedAmount = swapper.swap($.rewards, swapInfo, tokens, address(this))[0];
+
         uint256 sharesBefore = vault.balanceOf(address(this));
-        uint256 sharesMinted = _depositToProtocolInternal(IERC20(tokens[0]), swappedAmount, slippages[3]);
+        // we should account for reward in same underlying token
+        // if it zero it means there were no rewards yet
+        // otherwise only this part is reinvested without minting shares
+        uint256 underlyingForDeposit = slippages[5];
+        uint256 sharesMinted =
+            _depositToProtocolInternal(IERC20(tokens[0]), swappedAmount + underlyingForDeposit, slippages[3]);
+
         compoundedYieldPercentage = int256(YIELD_FULL_PERCENT * sharesMinted / sharesBefore);
     }
 }
