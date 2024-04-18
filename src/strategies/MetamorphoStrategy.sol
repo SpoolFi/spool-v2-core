@@ -21,7 +21,7 @@ contract MetamorphoStrategy is ERC4626StrategyBase {
         // MORPHO token should not be included here for the time being
         // since it is not transferable right now
         // but we should claim it anyway and store in Strategy Contract
-        // to decide ho to deal with it once transfers are enabled
+        // to decide how to deal with it once transfers are enabled
         address[] rewards;
     }
 
@@ -29,12 +29,9 @@ contract MetamorphoStrategy is ERC4626StrategyBase {
     bytes32 private constant MetamorphoStrategyStorageLocation =
         0xba80ae0a45b1697a500a91d31dd2530d1622d0566cbb38bdf5b7a847a4c4ee00;
 
-    constructor(
-        IAssetGroupRegistry assetGroupRegistry_,
-        ISpoolAccessControl accessControl_,
-        IERC4626 vault_,
-        ISwapper swapper_
-    ) ERC4626StrategyBase(assetGroupRegistry_, accessControl_, vault_, 10 ** (vault_.decimals() * 2)) {
+    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, ISwapper swapper_)
+        ERC4626StrategyBase(assetGroupRegistry_, accessControl_)
+    {
         _disableInitializers();
         swapper = swapper_;
     }
@@ -45,11 +42,14 @@ contract MetamorphoStrategy is ERC4626StrategyBase {
         }
     }
 
-    function initialize(string memory strategyName_, uint256 assetGroupId_, address[] calldata rewards_)
-        external
-        initializer
-    {
-        __ERC4626Strategy_init(strategyName_, assetGroupId_);
+    function initialize(
+        string memory strategyName_,
+        uint256 assetGroupId_,
+        IERC4626 vault_,
+        uint256 constantShareAmount_,
+        address[] calldata rewards_
+    ) external initializer {
+        __ERC4626Strategy_init(strategyName_, assetGroupId_, vault_, constantShareAmount_);
         MetamorphoStrategyStorage storage $ = _getMetamorphoStrategyStorage();
         $.rewards = rewards_;
     }
@@ -104,7 +104,7 @@ contract MetamorphoStrategy is ERC4626StrategyBase {
 
         uint256 swappedAmount = swapper.swap($.rewards, swapInfo, tokens, address(this))[0];
 
-        uint256 sharesBefore = vault.balanceOf(address(this));
+        uint256 sharesBefore = vault().balanceOf(address(this));
         // we should account for reward in same underlying token
         // if it zero it means there were no rewards yet
         // otherwise only this part is reinvested without minting shares

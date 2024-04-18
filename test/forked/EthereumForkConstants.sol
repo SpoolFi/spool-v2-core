@@ -96,5 +96,5 @@ address constant SDUSDC_TOKEN = address(0x9ef444a6d7F4A5adcd68FD5329aA5240C90E14
 address constant METAMORPHO_RE7_USDT = address(0x95EeF579155cd2C5510F312c8fA39208c3Be01a8);
 
 // Yearn V3
-address constant YearnAjnaDAIVault = 0xe24BA27551aBE96Ca401D39761cA2319Ea14e3CB; // yvAjnaDAI
-address constant YearnAjnaDAIHarvester = 0x082a5743aAdf3d0Daf750EeF24652b36a68B1e9C; // ysyvAjnaDAI
+address constant YEARN_AJNA_DAI_VAULT = 0xe24BA27551aBE96Ca401D39761cA2319Ea14e3CB; // yvAjnaDAI
+address constant YEARN_AJNA_DAI_HARVESTER = 0x082a5743aAdf3d0Daf750EeF24652b36a68B1e9C; // ysyvAjnaDAI

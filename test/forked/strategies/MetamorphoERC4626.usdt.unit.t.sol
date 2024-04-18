@@ -8,7 +8,6 @@ import "@openzeppelin/interfaces/IERC4626.sol";
 import "../../../src/external/interfaces/weth/IWETH9.sol";
 import "../../../src/libraries/SpoolUtils.sol";
 import "../../../src/interfaces/Constants.sol";
-import "../../../src/strategies/GearboxV3ERC4626.sol";
 import "../../../src/strategies/MetamorphoStrategy.sol";
 import "../../fixtures/TestFixture.sol";
 import "../../libraries/Arrays.sol";
@@ -55,13 +54,13 @@ contract MetamorphoERC4626Test is TestFixture, ForkTestFixture {
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         assetGroupExchangeRates = SpoolUtils.getExchangeRates(assetGroup, priceFeedManager);
 
-        implementation = address(new MetamorphoERC4626Harness(assetGroupRegistry, accessControl, vault, swapper));
+        implementation = address(new MetamorphoERC4626Harness(assetGroupRegistry, accessControl, swapper));
         metamorphoStrategy = MetamorphoERC4626Harness(address(new ERC1967Proxy(implementation, "")));
 
         address[] memory rewards = new address[](2);
         rewards[0] = DAI;
         rewards[1] = USDT;
-        metamorphoStrategy.initialize("MetamorphoStrategy", assetGroupId, rewards);
+        metamorphoStrategy.initialize("MetamorphoStrategy", assetGroupId, vault, 10 ** (vault.decimals() * 2), rewards);
 
         vm.prank(address(strategyRegistry));
         accessControl.grantRole(ROLE_STRATEGY, address(metamorphoStrategy));
@@ -300,12 +299,9 @@ contract MetamorphoERC4626Test is TestFixture, ForkTestFixture {
 
 // Exposes protocol-specific functions for unit-testing.
 contract MetamorphoERC4626Harness is MetamorphoStrategy, StrategyHarness {
-    constructor(
-        IAssetGroupRegistry assetGroupRegistry_,
-        ISpoolAccessControl accessControl_,
-        IERC4626 vault_,
-        ISwapper swapper_
-    ) MetamorphoStrategy(assetGroupRegistry_, accessControl_, vault_, swapper_) {}
+    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, ISwapper swapper_)
+        MetamorphoStrategy(assetGroupRegistry_, accessControl_, swapper_)
+    {}
 
     function exposed_underlyingAssetAmount() external view returns (uint256) {
         return underlyingAssetAmount_();

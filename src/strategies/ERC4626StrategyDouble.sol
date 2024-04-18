@@ -15,36 +15,38 @@ import "../libraries/ERC4626Lib.sol";
 contract ERC4626StrategyDouble is ERC4626StrategyBase {
     IERC4626 public immutable secondaryVault;
 
-    constructor(
-        IAssetGroupRegistry assetGroupRegistry_,
-        ISpoolAccessControl accessControl_,
-        IERC4626 vault_,
-        IERC4626 secondaryVault_
-    ) ERC4626StrategyBase(assetGroupRegistry_, accessControl_, vault_, 10 ** (secondaryVault_.decimals() * 2)) {
+    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, IERC4626 secondaryVault_)
+        ERC4626StrategyBase(assetGroupRegistry_, accessControl_)
+    {
         _disableInitializers();
         secondaryVault = secondaryVault_;
     }
 
-    function initialize(string memory strategyName_, uint256 assetGroupId_) external initializer {
-        __ERC4626Strategy_init(strategyName_, assetGroupId_);
+    function initialize(
+        string memory strategyName_,
+        uint256 assetGroupId_,
+        IERC4626 vault_,
+        uint256 constantShareAmount_
+    ) external initializer {
+        __ERC4626Strategy_init(strategyName_, assetGroupId_, vault_, constantShareAmount_);
     }
 
     function beforeDepositCheck_(uint256 assets) internal view override {
-        if (ERC4626Lib.depositFull(secondaryVault, assets)) revert BeforeDepositCheck();
+        if (ERC4626Lib.isDepositFull(secondaryVault, assets)) revert BeforeDepositCheck();
     }
 
     function beforeRedeemalCheck_(uint256 shares) internal view override returns (uint256) {
-        if (ERC4626Lib.redeemNotEnough(secondaryVault, shares)) revert BeforeRedeemalCheck();
+        if (ERC4626Lib.isRedeemalEmpty(secondaryVault, shares)) revert BeforeRedeemalCheck();
         return secondaryVault.previewRedeem(shares);
     }
 
     function deposit_(uint256 shares) internal override returns (uint256) {
-        _resetAndApprove(vault, address(secondaryVault), shares);
+        _resetAndApprove(vault(), address(secondaryVault), shares);
         return secondaryVault.deposit(shares, address(this));
     }
 
     function previewConstantRedeem_() internal view override returns (uint256) {
-        return vault.previewRedeem(secondaryVault.previewRedeem(CONSTANT_SHARE_AMOUNT));
+        return vault().previewRedeem(secondaryVault.previewRedeem(constantShareAmount()));
     }
 
     function previewRedeemSSTs_(uint256 ssts) internal view override returns (uint256) {
@@ -60,6 +62,6 @@ contract ERC4626StrategyDouble is ERC4626StrategyBase {
     }
 
     function underlyingAssetAmount_() internal view override returns (uint256) {
-        return vault.previewRedeem(secondaryVault.previewRedeem(secondaryVault.balanceOf(address(this))));
+        return vault().previewRedeem(secondaryVault.previewRedeem(secondaryVault.balanceOf(address(this))));
     }
 }

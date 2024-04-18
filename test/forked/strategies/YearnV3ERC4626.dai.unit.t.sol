@@ -8,7 +8,6 @@ import "@openzeppelin/interfaces/IERC4626.sol";
 import "../../../src/external/interfaces/weth/IWETH9.sol";
 import "../../../src/libraries/SpoolUtils.sol";
 import "../../../src/interfaces/Constants.sol";
-import "../../../src/strategies/GearboxV3ERC4626.sol";
 import "../../../src/strategies/ERC4626StrategyDouble.sol";
 import "../../fixtures/TestFixture.sol";
 import "../../libraries/Arrays.sol";
@@ -34,8 +33,8 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
     address implementation;
 
     // ******* Underlying specific constants **************
-    YearnVault public vault = YearnVault(YearnAjnaDAIVault);
-    YearnVault public harvester = YearnVault(YearnAjnaDAIHarvester);
+    YearnVault public vault = YearnVault(YEARN_AJNA_DAI_VAULT);
+    YearnVault public harvester = YearnVault(YEARN_AJNA_DAI_HARVESTER);
     IERC20Metadata tokenUnderlying = IERC20Metadata(DAI);
     uint256 toDeposit = 100_000 * 10 ** 18;
     uint256 rewardTokenAmount = 13396529259569365546568;
@@ -61,10 +60,10 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         assetGroupExchangeRates = SpoolUtils.getExchangeRates(assetGroup, priceFeedManager);
 
-        implementation = address(new YearnV3ERC4626Harness(assetGroupRegistry, accessControl, vault, harvester));
+        implementation = address(new YearnV3ERC4626Harness(assetGroupRegistry, accessControl, harvester));
         yearnV3Strategy = YearnV3ERC4626Harness(address(new ERC1967Proxy(implementation, "")));
 
-        yearnV3Strategy.initialize("MetamorphoStrategy", assetGroupId);
+        yearnV3Strategy.initialize("YearnV3Strategy", assetGroupId, vault, 10 ** (vault.decimals() * 2));
 
         vm.prank(address(strategyRegistry));
         accessControl.grantRole(ROLE_STRATEGY, address(yearnV3Strategy));
@@ -253,12 +252,9 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
 
 // Exposes protocol-specific functions for unit-testing.
 contract YearnV3ERC4626Harness is ERC4626StrategyDouble, StrategyHarness {
-    constructor(
-        IAssetGroupRegistry assetGroupRegistry_,
-        ISpoolAccessControl accessControl_,
-        IERC4626 vault_,
-        IERC4626 harvester_
-    ) ERC4626StrategyDouble(assetGroupRegistry_, accessControl_, vault_, harvester_) {}
+    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, IERC4626 harvester_)
+        ERC4626StrategyDouble(assetGroupRegistry_, accessControl_, harvester_)
+    {}
 
     function exposed_underlyingAssetAmount() external view returns (uint256) {
         return underlyingAssetAmount_();
