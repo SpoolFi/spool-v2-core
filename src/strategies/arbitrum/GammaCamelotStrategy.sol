@@ -72,11 +72,12 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
     using SafeERC20 for IERC20;
 
     ISwapper public immutable swapper;
+    IGammaCamelotRewards public immutable rewards;
+
     IUniProxy public gammaUniProxy;
     IHypervisor public pool;
     INFTPool public nftPool;
     INitroPool public nitroPool;
-    IGammaCamelotRewards public rewards;
 
     // Pool data
     // ID of the position. set to uint256.max when
@@ -336,6 +337,7 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
             nftPool.safeTransferFrom(address(this), address(nitroPool), nftId);
         } else {
             // subsequent deposits (don't need to withdraw from nitroPool. not the same for withdrawFromPosition)
+            _harvest();
             nftPool.addToPosition(nftId, shares);
         }
     }
@@ -345,6 +347,7 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
     {
         // must withdraw NFT from nitro pool to withdraw from position
         nitroPool.withdraw(nftId);
+        _harvest();
         nftPool.withdrawFromPosition(nftId, shares);
         uint256[] memory amounts = new uint256[](2);
         uint256[4] memory minAmounts;
@@ -391,15 +394,18 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
     }
 
     function _getRewards() private returns (address[] memory rewardTokens) {
-        // harvest $ARB rewards
+        // Harvest $ARB
         nitroPool.harvest();
-        // must withdraw NFT from Nitro pool to harvest position
-        nitroPool.withdraw(nftId);
-        // harvest to the xGRAIL handler (xGRAIL is non-transferable)
-        nftPool.harvestPositionTo(nftId, address(rewards));
-        nftPool.safeTransferFrom(address(this), address(nitroPool), nftId);
-
+        _harvest();
         rewardTokens = rewards.handle();
+    }
+
+    // @notice Harvest to the rewards handler (xGRAIL is non-transferable, and we handle it there).
+    // Used during compounding, but also must be called before operations that would otherwise harvest
+    // to the NFT owner, ie. Nitro Pool. This causes a failure; it is expected that the original NFT owner harvests to
+    // themselves, or another address.
+    function _harvest() private {
+        nftPool.harvestPositionTo(nftId, address(rewards));
     }
 
     function _getTokenWorth() private view returns (uint256[] memory amounts) {

@@ -68,9 +68,11 @@ contract DeploySpool {
         }
 
         {
-            ghostStrategy = new GhostStrategy();
+            GhostStrategy implementation = new GhostStrategy();
+            proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
+            ghostStrategy = IStrategy(address(proxy));
 
-            contractsJson().add("GhostStrategy", address(ghostStrategy));
+            contractsJson().addProxy("GhostStrategy", address(implementation), address(proxy));
         }
 
         {
@@ -295,9 +297,11 @@ contract DeploySpool {
         }
 
         {
-            allowlistGuard = new AllowlistGuard(spoolAccessControl);
+            AllowlistGuard implementation = new AllowlistGuard(spoolAccessControl);
+            proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
+            allowlistGuard = AllowlistGuard(address(proxy));
 
-            contractsJson().add("AllowlistGuard", address(allowlistGuard));
+            contractsJson().addProxy("AllowlistGuard", address(implementation), address(proxy));
         }
 
         {

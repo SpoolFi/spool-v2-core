@@ -142,8 +142,8 @@ contract GammaCamelotRewards is IGammaCamelotRewards, Initializable, SpoolAccess
 
     function _xGrailFinalize() private {
         uint256 redeemsLength = xGRAIL.getUserRedeemsLength(address(this));
-        if (redeemsLength == 0) return;
-        for (uint256 i = (redeemsLength - 1); i >= 0; --i) {
+        for (uint256 i = redeemsLength; i > 0;) {
+            --i;
             (,, uint256 endTime, address dividendsAddress,) = xGRAIL.getUserRedeem(address(this), i);
             if (block.timestamp >= endTime) {
                 _handleDividends(dividendsAddress);
