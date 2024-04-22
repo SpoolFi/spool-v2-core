@@ -6,6 +6,9 @@ uint256 constant MAINNET_FORK_BLOCK_EXTENDED_0 = 18_776_000;
 uint256 constant MAINNET_FORK_BLOCK_EXTENDED_1 = 18_963_715;
 uint256 constant MAINNET_FORK_BLOCK_EXTENDED_2 = 19_610_823;
 
+// whales
+address constant USDC_WHALE = address(0x4B16c5dE96EB2117bBE5fd171E4d203624B014aa);
+
 // tokens
 address constant USDC = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
 address constant USDT = address(0xdAC17F958D2ee523a2206206994597C13D831ec7);

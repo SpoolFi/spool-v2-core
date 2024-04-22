@@ -333,7 +333,8 @@ abstract contract ERC4626StrategyBase is Strategy {
      * @return amount of assets the strategy will get
      */
     function previewRedeemSSTs_(uint256 ssts) internal view virtual returns (uint256) {
-        return (vault().balanceOf(address(this)) * ssts) / totalSupply();
+        uint256 supply = totalSupply();
+        return supply == 0 ? supply : (vault().balanceOf(address(this)) * ssts) / supply;
     }
 
     /**
