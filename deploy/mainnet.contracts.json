@@ -1,159 +1,152 @@
 {
   "ActionManager": {
-    "implementation": "0xa21035da64B1D157C35Ad187afeB8D217C3BA108",
-    "proxy": "0x4c6ee6eD4127a0067B9eb3b425DfCea95ac80cAe"
+    "implementation": "0xa4e411f65Cae185101aD5a7BF944346A487B82D9",
+    "proxy": "0xdF2ACdCeD7CF6348cA317Ab57210C35770927857"
   },
-  "AllowlistGuard": {
-    "implementation": "0x1E1F7BE107FeadC60b9fA415199391E3ffa509c2",
-    "proxy": "0xB8d7B179bfa7AEBCFBE4174AA3ec11E47264b334"
-  },
+  "AllowlistGuard": "0x09F068c79DB2A5b038cE456736D3AB2a5C04523D",
   "AssetGroupRegistry": {
-    "implementation": "0xEf2E91FE2f85bc856d5Bf36a412ba395bbbfc1A9",
-    "proxy": "0x1Aa2a802BA25669531Ffd2b1fF8ae94f3D87f41A"
+    "implementation": "0xb6EFBda134501430B6112CA67564Dd535AF332C9",
+    "proxy": "0x6c22dfAD4414cfb786A4173A7E4547A94E56e263"
   },
   "DepositManager": {
-    "implementation": "0x93f6Ca0Be49839e127AbAD41cEf6783e47dc259b",
-    "proxy": "0x823Ba38992825FF37E72B6c3D669a09173B8F7bf"
+    "implementation": "0x671534a368AfB2c5E7a0170A4ED37DC4C387F48c",
+    "proxy": "0xDc962D69F5fFa5e0e61826196119E34E908a320d"
   },
   "DepositSwap": {
-    "implementation": "0xe1E49B4CB738C8840a54D8b8958ce93C621965C8",
-    "proxy": "0xd8534197Bd587F8226d12E0C864ef2CaE6f82f5C"
+    "implementation": "0xcE7F66BD505a80129Ef25b06207Ac49620A55522",
+    "proxy": "0x74AD50d6208Fe9caB6e9e6E2015Aa4f001D5906E"
   },
   "ExponentialAllocationProvider": {
-    "implementation": "0xc77Ae9D8d99415b06B542E214eeCe9c9E790557E",
-    "proxy": "0xcebF2117a483EFf141c25bf8d365B9B81Af9112F"
+    "implementation": "0xDD0458a6E2FfE886e4670045D9abd1221E9D93ae",
+    "proxy": "0x015AFC876A4d115E2fF01000d9D3ADC714e5870B"
   },
-  "GhostStrategy": {
-    "implementation": "0x086E6C65d5f0c17B8AC744170A67b9F339F20690",
-    "proxy": "0xc65c1df280AC96535e56B0e7ac12fE0860b19411"
-  },
+  "GhostStrategy": "0xAFa7d1097D39ab3369e850Cf72ac8A0D7Fb5C2EF",
   "GuardManager": {
-    "implementation": "0xca1dbE439cA99cC6b7C4Ba63465DB86A705bF098",
-    "proxy": "0xB8c204e858AA420eb5a57599dA86fFD6375da6a8"
+    "implementation": "0x12f1E501CFAAa2c4A1c30a1783d0C4d3A92E3AbB",
+    "proxy": "0x32c0F2C34496e74875D826AF16f1fdbD6e224617"
   },
   "LinearAllocationProvider": {
-    "implementation": "0xc6c1BFf889bd9FeaBA68D1fba8d7dF505187F574",
-    "proxy": "0x7DBadf3CC5C9C7177B6f976910eF84AD90E018a8"
+    "implementation": "0xA1AF1C65430265DF44D3dC4708Ba03f042490ba0",
+    "proxy": "0x4e1157b40e62782F04d7F4a915f340B8F445B008"
   },
   "MasterWallet": {
-    "implementation": "0xA992Dee722f46752D3b7d5F11F282f8E8F9AcE3a",
-    "proxy": "0xf5DcF1F6E4c661Cb28c27FfF88Adde3522Cfbe91"
+    "implementation": "0xE411921ee9EeDfEFd7b9Ae15bF232bd36949Fcbc",
+    "proxy": "0x468DC7826898497D2494659b61D7899F4b6ceD72"
   },
-  "ProxyAdmin": "0x51c8FA2c1F093AC643f6431766b1c227d869Cb6F",
+  "ProxyAdmin": "0x3Ffda89A5F87D99DE88Bc0617d95C7e5dDe0408f",
   "RewardManager": {
-    "implementation": "0xAfFAd277A4Aa24c92EBd6E263726466104EB3e58",
-    "proxy": "0xd8d2C1C3C7982272e3e12dEC5aF681433fdcf003"
+    "implementation": "0x7BAcF2D8fA5DfcbF5a570c6eF243D84dA257c813",
+    "proxy": "0x51a7fA4af8cd0C03fFc1B8AE47d7F534Fd4e2944"
   },
   "RiskManager": {
-    "implementation": "0x3D9fbCDd24197EbD4Eaf40Ae712C5b7139d75448",
-    "proxy": "0xC30018cbee9C8141F620e950CC9637c7A2eF2c9e"
+    "implementation": "0x00dB3649F09F89B84afD26DefEddD0BF21818440",
+    "proxy": "0x0271704B01A276e2334e1eC50c9512276fee9FA1"
   },
-  "SmartVaultFactory": "0x8049Fc710D4a1Deea6a6bCeF772C166CEd7A82F5",
-  "SmartVaultFactoryHpf": "0x362599Cdc123e3FFEB7c0812d769128D180667E8",
+  "SmartVaultFactory": "0x075B70C2b0931eC82ceb91Ad20e0FC44f88bA99D",
   "SmartVaultManager": {
-    "implementation": "0x5C5293EabBC96a62788b4CA0D393042D4e931e81",
-    "proxy": "0x23Daf34e2b9Af02A74dC19cB52Af727B19403874"
+    "implementation": "0x5Be60b7F67566c51b394B489715Cb06f12dEb318",
+    "proxy": "0x6c1708833Cf8Bc1c7be6389dF1721B29d76090DA"
   },
   "SpoolAccessControl": {
-    "implementation": "0x9D7f606968cE7fE8323531607435F8BEbB2dF41e",
-    "proxy": "0x7b533e72E0cDC63AacD8cDB926AC402b846Fbd13"
+    "implementation": "0x85365E3d47C34466477518a5F6A869d2C68dF194",
+    "proxy": "0xE336E6dD21563Ed7785fa66562aE14194a720FBc"
   },
   "SpoolLens": {
-    "implementation": "0xd5d973374b7103541de1bc6f0b3af663e73b0eed",
-    "proxy": "0x8aa6174333F75421903b2B5c70DdF8DA5D84f74F"
+    "implementation": "0xE08bE40E1D7434ffF403966d93952cbbeE64C27F",
+    "proxy": "0x02cE10513AfAf102172651B7DC6f1A6359717421"
   },
   "StrategyRegistry": {
-    "implementation": "0x5bba135FB6F76483c55D28c2f762F7082Fee474E",
-    "proxy": "0x554c6bCB54656390aca0a0af38CA954dbE653F15"
+    "implementation": "0xEE8D61687d3E174435BF8deb9EA6816C78236B6A",
+    "proxy": "0x49820C1bC5e07416Cb986d89c3fe1a4e1D12faD4"
   },
   "Swapper": {
-    "implementation": "0xaeE55EFd9E51a5D3a52D7099373cdd870c134D1a",
-    "proxy": "0x33E52c206d584550193E642C8982f2Fff6339994"
+    "implementation": "0x10319e7e4863f1165aBaAE5947CB5e81282Ab43D",
+    "proxy": "0x19d4f3Ff35aD98244EF9A473B80b905EB5c14649"
   },
   "UniformAllocationProvider": {
-    "implementation": "0x33636c487f53f95334BD8F49A4782a7B84bf2caE",
-    "proxy": "0x6f519d997CD2027F164586718Ca248d2384D7dB1"
+    "implementation": "0xEfaFB06458dd86b0403B65Ef0F5763b682BBb752",
+    "proxy": "0xE3Eca4c4B0BB84532D43db64E505CC6eE750fD7C"
   },
   "UsdPriceFeedManager": {
-    "implementation": "0x08eac676ca5448e55c9fac8619bda1e4a71c93f0",
-    "proxy": "0x38f1A78ad8956B45b48837657BD0884BA7AB485A"
+    "implementation": "0xB381615dC2A59334735149CBe4bc694E803333d0",
+    "proxy": "0x3e724B66eb8F77Bbbe345685ef6F41b1D05C6815"
   },
   "WithdrawalManager": {
-    "implementation": "0x74a0EE4111e586b048EE1b6286a4F78e7DAFb63e",
-    "proxy": "0xC62AD2C374D6537E286a06F4d6301DA6cd9C6D0a"
+    "implementation": "0x18165F37c30dA006578D14DFB10A178b35226398",
+    "proxy": "0x919D5CC1C1dCa1f6EaB7207f56218815CC85f4c7"
   },
   "strategies": {
     "aave-v2": {
-      "aave-v2-dai": "0x27f38719608422Af8a31509CBBB5fAcD582f6e1F",
-      "aave-v2-usdc": "0xc6C65c730D7CB5FA22903DBcCB64973be4Fd4629",
-      "aave-v2-usdt": "0xCfdEa0499D00f6ecae256F0FC9daCC837D48409e",
-      "implementation": "0x3597F15739771b8e040c0cFac048752946B79e9D"
+      "aave-v2-dai": "0x2AE9CAA6Ad990D6790a2e21F69Bd93f2ccACdEc9",
+      "aave-v2-usdc": "0xe5f6b00e9261049704e66598B26BDbd1B648d674",
+      "aave-v2-usdt": "0x041ce771478a9c4986BB9F812053bBF38079D7e7",
+      "implementation": "0xE5a941e12191e353A0709c6F11C82a212f1fc7dC"
     },
     "compound-v2": {
-      "compound-v2-dai": "0x013022c7ca735eF6ba55cd3eaccB4Ebb3be484e9",
-      "compound-v2-usdc": "0xfC8610aE1D1cc5f30c932E9FF4ac37E3f1a6337d",
-      "compound-v2-usdt": "0xac997F24Ef9f5fc2A3c050eA14d1d017db20a1d1",
-      "implementation": "0x6Ab817bD92A1c3075d8f1ceD160984EA4E5F8d89"
-    },
-    "gearbox-v3": {
-        "gearbox-v3-usdc":"0xb4a7fb51D06760B5F622643B7276c003418732bD",
-        "gearbox-v3-weth": "0xD92B65d2321076FBAc23FCfC9A9Fd5Ed2E98B758",
-        "implementation":"0x615a54527c08e15d9276EDfb707e7F457aBCF3Ae"
-    },
-    "morpho-aave-v2": {
-      "implementation": "0x7b2121D7d8699aF6420941AE06834625ce650623",
-      "morpho-aave-v2-dai": "0xfE6D982a773F4251dA4Ba04fc8fE7F2717413599",
-      "morpho-aave-v2-usdc": "0xa51C0a9F2d688c8943F029feC00a3c9193aAdf81",
-      "morpho-aave-v2-usdt": "0xd353b46208493F1515d5f5c67A86795cf509c598"
-    },
-    "morpho-compound-v2": {
-      "implementation": "0x879BF9a1BBBa52dAd6C0d4a804EC3Bc088A51c7d",
-      "morpho-compound-v2-dai": "0xcab95acA532aD88C68fe464bD276C5beEb6FE373",
-      "morpho-compound-v2-usdc": "0x07D01228801cAc1EFEB36481370e5b532C7935a4",
-      "morpho-compound-v2-usdt": "0xb7364aF55b4A0393d070AEEB2D8a6468f82e178e"
-    },
-    "notional-finance": {
-      "implementation": "0x4A98b7Fb6f2B4ac817d5ef8eA932Ac6598C3E9D8",
-      "notional-finance-dai": "0xfbc81d6E3E85462B56EbDaeF71fe26af77cDFfA9",
-      "notional-finance-usdc": "0x107D759C58C5933320e636624f4B716d7B199E21"
-    },
-    "oeth-holding": {
-      "implementation": "0x4349909E23B4CDdd4d8573D75D21B5E6FBFb36A8",
-      "proxy": "0x39E5c2a796082eB553c1b0656e09E49583D12CB8"
-    },
-    "reth-holding": {
-      "implementation": "0xefC54333d3Fc82a7BE86ECAB7Eab1E3834B32909",
-      "proxy": "0x019834Ef2ec086e495668aa4E06B4d31119beC71"
-    },
-    "sfrxeth-holding": {
-      "implementation": "0xAcB8e69668c5005bC14e83D2f4aAC15E7186D797",
-      "proxy": "0x6d0e6242FE023675487BccA4Ab989a91D0932a51"
-    },
-    "steth-holding": {
-      "implementation": "0x89fd0a5549d402595c9db1be92564c486fb10b96",
-      "proxy": "0x504d272aC93e7ffAcAcB7DD69061c9b4D0781410"
-    },
-    "yearn-v2": {
-      "implementation": "0x13b727aBD64063629fcc1b9F8CbD6B4efc619c08",
-      "yearn-v2-dai": "0xb8943E7eBB7B919AAFaE261343c38F02e4182CA6",
-      "yearn-v2-usdc": "0xc61E829DF3fbD6Cf5B2f5881F190C69eE48d20DF",
-      "yearn-v2-usdt": "0x24416AE2794C222725185734c7050c008fC1d2f8"
+      "compound-v2-dai": "0x03Cc74E1A8D91E6B2b28237058cdE4b339741c04",
+      "compound-v2-usdc": "0xf434ABE350682850e41B5b15837e29f0c606DFce",
+      "compound-v2-usdt": "0x1Ef5dd09408d75509d43a53cB8fB0fEa93b7a4a4",
+      "implementation": "0x9fDD20F888Efa05DcC877cff36d287f8437569a0"
     },
     "convex-3pool": {
-      "implementation": "0x63423e8358B3D00a780CCE788Ed4BCCd50ed58b2",
-      "proxy": "0x93f0F12e368b06d7914255FBA5cA47821cd5908d"
+      "implementation": "0xb4C5ccCF7c332e6C3123512526C27a4017FEeD5B",
+      "proxy": "0xD93C67509CC0cf45C1E9bADB7D03f5cD92103878"
     },
     "convex-alusd": {
-      "implementation": "0xD049C7B5707021C39787438B95d65C9C7339EA04",
-      "proxy": "0x2cA41209c87D2a611059d85C62cc0F913068d301"
-    },
-    "curve-3pool": {
-      "implementation": "0x520AeDDdd3fb45E49ce236Df4c43B6a1a0cc061A",
-      "proxy": "0x6EB6251AF926016c60DE17aD976b9C1e2485e1F0"
+      "implementation": "0xef027aCb91a4Ce2c1B9319A6451f4F915Ed66B32",
+      "proxy": "0x60Ed987fb1106E0048CeafCcDd6af7f75A2CBD46"
     },
     "convex-stfrxeth": {
-     "implementation": "0xbb141226abA3b1dDfBe5EB03De9138f16198b42c",
-     "proxy": "0x5699181904Ae5781d204a0E189862f8AF9109479"
+      "implementation": "0xDCcca5E2892f101e9d50fb19e15195562457D8D4",
+      "proxy": "0x2273b95B203a1782A2AA75d568e3C5f57708E4B2"
+    },
+    "curve-3pool": {
+      "implementation": "0xb3752bBb715aCAe2A3E9c28200B5A0B319f583Ef",
+      "proxy": "0x83DFeBE34b3Da9538c8457b819871D8b3e6B5E28"
+    },
+    "gearbox-v3": {
+      "gearbox-v3-usdc": "0x09Fca6640E016750b8B6C7c7d98f47D435a5B224",
+      "gearbox-v3-weth": "0x6C3b0401815A4d92DA2F3BA8e2809587C2D095EC",
+      "implementation": "0x62422c81cC7cDfEA6dAECe3218eD503539Ce7d39"
+    },
+    "morpho-aave-v2": {
+      "implementation": "0x438a0bb793412159357340d07Fb5A1f7aCA5b796",
+      "morpho-aave-v2-dai": "0x578Cf55Ff29722A5fe7e1202bB89fac030142d66",
+      "morpho-aave-v2-usdc": "0x633500e0EfF56d8853bD51Ac0B19C1cA95Db612e",
+      "morpho-aave-v2-usdt": "0xc1a8CA78c14E06aC4dAbff1B10cC115FF6a95556"
+    },
+    "morpho-compound-v2": {
+      "implementation": "0xe1821C399D84C3da9895669BEA8AACD075ed41F4",
+      "morpho-compound-v2-dai": "0x67d2D608714A26305629db6FFC430e153BA7f2Cf",
+      "morpho-compound-v2-usdc": "0x3ddD826b8570A0bFf8d52652FE7920947CD32a94",
+      "morpho-compound-v2-usdt": "0x58AF659B2440ec3b2772a8b7fd8972f7fdEB9105"
+    },
+    "notional-finance": {
+      "implementation": "0x6194D01936D64e6d12972ba054c705eAf302592F",
+      "notional-finance-dai": "0xe10b236290855F4098fDEd14522C1D12dB467A85",
+      "notional-finance-usdc": "0xF4ebA6AdFB2f54EfBBb0B079f15eD5f177367b75"
+    },
+    "oeth-holding": {
+      "implementation": "0xc8872861229eF1a68367cCEfC17AE2F2550De352",
+      "proxy": "0x24bF10e52bF0109A5aDeB3Bef7DEccB4Bb140bfd"
+    },
+    "reth-holding": {
+      "implementation": "0x6d8DBc3875A8f4005eDd94b633212cCC5d74062B",
+      "proxy": "0x7aFf34F17CED3Bc39A94aD250372119a2762876b"
+    },
+    "sfrxeth-holding": {
+      "implementation": "0x5049Cc6e8BaA9F053Fa5357395784DaDc0cd469f",
+      "proxy": "0x68b19781cBE5724b1666D944C729aa15d6925E0b"
+    },
+    "steth-holding": {
+      "implementation": "0x7fd3f41F2dE554d8528Db74294a4382f4718F3Ad",
+      "proxy": "0xB91fC3a5Cf81470Ad17B36d111Ab4E35947F98D8"
+    },
+    "yearn-v2": {
+      "implementation": "0xc464EE4cbE8eFC9112a29dC8C840bBa60E635CF3",
+      "yearn-v2-dai": "0xCA7D7c54Ba78E77de188E277D6D5C6D339F19d0B",
+      "yearn-v2-usdc": "0x3660e3e7BEF5ff78Fd3ee89837A4384672F1B9Ea",
+      "yearn-v2-usdt": "0xBd30B329a9A9A24E31aBFa5C757E83476646aB8F"
     }
   }
 }

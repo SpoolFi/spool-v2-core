@@ -34,7 +34,7 @@ contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
 
         deployStrategies(spoolAccessControl, assetGroupRegistry, swapper, address(proxyAdmin), strategyRegistry);
 
-        postDeploySpool(deployerAddress);
+        // postDeploySpool(deployerAddress);
     }
 
     function assets(string memory assetKey) public view virtual override returns (address) {

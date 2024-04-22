@@ -333,10 +333,10 @@ contract DeploySpool {
         smartVaultManager = SmartVaultManager(contractsJson().getAddress(".SmartVaultManager.proxy"));
         depositSwap = DepositSwap(contractsJson().getAddress(".DepositSwap.proxy"));
         smartVaultFactory = SmartVaultFactory(contractsJson().getAddress(".SmartVaultFactory"));
-        allowlistGuard = AllowlistGuard(contractsJson().getAddress(".AllowlistGuard.proxy"));
+        allowlistGuard = AllowlistGuard(contractsJson().getAddress(".AllowlistGuard"));
         depositManager = DepositManager(contractsJson().getAddress(".DepositManager.proxy"));
         withdrawalManager = WithdrawalManager(contractsJson().getAddress(".WithdrawalManager.proxy"));
-        ghostStrategy = IStrategy(contractsJson().getAddress(".GhostStrategy.proxy"));
+        ghostStrategy = IStrategy(contractsJson().getAddress(".GhostStrategy"));
         exponentialAllocationProvider =
             ExponentialAllocationProvider(contractsJson().getAddress(".ExponentialAllocationProvider.proxy"));
         linearAllocationProvider =

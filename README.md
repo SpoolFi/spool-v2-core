@@ -55,6 +55,18 @@ where you have to provide your fork url. Finally you can execute deployment scri
 forge script script/LocalMainnetInitialSetup.s.sol --fork-url http://localhost:8545 --broadcast
 ```
 
+deploy and verify on Tenderly with the following call:
+```
+forge script MainnetInitialSetup --rpc-url $TENDERLY_TESTNET_URL \
+ --slow \
+ --broadcast \
+ --skip-simulation \
+ --verify \
+ --etherscan-api-key $TENDERLY_API_KEY \
+ --verifier-url="https://api.tenderly.co/api/v1/account/solidant-org/project/spool-v2/etherscan/verify/testnet/${TENDERLY_TESTNET_RESOURCE_ID}"
+```
+where `TENDERLY_TESTNET_URL`, `TENDERLY_API_KEY` and `TENDERLY_TESTNET_RESOURCE_ID` are entries in the `.env` file.
+
 The addresses of deployed contracts will be listed in the `deploy/local-mainnet.contracts.json` file, and the detailed broadcast in the `broadcast/LocalMainnetInitialSetup.s.sol/` folder.
 
 ## Smart Contract Overview
