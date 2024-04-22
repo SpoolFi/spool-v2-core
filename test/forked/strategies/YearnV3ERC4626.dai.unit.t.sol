@@ -173,7 +173,6 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
         assertEq(sharesAfter, 0, "3");
     }
 
-    // TODO: getYieldPercentage is broken need to debug further
     function test_getYieldPercentage() public {
         // basic report for some rewards
         vm.startPrank(harvester.keeper());
