@@ -211,25 +211,29 @@
             }
         },
         "metamorpho-gauntlet": {
-            "usdc": {
+            "mkr-blended": {
                 "vault": "0xEbFA750279dEfa89b8D99bdd145a016F6292757b",
                 "rewards": ["0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0"],
-                "apy": 4500000000
+                "apy": 102600000000,
+                "underlyingAsset": "usdc"
             },
-            "dai": {
+            "dai-core": {
                 "vault": "0x500331c9fF24D9d11aee6B07734Aa72343EA74a5",
                 "rewards": [],
-                "apy": 4500000000
+                "apy": 72800000000,
+                "underlyingAsset": "dai"
             },
-            "weth": {
+            "lrt-core": {
                 "vault": "0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658",
                 "rewards": ["0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"],
-                "apy": 4500000000
+                "apy": 34190000000,
+                "underlyingAsset": "weth"
             },
-            "usdt": {
+            "usdt-prime": {
                 "vault": "0x8CB3649114051cA5119141a34C200D65dc0Faa73",
                 "rewards": [],
-                "apy": 4500000000
+                "apy": 60900000000,
+                "underlyingAsset": "usdt"
             }
         }
     },

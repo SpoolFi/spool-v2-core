@@ -139,6 +139,10 @@ contract JsonReader {
         return jsonReader.readAddressArray(key);
     }
 
+    function getString(string memory key) public view returns (string memory) {
+        return jsonReader.readString(key);
+    }
+
     function hasKey(string memory key) public view returns (bool) {
         return vmReader.keyExists(jsonReader, key);
     }
