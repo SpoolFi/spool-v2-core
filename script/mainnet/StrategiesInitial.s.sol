@@ -752,16 +752,19 @@ contract StrategiesInitial {
 
         // create variant proxies
         string[] memory variants = new string[](4);
-        variants[0] = WETH_KEY;
-        variants[1] = USDC_KEY;
-        variants[2] = USDT_KEY;
-        variants[3] = DAI_KEY;
+        variants[0] = "lrt-core";
+        variants[1] = "mkr-blended";
+        variants[2] = "usdt-prime";
+        variants[3] = "dai-core";
 
         for (uint256 i; i < variants.length; ++i) {
             string memory variantName = _getVariantName(METAMORPHO_GAUNTLET, variants[i]);
 
             address variant = _newProxy(address(implementation), contracts.proxyAdmin);
-            uint256 assetGroupId = assetGroups(variants[i]);
+            string memory assetKey = constantsJson().getString(
+                string.concat(".strategies.", METAMORPHO_GAUNTLET, ".", variants[i], ".underlyingAsset")
+            );
+            uint256 assetGroupId = assetGroups(assetKey);
 
             IERC4626 vault = IERC4626(
                 constantsJson().getAddress(
