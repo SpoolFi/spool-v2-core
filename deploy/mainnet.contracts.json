@@ -110,11 +110,11 @@
       "implementation": "0x62422c81cC7cDfEA6dAECe3218eD503539Ce7d39"
     },
     "metamorpho-gauntlet": {
-      "implementation": "0xd9a1254D4e9e60D424fd721eD509AC455c4DeEb3",
-      "metamorpho-gauntlet-dai": "0xB370F95A84D0a8d1150C42c44894C0Ba457F18B6",
-      "metamorpho-gauntlet-usdc": "0xF27788927FaF69f16ADDd18408EcC675C9F0C58E",
-      "metamorpho-gauntlet-usdt": "0x8107DfC5a4DE11A1C08C0Bf0C99e7Dd38dc2eAb2",
-      "metamorpho-gauntlet-weth": "0x7492CA1BD30A11358e507097cFD7099fa8dd6800"
+      "implementation": "0x699ae3BCBa5b76ea1E8373b944332D0a3a50eCCd",
+      "metamorpho-gauntlet-dai-core": "0x140f7e6cb92A399E9c70235879d7504D8c9fE784",
+      "metamorpho-gauntlet-lrt-core": "0xddFb9C33a20Abeb6B540a7Af31b115a0FDb403fB",
+      "metamorpho-gauntlet-mkr-blended": "0xCd6883d1b7F1295D1B81F6A94174993e4BED0bc0",
+      "metamorpho-gauntlet-usdt-prime": "0x3D0686fd0A9673d696A8AdeF569DAEDeD95bA061"
     },
     "morpho-aave-v2": {
       "implementation": "0x438a0bb793412159357340d07Fb5A1f7aCA5b796",
