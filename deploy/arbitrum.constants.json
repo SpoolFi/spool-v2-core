@@ -50,7 +50,8 @@
             "usdc": {
                 "aToken": "0x625E7708f30cA75bfd92586e17077590C60eb4cD",
                 "apy": 117200000000
-            }
+            },
+            "fee": 100
         },
         "compound-v3": {
             "rewards": "0x88730d254A2f7e6AC8388c3198aFd694bA9f7fae",
@@ -63,7 +64,8 @@
             "usdc": {
                 "cToken": "0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA",
                 "apy": 24600000000
-            }
+            },
+            "fee": 100
         },
         "gamma-camelot": {
             "camelotV3Router": "0x1F721E2E82F6676FCE4eA07A5958cF098D339e18",

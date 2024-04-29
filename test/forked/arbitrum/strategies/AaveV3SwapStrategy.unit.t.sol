@@ -27,6 +27,7 @@ contract AaveV3SwapStrategyTest is TestFixture, ForkTestFixture {
     address[] private assetGroup;
     uint256 private assetGroupId;
     uint256[] private assetGroupExchangeRates;
+    uint24 private fee = 100;
 
     function setUp() public {
         setUpForkTestFixtureArbitrum();
@@ -51,7 +52,8 @@ contract AaveV3SwapStrategyTest is TestFixture, ForkTestFixture {
             accessControl,
             swapper,
             poolAddressesProvider,
-            incentive
+            incentive,
+            fee
         );
         aaveStrategy.initialize("aave-v3-strategy", assetGroupId, IAToken(aUSDCE_ARB));
     }
@@ -227,6 +229,7 @@ contract AaveV3SwapStrategyHarness is AaveV3SwapStrategy, StrategyHarness {
         ISpoolAccessControl accessControl_,
         ISwapper swapper_,
         IPoolAddressesProvider provider_,
-        IRewardsController incentive_
-    ) AaveV3SwapStrategy(assetGroupRegistry_, accessControl_, swapper_, provider_, incentive_) {}
+        IRewardsController incentive_,
+        uint24 fee_
+    ) AaveV3SwapStrategy(assetGroupRegistry_, accessControl_, swapper_, provider_, incentive_, fee_) {}
 }

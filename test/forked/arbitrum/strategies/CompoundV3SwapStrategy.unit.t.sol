@@ -21,6 +21,7 @@ contract CompoundV3SwapStrategyTest is TestFixture, ForkTestFixture {
     address[] private assetGroup;
     uint256 private assetGroupId;
     uint256[] private assetGroupExchangeRates;
+    uint24 private fee = 100;
 
     CompoundV3SwapStrategyHarness compoundV3Strategy;
     address[] smartVaultStrategies;
@@ -48,7 +49,8 @@ contract CompoundV3SwapStrategyTest is TestFixture, ForkTestFixture {
             accessControl,
             swapper,
             IERC20(COMP_ARB),
-            IRewards(COMPOUND_V3_REWARDS)
+            IRewards(COMPOUND_V3_REWARDS),
+            fee
         );
 
         compoundV3Strategy.initialize("compound-v3-strategy", assetGroupId, IComet(cUSDCE_ARB));
@@ -243,6 +245,7 @@ contract CompoundV3SwapStrategyHarness is CompoundV3SwapStrategy, StrategyHarnes
         ISpoolAccessControl accessControl_,
         ISwapper swapper_,
         IERC20 comp_,
-        IRewards rewards_
-    ) CompoundV3SwapStrategy(assetGroupRegistry_, accessControl_, swapper_, comp_, rewards_) {}
+        IRewards rewards_,
+        uint24 fee_
+    ) CompoundV3SwapStrategy(assetGroupRegistry_, accessControl_, swapper_, comp_, rewards_, fee_) {}
 }

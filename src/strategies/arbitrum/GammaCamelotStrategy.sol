@@ -5,7 +5,6 @@ import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/token/ERC721/IERC721Receiver.sol";
 import "../../external/interfaces/strategies/arbitrum/gamma-camelot/IAlgebraPool.sol";
-import "../../external/interfaces/strategies/arbitrum/gamma-camelot/ICamelotPair.sol";
 import "../../external/interfaces/strategies/arbitrum/gamma-camelot/IHypervisor.sol";
 import "../../external/interfaces/strategies/arbitrum/gamma-camelot/INFTPool.sol";
 import "../../external/interfaces/strategies/arbitrum/gamma-camelot/INitroPool.sol";

@@ -6,7 +6,6 @@ import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../../external/interfaces/strategies/uniswap/v3/IV3SwapRouter.sol";
 import "../../interfaces/ISwapper.sol";
 import "../../interfaces/CommonErrors.sol";
-import "forge-std/console.sol";
 
 // Description:
 // This contract is a helper contract for swapping between an asset group token and a different strategy token.
@@ -22,6 +21,12 @@ abstract contract AssetGroupSwapHelper {
     using SafeERC20 for IERC20;
 
     IV3SwapRouter public immutable swapRouter = IV3SwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+
+    uint24 public immutable fee;
+
+    constructor(uint24 fee_) {
+        fee = fee_;
+    }
 
     function _assetGroupSwap(address tokenIn, address tokenOut, uint256 amount, uint256 slippage)
         internal
@@ -40,7 +45,7 @@ abstract contract AssetGroupSwapHelper {
         IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter.ExactInputSingleParams({
             tokenIn: tokenIn,
             tokenOut: tokenOut,
-            fee: _getFee(),
+            fee: fee,
             recipient: address(this),
             deadline: block.timestamp,
             amountIn: amount,
@@ -49,9 +54,5 @@ abstract contract AssetGroupSwapHelper {
         });
 
         return swapRouter.exactInputSingle(params);
-    }
-
-    function _getFee() internal virtual returns (uint24) {
-        return 100;
     }
 }

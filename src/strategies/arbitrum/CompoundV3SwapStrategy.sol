@@ -39,8 +39,12 @@ contract CompoundV3SwapStrategy is CompoundV3StrategyBase, AssetGroupSwapHelper 
         ISpoolAccessControl accessControl_,
         ISwapper swapper_,
         IERC20 comp_,
-        IRewards rewards_
-    ) CompoundV3StrategyBase(assetGroupRegistry_, accessControl_, swapper_, comp_, rewards_) AssetGroupSwapHelper() {}
+        IRewards rewards_,
+        uint24 fee_
+    )
+        CompoundV3StrategyBase(assetGroupRegistry_, accessControl_, swapper_, comp_, rewards_)
+        AssetGroupSwapHelper(fee_)
+    {}
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
         if (_isViewExecution()) {
