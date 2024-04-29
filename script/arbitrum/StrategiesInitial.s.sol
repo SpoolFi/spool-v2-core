@@ -125,12 +125,15 @@ contract StrategiesInitial {
             constantsJson().getAddress(string.concat(".strategies.", AAVE_V3_KEY, ".rewardsController"))
         );
 
+        uint24 fee = uint24(constantsJson().getUint256(string.concat(".strategies.", AAVE_V3_SWAP_KEY, ".fee")));
+
         AaveV3SwapStrategy implementation = new AaveV3SwapStrategy(
             contracts.assetGroupRegistry,
             contracts.accessControl,
             contracts.swapper,
             provider,
-            incentive
+            incentive,
+            fee
         );
 
         contractsJson().addVariantStrategyImplementation(AAVE_V3_SWAP_KEY, address(implementation));
@@ -184,13 +187,15 @@ contract StrategiesInitial {
         // create implementation contract
         IERC20 comp = IERC20(constantsJson().getAddress(string.concat(".tokens.comp")));
         IRewards rewards = IRewards(constantsJson().getAddress(string.concat(".strategies.compound-v3.rewards")));
+        uint24 fee = uint24(constantsJson().getUint256(string.concat(".strategies.", COMPOUND_V3_SWAP_KEY, ".fee")));
 
         CompoundV3SwapStrategy implementation = new CompoundV3SwapStrategy(
             contracts.assetGroupRegistry,
             contracts.accessControl,
             contracts.swapper,
             comp,
-            rewards
+            rewards,
+            fee
         );
 
         contractsJson().addVariantStrategyImplementation(COMPOUND_V3_SWAP_KEY, address(implementation));
