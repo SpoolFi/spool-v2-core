@@ -17,6 +17,7 @@ import "../../interfaces/ISwapper.sol";
 import "../../libraries/PackedRange.sol";
 import "../../strategies/Strategy.sol";
 import "../interfaces/helpers/IGammaCamelotRewards.sol";
+import "./libraries/GammaCamelotPriceHelper.sol";
 
 error GammaCamelotDepositCheckFailed();
 error GammaCamelotRedeemalCheckFailed();
@@ -428,12 +429,11 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
     /// putting these equations together: price == (sqrtPriceX96 / 2^96)^2 == sqrtPriceX96^2 / (2^96)^2.
     /// Having derived token0 -> token1 rate, we can then derive amount of token0 as priced in token1.
     /// The final rate is amounts priced in token1 divided by the total supply of the pool. we use 10**18 as precision.
+    /// We call checkPriceChange to calculate the above, which provides front-running & sandwich protection.
     function _getHypervisorSharePrice() private view returns (uint256 hypervisorSharePrice) {
-        uint256 precision = pool.PRECISION();
-        IAlgebraPool underlyingPool = IAlgebraPool(pool.pool());
+        uint256 price = GammaCamelotPriceHelper.getPrice(gammaUniProxy, address(pool));
 
-        (uint160 sqrtPriceX96,,,,,,,) = underlyingPool.globalState();
-        uint256 price = FullMath.mulDiv(uint256(sqrtPriceX96) * uint256(sqrtPriceX96), precision, 2 ** 192);
+        uint256 precision = pool.PRECISION();
         (uint256 amount0, uint256 amount1) = pool.getTotalAmounts();
         uint256 amount0PricedInAmount1 = (amount0 * price) / precision;
 

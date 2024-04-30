@@ -10,4 +10,6 @@ interface IUniProxy {
         external
         view
         returns (uint256 amountStart, uint256 amountEnd);
+
+    function clearance() external view returns (address);
 }
