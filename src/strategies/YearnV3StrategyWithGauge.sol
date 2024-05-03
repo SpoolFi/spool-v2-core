@@ -8,6 +8,10 @@ import "../libraries/ERC4626Lib.sol";
 
 import {IYearnGaugeV2} from "../external/interfaces/strategies/yearn/v2/IYearnGaugeV2.sol";
 
+//
+/// @dev by staking primary shares into ERC4626 compliant Gauge contract (secondaryVault)
+// we will get dYFI rewards which are compounded
+//
 contract YearnV3StrategyWithGauge is ERC4626StrategyDouble {
     using SafeERC20 for IERC20;
 
@@ -49,16 +53,15 @@ contract YearnV3StrategyWithGauge is ERC4626StrategyDouble {
         uint256 balance = rewardToken.balanceOf(address(this));
         if (balance > 0) {
             IERC20(rewardToken).safeTransfer(address(swapper), balance);
+            address[] memory rewards = new address[](1);
+            rewards[0] = address(rewardToken);
+
+            uint256 swappedAmount = swapper.swap(rewards, swapInfo, tokens, address(this))[0];
+
+            uint256 sharesBefore = secondaryVault.balanceOf(address(this));
+            uint256 sharesMinted = _depositToProtocolInternal(IERC20(tokens[0]), swappedAmount, slippages[3]);
+
+            compoundedYieldPercentage = int256(YIELD_FULL_PERCENT * sharesMinted / sharesBefore);
         }
-
-        address[] memory rewards = new address[](1);
-        rewards[0] = address(rewardToken);
-
-        uint256 swappedAmount = swapper.swap(rewards, swapInfo, tokens, address(this))[0];
-
-        uint256 sharesBefore = secondaryVault.balanceOf(address(this));
-        uint256 sharesMinted = _depositToProtocolInternal(IERC20(tokens[0]), swappedAmount, slippages[3]);
-
-        compoundedYieldPercentage = int256(YIELD_FULL_PERCENT * sharesMinted / sharesBefore);
     }
 }
