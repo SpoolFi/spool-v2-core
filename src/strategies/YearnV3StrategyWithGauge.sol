@@ -8,10 +8,8 @@ import "../libraries/ERC4626Lib.sol";
 
 import {IYearnGaugeV2} from "../external/interfaces/strategies/yearn/v2/IYearnGaugeV2.sol";
 
-//
 /// @dev by staking primary shares into ERC4626 compliant Gauge contract (secondaryVault)
-// we will get dYFI rewards which are compounded
-//
+/// we will get dYFI rewards which are compounded
 contract YearnV3StrategyWithGauge is ERC4626StrategyDouble {
     using SafeERC20 for IERC20;
 

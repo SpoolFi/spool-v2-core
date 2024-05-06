@@ -133,7 +133,12 @@ contract YearnV3WithGaugeUSDCTest is TestFixture, ForkTestFixture {
             2,
             "2"
         );
-        assertApproxEqAbs(sharesBefore / sharesAfter, mintedShares / (mintedShares - withdrawnShares), 1, "3");
+        assertApproxEqAbs(
+            (sharesBefore * 10 ** 18) / sharesAfter,
+            (mintedShares * 10 ** 18) / (mintedShares - withdrawnShares),
+            10 ** 8,
+            "3"
+        );
     }
 
     function test_emergencyWithdrawImpl() public {
