@@ -2,7 +2,6 @@
 pragma solidity 0.8.17;
 
 import "./ERC4626StrategyBase.sol";
-import "../access/Roles.sol";
 
 // slippages extension
 // - for all actions
@@ -71,9 +70,13 @@ contract MetamorphoStrategy is ERC4626StrategyBase {
         address underlyingAsset = assets()[0];
         for (uint256 i; i < $.rewards.length; i++) {
             // for reward like underlying asset we will return 0
-            // it should be calculated separately in DHW
+            // it should be calculated separately in DHW and passed via slippages[5]
+            // + we do not need to send underlying for swap
             if (underlyingAsset != $.rewards[i]) {
                 amounts[i] = IERC20($.rewards[i]).balanceOf(address(this));
+                if (amounts[i] > 0) {
+                    IERC20($.rewards[i]).safeTransfer(address(swapper), amounts[i]);
+                }
             }
         }
         return ($.rewards, amounts);
@@ -90,19 +93,9 @@ contract MetamorphoStrategy is ERC4626StrategyBase {
         if (slippages[0] > 1) {
             revert CompoundSlippage();
         }
-        MetamorphoStrategyStorage memory $ = _getMetamorphoStrategyStorage();
-        address underlyingAsset = assets()[0];
-        for (uint256 i; i < $.rewards.length; ++i) {
-            // we do not need to send underlying for swap
-            if (underlyingAsset != $.rewards[i]) {
-                uint256 balance = IERC20($.rewards[i]).balanceOf(address(this));
-                if (balance > 0) {
-                    IERC20($.rewards[i]).safeTransfer(address(swapper), balance);
-                }
-            }
-        }
+        (address[] memory rewards,) = _getProtocolRewardsInternal();
 
-        uint256 swappedAmount = swapper.swap($.rewards, swapInfo, tokens, address(this))[0];
+        uint256 swappedAmount = swapper.swap(rewards, swapInfo, tokens, address(this))[0];
 
         uint256 sharesBefore = vault().balanceOf(address(this));
         // we should account for reward in same underlying token

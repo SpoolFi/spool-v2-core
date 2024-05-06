@@ -41,6 +41,6 @@ library ERC4626Lib {
      * @return true - not enough assets, false - provided shares can be redeemed
      */
     function isRedeemalEmpty(IERC4626 vault, uint256 shares) internal view returns (bool) {
-        return vault.maxRedeem(address(this)) < shares;
+        return getMaxRedeem(vault) < shares;
     }
 }
