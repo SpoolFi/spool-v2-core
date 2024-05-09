@@ -19,6 +19,7 @@ import {DepositSwap} from "../src/DepositSwap.sol";
 import {MasterWallet} from "../src/MasterWallet.sol";
 import {SmartVault} from "../src/SmartVault.sol";
 import {SmartVaultFactory} from "../src/SmartVaultFactory.sol";
+import {SmartVaultFactoryHpf} from "../src/SmartVaultFactoryHpf.sol";
 import {Swapper} from "../src/Swapper.sol";
 import {SpoolLens} from "../src/SpoolLens.sol";
 import "../src/managers/DepositManager.sol";
@@ -47,6 +48,7 @@ contract DeploySpool {
     SmartVaultManager public smartVaultManager;
     DepositSwap public depositSwap;
     SmartVaultFactory public smartVaultFactory;
+    SmartVaultFactoryHpf public smartVaultFactoryHpf;
     AllowlistGuard public allowlistGuard;
     DepositManager public depositManager;
     WithdrawalManager public withdrawalManager;
@@ -66,9 +68,11 @@ contract DeploySpool {
         }
 
         {
-            ghostStrategy = new GhostStrategy();
+            GhostStrategy implementation = new GhostStrategy();
+            proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
+            ghostStrategy = IStrategy(address(proxy));
 
-            contractsJson().add("GhostStrategy", address(ghostStrategy));
+            contractsJson().addProxy("GhostStrategy", address(implementation), address(proxy));
         }
 
         {
@@ -242,10 +246,24 @@ contract DeploySpool {
                 riskManager
             );
 
+            smartVaultFactoryHpf = new SmartVaultFactoryHpf(
+                address(smartVaultImplementation),
+                spoolAccessControl,
+                actionManager,
+                guardManager,
+                smartVaultManager,
+                assetGroupRegistry,
+                riskManager
+            );
+
             spoolAccessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactory));
+            spoolAccessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(smartVaultFactoryHpf));
+
             spoolAccessControl.grantRole(ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM, address(smartVaultFactory));
+            spoolAccessControl.grantRole(ADMIN_ROLE_SMART_VAULT_ALLOW_REDEEM, address(smartVaultFactoryHpf));
 
             contractsJson().add("SmartVaultFactory", address(smartVaultFactory));
+            contractsJson().add("SmartVaultFactoryHpf", address(smartVaultFactoryHpf));
         }
 
         {
@@ -279,9 +297,11 @@ contract DeploySpool {
         }
 
         {
-            allowlistGuard = new AllowlistGuard(spoolAccessControl);
+            AllowlistGuard implementation = new AllowlistGuard(spoolAccessControl);
+            proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
+            allowlistGuard = AllowlistGuard(address(proxy));
 
-            contractsJson().add("AllowlistGuard", address(allowlistGuard));
+            contractsJson().addProxy("AllowlistGuard", address(implementation), address(proxy));
         }
 
         {
@@ -333,6 +353,7 @@ contract DeploySpool {
         smartVaultManager = SmartVaultManager(contractsJson().getAddress(".SmartVaultManager.proxy"));
         depositSwap = DepositSwap(contractsJson().getAddress(".DepositSwap.proxy"));
         smartVaultFactory = SmartVaultFactory(contractsJson().getAddress(".SmartVaultFactory"));
+        smartVaultFactoryHpf = SmartVaultFactoryHpf(contractsJson().getAddress(".SmartVaultFactoryHpf"));
         allowlistGuard = AllowlistGuard(contractsJson().getAddress(".AllowlistGuard.proxy"));
         depositManager = DepositManager(contractsJson().getAddress(".DepositManager.proxy"));
         withdrawalManager = WithdrawalManager(contractsJson().getAddress(".WithdrawalManager.proxy"));

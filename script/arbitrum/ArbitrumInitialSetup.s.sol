@@ -2,12 +2,12 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Script.sol";
-import "./helper/JsonHelper.sol";
-import "./DeploySpool.s.sol";
-import "./mainnet/AssetsInitial.s.sol";
-import "./mainnet/StrategiesInitial.s.sol";
+import "../helper/JsonHelper.sol";
+import "../DeploySpool.s.sol";
+import "./AssetsInitial.s.sol";
+import "./StrategiesInitial.s.sol";
 
-contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesInitial {
+contract ArbitrumInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesInitial {
     JsonReader internal _constantsJson;
     JsonReadWriter internal _contractsJson;
 
@@ -23,8 +23,8 @@ contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
     }
 
     function init() public virtual {
-        _constantsJson = new JsonReader(vm, string.concat("deploy/mainnet.constants.json"));
-        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/mainnet.contracts.json"));
+        _constantsJson = new JsonReader(vm, string.concat("deploy/arbitrum.constants.json"));
+        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/arbitrum.contracts.json"));
     }
 
     function doSetup(address deployerAddress) public {
@@ -59,5 +59,5 @@ contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
         return _contractsJson;
     }
 
-    function test_mock_MainnetInitialSetup() external pure {}
+    function test_mock_ArbitrumInitialSetup() external pure {}
 }

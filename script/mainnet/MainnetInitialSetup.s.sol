@@ -2,29 +2,24 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Script.sol";
-import "./helper/JsonHelper.sol";
-import "./DeploySpool.s.sol";
-import "./mainnet/AssetsInitial.s.sol";
-import "./mainnet/StrategiesInitial.s.sol";
+import "../helper/JsonHelper.sol";
+import "../DeploySpool.s.sol";
+import "./AssetsInitial.s.sol";
+import "./StrategiesInitial.s.sol";
 
-contract MainnetExtendedSetup is Script, DeploySpool, AssetsInitial, StrategiesInitial {
+contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesInitial {
     JsonReader internal _constantsJson;
     JsonReadWriter internal _contractsJson;
 
     function run() external virtual {
         init();
 
-        doSetup();
-
-        broadcast();
-
-        execute();
-    }
-
-    function broadcast() public virtual {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployerAddress = vm.addr(deployerPrivateKey);
 
         vm.startBroadcast(deployerPrivateKey);
+
+        doSetup(deployerAddress, true);
     }
 
     function init() public virtual {
@@ -32,13 +27,17 @@ contract MainnetExtendedSetup is Script, DeploySpool, AssetsInitial, StrategiesI
         _contractsJson = new JsonReadWriter(vm, string.concat("deploy/mainnet.contracts.json"));
     }
 
-    function doSetup() public {
-        loadSpool();
+    function doSetup(address deployerAddress, bool extended) public {
+        deploySpool();
 
-        loadAssets(assetGroupRegistry);
+        setupAssets(assetGroupRegistry, usdPriceFeedManager);
+
+        deployStrategies(
+            spoolAccessControl, assetGroupRegistry, swapper, address(proxyAdmin), strategyRegistry, extended
+        );
+
+        postDeploySpool(deployerAddress);
     }
-
-    function execute() public virtual {}
 
     function assets(string memory assetKey) public view virtual override returns (address) {
         return _assets[assetKey];
@@ -62,5 +61,5 @@ contract MainnetExtendedSetup is Script, DeploySpool, AssetsInitial, StrategiesI
         return _contractsJson;
     }
 
-    function test_mock_MainnetExtendedSetup() external pure {}
+    function test_mock_MainnetInitialSetup() external pure {}
 }
