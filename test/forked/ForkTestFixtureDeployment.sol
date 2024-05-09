@@ -557,7 +557,11 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
 
     function _dealTokens(address account) internal {
         deal(address(dai), account, 1e18 * 1e6, true);
-        deal(address(usdc), account, 1e6 * 1e6, true);
+        // TODO: forge throw errors on dealing USDC (somehow related to proxy https://github.com/foundry-rs/forge-std/issues/318)
+        vm.startPrank(USDC_WHALE);
+        IERC20(usdc).transfer(account, 1e6 * 1e6);
+        vm.stopPrank();
+        // deal(address(usdc), account, 1e6 * 1e6, true);
         deal(address(usdt), account, 1e6 * 1e6, true);
 
         IWETH9(address(weth)).deposit{value: 1e18 * 1e6}();
@@ -668,8 +672,10 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                     _setInitialDhwParametersGeneric(parameters, i, j, 4);
                 } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                     _setInitialDhwParametersGeneric(parameters, i, j, 4);
+                } else if (Strings.equal(strategyKey, METAMORPHO_GAUNTLET)) {
+                    _setInitialDhwParametersGeneric(parameters, i, j, 6);
                 } else {
-                    revert(string.concat("Strategy '", strategyKey, "' not handled."));
+                    revert(string.concat("_generateDhwParameterBag: Strategy '", strategyKey, "' not handled."));
                 }
             }
         }
@@ -714,8 +720,10 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
                 } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
+                } else if (Strings.equal(strategyKey, METAMORPHO_GAUNTLET)) {
+                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
                 } else {
-                    revert(string.concat("Strategy '", strategyKey, "' not handled."));
+                    revert(string.concat("_updateDhwParameterBag: Strategy '", strategyKey, "' not handled."));
                 }
             }
         }
@@ -911,8 +919,10 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
+            } else if (Strings.equal(strategyKey, METAMORPHO_GAUNTLET)) {
+                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else {
-                revert(string.concat("Strategy '", strategyKey, "' not handled."));
+                revert(string.concat("_getRedeemFastSlippages: Strategy '", strategyKey, "' not handled."));
             }
         }
     }
@@ -1016,6 +1026,8 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
             } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
+            } else if (Strings.equal(strategyKey, METAMORPHO_GAUNTLET)) {
+                _setInitialReallocateParamsGeneric(params, i, 3, 3);
             } else {
                 revert(string.concat("_generateReallocateParamBag:: Strategy '", strategyKey, "' not handled."));
             }
@@ -1056,6 +1068,8 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 // not production ready - approximation
                 _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
+                _updateReallocateParamsGeneric(params, i, strategy, logs);
+            } else if (Strings.equal(strategyKey, METAMORPHO_GAUNTLET)) {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else {
                 revert(string.concat("_updateReallocateParamBag:: Strategy '", strategyKey, "' not handled."));

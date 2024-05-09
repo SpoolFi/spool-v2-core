@@ -95,10 +95,33 @@
       "compound-v2-usdt": "0xac997F24Ef9f5fc2A3c050eA14d1d017db20a1d1",
       "implementation": "0x6Ab817bD92A1c3075d8f1ceD160984EA4E5F8d89"
     },
+    "convex-3pool": {
+      "implementation": "0x63423e8358B3D00a780CCE788Ed4BCCd50ed58b2",
+      "proxy": "0x93f0F12e368b06d7914255FBA5cA47821cd5908d"
+    },
+    "convex-alusd": {
+      "implementation": "0xD049C7B5707021C39787438B95d65C9C7339EA04",
+      "proxy": "0x2cA41209c87D2a611059d85C62cc0F913068d301"
+    },
+    "convex-stfrxeth": {
+      "implementation": "0xbb141226abA3b1dDfBe5EB03De9138f16198b42c",
+      "proxy": "0x5699181904Ae5781d204a0E189862f8AF9109479"
+    },
+    "curve-3pool": {
+      "implementation": "0x520AeDDdd3fb45E49ce236Df4c43B6a1a0cc061A",
+      "proxy": "0x6EB6251AF926016c60DE17aD976b9C1e2485e1F0"
+    },
     "gearbox-v3": {
-        "gearbox-v3-usdc":"0xb4a7fb51D06760B5F622643B7276c003418732bD",
-        "gearbox-v3-weth": "0xD92B65d2321076FBAc23FCfC9A9Fd5Ed2E98B758",
-        "implementation":"0x615a54527c08e15d9276EDfb707e7F457aBCF3Ae"
+      "gearbox-v3-usdc": "0xb4a7fb51D06760B5F622643B7276c003418732bD",
+      "gearbox-v3-weth": "0xD92B65d2321076FBAc23FCfC9A9Fd5Ed2E98B758",
+      "implementation": "0x615a54527c08e15d9276EDfb707e7F457aBCF3Ae"
+    },
+    "metamorpho-gauntlet": {
+      "implementation": "0x35E72AF2E0245077785472eD4A166C56649Ff0B2",
+      "metamorpho-gauntlet-dai-core": "0x05d9A563cb7bFC58082935ccb44FEe9dF19D1ee5",
+      "metamorpho-gauntlet-lrt-core": "0x1D060A1B17a7FF1929133B202a7Ec1D9B90A1965",
+      "metamorpho-gauntlet-mkr-blended": "0xAfC182fcFbdA42F639CCD4518aEcccE5Ea777440",
+      "metamorpho-gauntlet-usdt-prime": "0x35A73350c199b25618cFF7E9f33eC2EbcD1F0180"
     },
     "morpho-aave-v2": {
       "implementation": "0x7b2121D7d8699aF6420941AE06834625ce650623",
@@ -130,7 +153,7 @@
       "proxy": "0x6d0e6242FE023675487BccA4Ab989a91D0932a51"
     },
     "steth-holding": {
-      "implementation": "0x89fd0a5549d402595c9db1be92564c486fb10b96",
+      "implementation": "0x89fD0A5549d402595C9DB1Be92564C486fB10B96",
       "proxy": "0x504d272aC93e7ffAcAcB7DD69061c9b4D0781410"
     },
     "yearn-v2": {
@@ -138,22 +161,6 @@
       "yearn-v2-dai": "0xb8943E7eBB7B919AAFaE261343c38F02e4182CA6",
       "yearn-v2-usdc": "0xc61E829DF3fbD6Cf5B2f5881F190C69eE48d20DF",
       "yearn-v2-usdt": "0x24416AE2794C222725185734c7050c008fC1d2f8"
-    },
-    "convex-3pool": {
-      "implementation": "0x63423e8358B3D00a780CCE788Ed4BCCd50ed58b2",
-      "proxy": "0x93f0F12e368b06d7914255FBA5cA47821cd5908d"
-    },
-    "convex-alusd": {
-      "implementation": "0xD049C7B5707021C39787438B95d65C9C7339EA04",
-      "proxy": "0x2cA41209c87D2a611059d85C62cc0F913068d301"
-    },
-    "curve-3pool": {
-      "implementation": "0x520AeDDdd3fb45E49ce236Df4c43B6a1a0cc061A",
-      "proxy": "0x6EB6251AF926016c60DE17aD976b9C1e2485e1F0"
-    },
-    "convex-stfrxeth": {
-     "implementation": "0xbb141226abA3b1dDfBe5EB03De9138f16198b42c",
-     "proxy": "0x5699181904Ae5781d204a0E189862f8AF9109479"
     }
   }
 }
