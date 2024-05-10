@@ -20,6 +20,7 @@ import "../../src/strategies/StEthHoldingStrategy.sol";
 import "../../src/strategies/YearnV2Strategy.sol";
 import "../../src/strategies/OEthHoldingStrategy.sol";
 import "../../src/strategies/GearboxV3Strategy.sol";
+import "../../src/strategies/MetamorphoStrategy.sol";
 import "../helper/JsonHelper.sol";
 import "./AssetsInitial.s.sol";
 
@@ -36,6 +37,7 @@ string constant CURVE_STETH_KEY = "curve-steth";
 string constant CURVE_OETH_KEY = "curve-oeth";
 string constant CURVE_STFRXETH_KEY = "curve-stfrxeth";
 string constant GEARBOX_V3_KEY = "gearbox-v3";
+string constant METAMORPHO_GAUNTLET = "metamorpho-gauntlet";
 string constant IDLE_BEST_YIELD_SENIOR_KEY = "idle-best-yield-senior";
 string constant MORPHO_AAVE_V2_KEY = "morpho-aave-v2";
 string constant MORPHO_COMPOUND_V2_KEY = "morpho-compound-v2";
@@ -107,6 +109,8 @@ contract StrategiesInitial {
             deployConvexStFrxEth(contracts, true);
 
             deployGearboxV3(contracts, true);
+
+            deployMetamorphoGauntlet(contracts, true);
         }
     }
 
@@ -116,11 +120,8 @@ contract StrategiesInitial {
             constantsJson().getAddress(string.concat(".strategies.", AAVE_V2_KEY, ".lendingPoolAddressesProvider"))
         );
 
-        AaveV2Strategy implementation = new AaveV2Strategy(
-            contracts.assetGroupRegistry,
-            contracts.accessControl,
-            provider
-        );
+        AaveV2Strategy implementation =
+            new AaveV2Strategy(contracts.assetGroupRegistry, contracts.accessControl, provider);
 
         contractsJson().addVariantStrategyImplementation(AAVE_V2_KEY, address(implementation));
 
@@ -146,10 +147,7 @@ contract StrategiesInitial {
             IComptroller(constantsJson().getAddress(string.concat(".strategies.", COMPOUND_V2_KEY, ".comptroller")));
 
         CompoundV2Strategy implementation = new CompoundV2Strategy(
-            contracts.assetGroupRegistry,
-            contracts.accessControl,
-            contracts.swapper,
-            comptroller
+            contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper, comptroller
         );
 
         contractsJson().addVariantStrategyImplementation(COMPOUND_V2_KEY, address(implementation));
@@ -184,11 +182,7 @@ contract StrategiesInitial {
                 IBooster(constantsJson().getAddress(string.concat(".strategies.", CONVEX_BASE_KEY, ".booster")));
 
             Convex3poolStrategy implementation = new Convex3poolStrategy(
-                contracts.assetGroupRegistry,
-                contracts.accessControl,
-                assetGroupId,
-                contracts.swapper,
-                booster
+                contracts.assetGroupRegistry, contracts.accessControl, assetGroupId, contracts.swapper, booster
             );
 
             // create proxy
@@ -256,12 +250,7 @@ contract StrategiesInitial {
                 IBooster(constantsJson().getAddress(string.concat(".strategies.", CONVEX_BASE_KEY, ".booster")));
 
             ConvexAlusdStrategy implementation = new ConvexAlusdStrategy(
-                contracts.assetGroupRegistry,
-                contracts.accessControl,
-                assetGroupId,
-                contracts.swapper,
-                booster,
-                1
+                contracts.assetGroupRegistry, contracts.accessControl, assetGroupId, contracts.swapper, booster, 1
             );
 
             // create proxy
@@ -327,10 +316,7 @@ contract StrategiesInitial {
             uint256 assetGroupId = assetGroups(DAI_USDC_USDT_KEY);
 
             Curve3poolStrategy implementation = new Curve3poolStrategy(
-                contracts.assetGroupRegistry,
-                contracts.accessControl,
-                assetGroupId,
-                contracts.swapper
+                contracts.assetGroupRegistry, contracts.accessControl, assetGroupId, contracts.swapper
             );
 
             // create proxy
@@ -373,11 +359,8 @@ contract StrategiesInitial {
 
     function deployGearboxV3(StandardContracts memory contracts, bool register) public {
         // create implementation contract
-        GearboxV3Strategy implementation = new GearboxV3Strategy(
-            contracts.assetGroupRegistry,
-            contracts.accessControl,
-            contracts.swapper
-        );
+        GearboxV3Strategy implementation =
+            new GearboxV3Strategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper);
 
         contractsJson().addVariantStrategyImplementation(GEARBOX_V3_KEY, address(implementation));
 
@@ -406,11 +389,8 @@ contract StrategiesInitial {
 
     function deployIdle(StandardContracts memory contracts) public {
         // create implementation contract
-        IdleStrategy implementation = new IdleStrategy(
-            contracts.assetGroupRegistry,
-            contracts.accessControl,
-            contracts.swapper
-        );
+        IdleStrategy implementation =
+            new IdleStrategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper);
 
         contractsJson().addVariantStrategyImplementation(IDLE_BEST_YIELD_SENIOR_KEY, address(implementation));
 
@@ -449,11 +429,7 @@ contract StrategiesInitial {
             );
 
             REthHoldingStrategy implementation = new REthHoldingStrategy(
-                contracts.assetGroupRegistry,
-                contracts.accessControl,
-                assetGroupId,
-                rocketSwapRouter,
-                assets(WETH_KEY)
+                contracts.assetGroupRegistry, contracts.accessControl, assetGroupId, rocketSwapRouter, assets(WETH_KEY)
             );
 
             // create proxy
@@ -508,12 +484,7 @@ contract StrategiesInitial {
                 ICurveEthPool(constantsJson().getAddress(string.concat(".strategies.", CURVE_STETH_KEY, ".pool")));
 
             StEthHoldingStrategy implementation = new StEthHoldingStrategy(
-                contracts.assetGroupRegistry,
-                contracts.accessControl,
-                assetGroupId,
-                lido,
-                curvePool,
-                assets(WETH_KEY)
+                contracts.assetGroupRegistry, contracts.accessControl, assetGroupId, lido, curvePool, assets(WETH_KEY)
             );
 
             // create proxy
@@ -652,11 +623,7 @@ contract StrategiesInitial {
         IERC20 note = IERC20(constantsJson().getAddress(string.concat(".tokens.note")));
 
         NotionalFinanceStrategy implementation = new NotionalFinanceStrategy(
-            contracts.assetGroupRegistry,
-            contracts.accessControl,
-            contracts.swapper,
-            notional,
-            note
+            contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper, notional, note
         );
 
         contractsJson().addVariantStrategyImplementation(NOTIONAL_FINANCE_KEY, address(implementation));
@@ -686,10 +653,7 @@ contract StrategiesInitial {
 
     function deployYearnV2(StandardContracts memory contracts) public {
         // create implementation contract
-        YearnV2Strategy implementation = new YearnV2Strategy(
-            contracts.assetGroupRegistry,
-            contracts.accessControl
-        );
+        YearnV2Strategy implementation = new YearnV2Strategy(contracts.assetGroupRegistry, contracts.accessControl);
 
         contractsJson().addVariantStrategyImplementation(YEARN_V2_KEY, address(implementation));
 
@@ -752,10 +716,7 @@ contract StrategiesInitial {
             uint256 assetGroupId = assetGroups(WETH_KEY);
 
             ConvexStFrxEthStrategy implementation = new ConvexStFrxEthStrategy(
-                contracts.assetGroupRegistry,
-                contracts.accessControl,
-                assetGroupId,
-                contracts.swapper
+                contracts.assetGroupRegistry, contracts.accessControl, assetGroupId, contracts.swapper
             );
 
             // create proxy
@@ -781,6 +742,50 @@ contract StrategiesInitial {
                 _registerStrategy(
                     CONVEX_STFRXETH_KEY, address(implementation), proxy, assetGroupId, contracts.strategyRegistry
                 );
+            }
+        }
+    }
+
+    function deployMetamorphoGauntlet(StandardContracts memory contracts, bool register) public {
+        // create implementation contract
+        MetamorphoStrategy implementation =
+            new MetamorphoStrategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper);
+
+        contractsJson().addVariantStrategyImplementation(METAMORPHO_GAUNTLET, address(implementation));
+
+        // create variant proxies
+        string[] memory variants = new string[](4);
+        variants[0] = "lrt-core";
+        variants[1] = "mkr-blended";
+        variants[2] = "usdt-prime";
+        variants[3] = "dai-core";
+
+        for (uint256 i; i < variants.length; ++i) {
+            string memory variantName = _getVariantName(METAMORPHO_GAUNTLET, variants[i]);
+
+            address variant = _newProxy(address(implementation), contracts.proxyAdmin);
+            string memory assetKey = constantsJson().getString(
+                string.concat(".strategies.", METAMORPHO_GAUNTLET, ".", variants[i], ".underlyingAsset")
+            );
+            uint256 assetGroupId = assetGroups(assetKey);
+
+            IERC4626 vault = IERC4626(
+                constantsJson().getAddress(
+                    string.concat(".strategies.", METAMORPHO_GAUNTLET, ".", variants[i], ".vault")
+                )
+            );
+            address[] memory rewards = constantsJson().getAddressArray(
+                string.concat(".strategies.", METAMORPHO_GAUNTLET, ".", variants[i], ".rewards")
+            );
+            MetamorphoStrategy(variant).initialize(
+                variantName, assetGroupId, vault, 10 ** (vault.decimals() * 2), rewards
+            );
+            if (register) {
+                _registerStrategyVariant(
+                    METAMORPHO_GAUNTLET, variants[i], variant, assetGroupId, contracts.strategyRegistry
+                );
+            } else {
+                contractsJson().addVariantStrategyVariant(METAMORPHO_GAUNTLET, variantName, variant);
             }
         }
     }
