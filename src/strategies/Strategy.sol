@@ -290,17 +290,20 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
 
         // swap assets
         _swapAssets(assetGroup, assetsToDeposit, swapInfo);
+        uint256[] memory assetsDeposited = new uint256[](assetGroup.length);
         for (uint256 i; i < assetGroup.length; ++i) {
-            assetsToDeposit[i] = IERC20(assetGroup[i]).balanceOf(address(this));
+            assetsDeposited[i] = IERC20(assetGroup[i]).balanceOf(address(this));
         }
 
         // deposit assets
         uint256 usdWorth0 = _getUsdWorth(exchangeRates, priceFeedManager);
-        _depositToProtocol(assetGroup, assetsToDeposit, slippages);
+        _depositToProtocol(assetGroup, assetsDeposited, slippages);
         uint256 usdWorth1 = _getUsdWorth(exchangeRates, priceFeedManager);
 
         // mint SSTs
         uint256 sstsToMint = _mintStrategyShares(usdWorth0, usdWorth1);
+
+        emit Deposited(sstsToMint, usdWorth1 - usdWorth0, assetsToDeposit, assetsDeposited);
 
         return sstsToMint;
     }
