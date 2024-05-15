@@ -35,21 +35,21 @@
             "rewardsController": "0x929EC64c34a17401F460460D4B9390518E5B473e",
             "dai": {
                 "aToken": "0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE",
-                "apy": 81000000000
+                "apy": 53500000000
             },
             "usdc": {
                 "aToken": "0x724dc807b04555b71ed48a6896b6F41593b8C637",
-                "apy": 84100000000
+                "apy": 55600000000
             },
             "usdt": {
                 "aToken": "0x6ab707Aca953eDAeFBc4fD23bA73294241490620",
-                "apy": 92100000000
+                "apy": 57900000000
             }
         },
         "aave-v3-swap": {
             "usdc": {
                 "aToken": "0x625E7708f30cA75bfd92586e17077590C60eb4cD",
-                "apy": 117200000000
+                "apy": 58700000000
             },
             "fee": 100
         },
@@ -57,13 +57,13 @@
             "rewards": "0x88730d254A2f7e6AC8388c3198aFd694bA9f7fae",
             "usdc": {
                 "cToken": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
-                "apy": 50800000000
+                "apy": 59400000000
             }
         },
         "compound-v3-swap": {
             "usdc": {
                 "cToken": "0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA",
-                "apy": 24600000000
+                "apy": 80200000000
             },
             "fee": 100
         },
@@ -73,7 +73,7 @@
                 "hypervisor": "0xd7Ef5Ac7fd4AAA7994F3bc1D273eAb1d1013530E",
                 "nitroPool": "0x84EDB15BcBf6818879C6FDf26A69700D43100A74",
                 "narrow": {
-                    "apy": 10454497690,
+                    "apy": 3184910075,
                     "extraRewards": false
                 }
             }
