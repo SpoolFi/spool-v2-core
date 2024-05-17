@@ -84,11 +84,11 @@
   },
   "strategies": {
     "mock": {
-      "beacon": "0x7E0B5D8FE6552901fE486f711E263A14e6D1C792",
-      "mock-dai": "0x041ce771478a9c4986BB9F812053bBF38079D7e7",
-      "mock-usdc": "0x9fDD20F888Efa05DcC877cff36d287f8437569a0",
-      "mock-usdt": "0x1C255655Bb4fd90101dF99395f7ce351e987D93a",
-      "mock-weth": "0x91395743B7056e6371d0BE80aB4C877a8C6861CC"
+      "beacon": "0xb3752bBb715aCAe2A3E9c28200B5A0B319f583Ef",
+      "mock-dai": "0xCc239ffF84045cc1c81203695eE5d2e05530f026",
+      "mock-usdc": "0x07Ffa21cbf983e2F2246750108D9248133c85a98",
+      "mock-usdt": "0x68b19781cBE5724b1666D944C729aa15d6925E0b",
+      "mock-weth": "0x7fd3f41F2dE554d8528Db74294a4382f4718F3Ad"
     }
   }
 }

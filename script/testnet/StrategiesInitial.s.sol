@@ -64,7 +64,7 @@ contract StrategiesInitial {
     }
 
     function deployMock(StandardContracts memory contracts) public {
-        // Deploy beacon proxy for Uniswap v3
+        // Deploy beacon proxy
         UpgradeableBeacon beacon = _deployMockBeacon(contracts);
 
         // create variant proxies
