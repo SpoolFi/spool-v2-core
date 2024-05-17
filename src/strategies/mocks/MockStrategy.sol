@@ -17,6 +17,7 @@ struct UserInfo {
 
 struct PoolInfo {
     IERC20 token;
+    uint256 vestedSupply;
     uint256 lastRewardTime;
     uint256 accRewardPerShare;
 }
@@ -43,7 +44,12 @@ contract MockStrategy is Strategy {
         startTime = block.timestamp;
 
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId_);
-        poolInfo = PoolInfo({token: IERC20(assetGroup[0]), lastRewardTime: block.timestamp, accRewardPerShare: 0});
+        poolInfo = PoolInfo({
+            token: IERC20(assetGroup[0]),
+            vestedSupply: 0,
+            lastRewardTime: block.timestamp,
+            accRewardPerShare: 0
+        });
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {
@@ -66,19 +72,16 @@ contract MockStrategy is Strategy {
         override
         returns (int256 compoundYield)
     {
-        uint256 assetBalanceBefore = _getAssetBalanceBefore();
         // claims rewards
-        deposit(0);
-        // rewards generated
-        uint256 assetBalanceDiff = _getAssetBalanceDiff(assetBalanceBefore);
+        (, uint256[] memory rewards) = _getProtocolRewardsInternal();
 
         // NOTE: as reward token is same as the deposit token, deposit the claimed amount
         uint256 balanceBefore = userInfo[address(this)].amount;
 
-        deposit(assetBalanceDiff);
+        deposit(rewards[0]);
 
         if (balanceBefore > 0) {
-            compoundYield = int256(assetBalanceDiff * YIELD_FULL_PERCENT / balanceBefore);
+            compoundYield = int256(rewards[0] * YIELD_FULL_PERCENT / balanceBefore);
         }
     }
 
@@ -118,38 +121,43 @@ contract MockStrategy is Strategy {
         withdraw(toWithdraw);
     }
 
-    function _getAssetBalanceBefore() private view returns (uint256) {
+    function _getAssetBalance() private view returns (uint256) {
         address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId());
 
         return IERC20(assetGroup[0]).balanceOf(address(this));
-    }
-
-    function _getAssetBalanceDiff(uint256 assetBalanceBefore) private view returns (uint256) {
-        address[] memory assetGroup = _assetGroupRegistry.listAssetGroup(assetGroupId());
-
-        uint256 assetBalanceAfter = IERC20(assetGroup[0]).balanceOf(address(this));
-
-        if (assetBalanceAfter >= assetBalanceBefore) {
-            unchecked {
-                return assetBalanceAfter - assetBalanceBefore;
-            }
-        } else {
-            revert("MockMasterChefStrategy::_getAssetBalanceDiff: Balance after should be equal or higher");
-        }
     }
 
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public view override {}
 
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
 
-    function _emergencyWithdrawImpl(uint256[] calldata slippages, address recipient) internal pure override {}
+    function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
+        uint256 balance = userInfo[address(this)].amount;
+
+        withdraw(balance);
+
+        IERC20(poolInfo.token).safeTransfer(recipient, balance);
+    }
 
     function _getProtocolRewardsInternal()
         internal
         virtual
         override
         returns (address[] memory tokens, uint256[] memory amounts)
-    {}
+    {
+        uint256 assetBalanceBefore = _getAssetBalance();
+
+        // claims rewards
+        deposit(0);
+        // rewards generated
+        uint256 assetBalanceDiff = _getAssetBalance() - assetBalanceBefore;
+
+        tokens = new address[](1);
+        tokens[0] = address(poolInfo.token);
+
+        amounts = new uint256[](1);
+        amounts[0] = assetBalanceDiff;
+    }
 
     function updateRewardTokenPerSecond(uint256 _rewardTokenPerSecond)
         external
@@ -163,45 +171,44 @@ contract MockStrategy is Strategy {
         if (block.timestamp <= pool.lastRewardTime) {
             return;
         }
-        uint256 lpSupply = pool.token.balanceOf(address(this));
-        if (lpSupply == 0) {
+        uint256 vestedSupply = pool.vestedSupply;
+        if (vestedSupply == 0) {
             pool.lastRewardTime = block.timestamp;
             return;
         }
         uint256 multiplier = block.timestamp - pool.lastRewardTime;
         uint256 reward = multiplier * rewardTokenPerSecond;
 
-        pool.accRewardPerShare += reward * 1e12 / lpSupply;
+        pool.accRewardPerShare += reward * 1e12 / vestedSupply;
         pool.lastRewardTime = block.timestamp;
     }
 
-    function deposit(uint256 _amount) public {
+    function deposit(uint256 _amount) private {
         PoolInfo storage pool = poolInfo;
-        UserInfo storage user = userInfo[msg.sender];
+        UserInfo storage user = userInfo[address(this)];
         updatePool();
         if (user.amount > 0) {
             uint256 pending = user.amount * pool.accRewardPerShare / 1e12 - user.rewardDebt;
-            safeRewardTransfer(msg.sender, pending);
+            safeRewardMint(pending);
         }
-        pool.token.safeTransferFrom(address(msg.sender), address(this), _amount);
-
         user.amount += _amount;
         user.rewardDebt = user.amount * pool.accRewardPerShare / 1e12;
+        pool.vestedSupply += _amount;
     }
 
-    function withdraw(uint256 _amount) public {
+    function withdraw(uint256 _amount) private {
         PoolInfo storage pool = poolInfo;
-        UserInfo storage user = userInfo[msg.sender];
+        UserInfo storage user = userInfo[address(this)];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool();
         uint256 pending = user.amount * pool.accRewardPerShare / 1e12 - user.rewardDebt;
-        safeRewardTransfer(msg.sender, pending);
+        safeRewardMint(pending);
         user.amount -= _amount;
+        pool.vestedSupply -= _amount;
         user.rewardDebt = user.amount * pool.accRewardPerShare / 1e12;
-        pool.token.safeTransfer(address(msg.sender), _amount);
     }
 
-    function safeRewardTransfer(address _to, uint256 _amount) internal {
-        IERC20Mintable(address(poolInfo.token)).mint(_to, _amount);
+    function safeRewardMint(uint256 _amount) private {
+        IERC20Mintable(address(poolInfo.token)).mint(address(this), _amount);
     }
 }
