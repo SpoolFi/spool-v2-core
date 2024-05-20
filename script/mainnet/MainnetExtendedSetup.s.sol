@@ -6,6 +6,7 @@ import "../helper/JsonHelper.sol";
 import "../DeploySpool.s.sol";
 import "./AssetsInitial.s.sol";
 import "./StrategiesInitial.s.sol";
+import "@openzeppelin/utils/Strings.sol";
 
 contract MainnetExtendedSetup is Script, DeploySpool, AssetsInitial, StrategiesInitial {
     JsonReader internal _constantsJson;
@@ -28,8 +29,12 @@ contract MainnetExtendedSetup is Script, DeploySpool, AssetsInitial, StrategiesI
     }
 
     function init() public virtual {
-        _constantsJson = new JsonReader(vm, string.concat("deploy/mainnet.constants.json"));
-        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/mainnet.contracts.json"));
+        string memory environment = vm.envString("ENVIRONMENT");
+        require(
+            Strings.equal(environment, "production") || Strings.equal(environment, "staging"), "Environment is not set"
+        );
+        _constantsJson = new JsonReader(vm, string.concat("deploy/mainnet.", environment, ".constants.json"));
+        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/mainnet.", environment, ".contracts.json"));
     }
 
     function doSetup() public {

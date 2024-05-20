@@ -1,0 +1,176 @@
+{
+  "ActionManager": {
+    "implementation": "0xa4e411f65Cae185101aD5a7BF944346A487B82D9",
+    "proxy": "0xdF2ACdCeD7CF6348cA317Ab57210C35770927857"
+  },
+  "AllowlistGuard": {
+    "implementation": "0x0000000000000000000000000000000000000000",
+    "proxy": "0x0000000000000000000000000000000000000000"
+  },
+  "AssetGroupRegistry": {
+    "implementation": "0xb6EFBda134501430B6112CA67564Dd535AF332C9",
+    "proxy": "0x6c22dfAD4414cfb786A4173A7E4547A94E56e263"
+  },
+  "DepositManager": {
+    "implementation": "0x671534a368AfB2c5E7a0170A4ED37DC4C387F48c",
+    "proxy": "0xDc962D69F5fFa5e0e61826196119E34E908a320d"
+  },
+  "DepositSwap": {
+    "implementation": "0xcE7F66BD505a80129Ef25b06207Ac49620A55522",
+    "proxy": "0x74AD50d6208Fe9caB6e9e6E2015Aa4f001D5906E"
+  },
+  "ExponentialAllocationProvider": {
+    "implementation": "0xDD0458a6E2FfE886e4670045D9abd1221E9D93ae",
+    "proxy": "0x015AFC876A4d115E2fF01000d9D3ADC714e5870B"
+  },
+  "GhostStrategy": {
+    "implementation": "0x0000000000000000000000000000000000000000",
+    "proxy": "0x0000000000000000000000000000000000000000"
+  },
+  "GuardManager": {
+    "implementation": "0x12f1E501CFAAa2c4A1c30a1783d0C4d3A92E3AbB",
+    "proxy": "0x32c0F2C34496e74875D826AF16f1fdbD6e224617"
+  },
+  "LinearAllocationProvider": {
+    "implementation": "0xA1AF1C65430265DF44D3dC4708Ba03f042490ba0",
+    "proxy": "0x4e1157b40e62782F04d7F4a915f340B8F445B008"
+  },
+  "MasterWallet": {
+    "implementation": "0xE411921ee9EeDfEFd7b9Ae15bF232bd36949Fcbc",
+    "proxy": "0x468DC7826898497D2494659b61D7899F4b6ceD72"
+  },
+  "ProxyAdmin": "0x3Ffda89A5F87D99DE88Bc0617d95C7e5dDe0408f",
+  "RewardManager": {
+    "implementation": "0x7BAcF2D8fA5DfcbF5a570c6eF243D84dA257c813",
+    "proxy": "0x51a7fA4af8cd0C03fFc1B8AE47d7F534Fd4e2944"
+  },
+  "RiskManager": {
+    "implementation": "0x00dB3649F09F89B84afD26DefEddD0BF21818440",
+    "proxy": "0x0271704B01A276e2334e1eC50c9512276fee9FA1"
+  },
+  "SmartVaultFactory": "0x075B70C2b0931eC82ceb91Ad20e0FC44f88bA99D",
+  "SmartVaultFactoryHpf": "0x0000000000000000000000000000000000000000",
+  "SmartVaultManager": {
+    "implementation": "0x5Be60b7F67566c51b394B489715Cb06f12dEb318",
+    "proxy": "0x6c1708833Cf8Bc1c7be6389dF1721B29d76090DA"
+  },
+  "SpoolAccessControl": {
+    "implementation": "0x85365E3d47C34466477518a5F6A869d2C68dF194",
+    "proxy": "0xE336E6dD21563Ed7785fa66562aE14194a720FBc"
+  },
+  "SpoolLens": {
+    "implementation": "0xE08bE40E1D7434ffF403966d93952cbbeE64C27F",
+    "proxy": "0x02cE10513AfAf102172651B7DC6f1A6359717421"
+  },
+  "StrategyRegistry": {
+    "implementation": "0xEE8D61687d3E174435BF8deb9EA6816C78236B6A",
+    "proxy": "0x49820C1bC5e07416Cb986d89c3fe1a4e1D12faD4"
+  },
+  "Swapper": {
+    "implementation": "0x10319e7e4863f1165aBaAE5947CB5e81282Ab43D",
+    "proxy": "0x19d4f3Ff35aD98244EF9A473B80b905EB5c14649"
+  },
+  "UniformAllocationProvider": {
+    "implementation": "0xEfaFB06458dd86b0403B65Ef0F5763b682BBb752",
+    "proxy": "0xE3Eca4c4B0BB84532D43db64E505CC6eE750fD7C"
+  },
+  "UsdPriceFeedManager": {
+    "implementation": "0xB381615dC2A59334735149CBe4bc694E803333d0",
+    "proxy": "0x3e724B66eb8F77Bbbe345685ef6F41b1D05C6815"
+  },
+  "WithdrawalManager": {
+    "implementation": "0x18165F37c30dA006578D14DFB10A178b35226398",
+    "proxy": "0x919D5CC1C1dCa1f6EaB7207f56218815CC85f4c7"
+  },
+  "strategies": {
+    "aave-v2": {
+      "aave-v2-dai": "0x2AE9CAA6Ad990D6790a2e21F69Bd93f2ccACdEc9",
+      "aave-v2-usdc": "0xe5f6b00e9261049704e66598B26BDbd1B648d674",
+      "aave-v2-usdt": "0x041ce771478a9c4986BB9F812053bBF38079D7e7",
+      "implementation": "0xE5a941e12191e353A0709c6F11C82a212f1fc7dC"
+    },
+    "compound-v2": {
+      "compound-v2-dai": "0x03Cc74E1A8D91E6B2b28237058cdE4b339741c04",
+      "compound-v2-usdc": "0xf434ABE350682850e41B5b15837e29f0c606DFce",
+      "compound-v2-usdt": "0x1Ef5dd09408d75509d43a53cB8fB0fEa93b7a4a4",
+      "implementation": "0x9fDD20F888Efa05DcC877cff36d287f8437569a0"
+    },
+    "convex-3pool": {
+      "implementation": "0xb4C5ccCF7c332e6C3123512526C27a4017FEeD5B",
+      "proxy": "0xD93C67509CC0cf45C1E9bADB7D03f5cD92103878"
+    },
+    "convex-alusd": {
+      "implementation": "0xef027aCb91a4Ce2c1B9319A6451f4F915Ed66B32",
+      "proxy": "0x60Ed987fb1106E0048CeafCcDd6af7f75A2CBD46"
+    },
+    "convex-stfrxeth": {
+      "implementation": "0xDCcca5E2892f101e9d50fb19e15195562457D8D4",
+      "proxy": "0x2273b95B203a1782A2AA75d568e3C5f57708E4B2"
+    },
+    "curve-3pool": {
+      "implementation": "0xb3752bBb715aCAe2A3E9c28200B5A0B319f583Ef",
+      "proxy": "0x83DFeBE34b3Da9538c8457b819871D8b3e6B5E28"
+    },
+    "gearbox-v3": {
+      "gearbox-v3-usdc": "0x09Fca6640E016750b8B6C7c7d98f47D435a5B224",
+      "gearbox-v3-weth": "0x6C3b0401815A4d92DA2F3BA8e2809587C2D095EC",
+      "implementation": "0x62422c81cC7cDfEA6dAECe3218eD503539Ce7d39"
+    },
+    "metamorpho-gauntlet": {
+      "implementation": "0x699ae3BCBa5b76ea1E8373b944332D0a3a50eCCd",
+      "metamorpho-gauntlet-dai-core": "0x140f7e6cb92A399E9c70235879d7504D8c9fE784",
+      "metamorpho-gauntlet-lrt-core": "0xddFb9C33a20Abeb6B540a7Af31b115a0FDb403fB",
+      "metamorpho-gauntlet-mkr-blended": "0xCd6883d1b7F1295D1B81F6A94174993e4BED0bc0",
+      "metamorpho-gauntlet-usdt-prime": "0x3D0686fd0A9673d696A8AdeF569DAEDeD95bA061"
+    },
+    "morpho-aave-v2": {
+      "implementation": "0x438a0bb793412159357340d07Fb5A1f7aCA5b796",
+      "morpho-aave-v2-dai": "0x578Cf55Ff29722A5fe7e1202bB89fac030142d66",
+      "morpho-aave-v2-usdc": "0x633500e0EfF56d8853bD51Ac0B19C1cA95Db612e",
+      "morpho-aave-v2-usdt": "0xc1a8CA78c14E06aC4dAbff1B10cC115FF6a95556"
+    },
+    "morpho-compound-v2": {
+      "implementation": "0xe1821C399D84C3da9895669BEA8AACD075ed41F4",
+      "morpho-compound-v2-dai": "0x67d2D608714A26305629db6FFC430e153BA7f2Cf",
+      "morpho-compound-v2-usdc": "0x3ddD826b8570A0bFf8d52652FE7920947CD32a94",
+      "morpho-compound-v2-usdt": "0x58AF659B2440ec3b2772a8b7fd8972f7fdEB9105"
+    },
+    "notional-finance": {
+      "implementation": "0x6194D01936D64e6d12972ba054c705eAf302592F",
+      "notional-finance-dai": "0xe10b236290855F4098fDEd14522C1D12dB467A85",
+      "notional-finance-usdc": "0xF4ebA6AdFB2f54EfBBb0B079f15eD5f177367b75"
+    },
+    "oeth-holding": {
+      "implementation": "0xc8872861229eF1a68367cCEfC17AE2F2550De352",
+      "proxy": "0x24bF10e52bF0109A5aDeB3Bef7DEccB4Bb140bfd"
+    },
+    "reth-holding": {
+      "implementation": "0x6d8DBc3875A8f4005eDd94b633212cCC5d74062B",
+      "proxy": "0x7aFf34F17CED3Bc39A94aD250372119a2762876b"
+    },
+    "sfrxeth-holding": {
+      "implementation": "0x5049Cc6e8BaA9F053Fa5357395784DaDc0cd469f",
+      "proxy": "0x68b19781cBE5724b1666D944C729aa15d6925E0b"
+    },
+    "steth-holding": {
+      "implementation": "0x7fd3f41F2dE554d8528Db74294a4382f4718F3Ad",
+      "proxy": "0xB91fC3a5Cf81470Ad17B36d111Ab4E35947F98D8"
+    },
+    "yearn-v2": {
+      "implementation": "0xc464EE4cbE8eFC9112a29dC8C840bBa60E635CF3",
+      "yearn-v2-dai": "0xCA7D7c54Ba78E77de188E277D6D5C6D339F19d0B",
+      "yearn-v2-usdc": "0x3660e3e7BEF5ff78Fd3ee89837A4384672F1B9Ea",
+      "yearn-v2-usdt": "0xBd30B329a9A9A24E31aBFa5C757E83476646aB8F"
+    },
+    "yearn-v3-gauged": {
+      "implementation": "0xe0373f6c25ce6208FF69C552a7Dfb4d063FA09d9",
+      "yearn-v3-gauged-dai": "0x47530fc1a2D29773f9C63ad67217e47ECc64247B",
+      "yearn-v3-gauged-usdc": "0x08Cb7f4A2AAD6f4e0716124ac1242b88E2D464F2",
+      "yearn-v3-gauged-weth": "0x2438ae27C173700Fc6d3BB5b45C79857cF4da7F2"
+    },
+    "yearn-v3-juiced": {
+      "implementation": "0xd18c6DeBa3783364e45c7E56204662a4d046bf30",
+      "yearn-v3-juiced-dai": "0xA7F8B2c562f90bE7A3612A28B90AEE08e3c9D915"
+    }
+  }
+}

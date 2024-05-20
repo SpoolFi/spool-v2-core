@@ -16,7 +16,8 @@ contract YearnV3WithJuiceStrategySetup is MainnetExtendedSetup {
         // reserialize strategies
         contractsJson().reserializeKeyAddress("strategies");
 
-        deployYearnV3WithJuice(contracts, false);
+        string memory environment = vm.envString("ENVIRONMENT");
+        deployYearnV3WithJuice(contracts, Strings.equal(environment, "staging"));
     }
 
     function test_mock_MetamorphoGauntletStrategySetup() external pure {}
