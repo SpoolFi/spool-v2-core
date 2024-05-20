@@ -163,14 +163,14 @@
       "yearn-v2-usdt": "0xBd30B329a9A9A24E31aBFa5C757E83476646aB8F"
     },
     "yearn-v3-gauged": {
-      "implementation": "0xe0373f6c25ce6208FF69C552a7Dfb4d063FA09d9",
-      "yearn-v3-gauged-dai": "0x47530fc1a2D29773f9C63ad67217e47ECc64247B",
-      "yearn-v3-gauged-usdc": "0x08Cb7f4A2AAD6f4e0716124ac1242b88E2D464F2",
-      "yearn-v3-gauged-weth": "0x2438ae27C173700Fc6d3BB5b45C79857cF4da7F2"
+      "implementation": "0x0bC5d629348c5DcfCf509374d7114cd3D44BA119",
+      "yearn-v3-gauged-dai": "0x354CE4b1F6E539AF44a764e3078bB95F285266E5",
+      "yearn-v3-gauged-usdc": "0x92eb2abbfcB030930Ab785A04139ddd0803B9365",
+      "yearn-v3-gauged-weth": "0x711643789C4C1D8B5b4C4a70264b8cA23B7d4b44"
     },
     "yearn-v3-juiced": {
-      "implementation": "0xd18c6DeBa3783364e45c7E56204662a4d046bf30",
-      "yearn-v3-juiced-dai": "0xA7F8B2c562f90bE7A3612A28B90AEE08e3c9D915"
+      "implementation": "0x4cf63D412CDA9B91E091C7c2dA156C0E919C9030",
+      "yearn-v3-juiced-dai": "0x5ae775f9cdf0E5A83098bAdbA4927a2De36042c9"
     }
   }
 }

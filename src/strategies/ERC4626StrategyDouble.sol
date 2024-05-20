@@ -78,7 +78,8 @@ contract ERC4626StrategyDouble is ERC4626StrategyBase {
     }
 
     function previewRedeemSSTs_(uint256 ssts) internal view virtual override returns (uint256) {
-        return (secondaryVault().balanceOf(address(this)) * ssts) / totalSupply();
+        uint256 supply = totalSupply();
+        return supply == 0 ? 0 : (secondaryVault().balanceOf(address(this)) * ssts) / supply;
     }
 
     function redeem_() internal virtual override {
