@@ -53,10 +53,10 @@ contract YearnV3WithGaugeUSDCTest is TestFixture, ForkTestFixture {
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         assetGroupExchangeRates = SpoolUtils.getExchangeRates(assetGroup, priceFeedManager);
 
-        implementation = address(new YearnV3ERC4626Harness(assetGroupRegistry, accessControl, gauge, swapper));
+        implementation = address(new YearnV3ERC4626Harness(assetGroupRegistry, accessControl, swapper));
         yearnV3Strategy = YearnV3ERC4626Harness(address(new ERC1967Proxy(implementation, "")));
 
-        yearnV3Strategy.initialize("YearnV3Strategy", assetGroupId, vault, 10 ** (vault.decimals() * 2));
+        yearnV3Strategy.initialize("YearnV3Strategy", assetGroupId, vault, gauge, 10 ** (vault.decimals() * 2));
 
         vm.prank(address(strategyRegistry));
         accessControl.grantRole(ROLE_STRATEGY, address(yearnV3Strategy));
@@ -297,12 +297,9 @@ contract YearnV3WithGaugeUSDCTest is TestFixture, ForkTestFixture {
 
 // Exposes protocol-specific functions for unit-testing.
 contract YearnV3ERC4626Harness is YearnV3StrategyWithGauge, StrategyHarness {
-    constructor(
-        IAssetGroupRegistry assetGroupRegistry_,
-        ISpoolAccessControl accessControl_,
-        IERC4626 gauge_,
-        ISwapper swapper_
-    ) YearnV3StrategyWithGauge(assetGroupRegistry_, accessControl_, gauge_, swapper_) {}
+    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, ISwapper swapper_)
+        YearnV3StrategyWithGauge(assetGroupRegistry_, accessControl_, swapper_)
+    {}
 
     function exposed_underlyingAssetAmount() external view returns (uint256) {
         return underlyingAssetAmount_();
