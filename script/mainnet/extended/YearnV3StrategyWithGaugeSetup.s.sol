@@ -20,5 +20,5 @@ contract YearnV3WithGaugeStrategySetup is MainnetExtendedSetup {
         deployYearnV3WithGauge(contracts, Strings.equal(environment, "staging"));
     }
 
-    function test_mock_MetamorphoGauntletStrategySetup() external pure {}
+    function test_mock_strategySetup() external pure {}
 }

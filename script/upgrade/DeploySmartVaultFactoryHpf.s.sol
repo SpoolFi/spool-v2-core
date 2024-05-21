@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
+import "@openzeppelin/utils/Strings.sol";
 import "forge-std/Script.sol";
 import "../../src/SmartVaultFactoryHpf.sol";
 import {JsonReader} from "../helper/JsonHelper.sol";
-import "@openzeppelin/utils/Strings.sol";
 
 contract DeploySmartVaultFactoryHpf is Script {
     JsonReader internal _contractsJson;

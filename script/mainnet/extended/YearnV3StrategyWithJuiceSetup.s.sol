@@ -20,5 +20,5 @@ contract YearnV3WithJuiceStrategySetup is MainnetExtendedSetup {
         deployYearnV3WithJuice(contracts, Strings.equal(environment, "staging"));
     }
 
-    function test_mock_MetamorphoGauntletStrategySetup() external pure {}
+    function test_mock_strategySetup() external pure {}
 }
