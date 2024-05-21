@@ -5,7 +5,7 @@
   },
   "AllowlistGuard": {
     "implementation": "0x0000000000000000000000000000000000000000",
-    "proxy": "0x0000000000000000000000000000000000000000"
+    "proxy": "0x09F068c79DB2A5b038cE456736D3AB2a5C04523D"
   },
   "AssetGroupRegistry": {
     "implementation": "0xb6EFBda134501430B6112CA67564Dd535AF332C9",
@@ -25,7 +25,7 @@
   },
   "GhostStrategy": {
     "implementation": "0x0000000000000000000000000000000000000000",
-    "proxy": "0x0000000000000000000000000000000000000000"
+    "proxy": "0xAFa7d1097D39ab3369e850Cf72ac8A0D7Fb5C2EF"
   },
   "GuardManager": {
     "implementation": "0x12f1E501CFAAa2c4A1c30a1783d0C4d3A92E3AbB",
