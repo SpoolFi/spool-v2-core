@@ -306,6 +306,43 @@ contract SpoolAccessControlableTest is Test {
         vm.prank(user);
         accessControl.unpause();
     }
+
+    function test_smartVaultOwnership() public {
+        // user is owner of smartVault
+        vm.startPrank(spoolAdmin);
+        accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, spoolAdmin);
+        accessControl.grantSmartVaultOwnership(smartVault, user);
+        assertEq(accessControl.smartVaultOwner(smartVault), user);
+
+        // anotherUser cannot call transferSmartVaultOwnership
+        vm.expectRevert();
+        vm.startPrank(anotherUser);
+        accessControl.transferSmartVaultOwnership(smartVault, anotherUser);
+        assertEq(accessControl.smartVaultOwnerPending(smartVault), address(0));
+        assertEq(accessControl.smartVaultOwner(smartVault), user);
+
+        // user (owner) can call transferSmartVaultOwnership
+        vm.startPrank(user);
+        accessControl.transferSmartVaultOwnership(smartVault, user);
+        assertEq(accessControl.smartVaultOwnerPending(smartVault), user);
+        assertEq(accessControl.smartVaultOwner(smartVault), user);
+
+        // pending owner is overwritten from user to anotherUser
+        accessControl.transferSmartVaultOwnership(smartVault, anotherUser);
+        assertEq(accessControl.smartVaultOwnerPending(smartVault), anotherUser);
+        assertEq(accessControl.smartVaultOwner(smartVault), user);
+
+        // user (owner) cannot accept ownership for anotherUser
+        vm.expectRevert();
+        accessControl.acceptSmartVaultOwnership(smartVault);
+        assertEq(accessControl.smartVaultOwner(smartVault), user);
+
+        // anotherUser obtains ownership
+        vm.startPrank(anotherUser);
+        accessControl.acceptSmartVaultOwnership(smartVault);
+        assertEq(accessControl.smartVaultOwnerPending(smartVault), address(0));
+        assertEq(accessControl.smartVaultOwner(smartVault), anotherUser);
+    }
 }
 
 contract MockContract is SpoolAccessControllable {

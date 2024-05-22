@@ -30,6 +30,8 @@ error ReentrantCall();
  */
 error NoReentrantRole();
 
+error OwnableUnauthorizedAccount(address account);
+
 interface ISpoolAccessControl is IAccessControlUpgradeable {
     /* ========== VIEW FUNCTIONS ========== */
 
@@ -163,4 +165,8 @@ interface ISpoolAccessControl is IAccessControlUpgradeable {
      * @param account Account that renounced the role
      */
     event SmartVaultRoleRenounced(address indexed smartVault, bytes32 indexed role, address indexed account);
+
+    event OwnershipTransferStarted(address indexed previousOwner, address indexed newOwner);
+
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 }
