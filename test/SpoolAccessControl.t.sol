@@ -313,6 +313,8 @@ contract SpoolAccessControlableTest is Test {
         accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, spoolAdmin);
         accessControl.grantSmartVaultOwnership(smartVault, user);
         assertEq(accessControl.smartVaultOwner(smartVault), user);
+        assertTrue(accessControl.hasSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, user));
+        assertFalse(accessControl.hasSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, anotherUser));
 
         // anotherUser cannot call transferSmartVaultOwnership
         vm.expectRevert();
@@ -320,28 +322,38 @@ contract SpoolAccessControlableTest is Test {
         accessControl.transferSmartVaultOwnership(smartVault, anotherUser);
         assertEq(accessControl.smartVaultOwnerPending(smartVault), address(0));
         assertEq(accessControl.smartVaultOwner(smartVault), user);
+        assertTrue(accessControl.hasSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, user));
+        assertFalse(accessControl.hasSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, anotherUser));
 
         // user (owner) can call transferSmartVaultOwnership
         vm.startPrank(user);
         accessControl.transferSmartVaultOwnership(smartVault, user);
         assertEq(accessControl.smartVaultOwnerPending(smartVault), user);
         assertEq(accessControl.smartVaultOwner(smartVault), user);
+        assertTrue(accessControl.hasSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, user));
+        assertFalse(accessControl.hasSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, anotherUser));
 
         // pending owner is overwritten from user to anotherUser
         accessControl.transferSmartVaultOwnership(smartVault, anotherUser);
         assertEq(accessControl.smartVaultOwnerPending(smartVault), anotherUser);
         assertEq(accessControl.smartVaultOwner(smartVault), user);
+        assertTrue(accessControl.hasSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, user));
+        assertFalse(accessControl.hasSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, anotherUser));
 
         // user (owner) cannot accept ownership for anotherUser
         vm.expectRevert();
         accessControl.acceptSmartVaultOwnership(smartVault);
         assertEq(accessControl.smartVaultOwner(smartVault), user);
+        assertTrue(accessControl.hasSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, user));
+        assertFalse(accessControl.hasSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, anotherUser));
 
         // anotherUser obtains ownership
         vm.startPrank(anotherUser);
         accessControl.acceptSmartVaultOwnership(smartVault);
         assertEq(accessControl.smartVaultOwnerPending(smartVault), address(0));
         assertEq(accessControl.smartVaultOwner(smartVault), anotherUser);
+        assertFalse(accessControl.hasSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, user));
+        assertTrue(accessControl.hasSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, anotherUser));
     }
 }
 

@@ -166,7 +166,7 @@ interface ISpoolAccessControl is IAccessControlUpgradeable {
      */
     event SmartVaultRoleRenounced(address indexed smartVault, bytes32 indexed role, address indexed account);
 
-    event OwnershipTransferStarted(address indexed previousOwner, address indexed newOwner);
+    event SmartVaultOwnershipTransferStarted(address indexed previousOwner, address indexed newOwner);
 
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event SmartVaultOwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 }
