@@ -18,8 +18,6 @@ string constant TEST_CONTRACTS_PATH = "deploy/fork-test-arbitrum.contracts.json"
 
 contract TestArbitrumInitialSetup is ArbitrumInitialSetup {
     function init() public virtual override {
-        super.init();
-
         _constantsJson = new JsonReader(vm, TEST_CONSTANTS_PATH);
         _contractsJson = new JsonReadWriter(vm, TEST_CONTRACTS_PATH);
     }
@@ -93,6 +91,9 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         vm.writeJson(Strings.toHexString(_emergencyWallet), TEST_CONSTANTS_PATH, ".emergencyWithdrawalWallet");
         vm.writeJson(Strings.toHexString(_feeRecipient), TEST_CONSTANTS_PATH, ".fees.ecosystemFeeReceiver");
         vm.writeJson(Strings.toHexString(_feeRecipient), TEST_CONSTANTS_PATH, ".fees.treasuryFeeReceiver");
+
+        // TestArbitrumInitialSetup is expecting this file to exist
+        vm.writeJson("{}", TEST_CONTRACTS_PATH);
 
         _deploySpool = new TestArbitrumInitialSetup();
         _deploySpool.init();

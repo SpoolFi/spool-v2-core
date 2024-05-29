@@ -10,7 +10,7 @@ import "../../../fixtures/TestFixture.sol";
 import "../../../mocks/MockAllocationProvider.sol";
 import "../ForkTestFixtureDeployment.sol";
 
-contract E2E is ForkTestFixtureDeployment {
+contract E2eArbitrumTest is ForkTestFixtureDeployment {
     MockAllocationProvider public mockAllocationProvider;
 
     function _setConfig() internal override {

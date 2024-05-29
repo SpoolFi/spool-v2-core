@@ -12,13 +12,11 @@ import "./ForkTestFixture.sol";
 import "../libraries/TimeUtils.sol";
 import "../libraries/VaultValueHelpers.sol";
 
-string constant TEST_CONSTANTS_PATH = "deploy/fork-test.constants.json";
-string constant TEST_CONTRACTS_PATH = "deploy/fork-test.contracts.json";
+string constant TEST_CONSTANTS_PATH = "deploy/fork-test-mainnet.constants.json";
+string constant TEST_CONTRACTS_PATH = "deploy/fork-test-mainnet.contracts.json";
 
 contract TestMainnetInitialSetup is MainnetInitialSetup {
     function init() public virtual override {
-        super.init();
-
         _constantsJson = new JsonReader(vm, TEST_CONSTANTS_PATH);
         _contractsJson = new JsonReadWriter(vm, TEST_CONTRACTS_PATH);
     }
@@ -81,7 +79,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         config = vm.readFile("deploy/mainnet.constants.json");
     }
 
-    function _deploy() internal {
+    function _deploy(uint256 extended) internal {
         setUpForkTestFixture();
         vm.selectFork(mainnetForkId);
         _setConfig();
@@ -93,9 +91,12 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         vm.writeJson(Strings.toHexString(_feeRecipient), TEST_CONSTANTS_PATH, ".fees.ecosystemFeeReceiver");
         vm.writeJson(Strings.toHexString(_feeRecipient), TEST_CONSTANTS_PATH, ".fees.treasuryFeeReceiver");
 
+        // TestMainnetInitialSetup is expecting this file to exist
+        vm.writeJson("{}", TEST_CONTRACTS_PATH);
+
         _deploySpool = new TestMainnetInitialSetup();
         _deploySpool.init();
-        _deploySpool.doSetup(address(_deploySpool), false);
+        _deploySpool.doSetup(address(_deploySpool), extended);
 
         {
             uint256 assetGroupId;
