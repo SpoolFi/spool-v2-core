@@ -8,7 +8,7 @@ import "../../fixtures/TestFixture.sol";
 import "../../mocks/MockAllocationProvider.sol";
 import "../ForkTestFixtureDeployment.sol";
 
-contract E2E is ForkTestFixtureDeployment {
+contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
     MockAllocationProvider public mockAllocationProvider;
 
     function setUpForkTestFixture() internal override {
@@ -16,7 +16,7 @@ contract E2E is ForkTestFixtureDeployment {
     }
 
     function setUp() public {
-        _deploy();
+        _deploy(4); // deploy strategies up to Metamorhpo Gauntlet
 
         mockAllocationProvider = new MockAllocationProvider();
         vm.startPrank(_spoolAdmin);

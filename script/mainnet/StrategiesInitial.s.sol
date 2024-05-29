@@ -75,7 +75,7 @@ contract StrategiesInitial {
         ISwapper swapper,
         address proxyAdmin,
         IStrategyRegistry strategyRegistry,
-        bool extended
+        uint256 extended
     ) public {
         StandardContracts memory contracts = StandardContracts({
             accessControl: accessControl,
@@ -103,13 +103,16 @@ contract StrategiesInitial {
 
         deployYearnV2(contracts);
 
-        if (extended) {
+        if (extended >= 1) {
             deployOeth(contracts, true);
-
+        }
+        if (extended >= 2) {
             deployConvexStFrxEth(contracts, true);
-
+        }
+        if (extended >= 3) {
             deployGearboxV3(contracts, true);
-
+        }
+        if (extended >= 4) {
             deployMetamorphoGauntlet(contracts, true);
         }
     }
