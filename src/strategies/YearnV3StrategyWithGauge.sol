@@ -30,14 +30,23 @@ contract YearnV3StrategyWithGauge is ERC4626StrategyDouble {
         __ERC4626StrategyDouble_init(strategyName_, assetGroupId_, vault_, secondaryVault_, constantShareAmount_);
     }
 
-    function _getProtocolRewardsInternal() internal override returns (address[] memory, uint256[] memory) {
-        address[] memory tokens = new address[](1);
-        uint256[] memory amounts = new uint256[](1);
-        IERC4626 secondaryVault_ = secondaryVault();
-        tokens[0] = IYearnGaugeV2(address(secondaryVault_)).REWARD_TOKEN();
-        IYearnGaugeV2(address(secondaryVault_)).getReward();
-        amounts[0] = IERC20(tokens[0]).balanceOf(address(this));
-        return (tokens, amounts);
+    function _getProtocolRewardsInternal()
+        internal
+        override
+        returns (address[] memory rewards, uint256[] memory amounts)
+    {
+        rewards = new address[](1);
+        amounts = new uint256[](1);
+
+        IYearnGaugeV2 secondaryVault_ = IYearnGaugeV2(address(secondaryVault()));
+        rewards[0] = secondaryVault_.REWARD_TOKEN();
+
+        secondaryVault_.getReward();
+        amounts[0] = IERC20(rewards[0]).balanceOf(address(this));
+        if (amounts[0] > 0) {
+            IERC20(rewards[0]).safeTransfer(address(swapper), amounts[0]);
+        }
+        return (rewards, amounts);
     }
 
     function _compound(address[] calldata tokens, SwapInfo[] calldata swapInfo, uint256[] calldata slippages)
@@ -51,19 +60,10 @@ contract YearnV3StrategyWithGauge is ERC4626StrategyDouble {
         if (slippages[0] > 1) {
             revert CompoundSlippage();
         }
-        IERC4626 secondaryVault_ = secondaryVault();
-        IYearnGaugeV2(address(secondaryVault_)).getReward();
-        address[] memory rewards = new address[](1);
-        rewards[0] = IYearnGaugeV2(address(secondaryVault_)).REWARD_TOKEN();
-        uint256 balance = IERC20(rewards[0]).balanceOf(address(this));
-        if (balance > 0) {
-            IERC20(rewards[0]).safeTransfer(address(swapper), balance);
-            uint256 swappedAmount = swapper.swap(rewards, swapInfo, tokens, address(this))[0];
-
-            uint256 sharesBefore = secondaryVault_.balanceOf(address(this));
-            uint256 sharesMinted = _depositToProtocolInternal(IERC20(tokens[0]), swappedAmount, slippages[3]);
-
-            compoundedYieldPercentage = int256(YIELD_FULL_PERCENT * sharesMinted / sharesBefore);
-        }
+        (address[] memory rewards,) = _getProtocolRewardsInternal();
+        uint256 swappedAmount = swapper.swap(rewards, swapInfo, tokens, address(this))[0];
+        uint256 sharesBefore = secondaryVault().balanceOf(address(this));
+        uint256 sharesMinted = _depositToProtocolInternal(IERC20(tokens[0]), swappedAmount, slippages[3]);
+        compoundedYieldPercentage = int256(YIELD_FULL_PERCENT * sharesMinted / sharesBefore);
     }
 }

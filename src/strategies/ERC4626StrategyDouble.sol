@@ -61,10 +61,8 @@ contract ERC4626StrategyDouble is ERC4626StrategyBase {
         if (ERC4626Lib.isDepositFull(secondaryVault(), assets)) revert BeforeDepositCheck();
     }
 
-    function beforeRedeemalCheck_(uint256 shares) internal view virtual override returns (uint256) {
-        IERC4626 secondaryVault_ = secondaryVault();
-        if (ERC4626Lib.isRedeemalEmpty(secondaryVault_, shares)) revert BeforeRedeemalCheck();
-        return secondaryVault_.previewRedeem(shares);
+    function beforeRedeemalCheck_(uint256 shares) internal view virtual override {
+        if (ERC4626Lib.isRedeemalEmpty(secondaryVault(), shares)) revert BeforeRedeemalCheck();
     }
 
     function deposit_(uint256 shares) internal virtual override returns (uint256) {

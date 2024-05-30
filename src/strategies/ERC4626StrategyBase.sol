@@ -284,11 +284,9 @@ abstract contract ERC4626StrategyBase is Strategy {
      * @dev by default returns unchanged assets amount
      * @dev in case vault shares are used elsewhere this function should be overwritten
      * @param shares amount to redeem
-     * @return assets amount
      */
-    function beforeRedeemalCheck_(uint256 shares) internal virtual returns (uint256 assets) {
+    function beforeRedeemalCheck_(uint256 shares) internal virtual {
         if (ERC4626Lib.isRedeemalEmpty(vault(), shares)) revert BeforeRedeemalCheck();
-        return shares;
     }
 
     /**
