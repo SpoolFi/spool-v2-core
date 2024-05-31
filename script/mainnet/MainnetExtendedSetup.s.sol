@@ -12,6 +12,8 @@ contract MainnetExtendedSetup is Script, DeploySpool, AssetsInitial, StrategiesI
     JsonReader internal _constantsJson;
     JsonReadWriter internal _contractsJson;
 
+    uint256 internal _deployerPrivateKey;
+
     function run() external virtual {
         init();
 
@@ -23,9 +25,9 @@ contract MainnetExtendedSetup is Script, DeploySpool, AssetsInitial, StrategiesI
     }
 
     function broadcast() public virtual {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        _deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast(_deployerPrivateKey);
     }
 
     function init() public virtual {

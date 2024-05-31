@@ -76,11 +76,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
     string config;
 
     function _setConfig() internal virtual {
-        string memory environment = vm.envString("ENVIRONMENT");
-        require(
-            Strings.equal(environment, "production") || Strings.equal(environment, "staging"), "Environment is not set"
-        );
-        config = vm.readFile(string.concat("deploy/mainnet.", environment, ".constants.json"));
+        config = vm.readFile(string.concat("deploy/mainnet.production.constants.json"));
     }
 
     function _deploy(uint256 extended) internal {
