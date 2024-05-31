@@ -1,12 +1,18 @@
 [profile.default]
+
+# project
 src = 'src'
 out = 'out'
 libs = ['lib']
 fs_permissions = [{ access = "read-write", path = "./deploy"}]
 
-# optimizer
+# compiler
+evm_version = 'shanghai'
 optimizer = true
 optimizer_runs = 200
+extra_output_files = [
+    'abi',
+]
 
 # test
 no_match_path = "./test/forked/**"
@@ -16,5 +22,33 @@ mainnet = "${MAINNET_RPC_URL}"
 arbitrum = "${ARBITRUM_RPC_URL}"
 local-mainnet = "http://localhost:8545"
 
-# See more config options https://github.com/foundry-rs/foundry/tree/master/config
 
+[profile.mainnet-prod]
+# FOUNDRY_PROFILE=mainnet-prod
+# inherits from default profile
+
+# compiler
+optimizer_runs = 99999
+libraries = [
+    'script/helper/ArraysHelper.sol:ArraysHelper:0x7dF191D01252D2C0BABf77c725c63D69fe6EAA1a',
+    'src/libraries/ArrayMapping.sol:ArrayMappingUint256:0xB6B08a9ed9282c695ddFbfA81d9ebF208b4c1De0',
+    'src/libraries/ReallocationLib.sol:ReallocationLib:0x49CE6640EB2D89F80395C1a3695cc3a01b5C7bc1',
+    'src/libraries/SpoolUtils.sol:SpoolUtils:0xCB3fECd1D5eabB1b18383604A28352c17Bdfef89',
+    'src/strategies/libraries/EthFrxEthAssetGroupAdapter.sol:EthFrxEthAssetGroupAdapter:0xE23681bAA697EF5054E2D8C397ae59145027625D',
+    'src/strategies/libraries/EthStEthAssetGroupAdapter.sol:EthStEthAssetGroupAdapter:0x1516eb3a54377168b6b184326200f4258C3529dF'
+]
+
+
+[profile.arbitrum-prod]
+# FOUNDRY_PROFILE=arbitrum-prod
+# inherits from default profile
+
+# compiler
+optimizer_runs = 99999
+libraries = [
+    "script/helper/ArraysHelper.sol:ArraysHelper:0x1cc307ce564a41a1823f7c6e319b75c139747a32",
+    "src/libraries/ArrayMapping.sol:ArrayMappingUint256:0x8d4fe5840fead29f30d5fb9f3ba6fdb6640de8ba",
+    "src/libraries/ReallocationLib.sol:ReallocationLib:0xc6f00a9d10263941998d7fd4e4758f1497babdd6",
+    "src/libraries/SpoolUtils.sol:SpoolUtils:0x9a6a0820738f6f18f39f9e7109fea44de85bd468",
+    "src/strategies/arbitrum/libraries/GammaCamelotPriceHelper.sol:GammaCamelotPriceHelper:0x1847118d72d1c48c37c5927f7fe89a79bcce5b5f"
+]
