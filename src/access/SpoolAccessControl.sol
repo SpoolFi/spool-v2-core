@@ -16,6 +16,7 @@ contract SpoolAccessControl is AccessControlUpgradeable, PausableUpgradeable, IS
     uint256 private _status;
 
     mapping(address => address) public smartVaultOwner;
+    mapping(address => address) public smartVaultOwnerPending;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -56,6 +57,31 @@ contract SpoolAccessControl is AccessControlUpgradeable, PausableUpgradeable, IS
         _grantRole(_getSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN), owner);
 
         emit SmartVaultOwnershipGranted(smartVault, owner);
+    }
+
+    /**
+     * @dev Starts the ownership transfer of the contract to a new account. Replaces the pending transfer if there is one.
+     * Can only be called by the current owner.
+     */
+    function transferSmartVaultOwnership(address smartVault, address newOwner) external {
+        if (msg.sender != smartVaultOwner[smartVault]) revert OwnableUnauthorizedAccount(msg.sender);
+        smartVaultOwnerPending[smartVault] = newOwner;
+        emit SmartVaultOwnershipTransferStarted(msg.sender, newOwner);
+    }
+
+    /**
+     * @dev The new owner accepts the ownership transfer.
+     */
+    function acceptSmartVaultOwnership(address smartVault) external {
+        address newOwner = msg.sender;
+        if (newOwner != smartVaultOwnerPending[smartVault]) revert OwnableUnauthorizedAccount(newOwner);
+        delete smartVaultOwnerPending[smartVault];
+        address oldOwner = smartVaultOwner[smartVault];
+        smartVaultOwner[smartVault] = newOwner;
+        bytes32 smartVaultRole = _getSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN);
+        _revokeRole(smartVaultRole, oldOwner);
+        _grantRole(smartVaultRole, newOwner);
+        emit SmartVaultOwnershipTransferred(oldOwner, newOwner);
     }
 
     function grantSmartVaultRole(address smartVault, bytes32 role, address account)
