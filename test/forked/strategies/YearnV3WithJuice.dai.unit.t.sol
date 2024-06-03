@@ -8,7 +8,7 @@ import "@openzeppelin/interfaces/IERC4626.sol";
 import "../../../src/external/interfaces/weth/IWETH9.sol";
 import "../../../src/libraries/SpoolUtils.sol";
 import "../../../src/interfaces/Constants.sol";
-import "../../../src/strategies/ERC4626StrategyDouble.sol";
+import "../../../src/strategies/YearnV3StrategyWithJuice.sol";
 import "../../fixtures/TestFixture.sol";
 import "../../libraries/Arrays.sol";
 import "../../libraries/Constants.sol";
@@ -24,7 +24,7 @@ interface YearnVault is IERC4626 {
     function report() external returns (uint256 _profit, uint256 _loss);
 }
 
-contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
+contract YearnV3WithJuiceTest is TestFixture, ForkTestFixture {
     address[] private assetGroup;
     uint256 private assetGroupId;
     uint256[] private assetGroupExchangeRates;
@@ -60,10 +60,10 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         assetGroupExchangeRates = SpoolUtils.getExchangeRates(assetGroup, priceFeedManager);
 
-        implementation = address(new YearnV3ERC4626Harness(assetGroupRegistry, accessControl, harvester));
+        implementation = address(new YearnV3ERC4626Harness(assetGroupRegistry, accessControl));
         yearnV3Strategy = YearnV3ERC4626Harness(address(new ERC1967Proxy(implementation, "")));
 
-        yearnV3Strategy.initialize("YearnV3Strategy", assetGroupId, vault, 10 ** (vault.decimals() * 2));
+        yearnV3Strategy.initialize("YearnV3Strategy", assetGroupId, vault, harvester, 10 ** (vault.decimals() * 2));
 
         vm.prank(address(strategyRegistry));
         accessControl.grantRole(ROLE_STRATEGY, address(yearnV3Strategy));
@@ -250,9 +250,9 @@ contract YearnV3ERC4626Test is TestFixture, ForkTestFixture {
 }
 
 // Exposes protocol-specific functions for unit-testing.
-contract YearnV3ERC4626Harness is ERC4626StrategyDouble, StrategyHarness {
-    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, IERC4626 harvester_)
-        ERC4626StrategyDouble(assetGroupRegistry_, accessControl_, harvester_)
+contract YearnV3ERC4626Harness is YearnV3StrategyWithJuice, StrategyHarness {
+    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_)
+        YearnV3StrategyWithJuice(assetGroupRegistry_, accessControl_)
     {}
 
     function exposed_underlyingAssetAmount() external view returns (uint256) {

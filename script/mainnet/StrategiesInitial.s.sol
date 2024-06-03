@@ -21,6 +21,8 @@ import "../../src/strategies/YearnV2Strategy.sol";
 import "../../src/strategies/OEthHoldingStrategy.sol";
 import "../../src/strategies/GearboxV3Strategy.sol";
 import "../../src/strategies/MetamorphoStrategy.sol";
+import "../../src/strategies/YearnV3StrategyWithJuice.sol";
+import "../../src/strategies/YearnV3StrategyWithGauge.sol";
 import "../helper/JsonHelper.sol";
 import "./AssetsInitial.s.sol";
 
@@ -47,6 +49,8 @@ string constant SFRXETH_HOLDING_KEY = "sfrxeth-holding";
 string constant STETH_HOLDING_KEY = "steth-holding";
 string constant OETH_HOLDING_KEY = "oeth-holding";
 string constant YEARN_V2_KEY = "yearn-v2";
+string constant YEARN_V3_GAUGED_KEY = "yearn-v3-gauged";
+string constant YEARN_V3_JUICED_KEY = "yearn-v3-juiced";
 
 struct StandardContracts {
     ISpoolAccessControl accessControl;
@@ -114,6 +118,10 @@ contract StrategiesInitial {
         }
         if (extended >= 4) {
             deployMetamorphoGauntlet(contracts, true);
+
+            deployYearnV3WithGauge(contracts, true);
+
+            deployYearnV3WithJuice(contracts, true);
         }
     }
 
@@ -789,6 +797,86 @@ contract StrategiesInitial {
                 );
             } else {
                 contractsJson().addVariantStrategyVariant(METAMORPHO_GAUNTLET, variantName, variant);
+            }
+        }
+    }
+
+    function deployYearnV3WithGauge(StandardContracts memory contracts, bool register) public {
+        // create implementation contract
+        YearnV3StrategyWithGauge implementation =
+            new YearnV3StrategyWithGauge(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper);
+        contractsJson().addVariantStrategyImplementation(YEARN_V3_GAUGED_KEY, address(implementation));
+
+        // create variant proxies
+        string[] memory variants = new string[](3);
+        variants[0] = DAI_KEY;
+        variants[1] = USDC_KEY;
+        variants[2] = WETH_KEY;
+
+        for (uint256 i; i < variants.length; ++i) {
+            string memory variantName = _getVariantName(YEARN_V3_GAUGED_KEY, variants[i]);
+
+            IERC4626 vault = IERC4626(
+                constantsJson().getAddress(
+                    string.concat(".strategies.", YEARN_V3_GAUGED_KEY, ".", variants[i], ".tokenVault")
+                )
+            );
+            IERC4626 gauge = IERC4626(
+                constantsJson().getAddress(
+                    string.concat(".strategies.", YEARN_V3_GAUGED_KEY, ".", variants[i], ".gauge")
+                )
+            );
+
+            address variant = _newProxy(address(implementation), contracts.proxyAdmin);
+            uint256 assetGroupId = assetGroups(variants[i]);
+            YearnV3StrategyWithGauge(variant).initialize(
+                variantName, assetGroupId, vault, gauge, 10 ** (gauge.decimals() * 2)
+            );
+            if (register) {
+                _registerStrategyVariant(
+                    YEARN_V3_GAUGED_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry
+                );
+            } else {
+                contractsJson().addVariantStrategyVariant(YEARN_V3_GAUGED_KEY, variantName, variant);
+            }
+        }
+    }
+
+    function deployYearnV3WithJuice(StandardContracts memory contracts, bool register) public {
+        // create implementation contract
+        YearnV3StrategyWithJuice implementation =
+            new YearnV3StrategyWithJuice(contracts.assetGroupRegistry, contracts.accessControl);
+        contractsJson().addVariantStrategyImplementation(YEARN_V3_JUICED_KEY, address(implementation));
+
+        // create variant proxies
+        string[] memory variants = new string[](1);
+        variants[0] = DAI_KEY;
+
+        for (uint256 i; i < variants.length; ++i) {
+            string memory variantName = _getVariantName(YEARN_V3_JUICED_KEY, variants[i]);
+
+            IERC4626 vault = IERC4626(
+                constantsJson().getAddress(
+                    string.concat(".strategies.", YEARN_V3_JUICED_KEY, ".", variants[i], ".tokenVault")
+                )
+            );
+            IERC4626 harvester = IERC4626(
+                constantsJson().getAddress(
+                    string.concat(".strategies.", YEARN_V3_JUICED_KEY, ".", variants[i], ".harvester")
+                )
+            );
+
+            address variant = _newProxy(address(implementation), contracts.proxyAdmin);
+            uint256 assetGroupId = assetGroups(variants[i]);
+            YearnV3StrategyWithJuice(variant).initialize(
+                variantName, assetGroupId, vault, harvester, 10 ** (harvester.decimals() * 2)
+            );
+            if (register) {
+                _registerStrategyVariant(
+                    YEARN_V3_JUICED_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry
+                );
+            } else {
+                contractsJson().addVariantStrategyVariant(YEARN_V3_JUICED_KEY, variantName, variant);
             }
         }
     }

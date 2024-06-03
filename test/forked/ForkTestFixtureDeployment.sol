@@ -76,7 +76,11 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
     string config;
 
     function _setConfig() internal virtual {
-        config = vm.readFile("deploy/mainnet.constants.json");
+        string memory environment = vm.envString("ENVIRONMENT");
+        require(
+            Strings.equal(environment, "production") || Strings.equal(environment, "staging"), "Environment is not set"
+        );
+        config = vm.readFile(string.concat("deploy/mainnet.", environment, ".constants.json"));
     }
 
     function _deploy(uint256 extended) internal {
@@ -675,6 +679,10 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                     _setInitialDhwParametersGeneric(parameters, i, j, 4);
                 } else if (Strings.equal(strategyKey, METAMORPHO_GAUNTLET)) {
                     _setInitialDhwParametersGeneric(parameters, i, j, 6);
+                } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
+                    _setInitialDhwParametersGeneric(parameters, i, j, 6);
+                } else if (Strings.equal(strategyKey, YEARN_V3_JUICED_KEY)) {
+                    _setInitialDhwParametersGeneric(parameters, i, j, 6);
                 } else {
                     revert(string.concat("_generateDhwParameterBag: Strategy '", strategyKey, "' not handled."));
                 }
@@ -723,6 +731,10 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
                 } else if (Strings.equal(strategyKey, METAMORPHO_GAUNTLET)) {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
+                } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
+                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
+                } else if (Strings.equal(strategyKey, YEARN_V3_JUICED_KEY)) {
+                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
                 } else {
                     revert(string.concat("_updateDhwParameterBag: Strategy '", strategyKey, "' not handled."));
                 }
@@ -922,6 +934,10 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else if (Strings.equal(strategyKey, METAMORPHO_GAUNTLET)) {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
+            } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
+                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
+            } else if (Strings.equal(strategyKey, YEARN_V3_JUICED_KEY)) {
+                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else {
                 revert(string.concat("_getRedeemFastSlippages: Strategy '", strategyKey, "' not handled."));
             }
@@ -1029,6 +1045,10 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
             } else if (Strings.equal(strategyKey, METAMORPHO_GAUNTLET)) {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
+            } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
+                _setInitialReallocateParamsGeneric(params, i, 3, 3);
+            } else if (Strings.equal(strategyKey, YEARN_V3_JUICED_KEY)) {
+                _setInitialReallocateParamsGeneric(params, i, 3, 3);
             } else {
                 revert(string.concat("_generateReallocateParamBag:: Strategy '", strategyKey, "' not handled."));
             }
@@ -1071,6 +1091,10 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
             } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else if (Strings.equal(strategyKey, METAMORPHO_GAUNTLET)) {
+                _updateReallocateParamsGeneric(params, i, strategy, logs);
+            } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
+                _updateReallocateParamsGeneric(params, i, strategy, logs);
+            } else if (Strings.equal(strategyKey, YEARN_V3_JUICED_KEY)) {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else {
                 revert(string.concat("_updateReallocateParamBag:: Strategy '", strategyKey, "' not handled."));

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
+import "@openzeppelin/utils/Strings.sol";
 import "forge-std/Script.sol";
 import "../helper/JsonHelper.sol";
 import "../DeploySpool.s.sol";
@@ -23,8 +24,12 @@ contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
     }
 
     function init() public virtual {
-        _constantsJson = new JsonReader(vm, string.concat("deploy/mainnet.constants.json"));
-        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/mainnet.contracts.json"));
+        string memory environment = vm.envString("ENVIRONMENT");
+        require(
+            Strings.equal(environment, "production") || Strings.equal(environment, "staging"), "Environment is not set"
+        );
+        _constantsJson = new JsonReader(vm, string.concat("deploy/mainnet.", environment, ".constants.json"));
+        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/mainnet.", environment, ".contracts.json"));
     }
 
     function doSetup(address deployerAddress, uint256 extended) public {

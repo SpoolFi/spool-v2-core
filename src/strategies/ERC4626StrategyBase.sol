@@ -138,8 +138,7 @@ abstract contract ERC4626StrategyBase is Strategy {
 
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public override {
         _beforeRedeemalCheckSlippages(ssts, slippages);
-        uint256 shares = beforeRedeemalCheck_(previewRedeemSSTs_(ssts));
-        if (ERC4626Lib.isRedeemalEmpty(vault(), shares)) revert BeforeRedeemalCheck();
+        beforeRedeemalCheck_(previewRedeemSSTs_(ssts));
     }
 
     /// @dev can be overwritten in particular strategy to remove slippages
@@ -285,10 +284,9 @@ abstract contract ERC4626StrategyBase is Strategy {
      * @dev by default returns unchanged assets amount
      * @dev in case vault shares are used elsewhere this function should be overwritten
      * @param shares amount to redeem
-     * @return assets amount
      */
-    function beforeRedeemalCheck_(uint256 shares) internal virtual returns (uint256 assets) {
-        return shares;
+    function beforeRedeemalCheck_(uint256 shares) internal virtual {
+        if (ERC4626Lib.isRedeemalEmpty(vault(), shares)) revert BeforeRedeemalCheck();
     }
 
     /**
