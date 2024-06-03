@@ -168,6 +168,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
 
     function mintVaultShares(address receiver, uint256 vaultShares)
         external
+        virtual
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
     {
         _mint(receiver, vaultShares);
