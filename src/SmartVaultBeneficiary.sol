@@ -3,7 +3,6 @@ pragma solidity 0.8.17;
 
 import "./SmartVault.sol";
 
-error NotBeneficiary();
 error ExceedMaxFeeBp();
 
 contract SmartVaultBeneficiary is SmartVault {
