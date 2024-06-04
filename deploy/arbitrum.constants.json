@@ -79,6 +79,9 @@
             }
         }
     },
+    "tokens": {
+        "comp": "0x354A6dA3fcde098F8389cad84b0182725c6C91dE"
+    },
     "proxyAdminOwner": "0x91F1110A2Ea159d8Bad14b366924930a99Bd0459",
     "spoolAdmin": "0x91F1110A2Ea159d8Bad14b366924930a99Bd0459",
     "fees": {
@@ -87,5 +90,7 @@
         "ecosystemFeeReceiver": "0xd21f71F12da8275b3bdA986b2095850932D4abAa",
         "treasuryFeeReceiver": "0xd21f71F12da8275b3bdA986b2095850932D4abAa"
     },
-    "emergencyWithdrawalWallet": "0x91F1110A2Ea159d8Bad14b366924930a99Bd0459"
+    "emergencyWithdrawalWallet": "0x91F1110A2Ea159d8Bad14b366924930a99Bd0459",
+    "keeperDoHardWorker": "0xb09c7D9b6c961064d8d2dF36bA220DBc0070CfAe",
+    "riskProvider": "0x281396fAB7cADF88837c411721a5be80e57F3eBD"
 }
