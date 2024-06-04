@@ -79,16 +79,13 @@
             }
         }
     },
-    "tokens": {
-        "comp": "0x354A6dA3fcde098F8389cad84b0182725c6C91dE"
-    },
-    "proxyAdminOwner": "0x1A2921a0ABa58A0199820Cbc01fB361777edE19b",
-    "spoolAdmin": "0x1A2921a0ABa58A0199820Cbc01fB361777edE19b",
+    "proxyAdminOwner": "0x91F1110A2Ea159d8Bad14b366924930a99Bd0459",
+    "spoolAdmin": "0x91F1110A2Ea159d8Bad14b366924930a99Bd0459",
     "fees": {
         "ecosystemFeePct": 800,
         "treasuryFeePct": 200,
-        "ecosystemFeeReceiver": "0x1A2921a0ABa58A0199820Cbc01fB361777edE19b",
-        "treasuryFeeReceiver": "0x1A2921a0ABa58A0199820Cbc01fB361777edE19b"
+        "ecosystemFeeReceiver": "0xd21f71F12da8275b3bdA986b2095850932D4abAa",
+        "treasuryFeeReceiver": "0xd21f71F12da8275b3bdA986b2095850932D4abAa"
     },
-    "emergencyWithdrawalWallet": "0x1A2921a0ABa58A0199820Cbc01fB361777edE19b"
+    "emergencyWithdrawalWallet": "0x91F1110A2Ea159d8Bad14b366924930a99Bd0459"
 }
