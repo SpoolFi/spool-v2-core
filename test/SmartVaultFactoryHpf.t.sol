@@ -12,7 +12,6 @@ import "../src/interfaces/ISmartVaultManager.sol";
 import "../src/interfaces/ISpoolAccessControl.sol";
 import "../src/interfaces/IStrategy.sol";
 import "../src/SmartVault.sol";
-import "../src/SmartVaultBeneficiary.sol";
 import "../src/SmartVaultFactoryHpf.sol";
 import "./libraries/Arrays.sol";
 import "../src/managers/RiskManager.sol";
