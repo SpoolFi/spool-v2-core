@@ -14,7 +14,7 @@ library BytesUint256Lib {
         uint256 numChunks = (data.length + 31) / 32;
         uint256[] memory result = new uint256[](numChunks);
 
-        for (uint256 i = 0; i < numChunks; i++) {
+        for (uint256 i; i < numChunks; ++i) {
             uint256 chunk;
             assembly {
                 chunk := mload(add(data, add(32, mul(i, 32))))
