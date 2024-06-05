@@ -167,7 +167,7 @@ contract EthenaStrategy is Strategy {
 
     function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
         uint256 supply = totalSupply();
-        uint256 shares = supply == 0 ? supply : (sUSDe.balanceOf(address(this)) * ssts) / supply;
+        uint256 shares = supply == 0 ? 0 : (sUSDe.balanceOf(address(this)) * ssts) / supply;
         _redeemFromProtocolInternal(shares, slippages);
     }
 
