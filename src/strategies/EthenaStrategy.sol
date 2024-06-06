@@ -118,19 +118,19 @@ contract EthenaStrategy is Strategy {
     function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal virtual override {}
 
     /// @dev used to decide whether USDe should be swapped to asset group
-    function _shouldSwap() internal view returns (bool) {
-        return address(USDe) != assets()[0];
+    function _shouldSwap(address underlyingAsset) internal view returns (bool) {
+        return address(USDe) != underlyingAsset;
     }
 
-    function _depositToProtocol(address[] calldata, uint256[] memory amounts, uint256[] calldata slippages)
+    function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata slippages)
         internal
         virtual
         override
     {
         uint256 amount = amounts[0];
         // first swap asset to USDe in case it is not a USDe asset group
-        if (_shouldSwap()) {
-            amount = _swap(assets()[0], address(USDe), amount, slippages);
+        if (_shouldSwap(tokens[0])) {
+            amount = _swap(tokens[0], address(USDe), amount, slippages);
         }
         // conditional is needed since on estimation _swap returns 0 and staking will fail in this case
         if (amount > 0) {
@@ -165,17 +165,23 @@ contract EthenaStrategy is Strategy {
         }
     }
 
-    function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
+    function _redeemFromProtocol(address[] calldata tokens, uint256 ssts, uint256[] calldata slippages)
+        internal
+        override
+    {
         uint256 supply = totalSupply();
         uint256 shares = supply == 0 ? 0 : (sUSDe.balanceOf(address(this)) * ssts) / supply;
-        _redeemFromProtocolInternal(shares, slippages);
+        _redeemFromProtocolInternal(tokens[0], shares, slippages);
     }
 
-    function _redeemFromProtocolInternal(uint256 shares, uint256[] calldata slippages) internal virtual {
+    function _redeemFromProtocolInternal(address underlyingToken, uint256 shares, uint256[] calldata slippages)
+        internal
+        virtual
+    {
         uint256 cooldownDuration = sUSDe.cooldownDuration();
         // if cooldown duration is zero it means sUSDe can be directly redeemed to USDe
         if (cooldownDuration == 0) {
-            _redeemDirectly(shares, slippages);
+            _redeemDirectly(underlyingToken, shares, slippages);
         } else {
             // otherwise we need to swap to underlying asset
             _swap(address(sUSDe), assets()[0], shares, slippages);
@@ -183,16 +189,16 @@ contract EthenaStrategy is Strategy {
     }
 
     function _emergencyWithdrawImpl(uint256[] calldata slippages, address recipient) internal virtual override {
-        _redeemFromProtocolInternal(sUSDe.balanceOf(address(this)), slippages);
         IERC20Metadata underlyingToken = IERC20Metadata(assets()[0]);
+        _redeemFromProtocolInternal(address(underlyingToken), sUSDe.balanceOf(address(this)), slippages);
         underlyingToken.safeTransfer(recipient, underlyingToken.balanceOf(address(this)));
     }
 
-    function _redeemDirectly(uint256 shares, uint256[] calldata slippages) internal virtual {
+    function _redeemDirectly(address underlyingToken, uint256 shares, uint256[] calldata slippages) internal virtual {
         // redeem sUSDe directly to USDe
         uint256 amount = sUSDe.redeem(shares, address(this), address(this));
         // if USDe is not an asset group we need to swap it
-        if (_shouldSwap()) {
+        if (_shouldSwap(underlyingToken)) {
             _swap(address(USDe), assets()[0], amount, slippages);
         }
     }
