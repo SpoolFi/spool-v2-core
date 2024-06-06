@@ -54,12 +54,14 @@ contract EthenaStrategy is Strategy {
     /// @dev thrown if slippages array is not valid for swap
     error SwapSlippage();
 
+    ISwapper public immutable swapper;
+    IUsdPriceFeedManager public immutable priceFeedManager;
+
     /// @dev USDe token address
     IERC20Metadata public immutable USDe;
     /// @dev sUSDe token address
     IsUSDe public immutable sUSDe;
 
-    ISwapper public immutable swapper;
     /// @dev reward on Ethena protocol
     IERC20Metadata public immutable ENAToken;
     /// @dev used for calculating yield percentage
@@ -74,7 +76,8 @@ contract EthenaStrategy is Strategy {
         IERC20Metadata USDe_,
         IsUSDe sUSDe_,
         IERC20Metadata ENAToken_,
-        ISwapper swapper_
+        ISwapper swapper_,
+        IUsdPriceFeedManager priceFeedManager_
     ) Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID) {
         _disableInitializers();
         if (
@@ -87,6 +90,7 @@ contract EthenaStrategy is Strategy {
         sUSDe = sUSDe_;
         ENAToken = ENAToken_;
         swapper = swapper_;
+        priceFeedManager = priceFeedManager_;
         constantShareAmount = 10 ** (sUSDe.decimals() * 2);
     }
 
@@ -101,12 +105,14 @@ contract EthenaStrategy is Strategy {
     function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {}
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public override {}
 
-    /// @dev returns USDe amount for all asset groups
-    /// since it is stable and this function is used for informational purposes
-    /// it is ok to made an assumption of 1:1 ratio
     function getUnderlyingAssetAmounts() external view returns (uint256[] memory amounts) {
         amounts = new uint256[](1);
-        amounts[0] = _underlyingAssetAmount();
+        address underlyingAsset = assets()[0];
+        amounts[0] = _underlyingUSDeAmount();
+        if (address(USDe) != underlyingAsset) {
+            uint256 usdValue = priceFeedManager.assetToUsd(address(USDe), amounts[0]);
+            amounts[0] = priceFeedManager.usdToAsset(underlyingAsset, usdValue);
+        }
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {
@@ -117,11 +123,6 @@ contract EthenaStrategy is Strategy {
 
     function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal virtual override {}
 
-    /// @dev used to decide whether USDe should be swapped to asset group
-    function _shouldSwap(address underlyingAsset) internal view returns (bool) {
-        return address(USDe) != underlyingAsset;
-    }
-
     function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata slippages)
         internal
         virtual
@@ -129,7 +130,7 @@ contract EthenaStrategy is Strategy {
     {
         uint256 amount = amounts[0];
         // first swap asset to USDe in case it is not a USDe asset group
-        if (_shouldSwap(tokens[0])) {
+        if (address(USDe) != tokens[0]) {
             amount = _swap(tokens[0], address(USDe), amount, slippages);
         }
         // conditional is needed since on estimation _swap returns 0 and staking will fail in this case
@@ -198,7 +199,7 @@ contract EthenaStrategy is Strategy {
         // redeem sUSDe directly to USDe
         uint256 amount = sUSDe.redeem(shares, address(this), address(this));
         // if USDe is not an asset group we need to swap it
-        if (_shouldSwap(underlyingToken)) {
+        if (address(USDe) != underlyingToken) {
             _swap(address(USDe), assets()[0], amount, slippages);
         }
     }
@@ -250,19 +251,19 @@ contract EthenaStrategy is Strategy {
         return sUSDe.previewRedeem(constantShareAmount);
     }
 
-    function _underlyingAssetAmount() internal view virtual returns (uint256) {
+    function _underlyingUSDeAmount() internal view virtual returns (uint256) {
         return sUSDe.previewRedeem(sUSDe.balanceOf(address(this)));
     }
 
-    function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
+    function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager_)
         internal
         view
         override
         returns (uint256 usdValue)
     {
-        uint256 assetAmount = _underlyingAssetAmount();
+        uint256 assetAmount = _underlyingUSDeAmount();
         if (assetAmount > 0) {
-            usdValue = priceFeedManager.assetToUsdCustomPrice(address(USDe), assetAmount, exchangeRates[0]);
+            usdValue = priceFeedManager_.assetToUsdCustomPrice(address(USDe), assetAmount, exchangeRates[0]);
         }
     }
 }

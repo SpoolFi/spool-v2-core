@@ -16,6 +16,6 @@ contract EthenaStrategyImplSetup is MainnetExtendedSetup {
         // reserialize strategies
         contractsJson().reserializeKeyAddress("strategies");
 
-        deployEthenaImpl(contracts);
+        deployEthenaImpl(contracts, usdPriceFeedManager);
     }
 }

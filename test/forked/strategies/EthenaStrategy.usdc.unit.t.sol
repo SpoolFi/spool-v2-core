@@ -53,8 +53,11 @@ contract EthenaStrategyUsdcTest is TestFixture, ForkTestFixture {
         assetGroupRegistry.allowTokenBatch(assetGroup);
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
 
-        address implementation =
-            address(new EthenaStrategyHarness(assetGroupRegistry, accessControl, USDe, sUSDe, ENAToken, swapper));
+        address implementation = address(
+            new EthenaStrategyHarness(
+                assetGroupRegistry, accessControl, USDe, sUSDe, ENAToken, swapper, priceFeedManager
+            )
+        );
         ethenaStrategy = EthenaStrategyHarness(address(new ERC1967Proxy(implementation, "")));
 
         ethenaStrategy.initialize("EthenaStrategy", assetGroupId);
@@ -64,9 +67,9 @@ contract EthenaStrategyUsdcTest is TestFixture, ForkTestFixture {
 
         _deal(address(ethenaStrategy), toDeposit);
 
-        sUSDe_USDC_Exchange = new MockExchange(sUSDe,underlyingToken, priceFeedManager);
-        USDe_USDC_Exchange = new MockExchange(USDe,underlyingToken, priceFeedManager);
-        ENA_USDe_Exchange = new MockExchange(ENAToken,USDe, priceFeedManager);
+        sUSDe_USDC_Exchange = new MockExchange(sUSDe, underlyingToken, priceFeedManager);
+        USDe_USDC_Exchange = new MockExchange(USDe, underlyingToken, priceFeedManager);
+        ENA_USDe_Exchange = new MockExchange(ENAToken, USDe, priceFeedManager);
 
         deal(
             address(sUSDe),
@@ -214,7 +217,7 @@ contract EthenaStrategyUsdcTest is TestFixture, ForkTestFixture {
 
         uint256[] memory amounts = ethenaStrategy.getUnderlyingAssetAmounts();
         assertEq(amounts.length, 1);
-        assertApproxEqAbs(amounts[0], toDeposit * 10 ** 12, 1);
+        assertApproxEqAbs(amounts[0], toDeposit, 1);
     }
 
     function test_redeemFromProtocolWithSwap() public {
@@ -396,7 +399,7 @@ contract EthenaStrategyUsdcTest is TestFixture, ForkTestFixture {
             address(ENAToken), address(ethenaStrategy), 123 * 10 ** IERC20Metadata(address(ENAToken)).decimals(), false
         );
 
-        uint256 balanceOfStrategyBefore = ethenaStrategy.exposed_underlyingAssetAmount();
+        uint256 balanceOfStrategyBefore = ethenaStrategy.getUnderlyingAssetAmounts()[0];
 
         // act
         SwapInfo[] memory compoundSwapInfo = new SwapInfo[](1);
@@ -409,7 +412,7 @@ contract EthenaStrategyUsdcTest is TestFixture, ForkTestFixture {
         uint256[] memory slippages = new uint256[](0);
         int256 compoundYieldPercentage = ethenaStrategy.exposed_compound(assetGroup, compoundSwapInfo, slippages);
 
-        uint256 balanceOfStrategyAfter = ethenaStrategy.exposed_underlyingAssetAmount();
+        uint256 balanceOfStrategyAfter = ethenaStrategy.getUnderlyingAssetAmounts()[0];
 
         int256 compoundYieldPercentageExpected =
             int256((balanceOfStrategyAfter - balanceOfStrategyBefore) * YIELD_FULL_PERCENT / balanceOfStrategyBefore);
@@ -427,10 +430,7 @@ contract EthenaStrategyHarness is EthenaStrategy, StrategyHarness {
         IERC20Metadata USDe_,
         IsUSDe sUSDe_,
         IERC20Metadata ENAToken_,
-        ISwapper swapper_
-    ) EthenaStrategy(assetGroupRegistry_, accessControl_, USDe_, sUSDe_, ENAToken_, swapper_) {}
-
-    function exposed_underlyingAssetAmount() external view returns (uint256) {
-        return _underlyingAssetAmount();
-    }
+        ISwapper swapper_,
+        IUsdPriceFeedManager priceFeedManager_
+    ) EthenaStrategy(assetGroupRegistry_, accessControl_, USDe_, sUSDe_, ENAToken_, swapper_, priceFeedManager_) {}
 }
