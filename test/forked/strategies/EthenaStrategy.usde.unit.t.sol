@@ -48,8 +48,11 @@ contract EthenaStrategyUsdeTest is TestFixture, ForkTestFixture {
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         assetGroupExchangeRates = SpoolUtils.getExchangeRates(assetGroup, priceFeedManager);
 
-        address implementation =
-            address(new EthenaStrategyHarness(assetGroupRegistry, accessControl, USDe, sUSDe, ENAToken, swapper));
+        address implementation = address(
+            new EthenaStrategyHarness(
+                assetGroupRegistry, accessControl, USDe, sUSDe, ENAToken, swapper, priceFeedManager
+            )
+        );
         ethenaStrategy = EthenaStrategyHarness(address(new ERC1967Proxy(implementation, "")));
 
         ethenaStrategy.initialize("EthenaStrategy", assetGroupId);
@@ -327,7 +330,7 @@ contract EthenaStrategyUsdeTest is TestFixture, ForkTestFixture {
     }
 
     function test_compound() public {
-        MockExchange ENA_USDe_Exchange = new MockExchange(ENAToken,USDe, priceFeedManager);
+        MockExchange ENA_USDe_Exchange = new MockExchange(ENAToken, USDe, priceFeedManager);
 
         deal(
             address(ENAToken),
@@ -352,7 +355,7 @@ contract EthenaStrategyUsdeTest is TestFixture, ForkTestFixture {
             address(ENAToken), address(ethenaStrategy), 123 * 10 ** IERC20Metadata(address(ENAToken)).decimals(), false
         );
 
-        uint256 balanceOfStrategyBefore = ethenaStrategy.exposed_underlyingAssetAmount();
+        uint256 balanceOfStrategyBefore = ethenaStrategy.getUnderlyingAssetAmounts()[0];
 
         // act
         SwapInfo[] memory compoundSwapInfo = new SwapInfo[](1);
@@ -364,7 +367,7 @@ contract EthenaStrategyUsdeTest is TestFixture, ForkTestFixture {
 
         int256 compoundYieldPercentage = ethenaStrategy.exposed_compound(assetGroup, compoundSwapInfo, slippages);
 
-        uint256 balanceOfStrategyAfter = ethenaStrategy.exposed_underlyingAssetAmount();
+        uint256 balanceOfStrategyAfter = ethenaStrategy.getUnderlyingAssetAmounts()[0];
 
         int256 compoundYieldPercentageExpected =
             int256((balanceOfStrategyAfter - balanceOfStrategyBefore) * YIELD_FULL_PERCENT / balanceOfStrategyBefore);
@@ -382,10 +385,7 @@ contract EthenaStrategyHarness is EthenaStrategy, StrategyHarness {
         IERC20Metadata USDe_,
         IsUSDe sUSDe_,
         IERC20Metadata ENAToken_,
-        ISwapper swapper_
-    ) EthenaStrategy(assetGroupRegistry_, accessControl_, USDe_, sUSDe_, ENAToken_, swapper_) {}
-
-    function exposed_underlyingAssetAmount() external view returns (uint256) {
-        return _underlyingAssetAmount();
-    }
+        ISwapper swapper_,
+        IUsdPriceFeedManager priceFeedManager_
+    ) EthenaStrategy(assetGroupRegistry_, accessControl_, USDe_, sUSDe_, ENAToken_, swapper_, priceFeedManager_) {}
 }
