@@ -148,10 +148,29 @@ contract SmartVaultBeneficiaryTest is Test {
         vm.startPrank(smartVaultOwner);
 
         {
+            // management fee is not zero revert
+            vm.expectRevert(abi.encodeWithSelector(ManagementFeeNoneZero.selector));
+            specification.managementFeePct = 1;
+            beneficiaryFactory.deploySmartVault(specification);
+            specification.managementFeePct = 0;
+        }
+        {
+            // deposit fee is not zero revert
+            vm.expectRevert(abi.encodeWithSelector(DepositFeeNoneZero.selector));
+            specification.depositFeePct = 1;
+            beneficiaryFactory.deploySmartVault(specification);
+            specification.depositFeePct = 0;
+        }
+        {
+            // deposit fee is not zero revert
+            vm.expectRevert(abi.encodeWithSelector(PerformanceFeeNotMax.selector));
+            beneficiaryFactory.deploySmartVault(specification);
+        }
+        {
             specification.smartVaultName = "SmartVault1";
+            specification.performanceFeePct = 90_00;
             SmartVaultBeneficiary smartVault =
                 SmartVaultBeneficiary(address(beneficiaryFactory.deploySmartVault(specification)));
-
             // shares minted to INITIAL_LOCKED_SHARES_ADDRESS will not be shared with beneficiary
             {
                 vm.startPrank(address(smartVaultManager));

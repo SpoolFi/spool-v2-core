@@ -4,6 +4,9 @@ pragma solidity 0.8.17;
 import "./SmartVaultFactoryHpf.sol";
 
 error ExceedMaxFeeBp();
+error ManagementFeeNoneZero();
+error DepositFeeNoneZero();
+error PerformanceFeeNotMax();
 
 uint256 constant MAX_FEE_IN_BP = 100_00;
 
@@ -46,11 +49,19 @@ contract SmartVaultBeneficiaryFactoryHpf is SmartVaultFactoryHpf {
         feeInBp = feeInBp_;
     }
 
-    /**
-     * @notice Encodes calldata for smart vault initialization.
-     * @param specification Specifications for the new smart vault.
-     * @return initializationCalldata Enoded initialization calldata.
-     */
+    function _validateSpecification(SmartVaultSpecification calldata specification) internal view override {
+        if (specification.managementFeePct > 0) {
+            revert ManagementFeeNoneZero();
+        }
+        if (specification.depositFeePct > 0) {
+            revert DepositFeeNoneZero();
+        }
+        if (specification.performanceFeePct != SV_PERFORMANCE_FEE_HIGH_MAX) {
+            revert PerformanceFeeNotMax();
+        }
+        super._validateSpecification(specification);
+    }
+
     function _encodeInitializationCalldata(SmartVaultSpecification calldata specification)
         internal
         view

@@ -194,7 +194,7 @@ contract SmartVaultFactoryHpf is UpgradeableBeacon, SpoolAccessControllable {
      * @notice Validates smart vault specification.
      * @param specification Specifications for the new smart vault.
      */
-    function _validateSpecification(SmartVaultSpecification calldata specification) private view {
+    function _validateSpecification(SmartVaultSpecification calldata specification) internal view virtual {
         _assetGroupRegistry.validateAssetGroup(specification.assetGroupId);
 
         if (specification.strategies.length == 0) {
