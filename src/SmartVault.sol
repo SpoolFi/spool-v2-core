@@ -59,7 +59,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         string calldata svtSymbol,
         string calldata baseURI_,
         uint256 assetGroupId_
-    ) external virtual initializer {
+    ) public initializer {
         if (bytes(vaultName_).length == 0) revert InvalidConfiguration();
 
         __ERC1155_init(baseURI_);

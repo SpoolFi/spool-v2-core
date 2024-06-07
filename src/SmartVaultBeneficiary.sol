@@ -21,29 +21,13 @@ contract SmartVaultBeneficiary is SmartVault {
         uint256 assetGroupId_,
         address beneficiary_,
         uint256 feeInBp_
-    ) external virtual initializer {
+    ) external {
+        initialize(vaultName_, svtSymbol, baseURI_, assetGroupId_);
         if (address(beneficiary_) == address(0)) revert ConfigurationAddressZero();
         if (feeInBp_ > MAX_FEE_IN_BP) revert ExceedMaxFeeBp();
-        if (bytes(vaultName_).length == 0) revert InvalidConfiguration();
-
-        __ERC1155_init(baseURI_);
-        __ERC20_init(vaultName_, svtSymbol);
-
-        _vaultName = vaultName_;
-        assetGroupId = assetGroupId_;
-
-        _lastDepositId = 0;
-        _lastWithdrawalId = MAXIMAL_DEPOSIT_ID;
         beneficiary = beneficiary_;
         feeInBp = feeInBp_;
     }
-
-    function initialize(
-        string calldata vaultName_,
-        string calldata svtSymbol,
-        string calldata baseURI_,
-        uint256 assetGroupId_
-    ) external override {}
 
     function mintVaultShares(address receiver, uint256 vaultShares)
         external
