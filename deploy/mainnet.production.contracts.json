@@ -114,7 +114,8 @@
         "gearbox-v3": {
             "gearbox-v3-usdc": "0xb4a7fb51D06760B5F622643B7276c003418732bD",
             "gearbox-v3-weth": "0xD92B65d2321076FBAc23FCfC9A9Fd5Ed2E98B758",
-            "implementation": "0x615a54527c08e15d9276EDfb707e7F457aBCF3Ae"
+            "implementation": "0x615a54527c08e15d9276EDfb707e7F457aBCF3Ae",
+            "implementation-airdrop": "0x64a21Ca82fe09712af8CeC6C5fED62e97Bae33A1"
         },
         "metamorpho-gauntlet": {
             "implementation": "0x35E72AF2E0245077785472eD4A166C56649Ff0B2",
