@@ -13,7 +13,7 @@ import "../src/interfaces/ISpoolAccessControl.sol";
 import "../src/interfaces/IStrategy.sol";
 import "../src/SmartVault.sol";
 import "../src/SmartVaultBeneficiary.sol";
-import "../src/SmartVaultFactoryHpf.sol";
+import "../src/SmartVaultBeneficiaryFactoryHpf.sol";
 import "./libraries/Arrays.sol";
 import "../src/managers/RiskManager.sol";
 import "../src/access/SpoolAccessControl.sol";
@@ -98,21 +98,45 @@ contract SmartVaultBeneficiaryTest is Test {
         address beneficiary = address(0x321);
         address smartVaultOwner = address(0x9876);
 
+        address implementation = address(new SmartVaultBeneficiary(accessControl, guardManager));
+
         //cannot set fee more than 100%
         vm.expectRevert(abi.encodeWithSelector(ExceedMaxFeeBp.selector));
-        new SmartVaultBeneficiary(accessControl, guardManager, beneficiary, 101_00);
-        // beneficiary cannot be zero address
-        vm.expectRevert(abi.encodeWithSelector(ConfigurationAddressZero.selector));
-        new SmartVaultBeneficiary(accessControl, guardManager, address(0), 1_00);
-
-        SmartVaultFactoryHpf beneficiaryFactory = new SmartVaultFactoryHpf(
-            address(new SmartVaultBeneficiary(accessControl, guardManager, beneficiary, 15_00)),
+        new SmartVaultBeneficiaryFactoryHpf(
+            implementation,
             accessControl,
             actionManager,
             guardManager,
             smartVaultManager,
             assetGroupRegistry,
-            riskManager
+            riskManager,
+            beneficiary,
+            101_00
+        );
+        // beneficiary cannot be zero address
+        vm.expectRevert(abi.encodeWithSelector(ConfigurationAddressZero.selector));
+        new SmartVaultBeneficiaryFactoryHpf(
+            implementation,
+            accessControl,
+            actionManager,
+            guardManager,
+            smartVaultManager,
+            assetGroupRegistry,
+            riskManager,
+            address(0),
+            1_00
+        );
+
+        SmartVaultBeneficiaryFactoryHpf beneficiaryFactory = new SmartVaultBeneficiaryFactoryHpf(
+            implementation,
+            accessControl,
+            actionManager,
+            guardManager,
+            smartVaultManager,
+            assetGroupRegistry,
+            riskManager,
+            beneficiary,
+            15_00
         );
 
         accessControl.grantRole(ROLE_SMART_VAULT_INTEGRATOR, address(beneficiaryFactory));
@@ -151,34 +175,6 @@ contract SmartVaultBeneficiaryTest is Test {
             vm.stopPrank();
             uint256 smartVaultOwnerBalance = smartVault.balanceOf(smartVaultOwner);
             uint256 beneficiaryBalance = smartVault.balanceOf(beneficiary);
-
-            uint256 feeInBp = smartVault.feeInBp();
-            assertEq(smartVaultOwnerBalance + beneficiaryBalance, sharesToMint);
-            assertApproxEqAbs(sharesToMint * feeInBp / 100_00, beneficiaryBalance, 1);
-            assertApproxEqAbs(sharesToMint, smartVaultOwnerBalance * 100_00 / (100_00 - feeInBp), 1);
-        }
-
-        {
-            address newBeneficiary = address(0x9182);
-
-            address implementation2 =
-                address(new SmartVaultBeneficiary(accessControl, guardManager, newBeneficiary, 90_00));
-            beneficiaryFactory.upgradeTo(implementation2);
-
-            vm.startPrank(smartVaultOwner);
-
-            specification.smartVaultName = "SmartVault2";
-            SmartVaultBeneficiary smartVault =
-                SmartVaultBeneficiary(address(beneficiaryFactory.deploySmartVault(specification)));
-
-            vm.stopPrank();
-
-            vm.startPrank(address(smartVaultManager));
-            uint256 sharesToMint = 100500;
-            smartVault.mintVaultShares(smartVaultOwner, sharesToMint);
-            vm.stopPrank();
-            uint256 smartVaultOwnerBalance = smartVault.balanceOf(smartVaultOwner);
-            uint256 beneficiaryBalance = smartVault.balanceOf(newBeneficiary);
 
             uint256 feeInBp = smartVault.feeInBp();
             assertEq(smartVaultOwnerBalance + beneficiaryBalance, sharesToMint);

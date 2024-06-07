@@ -37,10 +37,10 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
     mapping(uint256 => WithdrawalMetadata) private _withdrawalMetadata;
 
     /// @notice Deposit NFT ID
-    uint256 private _lastDepositId;
+    uint256 internal _lastDepositId;
 
     /// @notice Withdrawal NFT ID
-    uint256 private _lastWithdrawalId;
+    uint256 internal _lastWithdrawalId;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -59,7 +59,7 @@ contract SmartVault is ERC20PermitUpgradeable, ERC1155Upgradeable, SpoolAccessCo
         string calldata svtSymbol,
         string calldata baseURI_,
         uint256 assetGroupId_
-    ) external initializer {
+    ) external virtual initializer {
         if (bytes(vaultName_).length == 0) revert InvalidConfiguration();
 
         __ERC1155_init(baseURI_);
