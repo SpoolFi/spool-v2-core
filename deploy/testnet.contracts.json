@@ -89,6 +89,12 @@
       "mock-usdc": "0x07Ffa21cbf983e2F2246750108D9248133c85a98",
       "mock-usdt": "0x68b19781cBE5724b1666D944C729aa15d6925E0b",
       "mock-weth": "0x7fd3f41F2dE554d8528Db74294a4382f4718F3Ad"
+    },
+    "mock-drip": {
+      "mock-drip-dai": "0x8b0bDB865a1501b54967982973eDBE38cf867558",
+      "mock-drip-usdc": "0xD5f24e72F51bA893c37b7A5a2D3307ea9ecf6B83",
+      "mock-drip-usdt": "0x94D301E7133097Fba430E89b18395DABc33d2A02",
+      "mock-drip-weth": "0x303d3fA19679D30e8722DD337f1A28b1A89689Ed"
     }
   }
 }

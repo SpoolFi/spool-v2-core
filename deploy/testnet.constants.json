@@ -33,19 +33,19 @@
         "mock": {
             "dai": {
                 "apy": 70000000000,
-                "rewardTokenPerSecond": "20000000000000000"
+                "rewardTokenPerSecond": "100"
             },
             "usdc": {
                 "apy": 70000000000,
-                "rewardTokenPerSecond": "20000"
+                "rewardTokenPerSecond": "100"
             },
             "usdt": {
                 "apy": 70000000000,
-                "rewardTokenPerSecond": "20000"
+                "rewardTokenPerSecond": "100"
             },
             "weth": {
                 "apy": 70000000000,
-                "rewardTokenPerSecond": "20000000000000000"
+                "rewardTokenPerSecond": "100"
             }
         }
     },

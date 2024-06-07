@@ -63,6 +63,29 @@ contract StrategiesInitial {
         contractsJson().addVariantStrategyBeacon(MOCK_KEY, address(beacon));
     }
 
+    function deployClientMock(StandardContracts memory contracts, string memory name) public {
+        UpgradeableBeacon beacon = UpgradeableBeacon(contractsJson().getAddress(".strategies.mock.beacon"));
+        // create variant proxies
+        string[] memory variants = new string[](4);
+        variants[0] = DAI_KEY;
+        variants[1] = USDC_KEY;
+        variants[2] = USDT_KEY;
+        variants[3] = WETH_KEY;
+
+        for (uint256 i; i < variants.length; ++i) {
+            string memory variantName = _getVariantName(name, variants[i]);
+
+            uint256 rewardTokenPerSecond = constantsJson().getUint256(
+                string.concat(".strategies.", MOCK_KEY, ".", variants[i], ".rewardTokenPerSecond")
+            );
+
+            address variant = _newBeaconProxy(address(beacon));
+            uint256 assetGroupId = assetGroups(variants[i]);
+            MockStrategy(variant).initialize(variantName, assetGroupId, rewardTokenPerSecond);
+            _registerClientStrategyVariant(name, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+        }
+    }
+
     function deployMock(StandardContracts memory contracts) public {
         // Deploy beacon proxy
         UpgradeableBeacon beacon = _deployMockBeacon(contracts);
@@ -134,6 +157,23 @@ contract StrategiesInitial {
         IStrategyRegistry strategyRegistry
     ) private {
         int256 apy = constantsJson().getInt256(string.concat(".strategies.", strategyKey, ".", variantKey, ".apy"));
+        string memory variantName = _getVariantName(strategyKey, variantKey);
+
+        strategyRegistry.registerStrategy(variant, apy);
+
+        strategies[strategyKey][assetGroupId] = variant;
+        addressToStrategyKey[variant] = strategyKey;
+        contractsJson().addVariantStrategyVariant(strategyKey, variantName, variant);
+    }
+
+    function _registerClientStrategyVariant(
+        string memory strategyKey,
+        string memory variantKey,
+        address variant,
+        uint256 assetGroupId,
+        IStrategyRegistry strategyRegistry
+    ) private {
+        int256 apy = constantsJson().getInt256(string.concat(".strategies.", MOCK_KEY, ".", variantKey, ".apy"));
         string memory variantName = _getVariantName(strategyKey, variantKey);
 
         strategyRegistry.registerStrategy(variant, apy);
