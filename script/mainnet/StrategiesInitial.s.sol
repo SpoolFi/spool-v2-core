@@ -908,7 +908,7 @@ contract StrategiesInitial {
     }
 
     function deployEthenaImpl(StandardContracts memory contracts, IUsdPriceFeedManager priceFeedManager) public {
-        address USDe = constantsJson().getAddress(string.concat(".strategies.", ETHENA_KEY, ".USDe"));
+        address USDe = constantsJson().getAddress("assets.usde.address");
         address sUSDe = constantsJson().getAddress(string.concat(".strategies.", ETHENA_KEY, ".sUSDe"));
         address ENAToken = constantsJson().getAddress(string.concat(".strategies.", ETHENA_KEY, ".ENA"));
         address implementation = address(
