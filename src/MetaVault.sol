@@ -5,14 +5,15 @@ import "@openzeppelin-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin-upgradeable/token/ERC1155/utils/ERC1155ReceiverUpgradeable.sol";
+import "@openzeppelin-upgradeable/utils/MulticallUpgradeable.sol";
 
 import "./managers/SmartVaultManager.sol";
 
 /**
  * @dev MetaVault is a contract which facilitates investment in various SmartVaults.
  * It has an owner, which is responsible for calling Spool Core V2 specific methods:
- * deposit, redeem, redeemFast and claimWithdrawal.
- * There is no need to claim SVTs, since deposit nfts are sufficient for withdrawal.
+ * deposit, redeem, redeemFast, claimSmartVaultTokens and claimWithdrawal.
  * In this way MetaVault owner can manage funds from users in trustless manner.
  * MetaVault supports only one ERC-20 asset.
  * Users can deposit funds and in return they get MetaVault shares.
@@ -21,13 +22,16 @@ import "./managers/SmartVaultManager.sol";
  * Redeem requests can always be matched with availableAssets in smart contract and become withdrawable.
  * While there are some pending redeem requests, deposits into Spool protocol are prohibited.
  */
-contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable {
+/// TODO: implement delegates? Owner would be able to assign delegates who will be allowed to call deposit, redeem, redeemFast, claimSmartVaultTokens and claimWithdrawal
+/// Why does it matter? Delegate could be a hot wallet of some backend service to perform those operations.
+/// Doesn't look like there is a risk of loosing funds even in case this how wallet will be compromised
+contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable, ERC1155ReceiverUpgradeable, MulticallUpgradeable {
     using SafeERC20Upgradeable for IERC20MetadataUpgradeable;
 
     // ========================== EVENTS ==========================
     event Deposit(address indexed user, uint256 amount);
-    event RedeemRequest(address indexed user, uint256 shares);
-    event Withdraw(address indexed user, uint256 amount);
+    event RedeemRequest(address indexed user, uint256 indexed withdrawalCycle, uint256 shares);
+    event Withdraw(address indexed user, uint256 indexed withdrawalCycle, uint256 amount);
 
     // ========================== ERRORS ==========================
     /**
@@ -85,9 +89,9 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable {
 
     // ========================== CONSTRUCTOR ==========================
 
-    constructor(SmartVaultManager smartVaultManager_, IERC20MetadataUpgradeable asset_) {
-        smartVaultManager = smartVaultManager_;
-        asset = asset_;
+    constructor(address smartVaultManager_, address asset_) {
+        smartVaultManager = SmartVaultManager(smartVaultManager_);
+        asset = IERC20MetadataUpgradeable(asset_);
         _decimals = uint8(asset.decimals());
     }
 
@@ -95,6 +99,7 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable {
 
     function initialize(string memory name_, string memory symbol_) external initializer {
         __Ownable2Step_init();
+        __Multicall_init();
         __ERC20_init(name_, symbol_);
         currentWithdrawalIndex = 1;
         asset.safeApprove(address(smartVaultManager), type(uint256).max);
@@ -102,13 +107,15 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable {
 
     // ========================== USER FACING ==========================
 
+    /// TODO: assume for now that price is constant
+    /// Remove this completely or implement some kind of pricing?
+    /// In case of none yield-bearing MetaVault it does make sense only in case of real loss
+    /// otherwise 1:1 is perfectly fine
     function convertToAssets(uint256 amount) public pure returns (uint256) {
-        /// TODO: assume for now that price is constant
         return amount;
     }
 
     function convertToShares(uint256 amount) public pure returns (uint256) {
-        /// TODO: assume for now that price is constant
         return amount;
     }
 
@@ -132,12 +139,14 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable {
      */
     function redeemRequest(uint256 shares) external {
         _burn(msg.sender, shares);
+        /// TODO: always subtract 1 wei from assets to return?
+        /// would allow to avoid inconsistency on withdrawal and pumpAssets() might be omitted completely
         uint256 assetsToWithdraw = convertToAssets(shares);
         /// accumulate redeems for all users for current withdrawal cycle
         withdrawalIndexToRequestedAmount[currentWithdrawalIndex] += assetsToWithdraw;
         /// accumulate redeems for particular user for current withdrawal cycle
         userToWithdrawalIndexToRequestedAmount[msg.sender][currentWithdrawalIndex] += assetsToWithdraw;
-        emit RedeemRequest(msg.sender, shares);
+        emit RedeemRequest(msg.sender, currentWithdrawalIndex, shares);
     }
 
     /**
@@ -152,7 +161,7 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable {
         /// delete entry for user to disable repeated withdrawal
         delete userToWithdrawalIndexToRequestedAmount[msg.sender][index];
         asset.safeTransfer(msg.sender, amount);
-        emit Withdraw(msg.sender, amount);
+        emit Withdraw(msg.sender, index, amount);
     }
 
     // ========================== WITHDRAWAL MANAGEMENT ==========================
@@ -193,7 +202,9 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable {
 
     // ========================== SPOOL INTERACTIONS ==========================
 
-    /// TODO: somehow validate that SmartVault is not yield bearing? - all yield goes to Spool and SmartVault owner
+    /// TODO: Somehow validate that SmartVault is not yield bearing? - all yield goes to Spool and SmartVault owner.
+    /// Probably, there is no need for this. Because even if some yield goes to MetaVault it wouldn't matter.
+    /// MetaVault should not be yield-bearing for user.
     function spoolDeposit(address smartVault, uint256 amount, bool doFlush) external onlyOwner returns (uint256) {
         if (
             /// if more than one withdrawal cycle is not fulfilled
@@ -201,7 +212,7 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable {
             /// or there is only one unfulfilled withdrawal cycle
             /// and there are some funds requested in it
             || (
-                lastFulfilledWithdrawalIndex + 1 < currentWithdrawalIndex
+                lastFulfilledWithdrawalIndex + 1 == currentWithdrawalIndex
                     && withdrawalIndexToRequestedAmount[currentWithdrawalIndex] > 0
             )
         ) {
@@ -223,12 +234,21 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable {
         return smartVaultManager.deposit(bag);
     }
 
+    function claimSmartVaultTokens(address smartVault, uint256[] calldata nftIds, uint256[] calldata nftAmounts)
+        external
+        onlyOwner
+        returns (uint256)
+    {
+        return smartVaultManager.claimSmartVaultTokens(smartVault, nftIds, nftAmounts);
+    }
+
     function spoolRedeem(RedeemBag calldata bag, bool doFlush) external onlyOwner returns (uint256) {
         return smartVaultManager.redeem(bag, address(this), doFlush);
     }
 
     function spoolRedeemFast(RedeemBag calldata bag, uint256[][] calldata withdrawalSlippages)
         external
+        onlyOwner
         returns (uint256)
     {
         uint256 withdrawnAssets = smartVaultManager.redeemFast(bag, withdrawalSlippages)[0];
@@ -236,13 +256,12 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable {
         return withdrawnAssets;
     }
 
-    function spoolClaimWithdrawal(
-        address smartVault,
-        uint256[] calldata nftIds,
-        uint256[] calldata nftAmounts,
-        address receiver
-    ) external onlyOwner returns (uint256) {
-        (uint256[] memory withdrawn,) = smartVaultManager.claimWithdrawal(smartVault, nftIds, nftAmounts, receiver);
+    function spoolClaimWithdrawal(address smartVault, uint256[] calldata nftIds, uint256[] calldata nftAmounts)
+        external
+        onlyOwner
+        returns (uint256)
+    {
+        (uint256[] memory withdrawn,) = smartVaultManager.claimWithdrawal(smartVault, nftIds, nftAmounts, address(this));
         uint256 withdrawnAssets = withdrawn[0];
         availableAssets += withdrawnAssets;
         return withdrawnAssets;
@@ -257,5 +276,21 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable {
      */
     function decimals() public view override returns (uint8) {
         return _decimals;
+    }
+
+    /// ========================== IERC-1155 RECEIVER ==========================
+
+    function onERC1155Received(address, address, uint256, uint256, bytes calldata) external pure returns (bytes4) {
+        /// bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))
+        return 0xf23a6e61;
+    }
+
+    function onERC1155BatchReceived(address, address, uint256[] calldata, uint256[] calldata, bytes calldata)
+        external
+        pure
+        returns (bytes4)
+    {
+        /// bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))
+        return 0xbc197c81;
     }
 }
