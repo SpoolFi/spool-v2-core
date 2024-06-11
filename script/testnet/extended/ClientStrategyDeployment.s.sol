@@ -16,6 +16,6 @@ contract ClientStrategyDeployment is TestnetExtendedSetup {
         // reserialize strategies
         contractsJson().reserializeKeyAddress("strategies");
 
-        deployClientMock(contracts, "mock-drip");
+        deployClientMock(contracts, "mock");
     }
 }
