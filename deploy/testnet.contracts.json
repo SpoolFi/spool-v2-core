@@ -96,6 +96,12 @@
       "mock-ape-usdt": "0x6d4A419A9C7237b9d54968ca0386CaAfA2511EBC",
       "mock-ape-weth": "0x78c175279DdC79e26280b058a357371D23BDA358"
     },
+    "mock-ape-2": {
+      "mock-ape-2-dai": "0xD21D40c8Ed1E7c985152d698787A18b632653DCD",
+      "mock-ape-2-usdc": "0x9B0EEC893C698969C60418d96050973fBdcFe643",
+      "mock-ape-2-usdt": "0xF8Cd232d3e548e548f3c1cC84475AC4c47bd7dFf",
+      "mock-ape-2-weth": "0x06407A1e7F36698a414BEEed7A05Ab6fA1CcAdE4"
+    },
     "mock-drip": {
       "mock-drip-dai": "0x8b0bDB865a1501b54967982973eDBE38cf867558",
       "mock-drip-usdc": "0xD5f24e72F51bA893c37b7A5a2D3307ea9ecf6B83",
