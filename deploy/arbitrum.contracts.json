@@ -12,7 +12,7 @@
     "proxy": "0xb3B8D7a4ef4C6C78699bDab42837383040a3752e"
   },
   "DepositManager": {
-    "implementation": "0xf87576db46fF6217172BDe27EF49A4F3F9d47a85",
+    "implementation": "0xAe2AB247770932632724Af0bd91Aa4ADf34D8bD3",
     "proxy": "0x4A98260e9552b09703bf4493B43c72A6b75Be47E"
   },
   "DepositSwap": {
