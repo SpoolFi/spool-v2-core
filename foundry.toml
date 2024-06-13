@@ -3,9 +3,12 @@
 # project
 src = 'src'
 out = 'out'
-cache_path = 'cache/default'
 libs = ['lib']
 fs_permissions = [{ access = "read-write", path = "./deploy"}]
+
+broadcast = 'broadcast/default'
+cache_path = 'cache/default'
+test = 'test'
 
 # compiler
 evm_version = 'shanghai'
@@ -31,6 +34,7 @@ local-mainnet = "http://localhost:8545"
 # project
 cache_path = 'cache/mainnet-production'
 broadcast = 'broadcast/mainnet-production'
+test = 'no-test'
 
 # compiler
 optimizer_runs = 99999
@@ -50,6 +54,7 @@ libraries = [
 # project
 cache_path = 'cache/sepolia-production'
 broadcast = 'broadcast/sepolia-production'
+test = 'no-test'
 
 # compiler
 optimizer_runs = 99999
@@ -67,6 +72,7 @@ libraries = [
 # project
 cache_path = 'cache/arbitrum-production'
 broadcast = 'broadcast/arbitrum-production'
+test = 'no-test'
 
 # compiler
 optimizer_runs = 99999
