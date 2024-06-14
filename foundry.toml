@@ -18,10 +18,6 @@ extra_output_files = [
 # test
 no_match_path = "./test/forked/**"
 
-# Ethena contract requires this (probably it uses PUSH0)
-# https://github.com/foundry-rs/foundry/issues/4988
-evm_version='shanghai'
-
 [rpc_endpoints]
 mainnet = "${MAINNET_RPC_URL}"
 arbitrum = "${ARBITRUM_RPC_URL}"
