@@ -87,28 +87,28 @@
       "aave-v2-dai": "0x27f38719608422Af8a31509CBBB5fAcD582f6e1F",
       "aave-v2-usdc": "0xc6C65c730D7CB5FA22903DBcCB64973be4Fd4629",
       "aave-v2-usdt": "0xCfdEa0499D00f6ecae256F0FC9daCC837D48409e",
-      "implementation": "0x3597F15739771b8e040c0cFac048752946B79e9D"
+      "implementation": "0x3Bb41F7A05535CC05Ab6263dd01a4fa3462bE3c9"
     },
     "compound-v2": {
       "compound-v2-dai": "0x013022c7ca735eF6ba55cd3eaccB4Ebb3be484e9",
       "compound-v2-usdc": "0xfC8610aE1D1cc5f30c932E9FF4ac37E3f1a6337d",
       "compound-v2-usdt": "0xac997F24Ef9f5fc2A3c050eA14d1d017db20a1d1",
-      "implementation": "0x6Ab817bD92A1c3075d8f1ceD160984EA4E5F8d89"
+      "implementation": "0x8fE41e9B43bB45d0eFBc86C32Aa4705935Bf8b13"
     },
     "convex-3pool": {
-      "implementation": "0x63423e8358B3D00a780CCE788Ed4BCCd50ed58b2",
+      "implementation": "0xbca4677aD780bF59FBdF6194a145cf00A1a7c12b",
       "proxy": "0x93f0F12e368b06d7914255FBA5cA47821cd5908d"
     },
     "convex-alusd": {
-      "implementation": "0xD049C7B5707021C39787438B95d65C9C7339EA04",
+      "implementation": "0x7158c40A536dA9E23d8D0A226698A788621adA8A",
       "proxy": "0x2cA41209c87D2a611059d85C62cc0F913068d301"
     },
     "convex-stfrxeth": {
-      "implementation": "0xbb141226abA3b1dDfBe5EB03De9138f16198b42c",
+      "implementation": "0x7f47E9e456F7a74c4D44Cc56B08CbAFFf6BF95e8",
       "proxy": "0x5699181904Ae5781d204a0E189862f8AF9109479"
     },
     "curve-3pool": {
-      "implementation": "0x520AeDDdd3fb45E49ce236Df4c43B6a1a0cc061A",
+      "implementation": "0xDB90a96095f53a015f6C69EF5e05f8f7B5a649fD",
       "proxy": "0x6EB6251AF926016c60DE17aD976b9C1e2485e1F0"
     },
     "ethena": {
@@ -119,24 +119,24 @@
     "gearbox-v3": {
       "gearbox-v3-usdc": "0xb4a7fb51D06760B5F622643B7276c003418732bD",
       "gearbox-v3-weth": "0xD92B65d2321076FBAc23FCfC9A9Fd5Ed2E98B758",
-      "implementation": "0x615a54527c08e15d9276EDfb707e7F457aBCF3Ae",
+      "implementation": "0xb170F18dca153752b2F35304e5ea581373095f4e",
       "implementation-airdrop": "0x64a21Ca82fe09712af8CeC6C5fED62e97Bae33A1"
     },
     "metamorpho-gauntlet": {
-      "implementation": "0x35E72AF2E0245077785472eD4A166C56649Ff0B2",
+      "implementation": "0xDb19e40bD45920b09Ac7fF2778d4A1cA90C0A772",
       "metamorpho-gauntlet-dai-core": "0x05d9A563cb7bFC58082935ccb44FEe9dF19D1ee5",
       "metamorpho-gauntlet-lrt-core": "0x1D060A1B17a7FF1929133B202a7Ec1D9B90A1965",
       "metamorpho-gauntlet-mkr-blended": "0xAfC182fcFbdA42F639CCD4518aEcccE5Ea777440",
       "metamorpho-gauntlet-usdt-prime": "0x35A73350c199b25618cFF7E9f33eC2EbcD1F0180"
     },
     "morpho-aave-v2": {
-      "implementation": "0x7b2121D7d8699aF6420941AE06834625ce650623",
+      "implementation": "0xdD55DAb8A52b1E2983a9c7297650DBA857dB4e3b",
       "morpho-aave-v2-dai": "0xfE6D982a773F4251dA4Ba04fc8fE7F2717413599",
       "morpho-aave-v2-usdc": "0xa51C0a9F2d688c8943F029feC00a3c9193aAdf81",
       "morpho-aave-v2-usdt": "0xd353b46208493F1515d5f5c67A86795cf509c598"
     },
     "morpho-compound-v2": {
-      "implementation": "0x879BF9a1BBBa52dAd6C0d4a804EC3Bc088A51c7d",
+      "implementation": "0x40844863f1a8945499501111f71eCdABDBedDEf5",
       "morpho-compound-v2-dai": "0xcab95acA532aD88C68fe464bD276C5beEb6FE373",
       "morpho-compound-v2-usdc": "0x07D01228801cAc1EFEB36481370e5b532C7935a4",
       "morpho-compound-v2-usdt": "0xb7364aF55b4A0393d070AEEB2D8a6468f82e178e"
@@ -147,23 +147,23 @@
       "notional-finance-usdc": "0x107D759C58C5933320e636624f4B716d7B199E21"
     },
     "oeth-holding": {
-      "implementation": "0x4349909E23B4CDdd4d8573D75D21B5E6FBFb36A8",
+      "implementation": "0x120da9fA3F56D2179FACab9Ce9b3D00dF4BE1575",
       "proxy": "0x39E5c2a796082eB553c1b0656e09E49583D12CB8"
     },
     "reth-holding": {
-      "implementation": "0xefC54333d3Fc82a7BE86ECAB7Eab1E3834B32909",
+      "implementation": "0x56a20C5D76d41338fBd5D7cB7Db37e937143f910",
       "proxy": "0x019834Ef2ec086e495668aa4E06B4d31119beC71"
     },
     "sfrxeth-holding": {
-      "implementation": "0xAcB8e69668c5005bC14e83D2f4aAC15E7186D797",
+      "implementation": "0xeFD8CE62CA1cd5C309ee1421496E8657036E9373",
       "proxy": "0x6d0e6242FE023675487BccA4Ab989a91D0932a51"
     },
     "steth-holding": {
-      "implementation": "0x89fD0A5549d402595C9DB1Be92564C486fB10B96",
+      "implementation": "0xc4962991713ff1e5EF4Ac4BA6f5B2292D5b65383",
       "proxy": "0x504d272aC93e7ffAcAcB7DD69061c9b4D0781410"
     },
     "yearn-v2": {
-      "implementation": "0x13b727aBD64063629fcc1b9F8CbD6B4efc619c08",
+      "implementation": "0xb7F6FBbB8d11946951b14cC349DDcF7e11F74D7e",
       "yearn-v2-dai": "0xb8943E7eBB7B919AAFaE261343c38F02e4182CA6",
       "yearn-v2-usdc": "0xc61E829DF3fbD6Cf5B2f5881F190C69eE48d20DF",
       "yearn-v2-usdt": "0x24416AE2794C222725185734c7050c008fC1d2f8"
