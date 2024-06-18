@@ -30,8 +30,13 @@ contract ArbitrumExtendedSetup is Script, DeploySpool, AssetsInitial, Strategies
     }
 
     function init() public virtual {
-        _constantsJson = new JsonReader(vm, string.concat("deploy/arbitrum.constants.json"));
-        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/arbitrum.contracts.json"));
+        string memory profile = vm.envString("FOUNDRY_PROFILE");
+        require(
+            Strings.equal(profile, "arbitrum.production") || Strings.equal(profile, "arbitrum.staging"),
+            "Arbitrum Foundry profile is not set"
+        );
+        _constantsJson = new JsonReader(vm, string.concat("deploy/", profile, ".constants.json"));
+        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/", profile, ".contracts.json"));
     }
 
     function doSetup() public {
