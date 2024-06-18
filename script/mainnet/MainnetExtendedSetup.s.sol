@@ -33,7 +33,7 @@ contract MainnetExtendedSetup is Script, DeploySpool, AssetsInitial, StrategiesI
     function init() public virtual {
         string memory profile = vm.envString("FOUNDRY_PROFILE");
         require(
-            Strings.equal(profile, "mainnet.production") || Strings.equal(profile, "mainnet.staging"),
+            Strings.equal(profile, "mainnet-production") || Strings.equal(profile, "mainnet-staging"),
             "Mainnet Foundry profile is not set"
         );
         _constantsJson = new JsonReader(vm, string.concat("deploy/", profile, ".constants.json"));
