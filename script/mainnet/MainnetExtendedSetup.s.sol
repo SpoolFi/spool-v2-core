@@ -31,12 +31,13 @@ contract MainnetExtendedSetup is Script, DeploySpool, AssetsInitial, StrategiesI
     }
 
     function init() public virtual {
-        string memory environment = vm.envString("ENVIRONMENT");
+        string memory profile = vm.envString("FOUNDRY_PROFILE");
         require(
-            Strings.equal(environment, "production") || Strings.equal(environment, "staging"), "Environment is not set"
+            Strings.equal(profile, "mainnet.production") || Strings.equal(profile, "mainnet.staging"),
+            "Mainnet Foundry profile is not set"
         );
-        _constantsJson = new JsonReader(vm, string.concat("deploy/mainnet.", environment, ".constants.json"));
-        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/mainnet.", environment, ".contracts.json"));
+        _constantsJson = new JsonReader(vm, string.concat("deploy/", profile, ".constants.json"));
+        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/", profile, ".contracts.json"));
     }
 
     function doSetup() public {
