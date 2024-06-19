@@ -3,7 +3,6 @@
 # project
 src = 'src'
 out = 'out'
-cache_path = 'cache/default'
 libs = ['lib']
 fs_permissions = [{ access = "read-write", path = "./deploy"}]
 
@@ -28,9 +27,6 @@ local-mainnet = "http://localhost:8545"
 # FOUNDRY_PROFILE=mainnet-prod
 # inherits from default profile
 
-# project
-cache_path = 'cache/mainnet-prod'
-
 # compiler
 optimizer_runs = 99999
 libraries = [
@@ -46,9 +42,6 @@ libraries = [
 [profile.arbitrum-prod]
 # FOUNDRY_PROFILE=arbitrum-prod
 # inherits from default profile
-
-# project
-cache_path = 'cache/arbitrum-prod'
 
 # compiler
 optimizer_runs = 99999
