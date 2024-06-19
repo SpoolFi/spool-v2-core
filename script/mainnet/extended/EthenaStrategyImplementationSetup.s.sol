@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "../MainnetExtendedSetup.s.sol";
 
-contract EthenaStrategyImplSetup is MainnetExtendedSetup {
+contract EthenaStrategyImplementationSetup is MainnetExtendedSetup {
     function execute() public override {
         StandardContracts memory contracts = StandardContracts({
             accessControl: spoolAccessControl,

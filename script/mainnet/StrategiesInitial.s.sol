@@ -907,7 +907,7 @@ contract StrategiesInitial {
         contractsJson().addVariantStrategyVariant(ETHENA_KEY, variantName, proxy);
     }
 
-    function deployEthenaImpl(StandardContracts memory contracts, IUsdPriceFeedManager priceFeedManager) public {
+    function deployEthenaImpl(StandardContracts memory contracts) public {
         address USDe = constantsJson().getAddress(string.concat(".strategies.", ETHENA_KEY, ".USDe"));
         address sUSDe = constantsJson().getAddress(string.concat(".strategies.", ETHENA_KEY, ".sUSDe"));
         address ENAToken = constantsJson().getAddress(string.concat(".strategies.", ETHENA_KEY, ".ENA"));
@@ -918,8 +918,7 @@ contract StrategiesInitial {
                 IERC20Metadata(USDe),
                 IsUSDe(sUSDe),
                 IERC20Metadata(ENAToken),
-                contracts.swapper,
-                priceFeedManager
+                contracts.swapper
             )
         );
         contractsJson().addVariantStrategyImplementation(ETHENA_KEY, implementation);
