@@ -965,7 +965,7 @@ contract StrategiesInitial {
     }
 
     function _getVariantName(string memory strategyKey, string memory variantKey)
-        private
+        internal
         pure
         returns (string memory)
     {
