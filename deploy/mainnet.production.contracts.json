@@ -161,16 +161,6 @@
             "yearn-v2-dai": "0xb8943E7eBB7B919AAFaE261343c38F02e4182CA6",
             "yearn-v2-usdc": "0xc61E829DF3fbD6Cf5B2f5881F190C69eE48d20DF",
             "yearn-v2-usdt": "0x24416AE2794C222725185734c7050c008fC1d2f8"
-        },
-        "yearn-v3-gauged": {
-            "implementation": "0xC4f43e85f10Fd6F29BC973c45160DC3f78E80D15",
-            "yearn-v3-gauged-dai": "0x98732e2FEb854bAd400D4b5336f4439E7E53fe88",
-            "yearn-v3-gauged-usdc": "0x90b8695EDCdEfAFA678Df6d819307573f7B1a18C",
-            "yearn-v3-gauged-weth": "0x95a02e5ac5Ca7D633287f922f6FFe1129F92E39C"
-        },
-          "yearn-v3-juiced": {
-            "implementation": "0x123dB049CC5Ee36010f5148000754181aB87b3B3",
-            "yearn-v3-juiced-dai": "0x2e988479F14Ff61586F8Fd0F09E8720484Eb6030"
         }
     }
 }
