@@ -55,8 +55,6 @@ error GammaCamelotCompoundSlippagesFailed();
 //   - _redeemFromProtocol: slippages[1..2]
 //   - _emergencyWithdrawImpl: slippages[1..2]
 //
-// - swapInfo (premature exit to get assets used): slippages[0] == 4
-//
 // Description:
 // This is an ALM (Active Liquidity Management) strategy, where WETH/USDC are deposited into Camelot DEX (Uniswap
 // V3-like DEX) via Gamma protocol.
@@ -212,8 +210,6 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
             slippageOffset = 5;
         } else if (slippages[0] == 2) {
             slippageOffset = 3;
-        } else if (slippages[0] == 4 && _isViewExecution()) {
-            return;
         } else {
             revert GammaCamelotDepositSlippagesFailed();
         }
@@ -234,8 +230,6 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
             slippageOffset = 1;
         } else if (slippages[0] == 0 && _isViewExecution()) {
             slippageOffset = 5;
-        } else if (slippages[0] == 4 && _isViewExecution()) {
-            return;
         } else {
             revert GammaCamelotRedeemalSlippagesFailed();
         }
@@ -266,7 +260,7 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         returns (int256 compoundYield)
     {
         uint256 slippageOffset;
-        if (slippages[0] < 2 || (slippages[0] == 4 && _isViewExecution())) {
+        if (slippages[0] < 2) {
             slippageOffset = 4;
         } else {
             revert GammaCamelotCompoundSlippagesFailed();
@@ -376,17 +370,9 @@ contract GammaCamelotStrategy is Strategy, IERC721Receiver {
         }
     }
 
-    function _getProtocolRewardsInternal()
-        internal
-        virtual
-        override
-        returns (address[] memory rewardTokens, uint256[] memory balances)
-    {
-        if (nftId == type(uint256).max) {
-            return (rewardTokens, balances);
-        }
-        rewardTokens = _getRewards();
-        balances = new uint256[](rewardTokens.length);
+    function _getProtocolRewardsInternal() internal virtual override returns (address[] memory, uint256[] memory) {
+        address[] memory rewardTokens = _getRewards();
+        uint256[] memory balances = new uint256[](rewardTokens.length);
 
         unchecked {
             for (uint256 i; i < rewardTokens.length; ++i) {
