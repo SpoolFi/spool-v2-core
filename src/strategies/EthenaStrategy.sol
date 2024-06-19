@@ -220,7 +220,7 @@ contract EthenaStrategy is Strategy {
         address swapTarget = address(uint160(slippages[0]));
         uint256 bytesLength = slippages[1];
         uint256[] memory toDecode = new uint256[](slippages.length - 2);
-        for (uint256 i; i < toDecode.length; ++i) {
+        for (uint256 i; i < toDecode.length; i++) {
             toDecode[i] = slippages[2 + i];
         }
         bytes memory payload = BytesUint256Lib.decode(toDecode, bytesLength);
