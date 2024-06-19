@@ -103,7 +103,7 @@
     },
     "gamma-camelot": {
       "gamma-camelot-weth-usdc-narrow": "0xB5d158dc42b329214f7ecC020f715f93501a8f9e",
-      "implementation": "0x9Abe8f0EB3cBE99965a7F1E774A60A9F7fE1FF78"
+      "implementation": "0x6c2E2363393087Fdc493c0be59f5Db103c39f9c9"
     }
   },
   "strategy-helpers": {
