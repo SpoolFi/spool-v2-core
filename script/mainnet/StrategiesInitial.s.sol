@@ -3,7 +3,6 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/utils/math/SafeCast.sol";
-import "@openzeppelin/utils/Strings.sol";
 import "../../src/libraries/uint16a16Lib.sol";
 import "../../src/strategies/convex/Convex3poolStrategy.sol";
 import "../../src/strategies/convex/ConvexAlusdStrategy.sol";
@@ -24,11 +23,8 @@ import "../../src/strategies/GearboxV3Strategy.sol";
 import "../../src/strategies/MetamorphoStrategy.sol";
 import "../../src/strategies/YearnV3StrategyWithJuice.sol";
 import "../../src/strategies/YearnV3StrategyWithGauge.sol";
-import "../../src/strategies/EthenaStrategy.sol";
 import "../helper/JsonHelper.sol";
 import "./AssetsInitial.s.sol";
-
-import "forge-std/console.sol";
 
 string constant AAVE_V2_KEY = "aave-v2";
 string constant COMPOUND_V2_KEY = "compound-v2";
@@ -55,7 +51,6 @@ string constant OETH_HOLDING_KEY = "oeth-holding";
 string constant YEARN_V2_KEY = "yearn-v2";
 string constant YEARN_V3_GAUGED_KEY = "yearn-v3-gauged";
 string constant YEARN_V3_JUICED_KEY = "yearn-v3-juiced";
-string constant ETHENA_KEY = "ethena";
 
 struct StandardContracts {
     ISpoolAccessControl accessControl;
@@ -884,46 +879,6 @@ contract StrategiesInitial {
                 contractsJson().addVariantStrategyVariant(YEARN_V3_JUICED_KEY, variantName, variant);
             }
         }
-    }
-
-    function deployEthena(StandardContracts memory contracts, string memory assetKey) public {
-        string memory variant;
-        if (Strings.equal(assetKey, USDT_KEY)) {
-            variant = USDT_KEY;
-        } else if (Strings.equal(assetKey, USDC_KEY)) {
-            variant = USDC_KEY;
-        } else if (Strings.equal(assetKey, DAI_KEY)) {
-            variant = DAI_KEY;
-        } else if (Strings.equal(assetKey, USDE_KEY)) {
-            variant = USDE_KEY;
-        }
-        require(bytes(variant).length > 0, "Invalid asset group");
-
-        address implementation =
-            contractsJson().getAddress(string.concat(".strategies.", ETHENA_KEY, ".implementation"));
-
-        string memory variantName = _getVariantName(ETHENA_KEY, variant);
-
-        address proxy = _newProxy(implementation, contracts.proxyAdmin);
-        EthenaStrategy(proxy).initialize(variantName, assetGroups(variant));
-        contractsJson().addVariantStrategyVariant(ETHENA_KEY, variantName, proxy);
-    }
-
-    function deployEthenaImpl(StandardContracts memory contracts) public {
-        address USDe = constantsJson().getAddress(string.concat(".strategies.", ETHENA_KEY, ".USDe"));
-        address sUSDe = constantsJson().getAddress(string.concat(".strategies.", ETHENA_KEY, ".sUSDe"));
-        address ENAToken = constantsJson().getAddress(string.concat(".strategies.", ETHENA_KEY, ".ENA"));
-        address implementation = address(
-            new EthenaStrategy(
-                contracts.assetGroupRegistry,
-                contracts.accessControl,
-                IERC20Metadata(USDe),
-                IsUSDe(sUSDe),
-                IERC20Metadata(ENAToken),
-                contracts.swapper
-            )
-        );
-        contractsJson().addVariantStrategyImplementation(ETHENA_KEY, implementation);
     }
 
     function _newProxy(address implementation, address proxyAdmin) private returns (address) {

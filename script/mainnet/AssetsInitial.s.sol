@@ -11,7 +11,6 @@ string constant USDC_KEY = "usdc";
 string constant USDT_KEY = "usdt";
 string constant WETH_KEY = "weth";
 string constant DAI_USDC_USDT_KEY = "dai-usdc-usdt";
-string constant USDE_KEY = "usde";
 
 contract AssetsInitial {
     function constantsJson() internal view virtual returns (JsonReader) {}
