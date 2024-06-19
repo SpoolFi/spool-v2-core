@@ -28,6 +28,8 @@ import "../../src/strategies/EthenaStrategy.sol";
 import "../helper/JsonHelper.sol";
 import "./AssetsInitial.s.sol";
 
+import "forge-std/console.sol";
+
 string constant AAVE_V2_KEY = "aave-v2";
 string constant COMPOUND_V2_KEY = "compound-v2";
 string constant CONVEX_BASE_KEY = "convex-base";
