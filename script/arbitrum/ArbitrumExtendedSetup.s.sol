@@ -11,8 +11,6 @@ contract ArbitrumExtendedSetup is Script, DeploySpool, AssetsInitial, Strategies
     JsonReader internal _constantsJson;
     JsonReadWriter internal _contractsJson;
 
-    uint256 internal _deployerPrivateKey;
-
     function run() external virtual {
         init();
 
@@ -24,9 +22,9 @@ contract ArbitrumExtendedSetup is Script, DeploySpool, AssetsInitial, Strategies
     }
 
     function broadcast() public virtual {
-        _deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
-        vm.startBroadcast(_deployerPrivateKey);
+        vm.startBroadcast(deployerPrivateKey);
     }
 
     function init() public virtual {
