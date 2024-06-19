@@ -24,13 +24,12 @@ contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
     }
 
     function init() public virtual {
-        string memory profile = vm.envString("FOUNDRY_PROFILE");
+        string memory environment = vm.envString("ENVIRONMENT");
         require(
-            Strings.equal(profile, "mainnet.production") || Strings.equal(profile, "mainnet.staging"),
-            "Mainnet Foundry profile is not set"
+            Strings.equal(environment, "production") || Strings.equal(environment, "staging"), "Environment is not set"
         );
-        _constantsJson = new JsonReader(vm, string.concat("deploy/", profile, ".constants.json"));
-        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/", profile, ".contracts.json"));
+        _constantsJson = new JsonReader(vm, string.concat("deploy/mainnet.", environment, ".constants.json"));
+        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/mainnet.", environment, ".contracts.json"));
     }
 
     function doSetup(address deployerAddress, uint256 extended) public {
