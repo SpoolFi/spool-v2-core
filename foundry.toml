@@ -24,13 +24,13 @@ arbitrum = "${ARBITRUM_RPC_URL}"
 local-mainnet = "http://localhost:8545"
 
 
-[profile.mainnet-production]
-# FOUNDRY_PROFILE=mainnet-production
+[profile.mainnet-prod]
+# FOUNDRY_PROFILE=mainnet-prod
 # inherits from default profile
 
 # project
-cache_path = 'cache/mainnet-production'
-broadcast = 'broadcast/mainnet-production'
+cache_path = 'cache/mainnet-prod'
+broadcast = 'broadcast/mainnet-prod'
 
 # compiler
 optimizer_runs = 99999
@@ -43,13 +43,13 @@ libraries = [
     'src/strategies/libraries/EthStEthAssetGroupAdapter.sol:EthStEthAssetGroupAdapter:0x1516eb3a54377168b6b184326200f4258C3529dF'
 ]
 
-[profile.sepolia-production]
-# FOUNDRY_PROFILE=sepolia-production
+[profile.sepolia-prod]
+# FOUNDRY_PROFILE=sepolia-prod
 # inherits from default profile
 
 # project
-cache_path = 'cache/sepolia-production'
-broadcast = 'broadcast/sepolia-production'
+cache_path = 'cache/sepolia-prod'
+broadcast = 'broadcast/sepolia-prod'
 
 # compiler
 optimizer_runs = 99999
@@ -60,13 +60,13 @@ libraries = [
     "src/libraries/SpoolUtils.sol:SpoolUtils:0x5049d7d26ab755ca8489ccc30d19e92856e9be72"
 ]
 
-[profile.arbitrum-production]
-# FOUNDRY_PROFILE=arbitrum-production
+[profile.arbitrum-prod]
+# FOUNDRY_PROFILE=arbitrum-prod
 # inherits from default profile
 
 # project
-cache_path = 'cache/arbitrum-production'
-broadcast = 'broadcast/arbitrum-production'
+cache_path = 'cache/arbitrum-prod'
+broadcast = 'broadcast/arbitrum-prod'
 
 # compiler
 optimizer_runs = 99999
