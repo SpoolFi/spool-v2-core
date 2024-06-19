@@ -111,11 +111,6 @@
       "implementation": "0x520AeDDdd3fb45E49ce236Df4c43B6a1a0cc061A",
       "proxy": "0x6EB6251AF926016c60DE17aD976b9C1e2485e1F0"
     },
-    "ethena": {
-      "ethena-usdc": "0x265cc52678887e59D1b66F3D93BBAB7658Bc0337",
-      "ethena-usde": "0xa43DbC866806d0DCdc5f19510de62090B2301d18",
-      "implementation": "0xDd118AEd7643D152708EbFee068aB3eA181F431E"
-    },
     "gearbox-v3": {
       "gearbox-v3-usdc": "0xb4a7fb51D06760B5F622643B7276c003418732bD",
       "gearbox-v3-weth": "0xD92B65d2321076FBAc23FCfC9A9Fd5Ed2E98B758",

@@ -25,12 +25,11 @@ contract AssetsInitial {
     }
 
     function setAssets(IAssetGroupRegistry assetGroupRegistry, UsdPriceFeedManager priceFeedManager) public {
-        string[] memory assetNames = new string[](5);
+        string[] memory assetNames = new string[](4);
         assetNames[0] = DAI_KEY;
         assetNames[1] = USDC_KEY;
         assetNames[2] = USDT_KEY;
         assetNames[3] = WETH_KEY;
-        assetNames[4] = USDE_KEY;
 
         address[] memory assetAddresses = new address[](assetNames.length);
         address[] memory assetPriceAggregators = new address[](assetNames.length);
@@ -74,10 +73,6 @@ contract AssetsInitial {
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         _assetGroups[DAI_KEY] = assetGroupId;
 
-        assetGroup[0] = _assets[USDE_KEY];
-        assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-        _assetGroups[USDE_KEY] = assetGroupId;
-
         assetGroup = new address[](3);
         assetGroup[0] = _assets[DAI_KEY];
         assetGroup[1] = _assets[USDC_KEY];
@@ -93,12 +88,11 @@ contract AssetsInitial {
     }
 
     function loadAssets() public {
-        string[] memory assetNames = new string[](5);
+        string[] memory assetNames = new string[](4);
         assetNames[0] = DAI_KEY;
         assetNames[1] = USDC_KEY;
         assetNames[2] = USDT_KEY;
         assetNames[3] = WETH_KEY;
-        assetNames[4] = USDE_KEY;
 
         for (uint256 i; i < assetNames.length; ++i) {
             _assets[assetNames[i]] = constantsJson().getAddress(string.concat(".assets.", assetNames[i], ".address"));
@@ -119,9 +113,6 @@ contract AssetsInitial {
 
         assetGroup[0] = _assets[WETH_KEY];
         _assetGroups[WETH_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
-
-        assetGroup[0] = _assets[USDE_KEY];
-        _assetGroups[USDE_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
 
         assetGroup = new address[](3);
         assetGroup[0] = _assets[DAI_KEY];
