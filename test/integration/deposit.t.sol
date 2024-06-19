@@ -40,16 +40,6 @@ contract DepositIntegrationTest is IntegrationTestFixture {
         smartVaultManager.syncSmartVault(address(smartVault), true);
     }
 
-    function test_deposit_shouldRevertWhenNothingIsDeposited() public {
-        // Alice deposits
-        vm.startPrank(alice);
-
-        uint256[] memory depositAmounts = Arrays.toArray(0 ether, 0 ether, 0 ether);
-
-        vm.expectRevert(abi.encodeWithSelector(NothingToDeposit.selector));
-        smartVaultManager.deposit(DepositBag(address(smartVault), depositAmounts, alice, address(0), false));
-    }
-
     function test_shouldBeAbleToDeposit() public {
         // Alice deposits
         vm.startPrank(alice);

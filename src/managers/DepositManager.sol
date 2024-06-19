@@ -555,16 +555,9 @@ contract DepositManager is SpoolAccessControllable, IDepositManager {
             SpoolUtils.getStrategyRatiosAtLastDhw(bag2.strategies, _strategyRegistry)
         );
 
-        // update vaults total deposited amounts with current deposit
-        // and check if there is something to deposit
-        uint256 cumulativeDepositAmount;
+        // update total deposited amounts with current deposit
         for (uint256 i; i < bag2.tokens.length; ++i) {
             _vaultDeposits[bag.smartVault][bag2.flushIndex][i] += bag.assets[i];
-            cumulativeDepositAmount += bag.assets[i];
-        }
-        if (cumulativeDepositAmount == 0) {
-            // this is mainly done to prevent misconfiguration of swaps
-            revert NothingToDeposit();
         }
 
         // mint deposit NFT

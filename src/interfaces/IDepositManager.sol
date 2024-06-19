@@ -15,11 +15,6 @@ error InvalidAssetLengths();
 error InvalidNftArrayLength();
 
 /**
- * @notice Used when trying to deposit zero assets into a smart vault.
- */
-error NothingToDeposit();
-
-/**
  * @notice Used when there are no pending deposits to recover.
  * E.g., they were already recovered or flushed.
  */
