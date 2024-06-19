@@ -8,37 +8,39 @@ library BytesUint256Lib {
     /**
      * @dev encode bytes to uint256[]
      * @param data arbitrary bytes
-     * @return result array of uint256 representing bytes
+     * @return array of uint256 representing bytes
      */
-    function encode(bytes memory data) internal pure returns (uint256[] memory result) {
-        assembly {
-            let numChunks := shr(5, add(mload(data), 63))
-            let limit := shl(5, numChunks)
-            result := mload(0x40)
-            mstore(0x40, add(result, limit))
-            mstore(result, sub(numChunks, 1))
-            for { let pos := 32 } lt(pos, limit) { pos := add(pos, 32) } {
-                mstore(add(result, pos), mload(add(data, pos)))
+    function encode(bytes memory data) internal pure returns (uint256[] memory) {
+        uint256 numChunks = (data.length + 31) / 32;
+        uint256[] memory result = new uint256[](numChunks);
+
+        for (uint256 i; i < numChunks; ++i) {
+            uint256 chunk;
+            assembly {
+                chunk := mload(add(data, add(32, mul(i, 32))))
             }
+            result[i] = chunk;
         }
+
+        return result;
     }
 
     /**
      * @dev decode uint256[] to original bytes
      * @param data uint256 array
      * @param originalLength original bytes length
-     * @return result bytes
+     * @return bytes
      */
-    function decode(uint256[] memory data, uint256 originalLength) internal pure returns (bytes memory result) {
-        require((originalLength + 31) >> 5 == data.length);
-        assembly {
-            let limit := shl(5, add(mload(data), 1))
-            result := mload(0x40)
-            mstore(0x40, add(result, shl(5, shr(5, add(originalLength, 63)))))
-            mstore(result, originalLength)
-            for { let pos := 32 } lt(pos, limit) { pos := add(pos, 32) } {
-                mstore(add(result, pos), mload(add(data, pos)))
+    function decode(uint256[] memory data, uint256 originalLength) public pure returns (bytes memory) {
+        bytes memory result = new bytes(originalLength);
+
+        for (uint256 i = 0; i < data.length; i++) {
+            uint256 chunk = data[i];
+            assembly {
+                mstore(add(result, add(32, mul(i, 32))), chunk)
             }
         }
+
+        return result;
     }
 }

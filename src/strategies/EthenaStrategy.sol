@@ -41,9 +41,9 @@ import "../libraries/BytesUint256Lib.sol";
 //              "cooldown" if off:  sUSDe -> USDe => Asset
 
 // Swap slippages
-//      slippages[0] - if equals 1 used as estimation flag, else swapTarget
-//      slippages[1] - bytesLength
-//      slippages[2..n] - swap payload to decode
+//      slippages[1] - if equals 1 used as estimation flag, else swapTarget
+//      slippages[2] - bytesLength
+//      slippages[3..n] - swap payload to decode
 contract EthenaStrategy is Strategy {
     using SafeERC20 for IsUSDe;
     using SafeERC20 for IERC20Metadata;
@@ -82,7 +82,7 @@ contract EthenaStrategy is Strategy {
         _disableInitializers();
         if (
             address(ENAToken_) == address(0) || address(swapper_) == address(0) || address(sUSDe_) == address(0)
-                || address(USDe_) == address(0) || address(priceFeedManager_) == address(0)
+                || address(USDe_) == address(0)
         ) {
             revert ConfigurationAddressZero();
         }
@@ -96,9 +96,9 @@ contract EthenaStrategy is Strategy {
 
     function initialize(string memory strategyName_, uint256 assetGroupId_) external virtual initializer {
         __Strategy_init(strategyName_, assetGroupId_);
-        USDe.approve(address(sUSDe), type(uint256).max);
-        USDe.approve(address(swapper), type(uint256).max);
-        sUSDe.approve(address(swapper), type(uint256).max);
+        USDe.safeApprove(address(sUSDe), type(uint256).max);
+        USDe.safeApprove(address(swapper), type(uint256).max);
+        sUSDe.safeApprove(address(swapper), type(uint256).max);
         lastPreviewRedeem = _previewConstantRedeem();
     }
 
@@ -146,13 +146,15 @@ contract EthenaStrategy is Strategy {
         returns (int256 compoundedYieldPercentage)
     {
         if (swapInfo.length > 0) {
-            (address[] memory tokens, uint256[] memory amounts) = _getProtocolRewardsInternal();
+            uint256 enaBalance = ENAToken.balanceOf(address(this));
 
-            if (amounts[0] > 0) {
+            if (enaBalance > 0) {
+                address[] memory tokensIn = new address[](1);
+                tokensIn[0] = address(ENAToken);
                 address[] memory tokensOut = new address[](1);
                 tokensOut[0] = address(USDe);
-                IERC20Metadata(tokens[0]).safeTransfer(address(swapper), amounts[0]);
-                uint256 swappedAmount = swapper.swap(tokens, swapInfo, tokensOut, address(this))[0];
+                ENAToken.safeTransfer(address(swapper), enaBalance);
+                uint256 swappedAmount = swapper.swap(tokensIn, swapInfo, tokensOut, address(this))[0];
 
                 if (swappedAmount > 0) {
                     uint256 sUSDeBalanceBefore = sUSDe.balanceOf(address(this));
