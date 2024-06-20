@@ -76,7 +76,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
     string config;
 
     function _setConfig() internal virtual {
-        config = vm.readFile(string.concat("deploy/mainnet.production.constants.json"));
+        config = vm.readFile(string.concat("deploy/mainnet-production.constants.json"));
     }
 
     function _deploy(uint256 extended) internal {

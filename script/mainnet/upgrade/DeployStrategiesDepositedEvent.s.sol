@@ -234,127 +234,129 @@ contract DeployStrategiesDepositedEventP1 is MainnetExtendedSetup {
     }
 }
 
-contract DeployStrategiesDepositedEventP2 is MainnetExtendedSetup {
-    // optimizer_runs = 2500
+// vv commented out because `forge coverage` fails on CI when this file has multiple contracts... vv
 
-    function broadcast() public override {
-        _deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-    }
+// contract DeployStrategiesDepositedEventP2 is MainnetExtendedSetup {
+//     // optimizer_runs = 2500
 
-    function execute() public override {
-        // reselialize strategies
-        _contractsJson.reserializeKeyAddress("strategies");
+//     function broadcast() public override {
+//         _deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+//     }
 
-        // deploy new implementations for strategies
-        redeployCurve3pool();
-        redeployMetamorphoGauntlet();
-    }
+//     function execute() public override {
+//         // reselialize strategies
+//         _contractsJson.reserializeKeyAddress("strategies");
 
-    function redeployCurve3pool() internal {
-        uint256 assetGroupId = assetGroups(DAI_USDC_USDT_KEY);
+//         // deploy new implementations for strategies
+//         redeployCurve3pool();
+//         redeployMetamorphoGauntlet();
+//     }
 
-        vm.broadcast(_deployerPrivateKey);
-        Curve3poolStrategy implementation = new Curve3poolStrategy(
-            assetGroupRegistry, spoolAccessControl, assetGroupId, swapper
-        );
+//     function redeployCurve3pool() internal {
+//         uint256 assetGroupId = assetGroups(DAI_USDC_USDT_KEY);
 
-        _contractsJson.addVariantStrategyImplementation(CURVE_3POOL_KEY, address(implementation));
+//         vm.broadcast(_deployerPrivateKey);
+//         Curve3poolStrategy implementation = new Curve3poolStrategy(
+//             assetGroupRegistry, spoolAccessControl, assetGroupId, swapper
+//         );
 
-        // upgrade curve-3pool:
-        // - proxy
-    }
+//         _contractsJson.addVariantStrategyImplementation(CURVE_3POOL_KEY, address(implementation));
 
-    function redeployMetamorphoGauntlet() internal {
-        vm.broadcast(_deployerPrivateKey);
-        MetamorphoStrategy implementation = new MetamorphoStrategy(assetGroupRegistry, spoolAccessControl, swapper);
+//         // upgrade curve-3pool:
+//         // - proxy
+//     }
 
-        _contractsJson.addVariantStrategyImplementation(METAMORPHO_GAUNTLET, address(implementation));
+//     function redeployMetamorphoGauntlet() internal {
+//         vm.broadcast(_deployerPrivateKey);
+//         MetamorphoStrategy implementation = new MetamorphoStrategy(assetGroupRegistry, spoolAccessControl, swapper);
 
-        // upgrade metamorpho-gauntlet:
-        // - metamorpho-gauntlet-dai-core
-        // - metamorpho-gauntlet-lrt-core
-        // - metamorpho-gauntlet-mkr-blended
-        // - metamorpho-gauntlet-usdt-prime
-    }
-}
+//         _contractsJson.addVariantStrategyImplementation(METAMORPHO_GAUNTLET, address(implementation));
 
-contract DeployStrategiesDepositedEventP3 is MainnetExtendedSetup {
-    // optimizer_runs = 800
+//         // upgrade metamorpho-gauntlet:
+//         // - metamorpho-gauntlet-dai-core
+//         // - metamorpho-gauntlet-lrt-core
+//         // - metamorpho-gauntlet-mkr-blended
+//         // - metamorpho-gauntlet-usdt-prime
+//     }
+// }
 
-    function broadcast() public override {
-        _deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-    }
+// contract DeployStrategiesDepositedEventP3 is MainnetExtendedSetup {
+//     // optimizer_runs = 800
 
-    function execute() public override {
-        // reselialize strategies
-        _contractsJson.reserializeKeyAddress("strategies");
+//     function broadcast() public override {
+//         _deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+//     }
 
-        // deploy new implementations for strategies
-        redeployConvex3pool();
-        redeployConvexStFrxeth();
-    }
+//     function execute() public override {
+//         // reselialize strategies
+//         _contractsJson.reserializeKeyAddress("strategies");
 
-    function redeployConvex3pool() internal {
-        uint256 assetGroupId = assetGroups(DAI_USDC_USDT_KEY);
+//         // deploy new implementations for strategies
+//         redeployConvex3pool();
+//         redeployConvexStFrxeth();
+//     }
 
-        IBooster booster =
-            IBooster(_constantsJson.getAddress(string.concat(".strategies.", CONVEX_BASE_KEY, ".booster")));
+//     function redeployConvex3pool() internal {
+//         uint256 assetGroupId = assetGroups(DAI_USDC_USDT_KEY);
 
-        vm.broadcast(_deployerPrivateKey);
-        Convex3poolStrategy implementation = new Convex3poolStrategy(
-            assetGroupRegistry, spoolAccessControl, assetGroupId, swapper, booster
-        );
+//         IBooster booster =
+//             IBooster(_constantsJson.getAddress(string.concat(".strategies.", CONVEX_BASE_KEY, ".booster")));
 
-        _contractsJson.addVariantStrategyImplementation(CONVEX_3POOL_KEY, address(implementation));
+//         vm.broadcast(_deployerPrivateKey);
+//         Convex3poolStrategy implementation = new Convex3poolStrategy(
+//             assetGroupRegistry, spoolAccessControl, assetGroupId, swapper, booster
+//         );
 
-        // upgrade convex-3pool:
-        // - proxy
-    }
+//         _contractsJson.addVariantStrategyImplementation(CONVEX_3POOL_KEY, address(implementation));
 
-    function redeployConvexStFrxeth() internal {
-        uint256 assetGroupId = assetGroups(WETH_KEY);
+//         // upgrade convex-3pool:
+//         // - proxy
+//     }
 
-        vm.broadcast(_deployerPrivateKey);
-        ConvexStFrxEthStrategy implementation = new ConvexStFrxEthStrategy(
-            assetGroupRegistry, spoolAccessControl, assetGroupId, swapper
-        );
+//     function redeployConvexStFrxeth() internal {
+//         uint256 assetGroupId = assetGroups(WETH_KEY);
 
-        _contractsJson.addVariantStrategyImplementation(CONVEX_STFRXETH_KEY, address(implementation));
+//         vm.broadcast(_deployerPrivateKey);
+//         ConvexStFrxEthStrategy implementation = new ConvexStFrxEthStrategy(
+//             assetGroupRegistry, spoolAccessControl, assetGroupId, swapper
+//         );
 
-        // upgrade convex-stfrxeth:
-        // - proxy
-    }
-}
+//         _contractsJson.addVariantStrategyImplementation(CONVEX_STFRXETH_KEY, address(implementation));
 
-contract DeployStrategiesDepositedEventP4 is MainnetExtendedSetup {
-    // optimizer_runs = 250
+//         // upgrade convex-stfrxeth:
+//         // - proxy
+//     }
+// }
 
-    function broadcast() public override {
-        _deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-    }
+// contract DeployStrategiesDepositedEventP4 is MainnetExtendedSetup {
+//     // optimizer_runs = 250
 
-    function execute() public override {
-        // reselialize strategies
-        _contractsJson.reserializeKeyAddress("strategies");
+//     function broadcast() public override {
+//         _deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+//     }
 
-        // deploy new implementations for strategies
-        redeployConvexAlusd();
-    }
+//     function execute() public override {
+//         // reselialize strategies
+//         _contractsJson.reserializeKeyAddress("strategies");
 
-    function redeployConvexAlusd() internal {
-        uint256 assetGroupId = assetGroups(DAI_USDC_USDT_KEY);
+//         // deploy new implementations for strategies
+//         redeployConvexAlusd();
+//     }
 
-        IBooster booster =
-            IBooster(_constantsJson.getAddress(string.concat(".strategies.", CONVEX_BASE_KEY, ".booster")));
+//     function redeployConvexAlusd() internal {
+//         uint256 assetGroupId = assetGroups(DAI_USDC_USDT_KEY);
 
-        vm.broadcast(_deployerPrivateKey);
-        ConvexAlusdStrategy implementation = new ConvexAlusdStrategy(
-            assetGroupRegistry, spoolAccessControl, assetGroupId, swapper, booster, 1
-        );
+//         IBooster booster =
+//             IBooster(_constantsJson.getAddress(string.concat(".strategies.", CONVEX_BASE_KEY, ".booster")));
 
-        _contractsJson.addVariantStrategyImplementation(CONVEX_ALUSD_KEY, address(implementation));
+//         vm.broadcast(_deployerPrivateKey);
+//         ConvexAlusdStrategy implementation = new ConvexAlusdStrategy(
+//             assetGroupRegistry, spoolAccessControl, assetGroupId, swapper, booster, 1
+//         );
 
-        // upgrade convex-alusd:
-        // - proxy
-    }
-}
+//         _contractsJson.addVariantStrategyImplementation(CONVEX_ALUSD_KEY, address(implementation));
+
+//         // upgrade convex-alusd:
+//         // - proxy
+//     }
+// }

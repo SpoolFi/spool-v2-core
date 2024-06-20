@@ -14,7 +14,7 @@ contract E2eArbitrumTest is ForkTestFixtureDeployment {
     MockAllocationProvider public mockAllocationProvider;
 
     function _setConfig() internal override {
-        config = vm.readFile("deploy/arbitrum.constants.json");
+        config = vm.readFile("deploy/arbitrum-production.constants.json");
     }
 
     function setUp() public {

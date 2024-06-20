@@ -77,7 +77,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
     string config;
 
     function _setConfig() internal virtual {
-        config = vm.readFile("deploy/arbitrum.constants.json");
+        config = vm.readFile("deploy/arbitrum-production.constants.json");
     }
 
     function _deploy() internal {
