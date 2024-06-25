@@ -43,7 +43,7 @@ contract MainnetExtendedSetup is Script, DeploySpool, AssetsInitial, StrategiesI
     function doSetup() public {
         loadSpool();
 
-        loadAssets(assetGroupRegistry);
+        loadAssets(assetGroupRegistry, Extended.CURRENT);
     }
 
     function execute() public virtual {}

@@ -20,7 +20,7 @@ contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
 
         vm.startBroadcast(deployerPrivateKey);
 
-        doSetup(deployerAddress, type(uint256).max);
+        doSetup(deployerAddress, Extended.CURRENT);
     }
 
     function init() public virtual {
@@ -33,10 +33,10 @@ contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
         _contractsJson = new JsonReadWriter(vm, string.concat("deploy/", profile, ".contracts.json"));
     }
 
-    function doSetup(address deployerAddress, uint256 extended) public {
+    function doSetup(address deployerAddress, Extended extended) public {
         deploySpool();
 
-        setupAssets(assetGroupRegistry, usdPriceFeedManager);
+        setupAssets(assetGroupRegistry, usdPriceFeedManager, extended);
 
         deployStrategies(
             spoolAccessControl, assetGroupRegistry, swapper, address(proxyAdmin), strategyRegistry, extended

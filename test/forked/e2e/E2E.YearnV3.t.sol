@@ -16,7 +16,7 @@ contract E2E_YearnV3 is ForkTestFixtureDeployment {
     }
 
     function setUp() public {
-        _deploy(4);
+        _deploy(Extended.METAMORPHO_YEARN_V3);
 
         mockAllocationProvider = new MockAllocationProvider();
         vm.startPrank(_spoolAdmin);

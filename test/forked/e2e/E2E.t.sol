@@ -14,7 +14,7 @@ contract E2eMainnetTest is ForkTestFixtureDeployment {
     MockAllocationProvider public mockAllocationProvider;
 
     function setUp() public {
-        _deploy(0); // deploy just initial strategies
+        _deploy(Extended.INITIAL); // deploy just initial strategies
 
         mockAllocationProvider = new MockAllocationProvider();
         vm.startPrank(_spoolAdmin);

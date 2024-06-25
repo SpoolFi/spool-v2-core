@@ -13,24 +13,43 @@ string constant WETH_KEY = "weth";
 string constant DAI_USDC_USDT_KEY = "dai-usdc-usdt";
 string constant USDE_KEY = "usde";
 
+enum Extended {
+    INITIAL,
+    OETH,
+    CONVEX_STETH_FRXETH,
+    GEARBOX_V3,
+    METAMORPHO_YEARN_V3,
+    USDE,
+    CURRENT
+}
+
 contract AssetsInitial {
     function constantsJson() internal view virtual returns (JsonReader) {}
 
     mapping(string => address) internal _assets;
     mapping(string => uint256) internal _assetGroups;
 
-    function setupAssets(IAssetGroupRegistry assetGroupRegistry, UsdPriceFeedManager priceFeedManager) public {
-        setAssets(assetGroupRegistry, priceFeedManager);
-        createAssetGroups(assetGroupRegistry);
+    function setupAssets(
+        IAssetGroupRegistry assetGroupRegistry,
+        UsdPriceFeedManager priceFeedManager,
+        Extended extended
+    ) public {
+        setAssets(assetGroupRegistry, priceFeedManager, extended);
+        createAssetGroups(assetGroupRegistry, extended);
     }
 
-    function setAssets(IAssetGroupRegistry assetGroupRegistry, UsdPriceFeedManager priceFeedManager) public {
-        string[] memory assetNames = new string[](5);
+    function setAssets(IAssetGroupRegistry assetGroupRegistry, UsdPriceFeedManager priceFeedManager, Extended extended)
+        public
+    {
+        uint256 numAssets = getNumAssets(extended);
+        string[] memory assetNames = new string[](numAssets);
         assetNames[0] = DAI_KEY;
         assetNames[1] = USDC_KEY;
         assetNames[2] = USDT_KEY;
         assetNames[3] = WETH_KEY;
-        assetNames[4] = USDE_KEY;
+        if (extended >= Extended.USDE) {
+            assetNames[4] = USDE_KEY;
+        }
 
         address[] memory assetAddresses = new address[](assetNames.length);
         address[] memory assetPriceAggregators = new address[](assetNames.length);
@@ -54,7 +73,7 @@ contract AssetsInitial {
         }
     }
 
-    function createAssetGroups(IAssetGroupRegistry assetGroupRegistry) public {
+    function createAssetGroups(IAssetGroupRegistry assetGroupRegistry, Extended extended) public {
         address[] memory assetGroup = new address[](1);
         uint256 assetGroupId;
 
@@ -74,10 +93,6 @@ contract AssetsInitial {
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         _assetGroups[DAI_KEY] = assetGroupId;
 
-        assetGroup[0] = _assets[USDE_KEY];
-        assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-        _assetGroups[USDE_KEY] = assetGroupId;
-
         assetGroup = new address[](3);
         assetGroup[0] = _assets[DAI_KEY];
         assetGroup[1] = _assets[USDC_KEY];
@@ -85,27 +100,37 @@ contract AssetsInitial {
         assetGroup = ArraysHelper.sort(assetGroup);
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         _assetGroups[DAI_USDC_USDT_KEY] = assetGroupId;
+
+        if (extended >= Extended.USDE) {
+            assetGroup = new address[](1);
+            assetGroup[0] = _assets[USDE_KEY];
+            assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+            _assetGroups[USDE_KEY] = assetGroupId;
+        }
     }
 
-    function loadAssets(IAssetGroupRegistry assetGroupRegistry) public {
-        loadAssets();
-        loadAssetGroups(assetGroupRegistry);
+    function loadAssets(IAssetGroupRegistry assetGroupRegistry, Extended extended) public {
+        loadAssets(extended);
+        loadAssetGroups(assetGroupRegistry, extended);
     }
 
-    function loadAssets() public {
-        string[] memory assetNames = new string[](5);
+    function loadAssets(Extended extended) public {
+        uint256 numAssets = getNumAssets(extended);
+        string[] memory assetNames = new string[](numAssets);
         assetNames[0] = DAI_KEY;
         assetNames[1] = USDC_KEY;
         assetNames[2] = USDT_KEY;
         assetNames[3] = WETH_KEY;
-        assetNames[4] = USDE_KEY;
+        if (extended >= Extended.USDE) {
+            assetNames[4] = USDE_KEY;
+        }
 
         for (uint256 i; i < assetNames.length; ++i) {
             _assets[assetNames[i]] = constantsJson().getAddress(string.concat(".assets.", assetNames[i], ".address"));
         }
     }
 
-    function loadAssetGroups(IAssetGroupRegistry assetGroupRegistry) public {
+    function loadAssetGroups(IAssetGroupRegistry assetGroupRegistry, Extended extended) public {
         address[] memory assetGroup = new address[](1);
 
         assetGroup[0] = _assets[DAI_KEY];
@@ -120,15 +145,25 @@ contract AssetsInitial {
         assetGroup[0] = _assets[WETH_KEY];
         _assetGroups[WETH_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
 
-        assetGroup[0] = _assets[USDE_KEY];
-        _assetGroups[USDE_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
-
         assetGroup = new address[](3);
         assetGroup[0] = _assets[DAI_KEY];
         assetGroup[1] = _assets[USDC_KEY];
         assetGroup[2] = _assets[USDT_KEY];
         assetGroup = ArraysHelper.sort(assetGroup);
         _assetGroups[DAI_USDC_USDT_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
+
+        if (extended >= Extended.USDE) {
+            assetGroup = new address[](1);
+            assetGroup[0] = _assets[USDE_KEY];
+            _assetGroups[USDE_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
+        }
+    }
+
+    function getNumAssets(Extended extended) internal pure returns (uint256 numAssets) {
+        numAssets = 4; // initial asset length
+        if (extended >= Extended.USDE) {
+            numAssets++;
+        }
     }
 
     function test_mock_AssetsInitial() external pure {}

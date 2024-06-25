@@ -16,7 +16,7 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
     }
 
     function setUp() public {
-        _deploy(4); // deploy strategies up to Metamorhpo Gauntlet
+        _deploy(Extended.METAMORPHO_YEARN_V3); // deploy strategies up to Metamorhpo Gauntlet
 
         mockAllocationProvider = new MockAllocationProvider();
         vm.startPrank(_spoolAdmin);
