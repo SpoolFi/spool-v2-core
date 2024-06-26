@@ -34,6 +34,13 @@
                 "address": "0xa569d910839Ae8865Da8F8e70FfFb0cBA869F961",
                 "timeLimit": 86580
             }
+        },
+        "pyusd": {
+            "address": "0x6c3ea9036406852006290770BEdFcAbA0e23A0e8",
+            "priceAggregator": {
+                "address": "0x8f1dF6D7F2db73eECE86a18b4381F4707b918FB1",
+                "timeLimit": 86580
+            }
         }
     },
     "strategies": {
