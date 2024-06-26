@@ -32,7 +32,7 @@
             "address": "0x4c9EDD5852cd905f086C759E8383e09bff1E68B3",
             "priceAggregator": {
                 "address": "0xa569d910839Ae8865Da8F8e70FfFb0cBA869F961",
-                "timeLimit": 3780
+                "timeLimit": 86580
             }
         }
     },
