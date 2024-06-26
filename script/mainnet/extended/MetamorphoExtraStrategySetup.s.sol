@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "../MainnetExtendedSetup.s.sol";
 
-contract MetamorphoGauntletStrategySetup is MainnetExtendedSetup {
+contract MetamorphoExtraStrategySetup is MainnetExtendedSetup {
     function execute() public override {
         StandardContracts memory contracts = StandardContracts({
             accessControl: spoolAccessControl,
@@ -16,9 +16,11 @@ contract MetamorphoGauntletStrategySetup is MainnetExtendedSetup {
         // reserialize strategies
         contractsJson().reserializeKeyAddress("strategies");
 
-        MetamorphoStrategy implementation = deployMetamorphoImplementation(contracts);
+        MetamorphoStrategy implementation = MetamorphoStrategy(
+            contractsJson().getAddress(string.concat(".strategies.", METAMORPHO_GAUNTLET, ".implementation"))
+        );
 
-        deployMetamorphoGauntlet(contracts, implementation, true, 0);
+        deployMetamorphoExtra(contracts, implementation, false);
     }
 
     function test_mock_MetamorphoGauntletStrategySetup() external pure {}

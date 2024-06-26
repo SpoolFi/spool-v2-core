@@ -12,6 +12,7 @@ string constant USDT_KEY = "usdt";
 string constant WETH_KEY = "weth";
 string constant DAI_USDC_USDT_KEY = "dai-usdc-usdt";
 string constant USDE_KEY = "usde";
+string constant PYUSD_KEY = "pyusd";
 
 enum Extended {
     INITIAL,
@@ -20,6 +21,7 @@ enum Extended {
     GEARBOX_V3,
     METAMORPHO_YEARN_V3,
     USDE,
+    METAMORPHO_EXTRA,
     CURRENT
 }
 
@@ -49,6 +51,9 @@ contract AssetsInitial {
         assetNames[3] = WETH_KEY;
         if (extended >= Extended.USDE) {
             assetNames[4] = USDE_KEY;
+        }
+        if (extended >= Extended.METAMORPHO_EXTRA) {
+            assetNames[5] = PYUSD_KEY;
         }
 
         address[] memory assetAddresses = new address[](assetNames.length);
@@ -101,11 +106,17 @@ contract AssetsInitial {
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         _assetGroups[DAI_USDC_USDT_KEY] = assetGroupId;
 
+        assetGroup = new address[](1);
         if (extended >= Extended.USDE) {
-            assetGroup = new address[](1);
             assetGroup[0] = _assets[USDE_KEY];
             assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
             _assetGroups[USDE_KEY] = assetGroupId;
+        }
+
+        if (extended >= Extended.METAMORPHO_EXTRA) {
+            assetGroup[0] = _assets[PYUSD_KEY];
+            assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+            _assetGroups[PYUSD_KEY] = assetGroupId;
         }
     }
 
@@ -123,6 +134,9 @@ contract AssetsInitial {
         assetNames[3] = WETH_KEY;
         if (extended >= Extended.USDE) {
             assetNames[4] = USDE_KEY;
+        }
+        if (extended >= Extended.METAMORPHO_EXTRA) {
+            assetNames[5] = PYUSD_KEY;
         }
 
         for (uint256 i; i < assetNames.length; ++i) {
@@ -152,16 +166,24 @@ contract AssetsInitial {
         assetGroup = ArraysHelper.sort(assetGroup);
         _assetGroups[DAI_USDC_USDT_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
 
+        assetGroup = new address[](1);
         if (extended >= Extended.USDE) {
-            assetGroup = new address[](1);
             assetGroup[0] = _assets[USDE_KEY];
             _assetGroups[USDE_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
+        }
+
+        if (extended >= Extended.METAMORPHO_EXTRA) {
+            assetGroup[0] = _assets[PYUSD_KEY];
+            _assetGroups[PYUSD_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
         }
     }
 
     function getNumAssets(Extended extended) internal pure returns (uint256 numAssets) {
         numAssets = 4; // initial asset length
         if (extended >= Extended.USDE) {
+            numAssets++;
+        }
+        if (extended >= Extended.METAMORPHO_EXTRA) {
             numAssets++;
         }
     }
