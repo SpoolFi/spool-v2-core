@@ -824,8 +824,9 @@ contract StrategiesInitial {
         contractsJson().addVariantStrategyImplementation(METAMORPHO_STEAKHOUSE, address(implementation));
 
         // create variant proxies
-        string[] memory variants = new string[](1);
+        string[] memory variants = new string[](2);
         variants[0] = "usdc";
+        variants[1] = "pyusd";
 
         _deployMetamorpho(METAMORPHO_STEAKHOUSE, implementation, variants, contracts, register);
     }
@@ -839,7 +840,7 @@ contract StrategiesInitial {
 
         // create variant proxies
         string[] memory variants = new string[](1);
-        variants[0] = "weth";
+        variants[0] = "flagship-eth";
 
         _deployMetamorpho(METAMORPHO_BPROTOCOL, implementation, variants, contracts, register);
     }
@@ -851,8 +852,8 @@ contract StrategiesInitial {
 
         // create variant proxies
         string[] memory variants = new string[](2);
-        variants[0] = "flagship-eth";
-        variants[1] = "flagship-usdt";
+        variants[0] = "weth";
+        variants[1] = "usdt";
 
         _deployMetamorpho(METAMORPHO_RE7, implementation, variants, contracts, register);
     }

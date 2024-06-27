@@ -56,6 +56,14 @@ contract AssetsInitial {
             assetNames[5] = PYUSD_KEY;
         }
 
+        _setAssets(assetGroupRegistry, priceFeedManager, assetNames);
+    }
+
+    function _setAssets(
+        IAssetGroupRegistry assetGroupRegistry,
+        UsdPriceFeedManager priceFeedManager,
+        string[] memory assetNames
+    ) internal {
         address[] memory assetAddresses = new address[](assetNames.length);
         address[] memory assetPriceAggregators = new address[](assetNames.length);
         uint256[] memory assetTimeLimits = new uint256[](assetNames.length);
@@ -79,45 +87,35 @@ contract AssetsInitial {
     }
 
     function createAssetGroups(IAssetGroupRegistry assetGroupRegistry, Extended extended) public {
-        address[] memory assetGroup = new address[](1);
-        uint256 assetGroupId;
+        _createAssetGroup(assetGroupRegistry, ArraysHelper.toArray(WETH_KEY));
 
-        assetGroup[0] = _assets[WETH_KEY];
-        assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-        _assetGroups[WETH_KEY] = assetGroupId;
+        _createAssetGroup(assetGroupRegistry, ArraysHelper.toArray(USDC_KEY));
 
-        assetGroup[0] = _assets[USDC_KEY];
-        assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-        _assetGroups[USDC_KEY] = assetGroupId;
+        _createAssetGroup(assetGroupRegistry, ArraysHelper.toArray(USDT_KEY));
 
-        assetGroup[0] = _assets[USDT_KEY];
-        assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-        _assetGroups[USDT_KEY] = assetGroupId;
+        _createAssetGroup(assetGroupRegistry, ArraysHelper.toArray(DAI_KEY));
 
-        assetGroup[0] = _assets[DAI_KEY];
-        assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-        _assetGroups[DAI_KEY] = assetGroupId;
+        _createAssetGroup(assetGroupRegistry, ArraysHelper.toArray(DAI_KEY, USDC_KEY, USDT_KEY));
 
-        assetGroup = new address[](3);
-        assetGroup[0] = _assets[DAI_KEY];
-        assetGroup[1] = _assets[USDC_KEY];
-        assetGroup[2] = _assets[USDT_KEY];
-        assetGroup = ArraysHelper.sort(assetGroup);
-        assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-        _assetGroups[DAI_USDC_USDT_KEY] = assetGroupId;
-
-        assetGroup = new address[](1);
         if (extended >= Extended.USDE) {
-            assetGroup[0] = _assets[USDE_KEY];
-            assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-            _assetGroups[USDE_KEY] = assetGroupId;
+            _createAssetGroup(assetGroupRegistry, ArraysHelper.toArray(USDE_KEY));
         }
 
         if (extended >= Extended.METAMORPHO_EXTRA) {
-            assetGroup[0] = _assets[PYUSD_KEY];
-            assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
-            _assetGroups[PYUSD_KEY] = assetGroupId;
+            _createAssetGroup(assetGroupRegistry, ArraysHelper.toArray(PYUSD_KEY));
         }
+    }
+
+    function _createAssetGroup(IAssetGroupRegistry assetGroupRegistry, string[] memory keys) internal {
+        address[] memory assetGroup = new address[](keys.length);
+        string memory key;
+        for (uint256 i; i < keys.length; ++i) {
+            assetGroup[i] = _assets[keys[i]];
+            key = string.concat(key, keys[i], (i < keys.length - 1) ? "-" : "");
+        }
+        assetGroup = ArraysHelper.sort(assetGroup);
+        uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+        _assetGroups[key] = assetGroupId;
     }
 
     function loadAssets(IAssetGroupRegistry assetGroupRegistry, Extended extended) public {

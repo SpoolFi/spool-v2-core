@@ -272,6 +272,59 @@
                 "rewards": [],
                 "apy": 60900000000,
                 "underlyingAsset": "usdt"
+            },
+            "weth-prime": {
+                "vault": "0x2371e134e3455e0593363cBF89d3b6cf53740618",
+                "rewards": [],
+                "apy": 13600000000,
+                "underlyingAsset": "weth"
+            },
+            "usdc-prime": {
+                "vault": "0xdd0f28e19C1780eb6396170735D45153D261490d",
+                "rewards": [],
+                "apy": 74000000000,
+                "underlyingAsset": "usdc"
+            }
+        },
+        "metamorpho-steakhouse": {
+            "usdc": {
+                "vault": "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB",
+                "rewards": [],
+                "apy": 70000000000,
+                "underlyingAsset": "usdc"
+            },
+            "pyusd": {
+                "vault": "0xbEEF02e5E13584ab96848af90261f0C8Ee04722a",
+                "rewards": [],
+                "apy": 39100000000,
+                "underlyingAsset": "pyusd"
+            }
+        },
+        "metamorpho-bprotocol": {
+            "flagship-eth": {
+                "vault": "0x38989BBA00BDF8181F4082995b3DEAe96163aC5D",
+                "rewards": [],
+                "apy": 16000000000,
+                "underlyingAsset": "weth"
+            }
+        },
+        "metamorpho-re7": {
+            "weth": {
+                "vault": "0x78Fc2c2eD1A4cDb5402365934aE5648aDAd094d0",
+                "rewards": [
+                    "0xc55126051B22eBb829D00368f4B12Bde432de5Da",
+                    "0x320623b8E4fF03373931769A31Fc52A4E78B5d70",
+                    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                    "0x8207c1FfC5B6804F6024322CcF34F29c3541Ae26"
+                ],
+                "apy": 59300000000,
+                "underlyingAsset": "weth"
+            },
+            "usdt": {
+                "vault": "0x95EeF579155cd2C5510F312c8fA39208c3Be01a8",
+                "rewards": [],
+                "apy": 124100000000,
+                "underlyingAsset": "usdt"
             }
         },
         "ethena": {

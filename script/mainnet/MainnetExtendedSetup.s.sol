@@ -40,7 +40,7 @@ contract MainnetExtendedSetup is Script, DeploySpool, AssetsInitial, StrategiesI
         _contractsJson = new JsonReadWriter(vm, string.concat("deploy/", profile, ".contracts.json"));
     }
 
-    function doSetup() public {
+    function doSetup() public virtual {
         loadSpool();
 
         loadAssets(assetGroupRegistry, Extended.CURRENT);
