@@ -48,6 +48,7 @@
     "implementation": "0x3D9fbCDd24197EbD4Eaf40Ae712C5b7139d75448",
     "proxy": "0xC30018cbee9C8141F620e950CC9637c7A2eF2c9e"
   },
+  "SmartVaultBeneficiaryFactoryHpf": "0x34e51Cc3Db85F2B8bB1E2E31a9131cb9737228a9",
   "SmartVaultFactory": "0x8049Fc710D4a1Deea6a6bCeF772C166CEd7A82F5",
   "SmartVaultFactoryHpf": "0x362599Cdc123e3FFEB7c0812d769128D180667E8",
   "SmartVaultManager": {

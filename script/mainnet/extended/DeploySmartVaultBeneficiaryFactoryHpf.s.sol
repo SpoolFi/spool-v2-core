@@ -41,7 +41,7 @@ contract DeploySmartVaultBeneficiaryFactoryHpf is MainnetExtendedSetup {
             beneficiaryFee
         );
 
-        smartVaultFactoryHpf.transferOwnership(spoolAdmin);
+        smartVaultBeneficiaryFactoryHpf.transferOwnership(spoolAdmin);
         vm.stopBroadcast();
 
         contractsJson().add("SmartVaultBeneficiaryFactoryHpf", address(smartVaultBeneficiaryFactoryHpf));
