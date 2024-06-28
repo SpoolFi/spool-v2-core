@@ -868,7 +868,6 @@ contract StrategiesInitial {
         for (uint256 i; i < variants.length; ++i) {
             string memory variantName = _getVariantName(key, variants[i]);
 
-            address variant = _newProxy(address(implementation), contracts.proxyAdmin);
             string memory assetKey =
                 constantsJson().getString(string.concat(".strategies.", key, ".", variants[i], ".underlyingAsset"));
             uint256 assetGroupId = assetGroups(assetKey);
@@ -877,15 +876,27 @@ contract StrategiesInitial {
                 IERC4626(constantsJson().getAddress(string.concat(".strategies.", key, ".", variants[i], ".vault")));
             address[] memory rewards =
                 constantsJson().getAddressArray(string.concat(".strategies.", key, ".", variants[i], ".rewards"));
-            MetamorphoStrategy(variant).initialize(
-                variantName, assetGroupId, vault, 10 ** (vault.decimals() * 2), rewards
-            );
+            address variant = _createAndInitializeMetamorpho(contracts, implementation, variantName, assetGroupId, vault, rewards);
             if (register) {
                 _registerStrategyVariant(key, variants[i], variant, assetGroupId, contracts.strategyRegistry);
             } else {
                 contractsJson().addVariantStrategyVariant(key, variantName, variant);
             }
         }
+    }
+
+    function _createAndInitializeMetamorpho(
+        StandardContracts memory contracts,
+        MetamorphoStrategy implementation,
+        string memory variantName,
+        uint256 assetGroupId,
+        IERC4626 vault,
+        address[] memory rewards
+    ) internal virtual returns(address variant) {
+        variant = _newProxy(address(implementation), contracts.proxyAdmin);
+        MetamorphoStrategy(variant).initialize(
+            variantName, assetGroupId, vault, 10 ** (vault.decimals() * 2), rewards
+        );
     }
 
     function deployYearnV3WithGauge(StandardContracts memory contracts, bool register) public {
