@@ -123,12 +123,19 @@
       "implementation": "0xb170F18dca153752b2F35304e5ea581373095f4e",
       "implementation-airdrop": "0x64a21Ca82fe09712af8CeC6C5fED62e97Bae33A1"
     },
-    "metamorpho-gauntlet": {
+    "metamorpho": {
       "implementation": "0xDb19e40bD45920b09Ac7fF2778d4A1cA90C0A772",
+      "metamorpho-bprotocol-flagship-eth": "0xBa57985052Dc49075e353b359c7A8Cc47807F60d",
       "metamorpho-gauntlet-dai-core": "0x05d9A563cb7bFC58082935ccb44FEe9dF19D1ee5",
       "metamorpho-gauntlet-lrt-core": "0x1D060A1B17a7FF1929133B202a7Ec1D9B90A1965",
       "metamorpho-gauntlet-mkr-blended": "0xAfC182fcFbdA42F639CCD4518aEcccE5Ea777440",
-      "metamorpho-gauntlet-usdt-prime": "0x35A73350c199b25618cFF7E9f33eC2EbcD1F0180"
+      "metamorpho-gauntlet-usdc-prime": "0x3c33C929379D98eb83F1A3fc46A432767Cb32A3a",
+      "metamorpho-gauntlet-usdt-prime": "0x35A73350c199b25618cFF7E9f33eC2EbcD1F0180",
+      "metamorpho-gauntlet-weth-prime": "0x55cB0D9c32453ecD84aB628cf3A320aB8997fae2",
+      "metamorpho-re7-usdt": "0x9A7582DD1946dCCF000B155a88649C64228fAf24",
+      "metamorpho-re7-weth": "0xee7fA506CDC3E3698087B25dE72eeAC37131119d",
+      "metamorpho-steakhouse-pyusd": "0x92e19a03468356FEd850EAF6cA5f25d8d6Ebf5AD",
+      "metamorpho-steakhouse-usdc": "0x173F7C86757bFD9Aea8D218Ac03E2Bc787F31fE4"
     },
     "morpho-aave-v2": {
       "implementation": "0xdD55DAb8A52b1E2983a9c7297650DBA857dB4e3b",
