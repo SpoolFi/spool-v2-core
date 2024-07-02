@@ -9,6 +9,7 @@ import "@openzeppelin-upgradeable/token/ERC1155/utils/ERC1155ReceiverUpgradeable
 import "@openzeppelin-upgradeable/utils/MulticallUpgradeable.sol";
 
 import "./managers/SmartVaultManager.sol";
+import "./libraries/ListMap.sol";
 
 /**
  * @dev MetaVault is a contract which facilitates investment in various SmartVaults.
@@ -27,6 +28,8 @@ import "./managers/SmartVaultManager.sol";
 /// Doesn't look like there is a risk of loosing funds even in case this how wallet will be compromised
 contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable, ERC1155ReceiverUpgradeable, MulticallUpgradeable {
     using SafeERC20Upgradeable for IERC20MetadataUpgradeable;
+    using ListMap for ListMap.Address;
+    using ListMap for ListMap.Uint256;
 
     // ========================== EVENTS ==========================
     event Deposit(address indexed user, uint256 amount);
@@ -34,6 +37,13 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable, ERC1155Receiver
     event Withdraw(address indexed user, uint256 indexed withdrawalCycle, uint256 amount);
 
     // ========================== ERRORS ==========================
+    error PendingDeposits();
+    error UnsupportedSmartVault();
+    error NothingToClaim(uint256 nftId);
+    error NothingToWithdraw();
+    error NothingToFulfill(uint256 nftId);
+    error NftTransferForbidden();
+
     /**
      * @dev deposit into Spool is prohibited if there are pending redeem requests to fulfill
      */
@@ -64,28 +74,39 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable, ERC1155Receiver
 
     // ========================== STATE ==========================
 
+    ListMap.Address internal _smartVaults;
+
+    uint256 public depositedSharesTotal;
+
+    mapping(address => ListMap.Uint256) internal _smartVaultToDepositNftIds;
+
+    ListMap.Uint256 internal _depositNftIds;
+    ListMap.Uint256 internal _withdrawalNftIds;
+
     /**
      * @dev all assets available for management by MetaVault.
-     * MetVault asset balance can be greater than availableAssets, since funds for withdrawals
-     * are not included into it.
+     * asset.balanceOf(address(this)) can be greater than availableAssets, since funds for withdrawals are excluded.
      */
     uint256 public availableAssets;
     /**
-     * @dev current withdrawal cycle. Used to process batch of pending redeem requests of users
+     * @dev current withdrawal cycle. Used to process batch of pending redeem requests.
      */
     uint256 public currentWithdrawalIndex;
     /**
-     * @dev last withdrawal cycle, where all redeem requests were fulfilled for users with corresponding withdrawal index
+     * @dev last withdrawal cycle, where all redeem requests were fulfilled
      */
     uint256 public lastFulfilledWithdrawalIndex;
     /**
-     * @dev total amount of assets requested by all users for particular withdrawal index
+     * @dev total amount of shares redeemed by users in particular withdrawal cycle
      */
-    mapping(uint256 => uint256) public withdrawalIndexToRequestedAmount;
+    mapping(uint256 => uint256) public withdrawalIndexToRedeemedShares;
+    mapping(uint256 => uint256) public withdrawalIndexToWithdrawnAssets;
+
+    mapping(uint256 => mapping(address => uint256)) public withdrawalIndexToSmartVaultToWithdrawalNftId;
     /**
-     * @dev amount of assets user requested in specific withdrawal cycle
+     * @dev amount of shares user redeemed in specific withdrawal cycle
      */
-    mapping(address => mapping(uint256 => uint256)) public userToWithdrawalIndexToRequestedAmount;
+    mapping(address => mapping(uint256 => uint256)) public userToWithdrawalIndexToRedeemedShares;
 
     // ========================== CONSTRUCTOR ==========================
 
@@ -101,34 +122,51 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable, ERC1155Receiver
         __Ownable2Step_init();
         __Multicall_init();
         __ERC20_init(name_, symbol_);
-        currentWithdrawalIndex = 1;
         asset.safeApprove(address(smartVaultManager), type(uint256).max);
+    }
+
+    // ==================== SMART VAULTS MANAGEMENT ====================
+
+    function smartVaults() external returns (address[] memory) {
+        return _smartVaults.list;
+    }
+
+    function smartVaultSupported(address vault) external returns (bool) {
+        return _smartVaults.includes[vault];
+    }
+
+    function smartVaultIsValid(address vault) external returns (bool) {
+        return _validateSmartVault(vault);
+    }
+
+    function addSmartVaults(address[] calldata vaults) external onlyOwner {
+        for (uint256 i; i < vaults.length; i++) {
+            _validateSmartVault(vaults[i]);
+        }
+        _smartVaults.addList(vaults);
+    }
+
+    function removeSmartVaults(address[] calldata vaults) external onlyOwner {
+        _smartVaults.removeList(vaults);
+    }
+
+    function _validateSmartVault(address vault) internal view returns (bool) {
+        // TODO: add validation of smart vaults
+        // only performance fee + matching underlying asset
+        vault;
+        return true;
     }
 
     // ========================== USER FACING ==========================
 
-    /// TODO: assume for now that price is constant
-    /// Remove this completely or implement some kind of pricing?
-    /// In case of none yield-bearing MetaVault it does make sense only in case of real loss
-    /// otherwise 1:1 is perfectly fine
-    function convertToAssets(uint256 amount) public pure returns (uint256) {
-        return amount;
-    }
-
-    function convertToShares(uint256 amount) public pure returns (uint256) {
-        return amount;
-    }
-
     /**
      * @dev deposit asset into MetaVault
      * @param amount of asset
-     * @return shares minted to user
      */
-    function deposit(uint256 amount) external returns (uint256 shares) {
+    function deposit(uint256 amount) external {
         /// MetaVault has now more funds to manage
         availableAssets += amount;
-        shares = convertToShares(amount);
-        _mint(msg.sender, shares);
+        _mint(msg.sender, amount);
         asset.safeTransferFrom(msg.sender, address(this), amount);
         emit Deposit(msg.sender, amount);
     }
@@ -139,14 +177,12 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable, ERC1155Receiver
      */
     function redeemRequest(uint256 shares) external {
         _burn(msg.sender, shares);
-        /// TODO: always subtract 1 wei from assets to return?
-        /// would allow to avoid inconsistency on withdrawal and pumpAssets() might be omitted completely
-        uint256 assetsToWithdraw = convertToAssets(shares);
+        uint256 index = currentWithdrawalIndex;
         /// accumulate redeems for all users for current withdrawal cycle
-        withdrawalIndexToRequestedAmount[currentWithdrawalIndex] += assetsToWithdraw;
+        withdrawalIndexToRedeemedShares[index] += shares;
         /// accumulate redeems for particular user for current withdrawal cycle
-        userToWithdrawalIndexToRequestedAmount[msg.sender][currentWithdrawalIndex] += assetsToWithdraw;
-        emit RedeemRequest(msg.sender, currentWithdrawalIndex, shares);
+        userToWithdrawalIndexToRedeemedShares[msg.sender][index] += shares;
+        emit RedeemRequest(msg.sender, index, shares);
     }
 
     /**
@@ -157,9 +193,11 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable, ERC1155Receiver
         /// user can withdraw funds only for fulfilled withdrawal cycle
         if (lastFulfilledWithdrawalIndex < index) revert RedeemRequestNotFulfilled();
         /// amount of funds user get from specified withdrawal cycle
-        amount = userToWithdrawalIndexToRequestedAmount[msg.sender][index];
+        amount = userToWithdrawalIndexToRedeemedShares[msg.sender][index] * withdrawalIndexToWithdrawnAssets[index]
+            / withdrawalIndexToRedeemedShares[index];
+        if (amount == 0) revert NothingToWithdraw();
         /// delete entry for user to disable repeated withdrawal
-        delete userToWithdrawalIndexToRequestedAmount[msg.sender][index];
+        delete userToWithdrawalIndexToRedeemedShares[msg.sender][index];
         asset.safeTransfer(msg.sender, amount);
         emit Withdraw(msg.sender, index, amount);
     }
@@ -167,45 +205,61 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable, ERC1155Receiver
     // ========================== WITHDRAWAL MANAGEMENT ==========================
 
     /**
-     * @dev owner of SmartVault fulfills all redeem requests for last unfulfilled withdrawal cycle
-     * Aggregated amount for all requests will be excluded from availableAssets
+     * @dev redeem all shares from last unfulfilled withdrawal cycle
      */
-    function fulfillWithdraw() external onlyOwner {
-        /// we fulfill last unprocessed withdrawal cycle
-        lastFulfilledWithdrawalIndex++;
-        /// it is not allowed for lastFulfilledWithdrawalIndex to exceed currentWithdrawalIndex
-        /// and in this way avoid deposit block
-        if (lastFulfilledWithdrawalIndex > currentWithdrawalIndex) revert LastWithdrawalIndexOutbound();
-        /// automatically increment currentWithdrawalIndex
-        if (lastFulfilledWithdrawalIndex == currentWithdrawalIndex) {
-            incrementWithdrawalIndex();
+    function initiateWithdrawal() internal {
+        uint256 shares = withdrawalIndexToRedeemedShares[lastFulfilledWithdrawalIndex + 1];
+        uint256 index = currentWithdrawalIndex;
+        address[] memory smartVaults = _smartVaults.list;
+        for (uint256 i; i < smartVaults.length; i++) {
+            // all deposits should be DHWed and SVTs are claimed
+            if (_smartVaultToDepositNftIds[smartVaults[i]].list.length > 0) revert PendingDeposits();
+            uint256 SVTBalance = ISmartVault(smartVaults[i]).balanceOf(address(this));
+            uint256 SVTToRedeem = SVTBalance * shares / depositedSharesTotal;
+            RedeemBag memory bag = RedeemBag({
+                smartVault: smartVaults[i],
+                shares: SVTToRedeem,
+                nftIds: new uint256[](0),
+                nftAmounts: new uint256[](0)
+            });
+            withdrawalIndexToSmartVaultToWithdrawalNftId[index][smartVaults[i]] =
+                smartVaultManager.redeem(bag, address(this), false);
         }
-        /// Aggregated amount for all requests will be excluded from availableAssets
-        availableAssets -= withdrawalIndexToRequestedAmount[lastFulfilledWithdrawalIndex];
-    }
-
-    /**
-     * @dev owner of SmartVault should call this before processing the batch of redeem requests.
-     * Otherwise it could lead to situation, where users will wait indefinite amount of time, if new redeem requests are created
-     */
-    function incrementWithdrawalIndex() public onlyOwner {
+        depositedSharesTotal -= shares;
         currentWithdrawalIndex++;
     }
 
-    /// TODO: could implement something like that to fix small inconsistencies
-    /// If we use 1:1 pricing strategy and expect really small discrepancies in amount of underlying asset
-    /// which will be get back by burning SVTs, it might be appropriate to use this tiny hack
-    function pumpAssets(uint256 amount) external onlyOwner {
-        availableAssets += amount;
-        asset.safeTransferFrom(msg.sender, address(this), amount);
+    /**
+     * @dev fulfill redeem requests for last unfulfilled withdrawal cycle
+     */
+    function finalizeWithdrawal() external {
+        /// we fulfill last unprocessed withdrawal cycle
+        lastFulfilledWithdrawalIndex++;
+        uint256 index = lastFulfilledWithdrawalIndex;
+        /// it is not allowed for lastFulfilledWithdrawalIndex to exceed currentWithdrawalIndex and in this way avoid deposit block
+        if (index > currentWithdrawalIndex) revert LastWithdrawalIndexOutbound();
+        address[] memory vaults = _smartVaults.list;
+        /// aggregate withdrawn assets from all smart vaults
+        uint256 withdrawnAssets;
+        for (uint256 i; i < vaults.length; i++) {
+            uint256[] memory nftIds = new uint256[](1);
+            nftIds[0] = withdrawalIndexToSmartVaultToWithdrawalNftId[index][vaults[i]];
+            uint256[] memory nftAmounts = new uint256[](1);
+            nftAmounts[0] = ISmartVault(vaults[i]).balanceOfFractional(address(this), nftIds[0]);
+            if (nftAmounts[0] == 0) revert NothingToFulfill(nftIds[0]);
+            (uint256[] memory withdrawn,) =
+                smartVaultManager.claimWithdrawal(vaults[i], nftIds, nftAmounts, address(this));
+            /// aggregate withdrawn assets from all smart vaults
+            withdrawnAssets += withdrawn[0];
+        }
+        withdrawalIndexToWithdrawnAssets[index] = withdrawnAssets;
     }
 
     // ========================== SPOOL INTERACTIONS ==========================
 
-    /// TODO: Somehow validate that SmartVault is not yield bearing? - all yield goes to Spool and SmartVault owner.
-    /// Probably, there is no need for this. Because even if some yield goes to MetaVault it wouldn't matter.
-    /// MetaVault should not be yield-bearing for user.
-    function spoolDeposit(address smartVault, uint256 amount, bool doFlush) external onlyOwner returns (uint256) {
+    function spoolDeposit(address vault, uint256 amount) external onlyOwner returns (uint256 nftId) {
+        /// deposits are only possible for managed smart vaults
+        if (!_smartVaults.includes[vault]) revert UnsupportedSmartVault();
         if (
             /// if more than one withdrawal cycle is not fulfilled
             lastFulfilledWithdrawalIndex + 1 < currentWithdrawalIndex
@@ -213,35 +267,48 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable, ERC1155Receiver
             /// and there are some funds requested in it
             || (
                 lastFulfilledWithdrawalIndex + 1 == currentWithdrawalIndex
-                    && withdrawalIndexToRequestedAmount[currentWithdrawalIndex] > 0
+                    && withdrawalIndexToRedeemedShares[currentWithdrawalIndex] > 0
             )
         ) {
             /// we block any deposit to push SmartVault owner to fulfill requested redeems
             revert PendingRedeemRequests();
         }
+
         availableAssets -= amount;
 
         uint256[] memory assets = new uint256[](1);
         assets[0] = amount;
         DepositBag memory bag = DepositBag({
-            smartVault: smartVault,
+            smartVault: vault,
             assets: assets,
             receiver: address(this),
-            doFlush: doFlush,
+            doFlush: false,
             referral: address(0)
         });
 
-        return smartVaultManager.deposit(bag);
+        nftId = smartVaultManager.deposit(bag);
+
+        _smartVaultToDepositNftIds[vault].add(nftId);
+        depositedSharesTotal += amount;
     }
 
-    function claimSmartVaultTokens(address smartVault, uint256[] calldata nftIds, uint256[] calldata nftAmounts)
-        external
-        onlyOwner
-        returns (uint256)
-    {
-        return smartVaultManager.claimSmartVaultTokens(smartVault, nftIds, nftAmounts);
+    function spoolClaimSmartVaultTokens(address vault, uint256[] calldata nftIds) external returns (uint256 amount) {
+        // will revert if some nftId is missing
+        _smartVaultToDepositNftIds[vault].removeList(nftIds);
+        _depositNftIds.removeList(nftIds);
+
+        uint256[] memory nftAmounts = new uint256[](nftIds.length);
+
+        for (uint256 i; i < nftIds.length; i++) {
+            nftAmounts[i] = ISmartVault(vault).balanceOfFractional(address(this), nftIds[i]);
+            // make sure there is actual balance for given nft id
+            if (nftAmounts[i] == 0) revert NothingToClaim(nftIds[i]);
+        }
+
+        amount = smartVaultManager.claimSmartVaultTokens(vault, nftIds, nftAmounts);
     }
 
+    //
     function spoolRedeem(RedeemBag calldata bag, bool doFlush) external onlyOwner returns (uint256) {
         return smartVaultManager.redeem(bag, address(this), doFlush);
     }
@@ -253,6 +320,9 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable, ERC1155Receiver
     {
         uint256 withdrawnAssets = smartVaultManager.redeemFast(bag, withdrawalSlippages)[0];
         availableAssets += withdrawnAssets;
+        if (bag.nftIds.length > 0) {
+            _depositNftIds.removeList(bag.nftIds);
+        }
         return withdrawnAssets;
     }
 
@@ -264,6 +334,7 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable, ERC1155Receiver
         (uint256[] memory withdrawn,) = smartVaultManager.claimWithdrawal(smartVault, nftIds, nftAmounts, address(this));
         uint256 withdrawnAssets = withdrawn[0];
         availableAssets += withdrawnAssets;
+        _withdrawalNftIds.removeList(nftIds);
         return withdrawnAssets;
     }
 
@@ -280,17 +351,40 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable, ERC1155Receiver
 
     /// ========================== IERC-1155 RECEIVER ==========================
 
-    function onERC1155Received(address, address, uint256, uint256, bytes calldata) external pure returns (bytes4) {
+    function onERC1155Received(address operator, address from, uint256 id, uint256 value, bytes calldata data)
+        external
+        acceptOnlyMinted(from)
+        returns (bytes4)
+    {
+        _handleReceive(id);
         /// bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))
         return 0xf23a6e61;
     }
 
-    function onERC1155BatchReceived(address, address, uint256[] calldata, uint256[] calldata, bytes calldata)
-        external
-        pure
-        returns (bytes4)
-    {
+    function onERC1155BatchReceived(
+        address operator,
+        address from,
+        uint256[] calldata ids,
+        uint256[] calldata values,
+        bytes calldata data
+    ) external acceptOnlyMinted(from) returns (bytes4) {
+        for (uint256 i; i < ids.length; i++) {
+            _handleReceive(ids[i]);
+        }
         /// bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))
         return 0xbc197c81;
+    }
+
+    modifier acceptOnlyMinted(address from) {
+        if (from != address(0)) revert NftTransferForbidden();
+        _;
+    }
+
+    function _handleReceive(uint256 id) internal {
+        if (id > MAXIMAL_DEPOSIT_ID) {
+            _withdrawalNftIds.add(id);
+        } else {
+            _depositNftIds.add(id);
+        }
     }
 }
