@@ -41,6 +41,7 @@ string constant CURVE_STETH_KEY = "curve-steth";
 string constant CURVE_OETH_KEY = "curve-oeth";
 string constant CURVE_STFRXETH_KEY = "curve-stfrxeth";
 string constant GEARBOX_V3_KEY = "gearbox-v3";
+string constant METAMORPHO = "metamorpho";
 string constant METAMORPHO_GAUNTLET = "metamorpho-gauntlet";
 string constant METAMORPHO_STEAKHOUSE = "metamorpho-steakhouse";
 string constant METAMORPHO_BPROTOCOL = "metamorpho-bprotocol";
@@ -776,6 +777,7 @@ contract StrategiesInitial {
         // create implementation contract
         implementation =
             new MetamorphoStrategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper);
+        contractsJson().addVariantStrategyImplementation(METAMORPHO, address(implementation));
     }
 
     function deployMetamorphoExtra(StandardContracts memory contracts, MetamorphoStrategy implementation, bool register)
@@ -796,8 +798,6 @@ contract StrategiesInitial {
         bool register,
         uint256 round
     ) public {
-        contractsJson().addVariantStrategyImplementation(METAMORPHO_GAUNTLET, address(implementation));
-
         // create variant proxies
         string[] memory variants;
         if (round == 0) {
@@ -821,8 +821,6 @@ contract StrategiesInitial {
         MetamorphoStrategy implementation,
         bool register
     ) public {
-        contractsJson().addVariantStrategyImplementation(METAMORPHO_STEAKHOUSE, address(implementation));
-
         // create variant proxies
         string[] memory variants = new string[](2);
         variants[0] = "usdc";
@@ -836,8 +834,6 @@ contract StrategiesInitial {
         MetamorphoStrategy implementation,
         bool register
     ) public {
-        contractsJson().addVariantStrategyImplementation(METAMORPHO_BPROTOCOL, address(implementation));
-
         // create variant proxies
         string[] memory variants = new string[](1);
         variants[0] = "flagship-eth";
@@ -848,8 +844,6 @@ contract StrategiesInitial {
     function deployMetamorphoRe7(StandardContracts memory contracts, MetamorphoStrategy implementation, bool register)
         public
     {
-        contractsJson().addVariantStrategyImplementation(METAMORPHO_RE7, address(implementation));
-
         // create variant proxies
         string[] memory variants = new string[](2);
         variants[0] = "weth";
@@ -876,11 +870,12 @@ contract StrategiesInitial {
                 IERC4626(constantsJson().getAddress(string.concat(".strategies.", key, ".", variants[i], ".vault")));
             address[] memory rewards =
                 constantsJson().getAddressArray(string.concat(".strategies.", key, ".", variants[i], ".rewards"));
-            address variant = _createAndInitializeMetamorpho(contracts, implementation, variantName, assetGroupId, vault, rewards);
+            address variant =
+                _createAndInitializeMetamorpho(contracts, implementation, variantName, assetGroupId, vault, rewards);
             if (register) {
-                _registerStrategyVariant(key, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+                _registerStrategyVariant(METAMORPHO, variants[i], variant, assetGroupId, contracts.strategyRegistry);
             } else {
-                contractsJson().addVariantStrategyVariant(key, variantName, variant);
+                contractsJson().addVariantStrategyVariant(METAMORPHO, variantName, variant);
             }
         }
     }
@@ -892,11 +887,9 @@ contract StrategiesInitial {
         uint256 assetGroupId,
         IERC4626 vault,
         address[] memory rewards
-    ) internal virtual returns(address variant) {
+    ) internal virtual returns (address variant) {
         variant = _newProxy(address(implementation), contracts.proxyAdmin);
-        MetamorphoStrategy(variant).initialize(
-            variantName, assetGroupId, vault, 10 ** (vault.decimals() * 2), rewards
-        );
+        MetamorphoStrategy(variant).initialize(variantName, assetGroupId, vault, 10 ** (vault.decimals() * 2), rewards);
     }
 
     function deployYearnV3WithGauge(StandardContracts memory contracts, bool register) public {

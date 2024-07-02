@@ -20,9 +20,8 @@ contract MetamorphoExtraStrategySetup is MainnetExtendedSetup {
         // reserialize strategies
         contractsJson().reserializeKeyAddress("strategies");
 
-        MetamorphoStrategy implementation = MetamorphoStrategy(
-            contractsJson().getAddress(string.concat(".strategies.", METAMORPHO_GAUNTLET, ".implementation"))
-        );
+        MetamorphoStrategy implementation =
+            MetamorphoStrategy(contractsJson().getAddress(string.concat(".strategies.", METAMORPHO, ".implementation")));
 
         deployMetamorphoExtra(contracts, implementation, false);
     }
@@ -34,9 +33,10 @@ contract MetamorphoExtraStrategySetup is MainnetExtendedSetup {
         uint256 assetGroupId,
         IERC4626 vault,
         address[] memory rewards
-    ) internal override returns(address variant) {
+    ) internal override returns (address variant) {
         vm.startBroadcast(_deployerPrivateKey);
-        variant = super._createAndInitializeMetamorpho(contracts, implementation, variantName, assetGroupId, vault, rewards);
+        variant =
+            super._createAndInitializeMetamorpho(contracts, implementation, variantName, assetGroupId, vault, rewards);
         vm.stopBroadcast();
     }
 
