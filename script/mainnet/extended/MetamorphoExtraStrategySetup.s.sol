@@ -39,6 +39,4 @@ contract MetamorphoExtraStrategySetup is MainnetExtendedSetup {
             super._createAndInitializeMetamorpho(contracts, implementation, variantName, assetGroupId, vault, rewards);
         vm.stopBroadcast();
     }
-
-    function test_mock_MetamorphoGauntletStrategySetup() external pure {}
 }

@@ -306,6 +306,12 @@
                 "rewards": [],
                 "apy": 16000000000,
                 "underlyingAsset": "weth"
+            },
+            "flagship-usdt": {
+                "vault": "0x2C25f6C25770fFEC5959D34B94Bf898865e5D6b1",
+                "rewards": [],
+                "apy": 60900000000,
+                "underlyingAsset": "usdt"
             }
         },
         "metamorpho-re7": {
@@ -319,12 +325,6 @@
                 ],
                 "apy": 59300000000,
                 "underlyingAsset": "weth"
-            },
-            "usdt": {
-                "vault": "0x95EeF579155cd2C5510F312c8fA39208c3Be01a8",
-                "rewards": [],
-                "apy": 124100000000,
-                "underlyingAsset": "usdt"
             }
         },
         "ethena": {
