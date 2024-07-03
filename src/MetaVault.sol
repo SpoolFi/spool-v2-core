@@ -284,6 +284,8 @@ contract MetaVault is Ownable2StepUpgradeable, ERC20Upgradeable, ERC1155Receiver
             || (
                 lastFulfilledWithdrawalIndex + 1 == currentWithdrawalIndex
                     && withdrawalIndexToRedeemedShares[currentWithdrawalIndex] > 0
+                // we should not block deposit if not enough assets were already deposited
+                && withdrawalIndexToRedeemedShares[currentWithdrawalIndex] < depositedSharesTotal
             )
         ) {
             /// we block any deposit to push SmartVault owner to fulfill requested redeems
