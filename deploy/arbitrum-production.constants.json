@@ -2,30 +2,30 @@
     "assets": {
         "dai": {
             "address": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
-            "priceAggregator": { 
+            "priceAggregator": {
                 "address": "0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB",
                 "timeLimit": 86580
             }
         },
         "usdc": {
             "address": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-            "priceAggregator": { 
+            "priceAggregator": {
                 "address": "0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3",
                 "timeLimit": 86580
             }
         },
         "usdt": {
             "address": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
-            "priceAggregator": { 
+            "priceAggregator": {
                 "address": "0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7",
                 "timeLimit": 86580
             }
         },
         "weth": {
             "address": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-            "priceAggregator": { 
+            "priceAggregator": {
                 "address": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
-                "timeLimit": 86580 
+                "timeLimit": 86580
             }
         }
     },
@@ -70,6 +70,7 @@
         "gamma-camelot": {
             "camelotV3Router": "0x1F721E2E82F6676FCE4eA07A5958cF098D339e18",
             "weth-usdc": {
+                "clearing": "0xba58521e31E795d1AB1f27656bc12C8a9EDCFad8",
                 "hypervisor": "0xd7Ef5Ac7fd4AAA7994F3bc1D273eAb1d1013530E",
                 "nitroPool": "0x84EDB15BcBf6818879C6FDf26A69700D43100A74",
                 "narrow": {
