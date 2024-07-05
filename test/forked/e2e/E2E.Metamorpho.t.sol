@@ -67,7 +67,7 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
 
         address[] memory strategies;
         {
-            address metamorphoStrategy = _getStrategyAddress(METAMORPHO_GAUNTLET, assetGroupId);
+            address metamorphoStrategy = _getStrategyAddress(METAMORPHO, assetGroupId);
             address aaveV2Strategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupId);
 
             strategies = Arrays.toArray(metamorphoStrategy, aaveV2Strategy);
@@ -133,7 +133,7 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
 
         address[] memory strategies;
         {
-            address metamorphoStrategy = _getStrategyAddress(METAMORPHO_GAUNTLET, assetGroupId);
+            address metamorphoStrategy = _getStrategyAddress(METAMORPHO, assetGroupId);
             address aaveV2Strategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupId);
 
             strategies = Arrays.toArray(metamorphoStrategy, aaveV2Strategy);
@@ -199,7 +199,7 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
 
         address[] memory strategies;
         {
-            address metamorphoStrategy = _getStrategyAddress(METAMORPHO_GAUNTLET, assetGroupId);
+            address metamorphoStrategy = _getStrategyAddress(METAMORPHO, assetGroupId);
             address aaveV2Strategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupId);
 
             strategies = Arrays.toArray(metamorphoStrategy, aaveV2Strategy);
@@ -265,7 +265,7 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
 
         address[] memory strategies;
         {
-            address metamorphoStrategy = _getStrategyAddress(METAMORPHO_GAUNTLET, assetGroupId);
+            address metamorphoStrategy = _getStrategyAddress(METAMORPHO, assetGroupId);
             address rEthHoldingStrategy = _getStrategyAddress(RETH_HOLDING_KEY, assetGroupId);
 
             strategies = Arrays.toArray(rEthHoldingStrategy, metamorphoStrategy);
@@ -328,7 +328,7 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
     function test_reallocate_dai() public {
         uint256 assetGroupId = _getAssetGroupId(DAI_KEY);
 
-        address metamorphoStrategy = _getStrategyAddress(METAMORPHO_GAUNTLET, assetGroupId);
+        address metamorphoStrategy = _getStrategyAddress(METAMORPHO, assetGroupId);
         address aaveV2Strategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupId);
 
         address[] memory strategies = Arrays.toArray(metamorphoStrategy, aaveV2Strategy);
@@ -386,7 +386,7 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
     function test_reallocate_usdc() public {
         uint256 assetGroupId = _getAssetGroupId(USDC_KEY);
 
-        address metamorphoStrategy = _getStrategyAddress(METAMORPHO_GAUNTLET, assetGroupId);
+        address metamorphoStrategy = _getStrategyAddress(METAMORPHO, assetGroupId);
         address aaveV2Strategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupId);
 
         address[] memory strategies = Arrays.toArray(metamorphoStrategy, aaveV2Strategy);
@@ -444,7 +444,7 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
     function test_reallocate_usdt() public {
         uint256 assetGroupId = _getAssetGroupId(USDT_KEY);
 
-        address metamorphoStrategy = _getStrategyAddress(METAMORPHO_GAUNTLET, assetGroupId);
+        address metamorphoStrategy = _getStrategyAddress(METAMORPHO, assetGroupId);
         address aaveV2Strategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupId);
 
         address[] memory strategies = Arrays.toArray(metamorphoStrategy, aaveV2Strategy);
@@ -503,7 +503,7 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
         uint256 assetGroupId = _getAssetGroupId(WETH_KEY);
 
         address rEthHoldingStrategy = _getStrategyAddress(RETH_HOLDING_KEY, assetGroupId);
-        address metamorphoStrategy = _getStrategyAddress(METAMORPHO_GAUNTLET, assetGroupId);
+        address metamorphoStrategy = _getStrategyAddress(METAMORPHO, assetGroupId);
 
         address[] memory strategies = Arrays.toArray(rEthHoldingStrategy, metamorphoStrategy);
 
