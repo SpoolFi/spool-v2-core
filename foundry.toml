@@ -83,3 +83,10 @@ libraries = [
     "src/libraries/SpoolUtils.sol:SpoolUtils:0x9a6a0820738f6f18f39f9e7109fea44de85bd468",
     "src/strategies/arbitrum/libraries/GammaCamelotPriceHelper.sol:GammaCamelotPriceHelper:0x1847118d72d1c48c37c5927f7fe89a79bcce5b5f"
 ]
+
+[profile.ci]
+# FOUNDRY_PROFILE=ci
+# inherits from default profile
+
+# project
+script = 'no-script'
