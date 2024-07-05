@@ -18,7 +18,7 @@ contract MetamorphoGauntletStrategySetup is MainnetExtendedSetup {
 
         MetamorphoStrategy implementation = deployMetamorphoImplementation(contracts);
 
-        deployMetamorphoGauntlet(contracts, implementation, true, 0);
+        deployMetamorpho(contracts, implementation, false, 0);
     }
 
     function test_mock_MetamorphoGauntletStrategySetup() external pure {}
