@@ -128,6 +128,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
+     * @notice SmartVault fees
+     */
+    function getSmartVaultFees(address smartVault) external view returns (SmartVaultFees memory) {
+        return _smartVaultFees[smartVault];
+    }
+
+    /**
      * @notice SmartVault strategies
      */
     function strategies(address smartVault) external view returns (address[] memory) {

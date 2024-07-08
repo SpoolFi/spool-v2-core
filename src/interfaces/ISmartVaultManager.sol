@@ -130,6 +130,13 @@ interface ISmartVaultManager is ISmartVaultRegistry {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /**
+     * @notice Get smartVault fees
+     * @param smartVault Smart vault.
+     * @return SmartVaultFees
+     */
+    function getSmartVaultFees(address smartVault) external view returns (SmartVaultFees memory);
+
+    /**
      * @notice Gets do-hard-work indexes.
      * @param smartVault Smart vault.
      * @param flushIndex Flush index.

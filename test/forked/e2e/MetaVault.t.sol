@@ -86,7 +86,14 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         _dealTokens(owner);
 
         vm.startPrank(owner);
-        address metaVaultImpl = address(new MetaVault(address(_smartVaultManager), address(usdc)));
+        address metaVaultImpl = address(
+            new MetaVault(
+                _smartVaultManager,
+                IERC20MetadataUpgradeable(address(usdc)),
+                _deploySpool.spoolAccessControl(),
+                _deploySpool.assetGroupRegistry()
+            )
+        );
         MetaVault metaVault = MetaVault(address(new ERC1967Proxy(metaVaultImpl, "")));
         metaVault.initialize("MetaVault", "M");
         vm.stopPrank();
@@ -99,86 +106,91 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.stopPrank();
 
         vm.startPrank(user1);
-        metaVault.deposit(100e6);
+        metaVault.mint(100e6);
         assertEq(metaVault.balanceOf(user1), 100e6);
         assertEq(metaVault.availableAssets(), 100e6);
+        assertEq(metaVault.depositedSharesTotal(), 0);
         assertEq(usdc.balanceOf(address(metaVault)), 100e6);
         vm.stopPrank();
 
-        vm.startPrank(owner);
-        vm.expectRevert(MetaVault.UnsupportedSmartVault.selector);
-        metaVault.spoolDeposit(address(vault1), 80e6, true);
         {
+            vm.startPrank(owner);
             address[] memory v = new address[](2);
             v[0] = address(vault1);
             v[1] = address(vault2);
-            metaVault.addSmartVaults(v);
+            uint256[] memory a = new uint256[](2);
+            a[0] = 20_00;
+            a[1] = 80_00;
+            metaVault.addSmartVaults(v, a);
             assertEq(metaVault.getSmartVaults(), v);
+            vm.stopPrank();
         }
-        assertEq(metaVault.depositedSharesTotal(), 0);
-        metaVault.spoolDeposit(address(vault1), 60e6, true);
-        assertEq(metaVault.availableAssets(), 40e6);
-        assertEq(usdc.balanceOf(address(metaVault)), 40e6);
-        assertEq(metaVault.depositedSharesTotal(), 60e6);
-        metaVault.spoolDeposit(address(vault2), 20e6, true);
-        assertEq(metaVault.availableAssets(), 20e6);
-        assertEq(usdc.balanceOf(address(metaVault)), 20e6);
-        assertEq(metaVault.depositedSharesTotal(), 80e6);
-        vm.stopPrank();
 
+        // flush deposit
+        metaVault.flush();
+        _flushVaults(vaults);
         _dhw(strategies);
+        _syncVaults(vaults);
+        metaVault.sync();
+
+        assertEq(metaVault.availableAssets(), 0);
+        assertEq(usdc.balanceOf(address(metaVault)), 0);
+        assertEq(metaVault.depositedSharesTotal(), 100e6);
+
+        uint256 withdrawalIndex = metaVault.currentWithdrawalIndex();
+        uint256 svts1Before = vault1.balanceOf(address(metaVault));
+        uint256 svts2Before = vault2.balanceOf(address(metaVault));
+        assertTrue(svts1Before > 0);
+        assertTrue(svts2Before > 0);
+
         {
             vm.startPrank(user1);
-            metaVault.redeemRequest(20e6);
+            metaVault.redeem(20e6);
             uint256 currentWithdrawalIndex = metaVault.currentWithdrawalIndex();
             uint256 totalRequested = metaVault.withdrawalIndexToRedeemedShares(currentWithdrawalIndex);
             uint256 userRequested = metaVault.userToWithdrawalIndexToRedeemedShares(user1, currentWithdrawalIndex);
             assertEq(20e6, userRequested);
             assertEq(totalRequested, userRequested);
-            assertEq(metaVault.availableAssets(), 20e6);
-            assertEq(metaVault.balanceOf(user1), 80e6);
             vm.expectRevert(MetaVault.RedeemRequestNotFulfilled.selector);
             // user cannot withdraw if request is not fulfilled
             metaVault.withdraw(currentWithdrawalIndex);
             vm.stopPrank();
-            vm.startPrank(owner);
-            // owner cannot deposit if there is pending redeem request
-            vm.expectRevert(MetaVault.PendingRedeemRequests.selector);
-            metaVault.spoolDeposit(address(vault1), 20e6, true);
-            vm.stopPrank();
         }
 
-        vm.startPrank(owner);
-        vm.expectRevert(MetaVault.PendingDeposits.selector);
-        metaVault.initiateWithdrawal();
-        uint256 withdrawalIndex = metaVault.currentWithdrawalIndex();
-        metaVault.spoolClaimSmartVaultTokens(address(vault1), metaVault.getSmartVaultDepositNftIds(address(vault1)));
-        metaVault.spoolClaimSmartVaultTokens(address(vault2), metaVault.getSmartVaultDepositNftIds(address(vault2)));
-        uint256 svts1Before = vault1.balanceOf(address(metaVault));
-        uint256 svts2Before = vault2.balanceOf(address(metaVault));
-        metaVault.initiateWithdrawal();
+        // flush withdrawal
+        metaVault.flush();
+
+        assertTrue(vault1.balanceOf(address(metaVault)) > 0);
+        assertTrue(vault2.balanceOf(address(metaVault)) > 0);
+        assertEq(metaVault.getSmartVaultWithdrawalNftIds(address(vault1)).length, 1);
+        assertEq(metaVault.getSmartVaultWithdrawalNftIds(address(vault2)).length, 1);
+
+        assertApproxEqAbs(
+            vault2.balanceOf(address(metaVault)) * 100_00 / vault1.balanceOf(address(metaVault)),
+            metaVault.smartVaultToAllocation(address(vault2)) * 100_00
+                / metaVault.smartVaultToAllocation(address(vault1)),
+            1
+        );
         assertEq(withdrawalIndex + 1, metaVault.currentWithdrawalIndex());
-        vm.stopPrank();
         assertEq(metaVault.getSmartVaultWithdrawalNftIds(address(vault1)).length, 1);
         assertEq(metaVault.getSmartVaultWithdrawalNftIds(address(vault2)).length, 1);
 
         _flushVaults(vaults);
         _dhw(strategies);
+        _syncVaults(vaults);
 
         {
-            vm.startPrank(owner);
             uint256 lastFulfilledWithdrawalIndex = metaVault.lastFulfilledWithdrawalIndex();
-            metaVault.finalizeWithdrawal();
+            metaVault.sync();
             uint256 svts1Withdrawn = svts1Before - vault1.balanceOf(address(metaVault));
             uint256 svts2Withdrawn = svts2Before - vault2.balanceOf(address(metaVault));
             assertEq(svts1Withdrawn * 100 / svts1Before, svts2Withdrawn * 100 / svts2Before);
-            assertEq(svts1Withdrawn * 100 / svts1Before, 20 * 100 / 80);
+            assertEq(svts1Withdrawn * 100 / svts1Before, 20);
 
             assertEq(lastFulfilledWithdrawalIndex + 1, metaVault.lastFulfilledWithdrawalIndex());
-            assertEq(metaVault.depositedSharesTotal(), 60e6);
+            assertEq(metaVault.depositedSharesTotal(), 80e6);
             assertEq(metaVault.getSmartVaultWithdrawalNftIds(address(vault1)).length, 0);
             assertEq(metaVault.getSmartVaultWithdrawalNftIds(address(vault2)).length, 0);
-            vm.stopPrank();
         }
 
         {

@@ -22,6 +22,28 @@ library ListMap {
     }
 
     /**
+     * @dev delete all entries
+     * @param listMap listMap which should be changed
+     */
+    function clean(Address storage listMap) internal {
+        for (uint256 i; i < listMap.list.length; i++) {
+            listMap.includes[listMap.list[i]] = false;
+        }
+        listMap.list = new address[](0);
+    }
+
+    /**
+     * @dev delete all entries
+     * @param listMap listMap which should be changed
+     */
+    function clean(Uint256 storage listMap) internal {
+        for (uint256 i; i < listMap.list.length; i++) {
+            listMap.includes[listMap.list[i]] = false;
+        }
+        listMap.list = new uint256[](0);
+    }
+
+    /**
      * @dev remove list
      * @param listMap listMap which should be changed
      * @param list list of items to remove from listMap
