@@ -117,16 +117,17 @@ contract MetaVault is
      * @dev AssetGroupRegistry contract
      */
     IAssetGroupRegistry public immutable assetGroupRegistry;
+
+    // ========================== STATE ==========================
+
     /**
      * @dev Underlying asset used for investments
      */
-    IERC20MetadataUpgradeable public immutable asset;
+    IERC20MetadataUpgradeable public asset;
     /**
      * @dev decimals of shares to match those in asset
      */
-    uint8 private immutable _decimals;
-
-    // ========================== STATE ==========================
+    uint8 private _decimals;
 
     /**
      * @dev list of managed SmartVaults
@@ -190,22 +191,24 @@ contract MetaVault is
 
     constructor(
         ISmartVaultManager smartVaultManager_,
-        IERC20MetadataUpgradeable asset_,
         ISpoolAccessControl spoolAccessControl_,
         IAssetGroupRegistry assetGroupRegistry_
     ) SpoolAccessControllable(spoolAccessControl_) {
         smartVaultManager = smartVaultManager_;
-        asset = asset_;
-        _decimals = uint8(asset.decimals());
         assetGroupRegistry = assetGroupRegistry_;
     }
 
     // ========================== INITIALIZER ==========================
 
-    function initialize(string memory name_, string memory symbol_) external initializer {
+    function initialize(IERC20MetadataUpgradeable asset_, string memory name_, string memory symbol_)
+        external
+        initializer
+    {
         __Ownable2Step_init();
         __Multicall_init();
         __ERC20_init(name_, symbol_);
+        asset = asset_;
+        _decimals = uint8(asset.decimals());
         asset.approve(address(smartVaultManager), type(uint256).max);
         currentWithdrawalIndex = 1;
     }

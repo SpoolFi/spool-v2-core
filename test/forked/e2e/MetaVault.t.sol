@@ -87,15 +87,10 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
         vm.startPrank(owner);
         address metaVaultImpl = address(
-            new MetaVault(
-                _smartVaultManager,
-                IERC20MetadataUpgradeable(address(usdc)),
-                _deploySpool.spoolAccessControl(),
-                _deploySpool.assetGroupRegistry()
-            )
+            new MetaVault(_smartVaultManager, _deploySpool.spoolAccessControl(), _deploySpool.assetGroupRegistry())
         );
         MetaVault metaVault = MetaVault(address(new ERC1967Proxy(metaVaultImpl, "")));
-        metaVault.initialize("MetaVault", "M");
+        metaVault.initialize(IERC20MetadataUpgradeable(address(usdc)), "MetaVault", "M");
         vm.stopPrank();
 
         vm.startPrank(user1);
