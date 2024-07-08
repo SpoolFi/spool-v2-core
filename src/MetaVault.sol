@@ -365,14 +365,18 @@ contract MetaVault is
     // ========================== SPOOL INTERACTIONS ==========================
 
     /**
-     * @dev anybody can flush redeems and deposits accumulated on MetaVault
+     * @dev anybody can flush deposits accumulated on MetaVault
      * On deposits MetaVault receives deposit nfts.
+     */
+    function flushDeposit() external {
+        _deposit();
+    }
+
+    /**
+     * @dev anybody can flush redeems  accumulated on MetaVault
      * On redeems MetaVault burns deposit nfts for SVTs and burns SVTs for redeem on spool
      */
-    function flush() external {
-        // TODO: create separate methods to allow batch:
-        // spoolDeposit -> flush -> DHW -> sync -> spoolRedeem -> flush -> DHW -> sync -> claimWithdrawal
-        _deposit();
+    function flushWithdrawal() external {
         _redeem();
     }
 
@@ -380,23 +384,25 @@ contract MetaVault is
      * @dev only DoHardWorker is allowed to flush fast
      * @param slippages data for redeemFast
      */
-    function flushFast(uint256[][][] calldata slippages) external onlyRole(ROLE_DO_HARD_WORKER, msg.sender) {
-        _deposit();
+    function flushWithdrawalFast(uint256[][][] calldata slippages) external onlyRole(ROLE_DO_HARD_WORKER, msg.sender) {
         _redeemFast(slippages);
     }
 
     /**
-     * @dev anybody can sync MetaVault
-     * @param claimSvts flag to claim if deposits were DHWed
+     * @dev anybody can sync MetaVault deposits
      */
-    function sync(bool claimSvts) external {
+    function syncDeposit() external {
         address[] memory vaults = _smartVaults.list;
-        if (claimSvts) {
-            for (uint256 i; i < vaults.length; i++) {
-                _spoolClaimSmartVaultTokens(vaults[i]);
-            }
+        for (uint256 i; i < vaults.length; i++) {
+            _spoolClaimSmartVaultTokens(vaults[i]);
         }
-        // finalize withdrawal
+    }
+
+    /**
+     * @dev anybody can sync MetaVault withdrawal
+     */
+    function syncWithdrawal() external {
+        address[] memory vaults = _smartVaults.list;
         while (lastFulfilledWithdrawalIndex < currentWithdrawalIndex - 1) {
             uint256 index = lastFulfilledWithdrawalIndex + 1;
             /// aggregate withdrawn assets from all smart vaults

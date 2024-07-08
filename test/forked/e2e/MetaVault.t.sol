@@ -121,12 +121,11 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
             vm.stopPrank();
         }
 
-        // flush deposit
-        metaVault.flush();
+        metaVault.flushDeposit();
         _flushVaults(vaults);
         _dhw(strategies);
         _syncVaults(vaults);
-        metaVault.sync(true);
+        metaVault.syncDeposit();
 
         assertEq(metaVault.availableAssets(), 0);
         assertEq(usdc.balanceOf(address(metaVault)), 0);
@@ -152,8 +151,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
             vm.stopPrank();
         }
 
-        // flush withdrawal
-        metaVault.flush();
+        metaVault.flushWithdrawal();
 
         assertTrue(vault1.balanceOf(address(metaVault)) > 0);
         assertTrue(vault2.balanceOf(address(metaVault)) > 0);
@@ -176,7 +174,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
         {
             uint256 lastFulfilledWithdrawalIndex = metaVault.lastFulfilledWithdrawalIndex();
-            metaVault.sync(true);
+            metaVault.syncWithdrawal();
             uint256 svts1Withdrawn = svts1Before - vault1.balanceOf(address(metaVault));
             uint256 svts2Withdrawn = svts2Before - vault2.balanceOf(address(metaVault));
             assertEq(svts1Withdrawn * 100 / svts1Before, svts2Withdrawn * 100 / svts2Before);
