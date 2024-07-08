@@ -109,7 +109,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         metaVault.mint(100e6);
         assertEq(metaVault.balanceOf(user1), 100e6);
         assertEq(metaVault.availableAssets(), 100e6);
-        assertEq(metaVault.depositedSharesTotal(), 0);
+        assertEq(metaVault.positionTotal(), 0);
         assertEq(usdc.balanceOf(address(metaVault)), 100e6);
         vm.stopPrank();
 
@@ -131,11 +131,11 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         _flushVaults(vaults);
         _dhw(strategies);
         _syncVaults(vaults);
-        metaVault.sync();
+        metaVault.sync(true);
 
         assertEq(metaVault.availableAssets(), 0);
         assertEq(usdc.balanceOf(address(metaVault)), 0);
-        assertEq(metaVault.depositedSharesTotal(), 100e6);
+        assertEq(metaVault.positionTotal(), 100e6);
 
         uint256 withdrawalIndex = metaVault.currentWithdrawalIndex();
         uint256 svts1Before = vault1.balanceOf(address(metaVault));
@@ -181,14 +181,14 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
         {
             uint256 lastFulfilledWithdrawalIndex = metaVault.lastFulfilledWithdrawalIndex();
-            metaVault.sync();
+            metaVault.sync(true);
             uint256 svts1Withdrawn = svts1Before - vault1.balanceOf(address(metaVault));
             uint256 svts2Withdrawn = svts2Before - vault2.balanceOf(address(metaVault));
             assertEq(svts1Withdrawn * 100 / svts1Before, svts2Withdrawn * 100 / svts2Before);
             assertEq(svts1Withdrawn * 100 / svts1Before, 20);
 
             assertEq(lastFulfilledWithdrawalIndex + 1, metaVault.lastFulfilledWithdrawalIndex());
-            assertEq(metaVault.depositedSharesTotal(), 80e6);
+            assertEq(metaVault.positionTotal(), 80e6);
             assertEq(metaVault.getSmartVaultWithdrawalNftIds(address(vault1)).length, 0);
             assertEq(metaVault.getSmartVaultWithdrawalNftIds(address(vault2)).length, 0);
         }
