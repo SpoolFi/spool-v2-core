@@ -51,14 +51,6 @@ contract MetaVault is
     // ========================== ERRORS ==========================
 
     /**
-     * @dev There are pending deposits for which SVTs where not yet claimed
-     */
-    error PendingDeposits();
-    /**
-     * @dev There are pending withdrawal for which withdrawal nft was not yet burnt
-     */
-    error PendingWithdrawals();
-    /**
      * @dev There are no SVTs to claim for nft id
      */
     error NothingToClaim(uint256 nftId);
@@ -102,6 +94,10 @@ contract MetaVault is
      * @dev To remove managed smart vault its allocation should be set to zero first
      */
     error NonZeroAllocation();
+    /**
+     * @dev To remove managed smart vault its position should be zero
+     */
+    error NonZeroPosition();
     /**
      * @dev user is not allowed to withdraw asset before his redeem request is fulfilled
      */
@@ -258,11 +254,10 @@ contract MetaVault is
      */
     function removeSmartVaults(address[] calldata vaults) external {
         /// vault can be removed from managed list only when
-        // there are no pending deposits / withdrawals and its allocation is zero
+        // its allocation and position are zero
         for (uint256 i; i < vaults.length; i++) {
-            if (_smartVaultToDepositNftIds[vaults[i]].list.length > 0) revert PendingDeposits();
-            if (_smartVaultToWithdrawalNftIds[vaults[i]].list.length > 0) revert PendingWithdrawals();
             if (smartVaultToAllocation[vaults[i]] > 0) revert NonZeroAllocation();
+            if (smartVaultToPosition[vaults[i]] > 0) revert NonZeroPosition();
         }
         _smartVaults.removeList(vaults);
     }
@@ -375,8 +370,10 @@ contract MetaVault is
      * On redeems MetaVault burns deposit nfts for SVTs and burns SVTs for redeem on spool
      */
     function flush() external {
-        _redeem();
+        // TODO: create separate methods to allow batch:
+        // spoolDeposit -> flush -> DHW -> sync -> spoolRedeem -> flush -> DHW -> sync -> claimWithdrawal
         _deposit();
+        _redeem();
     }
 
     /**
@@ -384,8 +381,8 @@ contract MetaVault is
      * @param slippages data for redeemFast
      */
     function flushFast(uint256[][][] calldata slippages) external onlyRole(ROLE_DO_HARD_WORKER, msg.sender) {
-        _redeemFast(slippages);
         _deposit();
+        _redeemFast(slippages);
     }
 
     /**
