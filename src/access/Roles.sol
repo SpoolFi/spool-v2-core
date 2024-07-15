@@ -137,3 +137,8 @@ bytes32 constant ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR = keccak256("EMERGENCY_WITHD
  * Should be granted to the DepositSwap contract.
  */
 bytes32 constant ROLE_SWAPPER = keccak256("SWAPPER");
+
+/**
+ * @dev Grants permission to deploy MetaVaults
+ */
+bytes32 constant ROLE_META_VAULT_DEPLOYER = keccak256("ROLE_META_VAULT_DEPLOYER");

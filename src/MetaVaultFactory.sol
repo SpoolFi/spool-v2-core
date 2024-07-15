@@ -3,14 +3,12 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/proxy/beacon/BeaconProxy.sol";
 import "@openzeppelin/proxy/beacon/UpgradeableBeacon.sol";
-import "@openzeppelin-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 
 import "./MetaVault.sol";
-import "./managers/SmartVaultManager.sol";
 import "./managers/AssetGroupRegistry.sol";
-import "./access/SpoolAccessControl.sol";
+import "./access/SpoolAccessControllable.sol";
 
-contract MetaVaultFactory is UpgradeableBeacon {
+contract MetaVaultFactory is UpgradeableBeacon, SpoolAccessControllable {
     /**
      * @dev Emitted when a new MetaVault is deployed
      * @param metaVault Address of the newly deployed MetaVault
@@ -24,31 +22,17 @@ contract MetaVaultFactory is UpgradeableBeacon {
     error UnsupportedAsset();
 
     /**
-     * @dev SmartVaultManager contract
-     */
-    ISmartVaultManager internal immutable smartVaultManager;
-    /**
      * @dev AssetGroupRegistry contract
      */
     IAssetGroupRegistry internal immutable assetGroupRegistry;
-    /**
-     * @dev AssetGroupRegistry contract
-     */
-    ISpoolAccessControl internal immutable spoolAccessControl;
 
     constructor(
         address implementation,
-        ISmartVaultManager smartVaultManager_,
         ISpoolAccessControl spoolAccessControl_,
         IAssetGroupRegistry assetGroupRegistry_
-    ) UpgradeableBeacon(implementation) {
-        if (address(smartVaultManager_) == address(0)) revert ConfigurationAddressZero();
-        if (address(spoolAccessControl_) == address(0)) revert ConfigurationAddressZero();
+    ) UpgradeableBeacon(implementation) SpoolAccessControllable(spoolAccessControl_) {
         if (address(assetGroupRegistry_) == address(0)) revert ConfigurationAddressZero();
-
-        smartVaultManager = smartVaultManager_;
         assetGroupRegistry = assetGroupRegistry_;
-        spoolAccessControl = spoolAccessControl_;
     }
 
     /**
@@ -56,9 +40,13 @@ contract MetaVaultFactory is UpgradeableBeacon {
      * @param asset address
      * @param name for MetaVault
      * @param symbol for MetaVault
-     * @return metaVault Deployed MetaVault
+     * @return metaVault deployed
      */
-    function deployMetaVault(address asset, string memory name, string memory symbol) external returns (MetaVault) {
+    function deployMetaVault(address asset, string memory name, string memory symbol)
+        external
+        onlyRole(ROLE_META_VAULT_DEPLOYER, msg.sender)
+        returns (MetaVault)
+    {
         _validateAsset(asset);
 
         address metaVault = address(new BeaconProxy(address(this), _encodeInitializationCalldata(asset, name, symbol)));
@@ -74,10 +62,11 @@ contract MetaVaultFactory is UpgradeableBeacon {
      * @param name for MetaVault
      * @param symbol for MetaVault
      * @param salt for address determination
-     * @return metaVault Deployed MetaVault
+     * @return metaVault deployed
      */
-    function deploySmartVaultDeterministically(address asset, string memory name, string memory symbol, bytes32 salt)
+    function deployMetaVaultDeterministically(address asset, string memory name, string memory symbol, bytes32 salt)
         external
+        onlyRole(ROLE_META_VAULT_DEPLOYER, msg.sender)
         returns (MetaVault)
     {
         _validateAsset(asset);
@@ -95,8 +84,8 @@ contract MetaVaultFactory is UpgradeableBeacon {
      * @param asset address
      * @param name for MetaVault
      * @param symbol for MetaVault
-     * @param salt Salt for address determination.
-     * @return predictedAddress Predicted address.
+     * @param salt for address determination
+     * @return predictedAddress
      */
     function predictDeterministicAddress(address asset, string memory name, string memory symbol, bytes32 salt)
         external
@@ -129,7 +118,7 @@ contract MetaVaultFactory is UpgradeableBeacon {
      * @param asset address
      * @param name for MetaVault
      * @param symbol for MetaVault
-     * @return initializationCalldata Encoded initialization calldata
+     * @return initializationCalldata
      */
     function _encodeInitializationCalldata(address asset, string memory name, string memory symbol)
         private

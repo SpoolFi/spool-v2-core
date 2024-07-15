@@ -196,14 +196,11 @@ contract MetaVault is
 
     // ========================== INITIALIZER ==========================
 
-    function initialize(IERC20MetadataUpgradeable asset_, string memory name_, string memory symbol_)
-        external
-        initializer
-    {
+    function initialize(address asset_, string memory name_, string memory symbol_) external initializer {
         __Ownable2Step_init();
         __Multicall_init();
         __ERC20_init(name_, symbol_);
-        asset = asset_;
+        asset = IERC20MetadataUpgradeable(asset_);
         _decimals = uint8(asset.decimals());
         asset.approve(address(smartVaultManager), type(uint256).max);
         currentWithdrawalIndex = 1;
