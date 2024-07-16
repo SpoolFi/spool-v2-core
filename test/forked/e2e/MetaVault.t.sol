@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import {stdStorage, StdStorage} from "forge-std/Test.sol";
 import "../../../src/interfaces/Constants.sol";
 import "../../../src/strategies/AaveV2Strategy.sol";
 import "../../../src/strategies/CompoundV2Strategy.sol";
@@ -16,6 +17,8 @@ import "../../../src/MetaVault.sol";
 import "../../../src/libraries/ListMap.sol";
 
 contract MetaVaultTest is ForkTestFixtureDeployment {
+    using stdStorage for StdStorage;
+
     MockAllocationProvider public mockAllocationProvider;
     MetaVault public metaVault;
     ISmartVault public vault1;
@@ -66,6 +69,27 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.stopPrank();
         vm.startPrank(owner);
         usdc.approve(address(metaVault), type(uint256).max);
+        vm.stopPrank();
+    }
+
+    function setVaults(uint256 allocation1, uint256 allocation2) internal {
+        address[] memory vaults = new address[](2);
+        vaults[0] = address(vault1);
+        vaults[1] = address(vault2);
+        uint256[] memory allocations = new uint256[](2);
+        allocations[0] = allocation1;
+        allocations[1] = allocation2;
+        vm.startPrank(owner);
+        metaVault.addSmartVaults(vaults, allocations);
+        vm.stopPrank();
+    }
+
+    function changeAllocation(uint256 allocation1, uint256 allocation2) internal {
+        uint256[] memory allocations = new uint256[](2);
+        allocations[0] = allocation1;
+        allocations[1] = allocation2;
+        vm.startPrank(owner);
+        metaVault.setSmartVaultAllocations(allocations);
         vm.stopPrank();
     }
 
@@ -186,17 +210,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
     }
 
     function test_setSmartVaultAllocations() external {
-        {
-            address[] memory vaults = new address[](2);
-            vaults[0] = address(vault1);
-            vaults[1] = address(vault2);
-            uint256[] memory allocations = new uint256[](2);
-            allocations[0] = 50_00;
-            allocations[1] = 50_00;
-            vm.startPrank(owner);
-            metaVault.addSmartVaults(vaults, allocations);
-            vm.stopPrank();
-        }
+        setVaults(50_00, 50_00);
         //  owner cannot set wrong allocation
         {
             uint256[] memory allocations = new uint256[](2);
@@ -253,17 +267,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
     }
 
     function test_removeSmartVaults() external {
-        {
-            address[] memory vaults = new address[](2);
-            vaults[0] = address(vault1);
-            vaults[1] = address(vault2);
-            uint256[] memory allocations = new uint256[](2);
-            allocations[0] = 90_00;
-            allocations[1] = 10_00;
-            vm.startPrank(owner);
-            metaVault.addSmartVaults(vaults, allocations);
-            vm.stopPrank();
-        }
+        setVaults(90_00, 10_00);
         // vault cannot be removed if its allocation is non zero
         {
             address[] memory vaults = new address[](2);
@@ -291,6 +295,117 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
             vm.stopPrank();
             assertEq(metaVault.getSmartVaults(), vaults);
         }
+    }
+
+    function test_mint() external {
+        vm.startPrank(user1);
+        metaVault.mint(100e6);
+        vm.stopPrank();
+        assertEq(metaVault.balanceOf(user1), 100e6);
+        assertEq(metaVault.availableAssets(), 100e6);
+        assertEq(metaVault.totalSupply(), 100e6);
+
+        vm.startPrank(user1);
+        metaVault.mint(20e6);
+        vm.stopPrank();
+        assertEq(metaVault.balanceOf(user1), 120e6);
+        assertEq(metaVault.availableAssets(), 120e6);
+        assertEq(metaVault.totalSupply(), 120e6);
+
+        vm.startPrank(user2);
+        metaVault.mint(30e6);
+        vm.stopPrank();
+        assertEq(metaVault.balanceOf(user2), 30e6);
+        assertEq(metaVault.availableAssets(), 150e6);
+        assertEq(metaVault.totalSupply(), 150e6);
+    }
+
+    function test_redeem() external {
+        vm.startPrank(user1);
+        metaVault.mint(100e6);
+        metaVault.redeem(20e6);
+        vm.stopPrank();
+
+        assertEq(metaVault.balanceOf(user1), 80e6);
+        assertEq(metaVault.availableAssets(), 100e6);
+        assertEq(metaVault.totalSupply(), 80e6);
+        assertEq(metaVault.userToWithdrawalIndexToRedeemedShares(user1, 1), 20e6);
+        assertEq(usdc.balanceOf(address(metaVault)), 100e6);
+
+        vm.startPrank(user1);
+        metaVault.redeem(10e6);
+        vm.stopPrank();
+
+        assertEq(metaVault.balanceOf(user1), 70e6);
+        assertEq(metaVault.availableAssets(), 100e6);
+        assertEq(metaVault.totalSupply(), 70e6);
+        assertEq(metaVault.userToWithdrawalIndexToRedeemedShares(user1, 1), 30e6);
+        assertEq(usdc.balanceOf(address(metaVault)), 100e6);
+    }
+
+    function test_withdraw() external {
+        vm.startPrank(user1);
+        metaVault.mint(100e6);
+        metaVault.redeem(20e6);
+        vm.stopPrank();
+
+        vm.startPrank(user2);
+        metaVault.mint(200e6);
+        metaVault.redeem(10e6);
+        vm.stopPrank();
+
+        // cannot withdraw before redeem request is fulfilled
+        vm.startPrank(user1);
+        vm.expectRevert(MetaVault.RedeemRequestNotFulfilled.selector);
+        metaVault.withdraw(1);
+        vm.stopPrank();
+
+        // emulate fulfillment of redeem request for 1 withdrawalIndex. MetaVault generated yield for users
+        stdstore.target(address(metaVault)).sig("lastFulfilledWithdrawalIndex()").checked_write(1);
+        stdstore.target(address(metaVault)).sig("currentWithdrawalIndex()").checked_write(2);
+        stdstore.target(address(metaVault)).sig("availableAssets()").checked_write(240e6);
+        stdstore.target(address(metaVault)).sig("withdrawalIndexToWithdrawnAssets(uint256)").with_key(1).checked_write(
+            60e6
+        );
+
+        assertEq(metaVault.userToWithdrawalIndexToRedeemedShares(user1, 1), 20e6);
+
+        uint256 user1BalanceBefore = usdc.balanceOf(user1);
+        vm.startPrank(user1);
+        metaVault.withdraw(1);
+
+        // cannot withdraw second time
+        vm.expectRevert(MetaVault.NothingToWithdraw.selector);
+        metaVault.withdraw(1);
+        vm.stopPrank();
+
+        // random user cannot withdraw anything if he has not requested
+        vm.startPrank(address(0x98765));
+        vm.expectRevert(MetaVault.NothingToWithdraw.selector);
+        metaVault.withdraw(1);
+        vm.stopPrank();
+
+        assertEq(metaVault.balanceOf(user1), 80e6);
+        assertEq(metaVault.availableAssets(), 240e6);
+        assertEq(metaVault.totalSupply(), 270e6);
+        assertEq(usdc.balanceOf(address(metaVault)), 260e6);
+        assertEq(metaVault.userToWithdrawalIndexToRedeemedShares(user1, 1), 0);
+
+        uint256 user1BalanceAfter = usdc.balanceOf(user1);
+        assertEq(user1BalanceAfter - user1BalanceBefore, 40e6);
+
+        uint256 user2BalanceBefore = usdc.balanceOf(user2);
+        vm.startPrank(user2);
+        metaVault.withdraw(1);
+        vm.stopPrank();
+
+        assertEq(metaVault.balanceOf(user2), 190e6);
+        assertEq(metaVault.availableAssets(), 240e6);
+        assertEq(metaVault.totalSupply(), 270e6);
+        assertEq(usdc.balanceOf(address(metaVault)), 240e6);
+
+        uint256 user2BalanceAfter = usdc.balanceOf(user2);
+        assertEq(user2BalanceAfter - user2BalanceBefore, 20e6);
     }
 
     // function test_metaVault_simpleFlow() public {
