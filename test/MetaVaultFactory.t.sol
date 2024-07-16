@@ -14,6 +14,7 @@ contract MetaVaultFactoryTest is Test {
     MetaVault metaVault;
     MetaVaultFactory factory;
     SpoolAccessControl accessControl;
+    IAssetGroupRegistry assetGroupRegistry;
 
     address tokenAllowed;
     address tokenForbidden;
@@ -25,7 +26,7 @@ contract MetaVaultFactoryTest is Test {
         accessControl = new SpoolAccessControl();
         accessControl.initialize();
 
-        IAssetGroupRegistry assetGroupRegistry = IAssetGroupRegistry(address(0x3));
+        assetGroupRegistry = IAssetGroupRegistry(address(0x3));
         vm.mockCall(
             address(assetGroupRegistry),
             abi.encodeWithSelector(IAssetGroupRegistry.isTokenAllowed.selector, tokenAllowed),
@@ -108,5 +109,28 @@ contract MetaVaultFactoryTest is Test {
         emit MetaVaultDeployed(address(0x0), address(0x0));
         MetaVault vault = factory.deployMetaVaultDeterministically(tokenAllowed, "test", "TST", keccak256("salt"));
         assertEq(predictedAddress, address(vault));
+    }
+
+    function test_upgradeMetaVault() external {
+        accessControl.grantRole(ROLE_META_VAULT_DEPLOYER, address(this));
+        MetaVault vault = factory.deployMetaVault(tokenAllowed, "test", "TST");
+        vm.expectRevert();
+        MetaVault2(address(vault)).version();
+
+        /// upgrade implementation of MetaVault
+        factory.upgradeTo(address(new MetaVault2(ISmartVaultManager(address(0x4)), accessControl, assetGroupRegistry)));
+        assertEq(MetaVault2(address(vault)).version(), 2);
+    }
+}
+
+contract MetaVault2 is MetaVault {
+    constructor(
+        ISmartVaultManager smartVaultManager_,
+        ISpoolAccessControl spoolAccessControl_,
+        IAssetGroupRegistry assetGroupRegistry_
+    ) MetaVault(smartVaultManager_, spoolAccessControl_, assetGroupRegistry_) {}
+
+    function version() external pure returns (uint256) {
+        return 2;
     }
 }
