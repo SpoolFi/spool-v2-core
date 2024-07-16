@@ -126,9 +126,18 @@ contract MetaVault is
      * @dev user is not allowed to withdraw asset before his redeem request is fulfilled
      */
     error RedeemRequestNotFulfilled();
+    /**
+     * @dev Maximum smart vault amount is exceeded
+     */
+    error MaxSmartVaultAmount();
 
     // ========================== IMMUTABLES ==========================
 
+    /**
+     * @dev Maximum amount of smart vaults MetaVault can manage
+     */
+    // TODO: we need to verify that this amount is optimal (business + technical)
+    uint256 public constant MAX_SMART_VAULT_AMOUNT = 8;
     /**
      * @dev SmartVaultManager contract. Gateway to Spool protocol
      */
@@ -263,6 +272,7 @@ contract MetaVault is
      */
     function addSmartVaults(address[] calldata vaults, uint256[] calldata allocations) external onlyOwner {
         address[] memory previousVaults = _smartVaults.list;
+        if (previousVaults.length + vaults.length > MAX_SMART_VAULT_AMOUNT) revert MaxSmartVaultAmount();
         for (uint256 i; i < vaults.length; i++) {
             _validateSmartVault(vaults[i]);
         }
