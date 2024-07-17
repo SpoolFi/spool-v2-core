@@ -71,6 +71,10 @@ contract MetaVault is
      * @dev Allocations have been changed
      */
     event AllocationChange(uint256[] previous, uint256[] current);
+    /**
+     * @dev Used for parameter gatherer to prepare slippages data
+     */
+    event SvtToRedeem(address smartVault, uint256 amount);
 
     // ========================== ERRORS ==========================
 
@@ -140,7 +144,6 @@ contract MetaVault is
     /**
      * @dev Maximum amount of smart vaults MetaVault can manage
      */
-    // TODO: we need to verify that this amount is optimal (business + technical)
     uint256 public constant MAX_SMART_VAULT_AMOUNT = 8;
     /**
      * @dev SmartVaultManager contract. Gateway to Spool protocol
@@ -475,7 +478,11 @@ contract MetaVault is
      * Redeem fast all shares from last non-initiated unfulfilled withdrawal index.
      * @param slippages data for redeemFast
      */
-    function flushWithdrawalFast(uint256[][][] calldata slippages) external onlyRole(ROLE_DO_HARD_WORKER, msg.sender) {
+    function flushWithdrawalFast(uint256[][][] calldata slippages) external {
+        bool isViewExecution = _isViewExecution();
+        if (!isViewExecution) {
+            _checkRole(ROLE_DO_HARD_WORKER, msg.sender);
+        }
         if (availableAssets > 0) revert PendingDeposit();
         /// if there are open positions
         if (positionTotal > 0) {
@@ -494,6 +501,10 @@ contract MetaVault is
                         _spoolClaimSmartVaultTokens(vaults[i]);
                         uint256 SVTBalance = ISmartVault(vaults[i]).balanceOf(address(this));
                         uint256 SVTToRedeem = SVTBalance * shares / positionTotal;
+                        if (isViewExecution) {
+                            emit SvtToRedeem(vaults[i], SVTToRedeem);
+                            continue;
+                        }
                         withdrawnAssets += _spoolRedeemFast(vaults[i], SVTToRedeem, slippages[i]);
                         uint256 positionChange;
                         /// handle dust
@@ -505,6 +516,8 @@ contract MetaVault is
                         closedPosition += positionChange;
                         smartVaultToPosition[vaults[i]] -= positionChange;
                     }
+                    if (isViewExecution) return;
+
                     positionTotal -= shares;
                     lastFulfilledWithdrawalIndex++;
                     currentWithdrawalIndex++;
@@ -524,8 +537,8 @@ contract MetaVault is
         for (uint256 i; i < vaults.length; i++) {
             _spoolClaimSmartVaultTokens(vaults[i]);
         }
-        // TODO: do we need event here? _spoolClaimSmartVaultTokens called in other places to ensure that deposits are finalized
-        // so there is probably no need to call this separately? Or we should still emit here? But then how to handle the case when this function is omitted?
+        /// we will not emit event here since _spoolClaimSmartVaultTokens called in other places as well
+        /// to ensure that deposits are finalized
     }
 
     /**
@@ -552,17 +565,25 @@ contract MetaVault is
         }
     }
 
-    /**
-     * @dev only DoHardWorker can reallocate posotions
-     * @param slippages for redeemFast
-     */
-    function reallocate(uint256[][][] calldata slippages) external onlyRole(ROLE_DO_HARD_WORKER, msg.sender) {
-        /// cache
-        address[] memory vaults = _smartVaults.list;
+    struct ReallocationVars {
         /// total amount of assets withdrawn during the reallocation
         uint256 withdrawnAssets;
         /// total equivalent of MetaVault shares for position change
         uint256 positionChangeTotal;
+        bool isViewExecution;
+    }
+
+    /**
+     * @dev only DoHardWorker can reallocate positions
+     * @param slippages for redeemFast
+     */
+    function reallocate(uint256[][][] calldata slippages) external {
+        ReallocationVars memory vars = ReallocationVars(0, 0, _isViewExecution());
+        if (!vars.isViewExecution) {
+            _checkRole(ROLE_DO_HARD_WORKER, msg.sender);
+        }
+        /// cache
+        address[] memory vaults = _smartVaults.list;
         /// track required adjustment for vaults positions
         uint256[] memory positionToAdd = new uint256[](vaults.length);
         for (uint256 i; i < vaults.length; i++) {
@@ -576,16 +597,23 @@ contract MetaVault is
             if (desiredPosition > currentPosition) {
                 uint256 positionDif = desiredPosition - currentPosition;
                 positionToAdd[i] = positionDif;
-                positionChangeTotal += positionDif;
+                vars.positionChangeTotal += positionDif;
                 // if amount of MetaVault shares should be reduced we perform redeemFast
             } else if (desiredPosition < currentPosition) {
                 uint256 positionDif = currentPosition - desiredPosition;
                 /// previously all SVTs shares were claimed,
                 /// so we can calculate the proportion of SVTs to be withdrawn using MetaVault deposited shares ratio
-                uint256 svtsToRedeem = positionDif * ISmartVault(vaults[i]).balanceOf(address(this)) / positionTotal;
+                uint256 svtsToRedeem = positionDif * ISmartVault(vaults[i]).balanceOf(address(this)) / currentPosition;
+                if (vars.isViewExecution) {
+                    emit SvtToRedeem(vaults[i], svtsToRedeem);
+                    continue;
+                }
                 smartVaultToPosition[vaults[i]] -= positionDif;
-                withdrawnAssets += _spoolRedeemFast(vaults[i], svtsToRedeem, slippages[i]);
+                vars.withdrawnAssets += _spoolRedeemFast(vaults[i], svtsToRedeem, slippages[i]);
             }
+        }
+        if (vars.isViewExecution) {
+            return;
         }
 
         /// now we will perform deposits
@@ -596,8 +624,9 @@ contract MetaVault is
             if (positionToAdd[i] > 0) {
                 smartVaultToPosition[vaults[i]] += positionToAdd[i];
                 /// calculate amount of assets based on MetaVault shares ratio
-                uint256 amount = positionToAdd[i] * withdrawnAssets / positionChangeTotal;
-                _spoolDeposit(vaults[i], amount);
+                uint256 amount = positionToAdd[i] * vars.withdrawnAssets / vars.positionChangeTotal;
+                uint256 nftId = _spoolDeposit(vaults[i], amount);
+                _smartVaultToDepositNftIds[vaults[i]].add(nftId);
             }
             newPositionTotal += smartVaultToPosition[vaults[i]];
         }
@@ -608,6 +637,10 @@ contract MetaVault is
         } else if (newPositionTotal > positionTotal) {
             smartVaultToPosition[vaults[0]] -= newPositionTotal - positionTotal;
         }
+    }
+
+    function _isViewExecution() internal view returns (bool) {
+        return tx.origin == address(0);
     }
 
     /**

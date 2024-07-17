@@ -590,107 +590,167 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         assertEq(metaVault.withdrawalIndexToSmartVaultToWithdrawalNftId(1, vault2), 0);
     }
 
-    // function test_metaVault_simpleFlow() public {
-    //     ISmartVault[] memory vaults = new ISmartVault[](2);
-    //     vaults[0] = vault1;
-    //     vaults[1] = vault2;
+    function test_flushWithdrawalFast_viewOnly() external {
+        setVaults(90_00, 10_00);
+        uint256[][][] memory slippages = new uint256[][][](2);
+        slippages[0] = new uint256[][](1);
+        slippages[1] = new uint256[][](1);
 
-    //     vm.startPrank(user1);
-    //     metaVault.mint(100e6);
-    //     assertEq(metaVault.balanceOf(user1), 100e6);
-    //     assertEq(metaVault.availableAssets(), 100e6);
-    //     assertEq(metaVault.positionTotal(), 0);
-    //     assertEq(usdc.balanceOf(address(metaVault)), 100e6);
-    //     vm.stopPrank();
+        vm.startPrank(user1);
+        metaVault.mint(100e6);
+        metaVault.redeem(10e6);
+        vm.stopPrank();
 
-    //     {
-    //         vm.startPrank(owner);
-    //         address[] memory v = new address[](2);
-    //         v[0] = address(vault1);
-    //         v[1] = address(vault2);
-    //         uint256[] memory a = new uint256[](2);
-    //         a[0] = 20_00;
-    //         a[1] = 80_00;
-    //         metaVault.addSmartVaults(v, a);
-    //         assertEq(metaVault.getSmartVaults(), v);
-    //         vm.stopPrank();
-    //     }
+        metaVault.flushDeposit();
+        _flushVaults(vaults);
+        _dhw(strategies);
+        _syncVaults(vaults);
+        metaVault.syncDeposit();
 
-    //     metaVault.flushDeposit();
-    //     _flushVaults(vaults);
-    //     _dhw(strategies);
-    //     _syncVaults(vaults);
-    //     metaVault.syncDeposit();
+        vm.startPrank(address(0), address(0));
+        vm.recordLogs();
+        metaVault.flushWithdrawalFast(slippages);
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        assertEq(entries.length, 2);
+        assertEq(entries[0].topics.length, 1);
+        assertEq(entries[0].topics[0], keccak256("SvtToRedeem(address,uint256)"));
+        assertEq(entries[1].topics.length, 1);
+        assertEq(entries[1].topics[0], keccak256("SvtToRedeem(address,uint256)"));
+        vm.stopPrank();
+    }
 
-    //     assertEq(metaVault.availableAssets(), 0);
-    //     assertEq(usdc.balanceOf(address(metaVault)), 0);
-    //     assertEq(metaVault.positionTotal(), 100e6);
+    function test_reallocate() external {
+        setVaults(90_00, 10_00);
+        uint256[][][] memory slippages = new uint256[][][](2);
+        slippages[0] = new uint256[][](1);
+        slippages[1] = new uint256[][](1);
 
-    //     uint256 withdrawalIndex = metaVault.currentWithdrawalIndex();
-    //     uint256 svts1Before = vault1.balanceOf(address(metaVault));
-    //     uint256 svts2Before = vault2.balanceOf(address(metaVault));
-    //     assertTrue(svts1Before > 0);
-    //     assertTrue(svts2Before > 0);
+        vm.startPrank(user1);
+        metaVault.mint(100e6);
+        vm.stopPrank();
 
-    //     {
-    //         vm.startPrank(user1);
-    //         metaVault.redeem(20e6);
-    //         uint256 currentWithdrawalIndex = metaVault.currentWithdrawalIndex();
-    //         uint256 totalRequested = metaVault.withdrawalIndexToRedeemedShares(currentWithdrawalIndex);
-    //         uint256 userRequested = metaVault.userToWithdrawalIndexToRedeemedShares(user1, currentWithdrawalIndex);
-    //         assertEq(20e6, userRequested);
-    //         assertEq(totalRequested, userRequested);
-    //         vm.expectRevert(MetaVault.RedeemRequestNotFulfilled.selector);
-    //         // user cannot withdraw if request is not fulfilled
-    //         metaVault.withdraw(currentWithdrawalIndex);
-    //         vm.stopPrank();
-    //     }
+        metaVault.flushDeposit();
 
-    //     metaVault.flushWithdrawal();
+        _flushVaults(vaults);
+        _dhw(strategies);
+        _syncVaults(vaults);
 
-    //     assertTrue(vault1.balanceOf(address(metaVault)) > 0);
-    //     assertTrue(vault2.balanceOf(address(metaVault)) > 0);
-    //     assertEq(metaVault.getSmartVaultWithdrawalNftIds(address(vault1)).length, 1);
-    //     assertEq(metaVault.getSmartVaultWithdrawalNftIds(address(vault2)).length, 1);
+        metaVault.syncDeposit();
 
-    //     assertApproxEqAbs(
-    //         vault2.balanceOf(address(metaVault)) * 100_00 / vault1.balanceOf(address(metaVault)),
-    //         metaVault.smartVaultToAllocation(address(vault2)) * 100_00
-    //             / metaVault.smartVaultToAllocation(address(vault1)),
-    //         1
-    //     );
-    //     assertEq(withdrawalIndex + 1, metaVault.currentWithdrawalIndex());
-    //     assertEq(metaVault.getSmartVaultWithdrawalNftIds(address(vault1)).length, 1);
-    //     assertEq(metaVault.getSmartVaultWithdrawalNftIds(address(vault2)).length, 1);
+        // first reallocation
+        {
+            changeAllocation(50_00, 50_00);
 
-    //     _flushVaults(vaults);
-    //     _dhw(strategies);
-    //     _syncVaults(vaults);
+            metaVault.reallocate(slippages);
 
-    //     {
-    //         uint256 lastFulfilledWithdrawalIndex = metaVault.lastFulfilledWithdrawalIndex();
-    //         metaVault.syncWithdrawal();
-    //         uint256 svts1Withdrawn = svts1Before - vault1.balanceOf(address(metaVault));
-    //         uint256 svts2Withdrawn = svts2Before - vault2.balanceOf(address(metaVault));
-    //         assertEq(svts1Withdrawn * 100 / svts1Before, svts2Withdrawn * 100 / svts2Before);
-    //         assertEq(svts1Withdrawn * 100 / svts1Before, 20);
+            _flushVaults(ISmartVault(vault2));
+            _dhw(strategies);
+            _syncVaults(ISmartVault(vault2));
 
-    //         assertEq(lastFulfilledWithdrawalIndex + 1, metaVault.lastFulfilledWithdrawalIndex());
-    //         assertEq(metaVault.positionTotal(), 80e6);
-    //         assertEq(metaVault.getSmartVaultWithdrawalNftIds(address(vault1)).length, 0);
-    //         assertEq(metaVault.getSmartVaultWithdrawalNftIds(address(vault2)).length, 0);
-    //     }
+            metaVault.syncDeposit();
 
-    //     {
-    //         vm.startPrank(user1);
-    //         uint256 userBalanceBefore = usdc.balanceOf(user1);
-    //         metaVault.withdraw(1);
-    //         uint256 userBalanceAfter = usdc.balanceOf(user1);
-    //         assertApproxEqAbs(userBalanceAfter - userBalanceBefore, 20e6, 2);
-    //         assertEq(userBalanceAfter - userBalanceBefore, metaVault.withdrawalIndexToWithdrawnAssets(1));
-    //         vm.stopPrank();
-    //     }
-    // }
+            assertApproxEqAbs(ISmartVault(vault1).balanceOf(address(metaVault)), 50e21, 1e20);
+            assertApproxEqAbs(ISmartVault(vault2).balanceOf(address(metaVault)), 50e21, 1e20);
+            assertEq(metaVault.availableAssets(), 0);
+            assertEq(usdc.balanceOf(address(metaVault)), 0);
+
+            assertApproxEqAbs(_deploySpool.spoolLens().getSmartVaultAssetBalances(vault1, false)[0], 50e6, 2);
+            assertApproxEqAbs(_deploySpool.spoolLens().getSmartVaultAssetBalances(vault2, false)[0], 50e6, 2);
+        }
+
+        // second reallocation
+        {
+            changeAllocation(15_00, 85_00);
+
+            metaVault.reallocate(slippages);
+
+            _flushVaults(ISmartVault(vault2));
+            _dhw(strategies);
+            _syncVaults(ISmartVault(vault2));
+
+            metaVault.syncDeposit();
+
+            assertApproxEqAbs(ISmartVault(vault1).balanceOf(address(metaVault)), 15e21, 1e20);
+            assertApproxEqAbs(ISmartVault(vault2).balanceOf(address(metaVault)), 85e21, 1e20);
+            assertEq(metaVault.availableAssets(), 0);
+            assertEq(usdc.balanceOf(address(metaVault)), 0);
+
+            assertApproxEqAbs(_deploySpool.spoolLens().getSmartVaultAssetBalances(vault1, false)[0], 15e6, 2);
+            assertApproxEqAbs(_deploySpool.spoolLens().getSmartVaultAssetBalances(vault2, false)[0], 85e6, 2);
+        }
+
+        // third reallocation
+        {
+            changeAllocation(100_00, 0);
+
+            metaVault.reallocate(slippages);
+
+            _flushVaults(ISmartVault(vault1));
+            _dhw(strategies);
+            _syncVaults(ISmartVault(vault1));
+
+            metaVault.syncDeposit();
+
+            assertApproxEqAbs(ISmartVault(vault1).balanceOf(address(metaVault)), 100e21, 1e20);
+            assertEq(ISmartVault(vault2).balanceOf(address(metaVault)), 0);
+            assertEq(metaVault.availableAssets(), 0);
+            assertEq(usdc.balanceOf(address(metaVault)), 0);
+
+            assertApproxEqAbs(_deploySpool.spoolLens().getSmartVaultAssetBalances(vault1, false)[0], 100e6, 2);
+            assertEq(_deploySpool.spoolLens().getSmartVaultAssetBalances(vault2, false)[0], 0);
+        }
+    }
+
+    function test_reallocate_viewOnly() external {
+        setVaults(90_00, 10_00);
+        uint256[][][] memory slippages = new uint256[][][](2);
+        slippages[0] = new uint256[][](1);
+        slippages[1] = new uint256[][](1);
+
+        vm.startPrank(user1);
+        metaVault.mint(100e6);
+        vm.stopPrank();
+
+        metaVault.flushDeposit();
+
+        _flushVaults(vaults);
+        _dhw(strategies);
+        _syncVaults(vaults);
+
+        metaVault.syncDeposit();
+
+        // first reallocation
+        {
+            changeAllocation(50_00, 50_00);
+            vm.startPrank(address(0), address(0));
+            vm.recordLogs();
+            metaVault.reallocate(slippages);
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            assertEq(entries.length, 1);
+            assertEq(entries[0].topics.length, 1);
+            assertEq(entries[0].topics[0], keccak256("SvtToRedeem(address,uint256)"));
+            (address vault, uint256 amount) = abi.decode(entries[0].data, (address, uint256));
+            assertEq(vault, vault1);
+            assertApproxEqAbs(amount, 40e21, 1e20);
+            vm.stopPrank();
+        }
+
+        // second reallocation
+        {
+            changeAllocation(100_00, 0);
+            vm.startPrank(address(0), address(0));
+            vm.recordLogs();
+            metaVault.reallocate(slippages);
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            assertEq(entries.length, 1);
+            assertEq(entries[0].topics.length, 1);
+            assertEq(entries[0].topics[0], keccak256("SvtToRedeem(address,uint256)"));
+            (address vault, uint256 amount) = abi.decode(entries[0].data, (address, uint256));
+            assertEq(vault, vault2);
+            assertApproxEqAbs(amount, 10e21, 1e20);
+            vm.stopPrank();
+        }
+    }
 
     function _createVault(
         uint256 assetGroupId,
