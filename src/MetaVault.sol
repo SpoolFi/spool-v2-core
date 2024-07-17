@@ -130,6 +130,10 @@ contract MetaVault is
      * @dev Maximum smart vault amount is exceeded
      */
     error MaxSmartVaultAmount();
+    /**
+     * @dev Withdrawal is prohibited if there are pending deposits
+     */
+    error PendingDeposit();
 
     // ========================== IMMUTABLES ==========================
 
@@ -166,10 +170,6 @@ contract MetaVault is
      * @dev list of deposit nfts for particular smart vault
      */
     mapping(address => ListMap.Uint256) internal _smartVaultToDepositNftIds;
-    /**
-     * @dev list of withdrawal nfts for particular smart vault
-     */
-    mapping(address => ListMap.Uint256) internal _smartVaultToWithdrawalNftIds;
     /**
      * @dev allocation is in base points
      */
@@ -306,14 +306,6 @@ contract MetaVault is
     }
 
     /**
-     * @dev get the array of withdrawal nfts which should be exchanged for assets
-     * @param smartVault address
-     */
-    function getSmartVaultWithdrawalNftIds(address smartVault) external view returns (uint256[] memory) {
-        return _smartVaultToWithdrawalNftIds[smartVault].list;
-    }
-
-    /**
      * @dev only owner of MetaVault can change the allocations for managed smart vaults
      * @param allocations to set
      */
@@ -425,7 +417,8 @@ contract MetaVault is
                 }
                 deposited += amount;
                 smartVaultToPosition[vaults[i]] += amount;
-                _spoolDeposit(vaults[i], amount);
+                uint256 nftId = _spoolDeposit(vaults[i], amount);
+                _smartVaultToDepositNftIds[vaults[i]].add(nftId);
             }
             positionTotal += assets;
             availableAssets = 0;
@@ -439,6 +432,7 @@ contract MetaVault is
      * On redeems MetaVault burns deposit nfts for SVTs and burns SVTs for redeem on Spool.
      */
     function flushWithdrawal() external {
+        if (availableAssets > 0) revert PendingDeposit();
         /// if there are open positions
         if (positionTotal > 0) {
             for (uint256 index = lastFulfilledWithdrawalIndex + 1; index <= currentWithdrawalIndex; index++) {
@@ -447,14 +441,24 @@ contract MetaVault is
                 if (shares == 0) return;
                 /// if assets for the withdrawal index were not yet requested
                 if (!withdrawalIndexIsInitiated[index]) {
-                    address[] memory smartVaults = _smartVaults.list;
-                    for (uint256 i; i < smartVaults.length; i++) {
+                    uint256 closedPosition;
+                    address[] memory vaults = _smartVaults.list;
+                    for (uint256 i; i < vaults.length; i++) {
                         /// claim all SVTs first
-                        _spoolClaimSmartVaultTokens(smartVaults[i]);
-                        uint256 SVTBalance = ISmartVault(smartVaults[i]).balanceOf(address(this));
+                        _spoolClaimSmartVaultTokens(vaults[i]);
+                        uint256 SVTBalance = ISmartVault(vaults[i]).balanceOf(address(this));
                         uint256 SVTToRedeem = SVTBalance * shares / positionTotal;
-                        withdrawalIndexToSmartVaultToWithdrawalNftId[index][smartVaults[i]] =
-                            _spoolRedeem(smartVaults[i], SVTToRedeem);
+                        uint256 positionChange;
+                        /// handle dust
+                        if (i == vaults.length - 1) {
+                            positionChange = shares - closedPosition;
+                        } else {
+                            positionChange = smartVaultToPosition[vaults[i]] * shares / positionTotal;
+                        }
+                        closedPosition += positionChange;
+                        smartVaultToPosition[vaults[i]] -= positionChange;
+                        withdrawalIndexToSmartVaultToWithdrawalNftId[index][vaults[i]] =
+                            _spoolRedeem(vaults[i], SVTToRedeem);
                     }
                     positionTotal -= shares;
                     currentWithdrawalIndex++;
@@ -472,6 +476,7 @@ contract MetaVault is
      * @param slippages data for redeemFast
      */
     function flushWithdrawalFast(uint256[][][] calldata slippages) external onlyRole(ROLE_DO_HARD_WORKER, msg.sender) {
+        if (availableAssets > 0) revert PendingDeposit();
         /// if there are open positions
         if (positionTotal > 0) {
             for (uint256 index = lastFulfilledWithdrawalIndex + 1; index <= currentWithdrawalIndex; index++) {
@@ -482,13 +487,23 @@ contract MetaVault is
                 if (!withdrawalIndexIsInitiated[index]) {
                     /// aggregate withdrawn assets from all smart vaults
                     uint256 withdrawnAssets;
-                    address[] memory smartVaults = _smartVaults.list;
-                    for (uint256 i; i < smartVaults.length; i++) {
+                    uint256 closedPosition;
+                    address[] memory vaults = _smartVaults.list;
+                    for (uint256 i; i < vaults.length; i++) {
                         /// claim all SVTs first
-                        _spoolClaimSmartVaultTokens(smartVaults[i]);
-                        uint256 SVTBalance = ISmartVault(smartVaults[i]).balanceOf(address(this));
+                        _spoolClaimSmartVaultTokens(vaults[i]);
+                        uint256 SVTBalance = ISmartVault(vaults[i]).balanceOf(address(this));
                         uint256 SVTToRedeem = SVTBalance * shares / positionTotal;
-                        withdrawnAssets += _spoolRedeemFast(smartVaults[i], SVTToRedeem, slippages[i]);
+                        withdrawnAssets += _spoolRedeemFast(vaults[i], SVTToRedeem, slippages[i]);
+                        uint256 positionChange;
+                        /// handle dust
+                        if (i == vaults.length - 1) {
+                            positionChange = shares - closedPosition;
+                        } else {
+                            positionChange = smartVaultToPosition[vaults[i]] * shares / positionTotal;
+                        }
+                        closedPosition += positionChange;
+                        smartVaultToPosition[vaults[i]] -= positionChange;
                     }
                     positionTotal -= shares;
                     lastFulfilledWithdrawalIndex++;
@@ -528,8 +543,7 @@ contract MetaVault is
                 if (nftId == 0) return;
                 /// aggregate withdrawn assets from all smart vaults
                 withdrawnAssets += _spoolClaimWithdrawal(vaults[i], nftId);
-                _smartVaultToWithdrawalNftIds[vaults[i]].remove(nftId);
-                withdrawalIndexToSmartVaultToWithdrawalNftId[index][vaults[i]] = 0;
+                delete withdrawalIndexToSmartVaultToWithdrawalNftId[index][vaults[i]];
             }
             /// we fulfill last unprocessed withdrawal index
             withdrawalIndexToWithdrawnAssets[index] = withdrawnAssets;
@@ -690,24 +704,22 @@ contract MetaVault is
 
     /// ========================== IERC-1155 RECEIVER ==========================
 
-    function onERC1155Received(address, address from, uint256 id, uint256, bytes calldata)
+    function onERC1155Received(address, address from, uint256, uint256, bytes calldata)
         external
+        view
         validateToken(from)
         returns (bytes4)
     {
-        _handleReceive(id);
         /// bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))
         return 0xf23a6e61;
     }
 
-    function onERC1155BatchReceived(address, address from, uint256[] calldata ids, uint256[] calldata, bytes calldata)
+    function onERC1155BatchReceived(address, address from, uint256[] calldata, uint256[] calldata, bytes calldata)
         external
+        view
         validateToken(from)
         returns (bytes4)
     {
-        for (uint256 i; i < ids.length; i++) {
-            _handleReceive(ids[i]);
-        }
         /// bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))
         return 0xbc197c81;
     }
@@ -719,16 +731,5 @@ contract MetaVault is
         if (!_smartVaults.includes[msg.sender]) revert TokenNotSupported();
         if (from != address(0)) revert NftTransferForbidden();
         _;
-    }
-
-    /**
-     * @dev distinguish between deposit and withdrawal nfts
-     */
-    function _handleReceive(uint256 id) internal {
-        if (id > MAXIMAL_DEPOSIT_ID) {
-            _smartVaultToWithdrawalNftIds[msg.sender].add(id);
-        } else {
-            _smartVaultToDepositNftIds[msg.sender].add(id);
-        }
     }
 }
