@@ -135,7 +135,7 @@ contract MetaVault is
      */
     error MaxSmartVaultAmount();
     /**
-     * @dev Withdrawal is prohibited if there are pending deposits
+     * @dev Redeem is prohibited if there are pending deposits of user
      */
     error PendingDeposit();
 
@@ -190,6 +190,14 @@ contract MetaVault is
      * asset.balanceOf(address(this)) can be greater than availableAssets, since funds for withdrawals are excluded.
      */
     uint256 public availableAssets;
+    /**
+     * @dev deposit index to control redeem by users
+     */
+    uint256 public depositIndex;
+    /**
+     * @dev track the latest deposit index of user to control redeem
+     */
+    mapping(address => uint256) public userToDepositIndex;
     /**
      * @dev current withdrawal index. Used to process batch of pending redeem requests.
      */
@@ -361,6 +369,7 @@ contract MetaVault is
         /// MetaVault has now more funds to manage
         availableAssets += amount;
         _mint(msg.sender, amount);
+        userToDepositIndex[msg.sender] = depositIndex;
         asset.safeTransferFrom(msg.sender, address(this), amount);
         emit Mint(msg.sender, amount);
     }
@@ -370,6 +379,7 @@ contract MetaVault is
      * @param shares of MetaVault to burn
      */
     function redeem(uint256 shares) external {
+        if (userToDepositIndex[msg.sender] == depositIndex) revert PendingDeposit();
         _burn(msg.sender, shares);
         uint256 index = currentWithdrawalIndex;
         /// accumulate redeems for all users for current withdrawal index
@@ -400,16 +410,25 @@ contract MetaVault is
     // ========================== SPOOL INTERACTIONS ==========================
 
     /**
-     * @dev anybody can flush deposits accumulated on MetaVault.
+     * @dev anybody can flush deposits and redeems accumulated on MetaVault.
+     */
+    function flush() external {
+        address[] memory vaults = _smartVaults.list;
+        if (vaults.length > 0) {
+            _flushWithdrawal(vaults);
+            _flushDeposit(vaults);
+        }
+    }
+
+    /**
      * Deposits into all managed smart vaults based on allocation.
      * On deposits MetaVault receives deposit nfts.
      */
-    function flushDeposit() external {
+    function _flushDeposit(address[] memory vaults) internal {
         /// if there are assets available for deposits
         uint256 assets = availableAssets;
         if (assets > 0) {
             uint256 deposited;
-            address[] memory vaults = _smartVaults.list;
             for (uint256 i; i < vaults.length; i++) {
                 uint256 amount;
                 /// handle dust so that available assets would go to 0
@@ -423,6 +442,7 @@ contract MetaVault is
                 uint256 nftId = _spoolDeposit(vaults[i], amount);
                 _smartVaultToDepositNftIds[vaults[i]].add(nftId);
             }
+            depositIndex++;
             positionTotal += assets;
             availableAssets = 0;
             emit FlushDeposit(assets);
@@ -430,12 +450,10 @@ contract MetaVault is
     }
 
     /**
-     * @dev anybody can flush redeems  accumulated on MetaVault
      * Redeem all shares from last non-initiated unfulfilled withdrawal index.
      * On redeems MetaVault burns deposit nfts for SVTs and burns SVTs for redeem on Spool.
      */
-    function flushWithdrawal() external {
-        if (availableAssets > 0) revert PendingDeposit();
+    function _flushWithdrawal(address[] memory vaults) internal {
         /// if there are open positions
         if (positionTotal > 0) {
             for (uint256 index = lastFulfilledWithdrawalIndex + 1; index <= currentWithdrawalIndex; index++) {
@@ -445,7 +463,6 @@ contract MetaVault is
                 /// if assets for the withdrawal index were not yet requested
                 if (!withdrawalIndexIsInitiated[index]) {
                     uint256 closedPosition;
-                    address[] memory vaults = _smartVaults.list;
                     for (uint256 i; i < vaults.length; i++) {
                         /// claim all SVTs first
                         _spoolClaimSmartVaultTokens(vaults[i]);
@@ -474,66 +491,17 @@ contract MetaVault is
     }
 
     /**
-     * @dev only DoHardWorker is allowed to flush fast.
-     * Redeem fast all shares from last non-initiated unfulfilled withdrawal index.
-     * @param slippages data for redeemFast
+     * @dev anybody can sync MetaVault deposits and withdrawals
      */
-    function flushWithdrawalFast(uint256[][][] calldata slippages) external {
-        bool isViewExecution = _isViewExecution();
-        if (!isViewExecution) {
-            _checkRole(ROLE_DO_HARD_WORKER, msg.sender);
-        }
-        if (availableAssets > 0) revert PendingDeposit();
-        /// if there are open positions
-        if (positionTotal > 0) {
-            for (uint256 index = lastFulfilledWithdrawalIndex + 1; index <= currentWithdrawalIndex; index++) {
-                uint256 shares = withdrawalIndexToRedeemedShares[index];
-                /// for this withdrawal index nothing has been redeemed so return immediately
-                if (shares == 0) return;
-                /// if assets for the withdrawal index were not yet requested
-                if (!withdrawalIndexIsInitiated[index]) {
-                    /// aggregate withdrawn assets from all smart vaults
-                    uint256 withdrawnAssets;
-                    uint256 closedPosition;
-                    address[] memory vaults = _smartVaults.list;
-                    for (uint256 i; i < vaults.length; i++) {
-                        /// claim all SVTs first
-                        _spoolClaimSmartVaultTokens(vaults[i]);
-                        uint256 SVTBalance = ISmartVault(vaults[i]).balanceOf(address(this));
-                        uint256 SVTToRedeem = SVTBalance * shares / positionTotal;
-                        if (isViewExecution) {
-                            emit SvtToRedeem(vaults[i], SVTToRedeem);
-                            continue;
-                        }
-                        withdrawnAssets += _spoolRedeemFast(vaults[i], SVTToRedeem, slippages[i]);
-                        uint256 positionChange;
-                        /// handle dust
-                        if (i == vaults.length - 1) {
-                            positionChange = shares - closedPosition;
-                        } else {
-                            positionChange = smartVaultToPosition[vaults[i]] * shares / positionTotal;
-                        }
-                        closedPosition += positionChange;
-                        smartVaultToPosition[vaults[i]] -= positionChange;
-                    }
-                    if (isViewExecution) return;
-
-                    positionTotal -= shares;
-                    lastFulfilledWithdrawalIndex++;
-                    currentWithdrawalIndex++;
-                    withdrawalIndexToWithdrawnAssets[lastFulfilledWithdrawalIndex] = withdrawnAssets;
-                    emit FlushWithdrawalFast(index, withdrawnAssets, shares);
-                    return;
-                }
-            }
+    function sync() external {
+        address[] memory vaults = _smartVaults.list;
+        if (vaults.length > 0) {
+            _syncDeposit(vaults);
+            _syncWithdrawal(vaults);
         }
     }
 
-    /**
-     * @dev anybody can sync MetaVault deposits
-     */
-    function syncDeposit() external {
-        address[] memory vaults = _smartVaults.list;
+    function _syncDeposit(address[] memory vaults) internal {
         for (uint256 i; i < vaults.length; i++) {
             _spoolClaimSmartVaultTokens(vaults[i]);
         }
@@ -541,11 +509,7 @@ contract MetaVault is
         /// to ensure that deposits are finalized
     }
 
-    /**
-     * @dev anybody can sync MetaVault withdrawal
-     */
-    function syncWithdrawal() external {
-        address[] memory vaults = _smartVaults.list;
+    function _syncWithdrawal(address[] memory vaults) internal {
         while (lastFulfilledWithdrawalIndex < currentWithdrawalIndex - 1) {
             uint256 index = lastFulfilledWithdrawalIndex + 1;
             /// aggregate withdrawn assets from all smart vaults

@@ -330,38 +330,68 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
     }
 
     function test_redeem() external {
+        setVaults(50_00, 50_00);
+
         vm.startPrank(user1);
         metaVault.mint(100e6);
+        vm.expectRevert(MetaVault.PendingDeposit.selector);
+        metaVault.redeem(20e6);
+        vm.stopPrank();
+
+        metaVault.flush();
+        _flushVaults(vaults);
+        _dhw(strategies);
+        _syncVaults(vaults);
+        metaVault.sync();
+
+        vm.startPrank(user1);
         metaVault.redeem(20e6);
         vm.stopPrank();
 
         assertEq(metaVault.balanceOf(user1), 80e6);
-        assertEq(metaVault.availableAssets(), 100e6);
+        assertEq(metaVault.availableAssets(), 0);
         assertEq(metaVault.totalSupply(), 80e6);
         assertEq(metaVault.userToWithdrawalIndexToRedeemedShares(user1, 1), 20e6);
-        assertEq(usdc.balanceOf(address(metaVault)), 100e6);
+        assertEq(usdc.balanceOf(address(metaVault)), 0);
 
         vm.startPrank(user1);
         metaVault.redeem(10e6);
         vm.stopPrank();
 
         assertEq(metaVault.balanceOf(user1), 70e6);
-        assertEq(metaVault.availableAssets(), 100e6);
+        assertEq(metaVault.availableAssets(), 0);
         assertEq(metaVault.totalSupply(), 70e6);
         assertEq(metaVault.userToWithdrawalIndexToRedeemedShares(user1, 1), 30e6);
-        assertEq(usdc.balanceOf(address(metaVault)), 100e6);
+        assertEq(usdc.balanceOf(address(metaVault)), 0);
     }
 
     function test_withdraw() external {
+        setVaults(50_00, 50_00);
+
         vm.startPrank(user1);
         metaVault.mint(100e6);
-        metaVault.redeem(20e6);
         vm.stopPrank();
-
         vm.startPrank(user2);
         metaVault.mint(200e6);
+        vm.stopPrank();
+
+        metaVault.flush();
+        _flushVaults(vaults);
+        _dhw(strategies);
+        _syncVaults(vaults);
+        metaVault.sync();
+
+        vm.startPrank(user1);
+        metaVault.redeem(20e6);
+        vm.stopPrank();
+        vm.startPrank(user2);
         metaVault.redeem(10e6);
         vm.stopPrank();
+
+        metaVault.flush();
+        _flushVaults(vaults);
+        _dhw(strategies);
+        _syncVaults(vaults);
 
         // cannot withdraw before redeem request is fulfilled
         vm.startPrank(user1);
@@ -369,24 +399,8 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         metaVault.withdraw(1);
         vm.stopPrank();
 
-        // emulate fulfillment of redeem request for 1 withdrawalIndex. MetaVault generated yield for users
-        stdstore.target(address(metaVault)).sig("lastFulfilledWithdrawalIndex()").checked_write(1);
-        stdstore.target(address(metaVault)).sig("currentWithdrawalIndex()").checked_write(2);
-        stdstore.target(address(metaVault)).sig("availableAssets()").checked_write(240e6);
-        stdstore.target(address(metaVault)).sig("withdrawalIndexToWithdrawnAssets(uint256)").with_key(1).checked_write(
-            60e6
-        );
-
-        assertEq(metaVault.userToWithdrawalIndexToRedeemedShares(user1, 1), 20e6);
-
-        uint256 user1BalanceBefore = usdc.balanceOf(user1);
-        vm.startPrank(user1);
-        metaVault.withdraw(1);
-
-        // cannot withdraw second time
-        vm.expectRevert(MetaVault.NothingToWithdraw.selector);
-        metaVault.withdraw(1);
-        vm.stopPrank();
+        metaVault.sync();
+        assertApproxEqAbs(usdc.balanceOf(address(metaVault)), 30e6, 2);
 
         // random user cannot withdraw anything if he has not requested
         vm.startPrank(address(0x98765));
@@ -394,14 +408,21 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         metaVault.withdraw(1);
         vm.stopPrank();
 
+        uint256 user1BalanceBefore = usdc.balanceOf(user1);
+        vm.startPrank(user1);
+        metaVault.withdraw(1);
+        // cannot withdraw second time
+        vm.expectRevert(MetaVault.NothingToWithdraw.selector);
+        metaVault.withdraw(1);
+        vm.stopPrank();
+
         assertEq(metaVault.balanceOf(user1), 80e6);
-        assertEq(metaVault.availableAssets(), 240e6);
         assertEq(metaVault.totalSupply(), 270e6);
-        assertEq(usdc.balanceOf(address(metaVault)), 260e6);
+        assertEq(usdc.balanceOf(address(metaVault)), 10e6);
         assertEq(metaVault.userToWithdrawalIndexToRedeemedShares(user1, 1), 0);
 
         uint256 user1BalanceAfter = usdc.balanceOf(user1);
-        assertEq(user1BalanceAfter - user1BalanceBefore, 40e6);
+        assertApproxEqAbs(user1BalanceAfter - user1BalanceBefore, 20e6, 2);
 
         uint256 user2BalanceBefore = usdc.balanceOf(user2);
         vm.startPrank(user2);
@@ -409,22 +430,21 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.stopPrank();
 
         assertEq(metaVault.balanceOf(user2), 190e6);
-        assertEq(metaVault.availableAssets(), 240e6);
         assertEq(metaVault.totalSupply(), 270e6);
-        assertEq(usdc.balanceOf(address(metaVault)), 240e6);
+        assertApproxEqAbs(usdc.balanceOf(address(metaVault)), 0, 1);
 
         uint256 user2BalanceAfter = usdc.balanceOf(user2);
-        assertEq(user2BalanceAfter - user2BalanceBefore, 20e6);
+        assertApproxEqAbs(user2BalanceAfter - user2BalanceBefore, 10e6, 2);
     }
 
-    function test_flushDeposit() external {
+    function test_flush_deposits_only() external {
         setVaults(91_00, 9_00);
 
         vm.startPrank(user1);
         metaVault.mint(100e6);
         vm.stopPrank();
 
-        metaVault.flushDeposit();
+        metaVault.flush();
 
         assertEq(metaVault.availableAssets(), 0);
         assertEq(usdc.balanceOf(address(metaVault)), 0);
@@ -435,7 +455,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         assertEq(metaVault.getSmartVaultDepositNftIds(vault2).length, 1);
 
         // second flushDeposit doesn't change anything
-        metaVault.flushDeposit();
+        metaVault.flush();
         assertEq(metaVault.availableAssets(), 0);
         assertEq(usdc.balanceOf(address(metaVault)), 0);
         assertEq(metaVault.positionTotal(), 100e6);
@@ -445,20 +465,18 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         assertEq(metaVault.getSmartVaultDepositNftIds(vault2).length, 1);
     }
 
-    function test_syncDeposit() external {
+    function test_sync_deposit_only() external {
         setVaults(91_00, 9_00);
 
         vm.startPrank(user1);
         metaVault.mint(100e6);
         vm.stopPrank();
 
-        metaVault.flushDeposit();
-
+        metaVault.flush();
         _flushVaults(vaults);
         _dhw(strategies);
         _syncVaults(vaults);
-
-        metaVault.syncDeposit();
+        metaVault.sync();
 
         assertEq(metaVault.positionTotal(), 100e6);
         assertEq(metaVault.smartVaultToPosition(vault1), 91e6);
@@ -469,34 +487,31 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         assertApproxEqAbs(ISmartVault(vault2).balanceOf(address(metaVault)), 9e21, 1e20);
     }
 
-    function test_flushWithdrawal() external {
+    function test_flush_withdrawal_only() external {
         setVaults(90_00, 10_00);
 
         // if there are no open positions flush doesn't do anything
-        metaVault.flushWithdrawal();
+        metaVault.flush();
 
         vm.startPrank(user1);
         metaVault.mint(100e6);
+        vm.stopPrank();
+
+        metaVault.flush();
+        _flushVaults(vaults);
+        _dhw(strategies);
+        _syncVaults(vaults);
+        metaVault.sync();
+
+        vm.startPrank(user1);
         metaVault.redeem(10e6);
         vm.stopPrank();
 
-        // if there are available assets then withdrawal will revert
-        vm.expectRevert(MetaVault.PendingDeposit.selector);
-        metaVault.flushWithdrawal();
-        assertEq(metaVault.currentWithdrawalIndex(), 1);
-
-        metaVault.flushDeposit();
-        // if there are pending deposit flushWithdrawal will fail
-        vm.expectRevert(abi.encodeWithSelector(DepositNftNotSyncedYet.selector, 1));
-        metaVault.flushWithdrawal();
+        metaVault.flush();
 
         _flushVaults(vaults);
         _dhw(strategies);
         _syncVaults(vaults);
-
-        metaVault.syncDeposit();
-
-        metaVault.flushWithdrawal();
 
         assertEq(metaVault.positionTotal(), 90e6);
         assertEq(metaVault.currentWithdrawalIndex(), 2);
@@ -508,115 +523,43 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         assertEq(metaVault.withdrawalIndexToSmartVaultToWithdrawalNftId(1, vault2), MAXIMAL_DEPOSIT_ID + 1);
     }
 
-    function test_syncWithdrawal() external {
+    function test_sync_withdraw_only() external {
         setVaults(90_00, 10_00);
 
         uint256 toRedeem = 10e6;
 
         vm.startPrank(user1);
         metaVault.mint(100e6);
+        vm.stopPrank();
+        metaVault.flush();
+        _flushVaults(vaults);
+        _dhw(strategies);
+        _syncVaults(vaults);
+        metaVault.sync();
+
+        vm.startPrank(user1);
         metaVault.redeem(toRedeem);
         vm.stopPrank();
-
-        metaVault.flushDeposit();
-
-        _flushVaults(vaults);
-        _dhw(strategies);
-        _syncVaults(vaults);
-
-        metaVault.syncDeposit();
-
-        metaVault.flushWithdrawal();
-
-        // syncing withdrawal is not possible if DHW has not run
-        vm.expectRevert(abi.encodeWithSelector(WithdrawalNftNotSyncedYet.selector, MAXIMAL_DEPOSIT_ID + 1));
-        metaVault.syncWithdrawal();
-
-        _flushVaults(vaults);
-        _dhw(strategies);
-        _syncVaults(vaults);
+        metaVault.flush();
 
         assertEq(metaVault.lastFulfilledWithdrawalIndex(), 0);
         assertEq(metaVault.withdrawalIndexToWithdrawnAssets(1), 0);
         assertEq(usdc.balanceOf(address(metaVault)), 0);
 
-        metaVault.syncWithdrawal();
+        // syncing withdrawal is not possible if DHW has not run
+        vm.expectRevert(abi.encodeWithSelector(WithdrawalNftNotSyncedYet.selector, MAXIMAL_DEPOSIT_ID + 1));
+        metaVault.sync();
+
+        _flushVaults(vaults);
+        _dhw(strategies);
+        _syncVaults(vaults);
+        metaVault.sync();
 
         assertEq(metaVault.lastFulfilledWithdrawalIndex(), 1);
         assertApproxEqAbs(metaVault.withdrawalIndexToWithdrawnAssets(1), toRedeem, 1);
         assertEq(metaVault.withdrawalIndexToSmartVaultToWithdrawalNftId(1, vault1), 0);
         assertEq(metaVault.withdrawalIndexToSmartVaultToWithdrawalNftId(1, vault2), 0);
         assertApproxEqAbs(usdc.balanceOf(address(metaVault)), toRedeem, 1);
-    }
-
-    function test_flushWithdrawalFast() external {
-        setVaults(90_00, 10_00);
-        uint256[][][] memory slippages = new uint256[][][](2);
-        slippages[0] = new uint256[][](1);
-        slippages[1] = new uint256[][](1);
-        // if there are no open positions flush doesn't do anything
-        metaVault.flushWithdrawalFast(slippages);
-
-        vm.startPrank(user1);
-        metaVault.mint(100e6);
-        metaVault.redeem(10e6);
-        vm.stopPrank();
-
-        // if there are available assets then withdrawal will revert
-        vm.expectRevert(MetaVault.PendingDeposit.selector);
-        metaVault.flushWithdrawalFast(slippages);
-        assertEq(metaVault.currentWithdrawalIndex(), 1);
-
-        metaVault.flushDeposit();
-        // if there are pending deposit flushWithdrawal will fail
-        vm.expectRevert(abi.encodeWithSelector(DepositNftNotSyncedYet.selector, 1));
-        metaVault.flushWithdrawalFast(slippages);
-
-        _flushVaults(vaults);
-        _dhw(strategies);
-        _syncVaults(vaults);
-
-        metaVault.syncDeposit();
-
-        metaVault.flushWithdrawalFast(slippages);
-
-        assertEq(metaVault.positionTotal(), 90e6);
-        assertEq(metaVault.currentWithdrawalIndex(), 2);
-        assertEq(metaVault.lastFulfilledWithdrawalIndex(), 1);
-        assertFalse(metaVault.withdrawalIndexIsInitiated(1));
-        assertEq(metaVault.smartVaultToPosition(vault1), 81e6);
-        assertEq(metaVault.smartVaultToPosition(vault2), 9e6);
-        assertEq(metaVault.withdrawalIndexToSmartVaultToWithdrawalNftId(1, vault1), 0);
-        assertEq(metaVault.withdrawalIndexToSmartVaultToWithdrawalNftId(1, vault2), 0);
-    }
-
-    function test_flushWithdrawalFast_viewOnly() external {
-        setVaults(90_00, 10_00);
-        uint256[][][] memory slippages = new uint256[][][](2);
-        slippages[0] = new uint256[][](1);
-        slippages[1] = new uint256[][](1);
-
-        vm.startPrank(user1);
-        metaVault.mint(100e6);
-        metaVault.redeem(10e6);
-        vm.stopPrank();
-
-        metaVault.flushDeposit();
-        _flushVaults(vaults);
-        _dhw(strategies);
-        _syncVaults(vaults);
-        metaVault.syncDeposit();
-
-        vm.startPrank(address(0), address(0));
-        vm.recordLogs();
-        metaVault.flushWithdrawalFast(slippages);
-        Vm.Log[] memory entries = vm.getRecordedLogs();
-        assertEq(entries.length, 2);
-        assertEq(entries[0].topics.length, 1);
-        assertEq(entries[0].topics[0], keccak256("SvtToRedeem(address,uint256)"));
-        assertEq(entries[1].topics.length, 1);
-        assertEq(entries[1].topics[0], keccak256("SvtToRedeem(address,uint256)"));
-        vm.stopPrank();
     }
 
     function test_reallocate() external {
@@ -629,13 +572,13 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         metaVault.mint(100e6);
         vm.stopPrank();
 
-        metaVault.flushDeposit();
+        metaVault.flush();
 
         _flushVaults(vaults);
         _dhw(strategies);
         _syncVaults(vaults);
 
-        metaVault.syncDeposit();
+        metaVault.sync();
 
         // first reallocation
         {
@@ -647,7 +590,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
             _dhw(strategies);
             _syncVaults(ISmartVault(vault2));
 
-            metaVault.syncDeposit();
+            metaVault.sync();
 
             assertApproxEqAbs(ISmartVault(vault1).balanceOf(address(metaVault)), 50e21, 1e20);
             assertApproxEqAbs(ISmartVault(vault2).balanceOf(address(metaVault)), 50e21, 1e20);
@@ -668,7 +611,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
             _dhw(strategies);
             _syncVaults(ISmartVault(vault2));
 
-            metaVault.syncDeposit();
+            metaVault.sync();
 
             assertApproxEqAbs(ISmartVault(vault1).balanceOf(address(metaVault)), 15e21, 1e20);
             assertApproxEqAbs(ISmartVault(vault2).balanceOf(address(metaVault)), 85e21, 1e20);
@@ -689,7 +632,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
             _dhw(strategies);
             _syncVaults(ISmartVault(vault1));
 
-            metaVault.syncDeposit();
+            metaVault.sync();
 
             assertApproxEqAbs(ISmartVault(vault1).balanceOf(address(metaVault)), 100e21, 1e20);
             assertEq(ISmartVault(vault2).balanceOf(address(metaVault)), 0);
@@ -711,13 +654,13 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         metaVault.mint(100e6);
         vm.stopPrank();
 
-        metaVault.flushDeposit();
+        metaVault.flush();
 
         _flushVaults(vaults);
         _dhw(strategies);
         _syncVaults(vaults);
 
-        metaVault.syncDeposit();
+        metaVault.sync();
 
         // first reallocation
         {
