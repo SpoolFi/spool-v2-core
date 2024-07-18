@@ -172,9 +172,13 @@ contract MetaVault is
      */
     ListMap.Address internal _smartVaults;
     /**
-     * @dev list of deposit nfts for particular smart vault
+     * @dev list of deposit nfts from regular deposits
      */
     mapping(address => ListMap.Uint256) internal _smartVaultToDepositNftIds;
+    /**
+     * @dev list of deposit nfts from reallocation
+     */
+    mapping(address => ListMap.Uint256) internal _smartVaultToDepositNftIdsFromReallocation;
     /**
      * @dev allocation is in base points
      */
@@ -322,6 +326,14 @@ contract MetaVault is
     }
 
     /**
+     * @dev get the array of deposit nfts which should be exchanged for SVTs
+     * @param smartVault address
+     */
+    function getSmartVaultDepositNftIdsFromReallocation(address smartVault) external view returns (uint256[] memory) {
+        return _smartVaultToDepositNftIdsFromReallocation[smartVault].list;
+    }
+
+    /**
      * @dev only owner of MetaVault can change the allocations for managed smart vaults
      * @param allocations to set
      */
@@ -417,20 +429,22 @@ contract MetaVault is
     /**
      * @dev anybody can flush deposits and redeems accumulated on MetaVault.
      */
-    function flush() external {
+    function flush() external returns (bool) {
         address[] memory vaults = _smartVaults.list;
         if (vaults.length > 0) {
             // we process withdrawal first to ensure all SVTs are collected
-            _flushWithdrawal(vaults);
-            _flushDeposit(vaults);
+            bool withdrawalIsNeeded = _flushWithdrawal(vaults);
+            bool depositIsNeeded = _flushDeposit(vaults);
+            return withdrawalIsNeeded || depositIsNeeded;
         }
+        return false;
     }
 
     /**
      * Deposits into all managed smart vaults based on allocation.
      * On deposits MetaVault receives deposit nfts.
      */
-    function _flushDeposit(address[] memory vaults) internal {
+    function _flushDeposit(address[] memory vaults) internal returns (bool) {
         /// if there are assets available for deposits
         uint256 assets = availableAssets;
         if (assets > 0) {
@@ -452,20 +466,22 @@ contract MetaVault is
             positionTotal += assets;
             availableAssets = 0;
             emit FlushDeposit(assets);
+            return true;
         }
+        return false;
     }
 
     /**
      * Redeem all shares from last non-initiated unfulfilled withdrawal index.
      * On redeems MetaVault burns deposit nfts for SVTs and burns SVTs for redeem on Spool.
      */
-    function _flushWithdrawal(address[] memory vaults) internal {
+    function _flushWithdrawal(address[] memory vaults) internal returns (bool) {
         /// if there are open positions
         if (positionTotal > 0) {
             for (uint256 index = lastFulfilledWithdrawalIndex + 1; index <= withdrawalIndex; index++) {
                 uint256 shares = withdrawalIndexToRedeemedShares[index];
                 /// for this withdrawal index nothing has been redeemed so return immediately
-                if (shares == 0) return;
+                if (shares == 0) return false;
                 /// if assets for the withdrawal index were not yet requested
                 if (!withdrawalIndexIsInitiated[index]) {
                     uint256 closedPosition;
@@ -490,32 +506,38 @@ contract MetaVault is
                     withdrawalIndex++;
                     withdrawalIndexIsInitiated[index] = true;
                     emit FlushWithdrawal(index, shares);
-                    return;
+                    return true;
                 }
             }
         }
+        return false;
     }
 
     /**
      * @dev anybody can sync MetaVault deposits and withdrawals
      */
-    function sync() external {
+    function sync() external returns (bool) {
         address[] memory vaults = _smartVaults.list;
         if (vaults.length > 0) {
-            _syncDeposit(vaults);
-            _syncWithdrawal(vaults);
+            bool depositIsNeeded = _syncDeposit(vaults);
+            bool withdrawalIsNeeded = _syncWithdrawal(vaults);
+            return depositIsNeeded || withdrawalIsNeeded;
         }
+        return false;
     }
 
-    function _syncDeposit(address[] memory vaults) internal {
+    function _syncDeposit(address[] memory vaults) internal returns (bool syncIsNeeded) {
         for (uint256 i; i < vaults.length; i++) {
-            _spoolClaimSmartVaultTokens(vaults[i]);
+            bool isNeeded = _spoolClaimSmartVaultTokens(vaults[i]);
+            if (isNeeded) {
+                syncIsNeeded = true;
+            }
         }
         /// we will not emit event here since _spoolClaimSmartVaultTokens called in other places as well
         /// to ensure that deposits are finalized
     }
 
-    function _syncWithdrawal(address[] memory vaults) internal {
+    function _syncWithdrawal(address[] memory vaults) internal returns (bool) {
         while (lastFulfilledWithdrawalIndex < withdrawalIndex - 1) {
             uint256 index = lastFulfilledWithdrawalIndex + 1;
             /// aggregate withdrawn assets from all smart vaults
@@ -523,7 +545,7 @@ contract MetaVault is
             for (uint256 i; i < vaults.length; i++) {
                 uint256 nftId = withdrawalIndexToSmartVaultToWithdrawalNftId[index][vaults[i]];
                 // no withdrawal nft means withdrawal is not initiated yet
-                if (nftId == 0) return;
+                if (nftId == 0) return false;
                 /// aggregate withdrawn assets from all smart vaults
                 withdrawnAssets += _spoolClaimWithdrawal(vaults[i], nftId);
                 delete withdrawalIndexToSmartVaultToWithdrawalNftId[index][vaults[i]];
@@ -532,7 +554,9 @@ contract MetaVault is
             withdrawalIndexToWithdrawnAssets[index] = withdrawnAssets;
             lastFulfilledWithdrawalIndex = index;
             emit SyncWithdrawal(index, withdrawnAssets);
+            return true;
         }
+        return false;
     }
 
     struct ReallocationVars {
@@ -596,7 +620,7 @@ contract MetaVault is
                 /// calculate amount of assets based on MetaVault shares ratio
                 uint256 amount = positionToAdd[i] * vars.withdrawnAssets / vars.positionChangeTotal;
                 uint256 nftId = _spoolDeposit(vaults[i], amount);
-                _smartVaultToDepositNftIds[vaults[i]].add(nftId);
+                _smartVaultToDepositNftIdsFromReallocation[vaults[i]].add(nftId);
             }
             newPositionTotal += smartVaultToPosition[vaults[i]];
         }
@@ -606,6 +630,24 @@ contract MetaVault is
             smartVaultToPosition[vaults[0]] += positionTotal - newPositionTotal;
         } else if (newPositionTotal > positionTotal) {
             smartVaultToPosition[vaults[0]] -= newPositionTotal - positionTotal;
+        }
+    }
+
+    /**
+     * @dev Helper to check the reallocation status of MetaVault
+     * @return result
+     * false - no pending reallocation.
+     * true - there was reallocation, which was successfully processed by DHW
+     * revert - DHW should be run
+     */
+    function reallocationStatus() external returns (bool result) {
+        /// cache
+        address[] memory vaults = _smartVaults.list;
+        for (uint256 i; i < vaults.length; i++) {
+            bool need = _spoolBurnDepositNfts(vaults[i], _smartVaultToDepositNftIdsFromReallocation);
+            if (need) {
+                result = true;
+            }
         }
     }
 
@@ -638,8 +680,17 @@ contract MetaVault is
      * it is intentional to ensure that in all places it is used deposits of MetaVault are finalized first
      * @param vault address
      */
-    function _spoolClaimSmartVaultTokens(address vault) internal {
-        uint256[] memory depositNftIds = _smartVaultToDepositNftIds[vault].list;
+    function _spoolClaimSmartVaultTokens(address vault) internal returns (bool) {
+        bool need1 = _spoolBurnDepositNfts(vault, _smartVaultToDepositNftIds);
+        bool need2 = _spoolBurnDepositNfts(vault, _smartVaultToDepositNftIdsFromReallocation);
+        return need1 || need2;
+    }
+
+    function _spoolBurnDepositNfts(address vault, mapping(address => ListMap.Uint256) storage smartVaultToDepositNfts)
+        internal
+        returns (bool)
+    {
+        uint256[] memory depositNftIds = smartVaultToDepositNfts[vault].list;
         if (depositNftIds.length > 0) {
             uint256[] memory nftAmounts = new uint256[](depositNftIds.length);
             for (uint256 i; i < depositNftIds.length; i++) {
@@ -647,9 +698,11 @@ contract MetaVault is
                 // make sure there is actual balance for given nft id
                 if (nftAmounts[i] == 0) revert NothingToClaim(depositNftIds[i]);
             }
-            _smartVaultToDepositNftIds[vault].clean();
+            smartVaultToDepositNfts[vault].clean();
             smartVaultManager.claimSmartVaultTokens(vault, depositNftIds, nftAmounts);
+            return true;
         }
+        return false;
     }
 
     /**
