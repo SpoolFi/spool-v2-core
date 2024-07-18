@@ -428,6 +428,7 @@ contract MetaVault is
 
     /**
      * @dev anybody can flush deposits and redeems accumulated on MetaVault.
+     * @return bool indicating whether flush had some effect / reverts if not all deposit nfts are claimed/claimable
      */
     function flush() external returns (bool) {
         address[] memory vaults = _smartVaults.list;
@@ -441,8 +442,10 @@ contract MetaVault is
     }
 
     /**
-     * Deposits into all managed smart vaults based on allocation.
+     * @dev Deposits into all managed smart vaults based on allocation.
      * On deposits MetaVault receives deposit nfts.
+     * @param vaults to flush
+     * @return bool indicating whether flush had some effect
      */
     function _flushDeposit(address[] memory vaults) internal returns (bool) {
         /// if there are assets available for deposits
@@ -472,8 +475,11 @@ contract MetaVault is
     }
 
     /**
-     * Redeem all shares from last non-initiated unfulfilled withdrawal index.
+     * @dev Redeem all shares from last non-initiated unfulfilled withdrawal index.
      * On redeems MetaVault burns deposit nfts for SVTs and burns SVTs for redeem on Spool.
+     * @param vaults to flush
+     * @return bool indicating whether flush had some effect
+     * reverts if not all deposit nfts are claimed/claimable => DHW is needed
      */
     function _flushWithdrawal(address[] memory vaults) internal returns (bool) {
         /// if there are open positions
@@ -515,6 +521,8 @@ contract MetaVault is
 
     /**
      * @dev anybody can sync MetaVault deposits and withdrawals
+     * @return bool indicating whether sync had some effect
+     * reverts if not all deposit nfts are claimed/claimable or not all withdrawal nfts are claimed/claimable => DHW is needed
      */
     function sync() external returns (bool) {
         address[] memory vaults = _smartVaults.list;
@@ -526,17 +534,31 @@ contract MetaVault is
         return false;
     }
 
-    function _syncDeposit(address[] memory vaults) internal returns (bool syncIsNeeded) {
+    /**
+     * @dev Claims all SVTs by burning deposit nfts
+     * @param vaults to sync
+     * @return bool indicating whether sync had some effect
+     * reverts if not all deposit nfts are claimed/claimable => DHW is needed
+     */
+    function _syncDeposit(address[] memory vaults) internal returns (bool) {
+        bool hadEffect;
         for (uint256 i; i < vaults.length; i++) {
             bool isNeeded = _spoolClaimSmartVaultTokens(vaults[i]);
             if (isNeeded) {
-                syncIsNeeded = true;
+                hadEffect = true;
             }
         }
+        return hadEffect;
         /// we will not emit event here since _spoolClaimSmartVaultTokens called in other places as well
         /// to ensure that deposits are finalized
     }
 
+    /**
+     * @dev Claim all withdrawals by burning withdrawal nfts
+     * @param vaults to sync
+     * @return bool indicating whether sync had some effect
+     * reverts if not all withdrawal nfts are claimable => DHW is needed
+     */
     function _syncWithdrawal(address[] memory vaults) internal returns (bool) {
         while (lastFulfilledWithdrawalIndex < withdrawalIndex - 1) {
             uint256 index = lastFulfilledWithdrawalIndex + 1;
@@ -686,6 +708,15 @@ contract MetaVault is
         return need1 || need2;
     }
 
+    /**
+     * @dev claim smart vault tokens (SVTs)
+     * will revert if balance is zero or deposit was not processed by DHW
+     * it is intentional to ensure that in all places it is used deposits of MetaVault are finalized first
+     * @param vault address
+     * @param smartVaultToDepositNfts storage pointer for deposit nfts
+     * @return bool indicating whether it had some effect
+     * reverts if not all deposit nfts are claimable => DHW is needed
+     */
     function _spoolBurnDepositNfts(address vault, mapping(address => ListMap.Uint256) storage smartVaultToDepositNfts)
         internal
         returns (bool)
