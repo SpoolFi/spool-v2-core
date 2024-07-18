@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin-upgradeable/access/Ownable2StepUpgradeable.sol";
-import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC1155/utils/ERC1155ReceiverUpgradeable.sol";
@@ -12,6 +12,8 @@ import "./managers/SmartVaultManager.sol";
 import "./managers/AssetGroupRegistry.sol";
 import "./access/SpoolAccessControllable.sol";
 import "./libraries/ListMap.sol";
+import "./external/interfaces/dai/IDAI.sol";
+import "./external/interfaces/permit2/IPermit2.sol";
 
 /**
  * @dev MetaVault is a contract which facilitates investment in various SmartVaults.
@@ -24,7 +26,7 @@ import "./libraries/ListMap.sol";
  */
 contract MetaVault is
     Ownable2StepUpgradeable,
-    ERC20Upgradeable,
+    ERC20PermitUpgradeable,
     ERC1155ReceiverUpgradeable,
     MulticallUpgradeable,
     SpoolAccessControllable
@@ -201,7 +203,7 @@ contract MetaVault is
     /**
      * @dev current withdrawal index. Used to process batch of pending redeem requests.
      */
-    uint256 public currentWithdrawalIndex;
+    uint256 public withdrawalIndex;
     /**
      * @dev last withdrawal index, where all redeem requests were fulfilled
      */
@@ -243,11 +245,14 @@ contract MetaVault is
     function initialize(address asset_, string memory name_, string memory symbol_) external initializer {
         __Ownable2Step_init();
         __Multicall_init();
+        /// @dev permit() can be batched with redeem() using multicall enabling 1 tx UX
+        __ERC20Permit_init(name_);
         __ERC20_init(name_, symbol_);
         asset = IERC20MetadataUpgradeable(asset_);
         _decimals = uint8(asset.decimals());
         asset.approve(address(smartVaultManager), type(uint256).max);
-        currentWithdrawalIndex = 1;
+        withdrawalIndex = 1;
+        depositIndex = 1;
     }
 
     // ==================== SMART VAULTS MANAGEMENT ====================
@@ -381,7 +386,7 @@ contract MetaVault is
     function redeem(uint256 shares) external {
         if (userToDepositIndex[msg.sender] == depositIndex) revert PendingDeposit();
         _burn(msg.sender, shares);
-        uint256 index = currentWithdrawalIndex;
+        uint256 index = withdrawalIndex;
         /// accumulate redeems for all users for current withdrawal index
         withdrawalIndexToRedeemedShares[index] += shares;
         /// accumulate redeems for particular user for current withdrawal index
@@ -415,6 +420,7 @@ contract MetaVault is
     function flush() external {
         address[] memory vaults = _smartVaults.list;
         if (vaults.length > 0) {
+            // we process withdrawal first to ensure all SVTs are collected
             _flushWithdrawal(vaults);
             _flushDeposit(vaults);
         }
@@ -456,7 +462,7 @@ contract MetaVault is
     function _flushWithdrawal(address[] memory vaults) internal {
         /// if there are open positions
         if (positionTotal > 0) {
-            for (uint256 index = lastFulfilledWithdrawalIndex + 1; index <= currentWithdrawalIndex; index++) {
+            for (uint256 index = lastFulfilledWithdrawalIndex + 1; index <= withdrawalIndex; index++) {
                 uint256 shares = withdrawalIndexToRedeemedShares[index];
                 /// for this withdrawal index nothing has been redeemed so return immediately
                 if (shares == 0) return;
@@ -481,7 +487,7 @@ contract MetaVault is
                             _spoolRedeem(vaults[i], SVTToRedeem);
                     }
                     positionTotal -= shares;
-                    currentWithdrawalIndex++;
+                    withdrawalIndex++;
                     withdrawalIndexIsInitiated[index] = true;
                     emit FlushWithdrawal(index, shares);
                     return;
@@ -510,7 +516,7 @@ contract MetaVault is
     }
 
     function _syncWithdrawal(address[] memory vaults) internal {
-        while (lastFulfilledWithdrawalIndex < currentWithdrawalIndex - 1) {
+        while (lastFulfilledWithdrawalIndex < withdrawalIndex - 1) {
             uint256 index = lastFulfilledWithdrawalIndex + 1;
             /// aggregate withdrawn assets from all smart vaults
             uint256 withdrawnAssets;
@@ -728,5 +734,29 @@ contract MetaVault is
         if (!_smartVaults.includes[msg.sender]) revert TokenNotSupported();
         if (from != address(0)) revert NftTransferForbidden();
         _;
+    }
+
+    /// @dev permit() can be batched with mint() using multicall enabling 1 tx UX
+    /// ========================== PERMIT ASSET ==========================
+
+    /// @dev if asset supports EIP712
+    function permitAsset(uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
+        IERC20PermitUpgradeable(address(asset)).permit(msg.sender, address(this), amount, deadline, v, r, s);
+    }
+
+    /// @dev if asset is DAI
+    function permitDai(uint256 nonce, uint256 deadline, bool allowed, uint8 v, bytes32 r, bytes32 s) external {
+        IDAI(address(asset)).permit(msg.sender, address(this), nonce, deadline, allowed, v, r, s);
+    }
+
+    /// @dev if permit is not supported for asset, Permit2 contract from Uniswap can be used - https://github.com/Uniswap/permit2
+    function permitUniswap(
+        PermitTransferFrom calldata permitTransferFrom,
+        SignatureTransferDetails calldata signatureTransferDetails,
+        bytes calldata signature
+    ) external {
+        IPermit2(PERMIT2_ADDRESS).permitTransferFrom(
+            permitTransferFrom, signatureTransferDetails, msg.sender, signature
+        );
     }
 }

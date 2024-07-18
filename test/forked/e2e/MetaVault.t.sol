@@ -307,12 +307,14 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
     }
 
     function test_mint() external {
+        assertEq(metaVault.userToDepositIndex(user1), 0);
         vm.startPrank(user1);
         metaVault.mint(100e6);
         vm.stopPrank();
         assertEq(metaVault.balanceOf(user1), 100e6);
         assertEq(metaVault.availableAssets(), 100e6);
         assertEq(metaVault.totalSupply(), 100e6);
+        assertEq(metaVault.userToDepositIndex(user1), 1);
 
         vm.startPrank(user1);
         metaVault.mint(20e6);
@@ -320,13 +322,16 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         assertEq(metaVault.balanceOf(user1), 120e6);
         assertEq(metaVault.availableAssets(), 120e6);
         assertEq(metaVault.totalSupply(), 120e6);
+        assertEq(metaVault.userToDepositIndex(user1), 1);
 
+        assertEq(metaVault.userToDepositIndex(user2), 0);
         vm.startPrank(user2);
         metaVault.mint(30e6);
         vm.stopPrank();
         assertEq(metaVault.balanceOf(user2), 30e6);
         assertEq(metaVault.availableAssets(), 150e6);
         assertEq(metaVault.totalSupply(), 150e6);
+        assertEq(metaVault.userToDepositIndex(user2), 1);
     }
 
     function test_redeem() external {
@@ -388,18 +393,18 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         metaVault.redeem(10e6);
         vm.stopPrank();
 
-        metaVault.flush();
-        _flushVaults(vaults);
-        _dhw(strategies);
-        _syncVaults(vaults);
-
         // cannot withdraw before redeem request is fulfilled
         vm.startPrank(user1);
         vm.expectRevert(MetaVault.RedeemRequestNotFulfilled.selector);
         metaVault.withdraw(1);
         vm.stopPrank();
 
+        metaVault.flush();
+        _flushVaults(vaults);
+        _dhw(strategies);
+        _syncVaults(vaults);
         metaVault.sync();
+
         assertApproxEqAbs(usdc.balanceOf(address(metaVault)), 30e6, 2);
 
         // random user cannot withdraw anything if he has not requested
@@ -514,7 +519,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         _syncVaults(vaults);
 
         assertEq(metaVault.positionTotal(), 90e6);
-        assertEq(metaVault.currentWithdrawalIndex(), 2);
+        assertEq(metaVault.withdrawalIndex(), 2);
         assertEq(metaVault.lastFulfilledWithdrawalIndex(), 0);
         assertTrue(metaVault.withdrawalIndexIsInitiated(1));
         assertEq(metaVault.smartVaultToPosition(vault1), 81e6);
@@ -573,11 +578,9 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.stopPrank();
 
         metaVault.flush();
-
         _flushVaults(vaults);
         _dhw(strategies);
         _syncVaults(vaults);
-
         metaVault.sync();
 
         // first reallocation
