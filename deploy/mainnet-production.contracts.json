@@ -186,5 +186,9 @@
       "implementation": "0x123dB049CC5Ee36010f5148000754181aB87b3B3",
       "yearn-v3-juiced-dai": "0x2e988479F14Ff61586F8Fd0F09E8720484Eb6030"
     }
+  },
+  "riskProviders": {
+      "spoolLabs": "0xC216aD6280f4fa92A5159EF383a1206D432481c8",
+      "DeFi": "0x9098c4936138536849d7ee6447777626ea202bd1"
   }
 }
