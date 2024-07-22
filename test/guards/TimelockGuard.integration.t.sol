@@ -4,20 +4,15 @@ pragma solidity 0.8.17;
 import "forge-std/Test.sol";
 import "../../src/interfaces/RequestType.sol";
 import "../../src/guards/TimelockGuard.sol";
-import "../../src/managers/ActionManager.sol";
 import "../../src/managers/AssetGroupRegistry.sol";
-import "../../src/managers/GuardManager.sol";
 import "../../src/managers/RiskManager.sol";
 import "../../src/managers/SmartVaultManager.sol";
 import "../../src/managers/StrategyRegistry.sol";
 import "../../src/managers/UsdPriceFeedManager.sol";
-import "../../src/MasterWallet.sol";
 import "../../src/SmartVault.sol";
 import "../../src/SmartVaultFactory.sol";
 import "../../src/Swapper.sol";
 import "../mocks/MockStrategy.sol";
-import "../mocks/MockToken.sol";
-import "../mocks/MockPriceFeedManager.sol";
 import "../libraries/Arrays.sol";
 import "../fixtures/TestFixture.sol";
 
@@ -171,18 +166,27 @@ contract TimelockGuardIntegrationTest is TestFixture {
 
         uint256[] memory nftAmounts = Arrays.toArray(NFT_MINTED_SHARES);
 
-        // at this point only charlie should be able to burn
+        // at this point only charlie should be able to claim
         vm.prank(charlie);
         smartVaultManager.claimSmartVaultTokens(address(smartVault), nftIds[0], nftAmounts);
 
-        // deposit as Eve with Dave set as receiver, should fail
+        // claim as Eve, should fail
         vm.prank(eve);
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
         smartVaultManager.claimSmartVaultTokens(address(smartVault), nftIds[1], nftAmounts);
 
-        // deposit as Charlie with Bob set as receiver, should fail
+        // claim as Bob, should fail
         vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
+        smartVaultManager.claimSmartVaultTokens(address(smartVault), nftIds[2], nftAmounts);
+
+        vm.warp(block.timestamp + 14 days);
+
+        // at this point everyone should be able to burn.
+        vm.prank(eve);
+        smartVaultManager.claimSmartVaultTokens(address(smartVault), nftIds[1], nftAmounts);
+
+        vm.prank(bob);
         smartVaultManager.claimSmartVaultTokens(address(smartVault), nftIds[2], nftAmounts);
     }
 }

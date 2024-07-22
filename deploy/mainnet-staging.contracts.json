@@ -172,5 +172,8 @@
       "implementation": "0x19EEac602e0987bcB6e43B3035266EFcEAB4c2Cc",
       "yearn-v3-juiced-dai": "0xDBF01AAEdAa58F53C139106361ce0ABF01B6804c"
     }
+  },
+  "riskProviders": {
+      "spoolLabs": "0xC216aD6280f4fa92A5159EF383a1206D432481c8"
   }
 }

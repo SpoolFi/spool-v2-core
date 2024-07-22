@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "forge-std/console.sol";
 import "forge-std/Test.sol";
-import "@openzeppelin/access/AccessControl.sol";
-import "../../src/interfaces/ISmartVault.sol";
 import "../../src/guards/TimelockGuard.sol";
 import "../../src/access/SpoolAccessControl.sol";
 
@@ -41,10 +38,6 @@ contract TimelockGuardTest is Test {
     }
 
     function test_updateTimelock_shouldUpdateTimelock() public {
-        address[] memory addressesToAdd = new address[](2);
-        addressesToAdd[0] = bob;
-        addressesToAdd[1] = charlie;
-
         vm.startPrank(alice);
         timelockGuard.updateTimelock(address(smartVault1), 1 weeks);
         timelockGuard.updateTimelock(address(smartVault2), 2 weeks);
@@ -52,6 +45,13 @@ contract TimelockGuardTest is Test {
 
         assertEq(timelockGuard.timelocks(smartVault1), 1 weeks);
         assertEq(timelockGuard.timelocks(smartVault2), 2 weeks);
+    }
+
+    function test_updateTimelock_shouldRevertWithTimelockisOutOfRange() public {
+        vm.startPrank(alice);
+        vm.expectRevert(abi.encodeWithSelector(TimelockOutOfRange.selector, 366 days));
+        timelockGuard.updateTimelock(smartVault1, 366 days);
+        vm.stopPrank();
     }
 
     function test_addToTimelock_shouldRevertWhenCallerIsNotAllowedToUpdateTimelock() public {

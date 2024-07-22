@@ -5,7 +5,6 @@ import "../MainnetExtendedSetup.s.sol";
 
 import "../../../src/guards/TimelockGuard.sol";
 import "../../../src/SmartVaultFactory.sol";
-import "../../../src/interfaces/IDepositManager.sol";
 
 import "../../helper/Arrays.sol";
 

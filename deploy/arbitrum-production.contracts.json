@@ -106,6 +106,9 @@
       "implementation": "0x6c2E2363393087Fdc493c0be59f5Db103c39f9c9"
     }
   },
+  "riskProviders": {
+      "spoolLabs": "0x281396fab7cadf88837c411721a5be80e57f3ebd"
+  },
   "strategy-helpers": {
     "gamma-camelot-rewards": {
       "implementation": "0xe47674A619a6d21e6c54B9A494e2E0d8416ea451",

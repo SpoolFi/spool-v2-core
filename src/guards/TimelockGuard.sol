@@ -14,6 +14,12 @@ import "../access/SpoolAccessControllable.sol";
  */
 error NotDepositNFT(address smartVault, uint256 nftId);
 
+/**
+ * @notice Used when the timelock is out of range.
+ * @param timelock Value of the timelock.
+ */
+error TimelockOutOfRange(uint256 timelock);
+
 /* ========== CONTRACTS ========== */
 
 contract TimelockGuard is SpoolAccessControllable {
@@ -33,6 +39,13 @@ contract TimelockGuard is SpoolAccessControllable {
      * Each smart vault can have a single timelock, updated by the owner.
      */
     mapping(address => uint256) public timelocks;
+
+    /* ========== CONSTANTS ========== */
+
+    /**
+     * @notice Maximum timelock value, in seconds.
+     */
+    uint256 constant MAX_TIMELOCK = 365 days;
 
     constructor(ISpoolAccessControl accessControl_) SpoolAccessControllable(accessControl_) {}
 
@@ -77,6 +90,10 @@ contract TimelockGuard is SpoolAccessControllable {
         external
         onlySmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN, msg.sender)
     {
+        if (timelock > MAX_TIMELOCK) {
+            revert TimelockOutOfRange(timelock);
+        }
+
         timelocks[smartVault] = timelock;
 
         emit UpdatedTimelock(smartVault, timelock);
