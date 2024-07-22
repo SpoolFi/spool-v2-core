@@ -6,6 +6,7 @@ import "forge-std/Test.sol";
 import "../src/MetaVault.sol";
 import "../src/MetaVaultFactory.sol";
 import "../src/access/SpoolAccessControl.sol";
+import "../src/SpoolLens.sol";
 import "./mocks/MockToken.sol";
 
 contract MetaVaultFactoryTest is Test {
@@ -15,6 +16,7 @@ contract MetaVaultFactoryTest is Test {
     MetaVaultFactory factory;
     SpoolAccessControl accessControl;
     IAssetGroupRegistry assetGroupRegistry;
+    ISpoolLens spoolLens;
 
     address tokenAllowed;
     address tokenForbidden;
@@ -25,6 +27,8 @@ contract MetaVaultFactoryTest is Test {
 
         accessControl = new SpoolAccessControl();
         accessControl.initialize();
+
+        spoolLens = ISpoolLens(address(0xa));
 
         assetGroupRegistry = IAssetGroupRegistry(address(0x3));
         vm.mockCall(
@@ -39,7 +43,7 @@ contract MetaVaultFactoryTest is Test {
         );
 
         address implementation =
-            address(new MetaVault(ISmartVaultManager(address(0x4)), accessControl, assetGroupRegistry));
+            address(new MetaVault(ISmartVaultManager(address(0x4)), accessControl, assetGroupRegistry, spoolLens));
 
         factory = new MetaVaultFactory(implementation, accessControl, assetGroupRegistry);
     }
@@ -118,7 +122,9 @@ contract MetaVaultFactoryTest is Test {
         MetaVault2(address(vault)).version();
 
         /// upgrade implementation of MetaVault
-        factory.upgradeTo(address(new MetaVault2(ISmartVaultManager(address(0x4)), accessControl, assetGroupRegistry)));
+        factory.upgradeTo(
+            address(new MetaVault2(ISmartVaultManager(address(0x4)), accessControl, assetGroupRegistry, spoolLens))
+        );
         assertEq(MetaVault2(address(vault)).version(), 2);
     }
 }
@@ -127,8 +133,9 @@ contract MetaVault2 is MetaVault {
     constructor(
         ISmartVaultManager smartVaultManager_,
         ISpoolAccessControl spoolAccessControl_,
-        IAssetGroupRegistry assetGroupRegistry_
-    ) MetaVault(smartVaultManager_, spoolAccessControl_, assetGroupRegistry_) {}
+        IAssetGroupRegistry assetGroupRegistry_,
+        ISpoolLens spoolLens
+    ) MetaVault(smartVaultManager_, spoolAccessControl_, assetGroupRegistry_, spoolLens) {}
 
     function version() external pure returns (uint256) {
         return 2;
