@@ -31,7 +31,7 @@ contract ListMapTest is Test {
         assertEq(addressListMap.list[0], addr1);
 
         // Try to add the same address again and expect revert
-        vm.expectRevert(ElementAlreadyInList.selector);
+        vm.expectRevert(ListMap.ElementAlreadyInList.selector);
         addressListMap.add(addr1);
     }
 
@@ -44,7 +44,7 @@ contract ListMapTest is Test {
         assertEq(addressListMap.list.length, 1);
 
         // Try to remove a non-existing address and expect revert
-        vm.expectRevert(NoElementInList.selector);
+        vm.expectRevert(ListMap.NoElementInList.selector);
         addressListMap.remove(addr3);
     }
 
@@ -55,7 +55,7 @@ contract ListMapTest is Test {
         assertEq(uint256ListMap.list[0], uint1);
 
         // Try to add the same uint256 again and expect revert
-        vm.expectRevert(ElementAlreadyInList.selector);
+        vm.expectRevert(ListMap.ElementAlreadyInList.selector);
         uint256ListMap.add(uint1);
     }
 
@@ -68,7 +68,7 @@ contract ListMapTest is Test {
         assertEq(uint256ListMap.list.length, 1);
 
         // Try to remove a non-existing uint256 and expect revert
-        vm.expectRevert(NoElementInList.selector);
+        vm.expectRevert(ListMap.NoElementInList.selector);
         uint256ListMap.remove(uint3);
     }
 

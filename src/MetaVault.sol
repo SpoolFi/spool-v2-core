@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin-upgradeable/access/Ownable2StepUpgradeable.sol";
-import "@openzeppelin-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
+import "@openzeppelin-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC1155/utils/ERC1155ReceiverUpgradeable.sol";
@@ -27,7 +27,7 @@ import "./external/interfaces/permit2/IPermit2.sol";
  */
 contract MetaVault is
     Ownable2StepUpgradeable,
-    ERC20PermitUpgradeable,
+    ERC20Upgradeable,
     ERC1155ReceiverUpgradeable,
     MulticallUpgradeable,
     SpoolAccessControllable
@@ -145,6 +145,10 @@ contract MetaVault is
      * @dev Flush is blocked if previous one is not synced yet
      */
     error PendingSync();
+    /**
+     * @dev Flush and reallocation are blocked if there is pending sync of reallocate
+     */
+    error PendingReallocationSync();
 
     // ========================== IMMUTABLES ==========================
 
@@ -185,9 +189,9 @@ contract MetaVault is
      */
     mapping(address => ListMap.Uint256) internal _smartVaultToDepositNftIds;
     /**
-     * @dev list of deposit nfts from reallocation
+     * @dev deposit nft from reallocation
      */
-    mapping(address => ListMap.Uint256) internal _smartVaultToDepositNftIdsFromReallocation;
+    mapping(address => uint256) public smartVaultToDepositNftIdFromReallocation;
     /**
      * @dev allocation is in base points
      */
@@ -267,8 +271,6 @@ contract MetaVault is
     function initialize(address asset_, string memory name_, string memory symbol_) external initializer {
         __Ownable2Step_init();
         __Multicall_init();
-        /// @dev permit() can be batched with redeem() using multicall enabling 1 tx UX
-        __ERC20Permit_init(name_);
         __ERC20_init(name_, symbol_);
         asset = IERC20MetadataUpgradeable(asset_);
         _decimals = uint8(asset.decimals());
@@ -308,7 +310,7 @@ contract MetaVault is
      */
     function addSmartVaults(address[] calldata vaults, uint256[] calldata allocations) external onlyOwner {
         /// if there is pending sync adding smart vaults is prohibited
-        if (index.sync < index.flush) revert PendingSync();
+        _checkPendingSync();
         address[] memory previousVaults = _smartVaults.list;
         if (previousVaults.length + vaults.length > MAX_SMART_VAULT_AMOUNT) revert MaxSmartVaultAmount();
         for (uint256 i; i < vaults.length; i++) {
@@ -341,14 +343,6 @@ contract MetaVault is
      */
     function getSmartVaultDepositNftIds(address smartVault) external view returns (uint256[] memory) {
         return _smartVaultToDepositNftIds[smartVault].list;
-    }
-
-    /**
-     * @dev get the array of deposit nfts which should be exchanged for SVTs
-     * @param smartVault address
-     */
-    function getSmartVaultDepositNftIdsFromReallocation(address smartVault) external view returns (uint256[] memory) {
-        return _smartVaultToDepositNftIdsFromReallocation[smartVault].list;
     }
 
     /**
@@ -462,7 +456,10 @@ contract MetaVault is
         address[] memory vaults = _smartVaults.list;
         if (vaults.length > 0) {
             /// previous flush should be synced
-            if (index.sync < index.flush) revert PendingSync();
+            _checkPendingSync();
+            for (uint256 i; i < vaults.length; i++) {
+                if (smartVaultToDepositNftIdFromReallocation[vaults[i]] > 0) revert PendingReallocationSync();
+            }
             // we process withdrawal first to ensure all SVTs are collected
             bool withdrawalIsNeeded = _flushWithdrawal(vaults);
             bool depositIsNeeded = _flushDeposit(vaults);
@@ -534,7 +531,16 @@ contract MetaVault is
                 }
                 closedPosition += positionChange;
                 smartVaultToPosition[vaults[i]] -= positionChange;
-                flushToSmartVaultToWithdrawalNftId[flushIndex][vaults[i]] = _spoolRedeem(vaults[i], SVTToRedeem);
+                flushToSmartVaultToWithdrawalNftId[flushIndex][vaults[i]] = smartVaultManager.redeem(
+                    RedeemBag({
+                        smartVault: vaults[i],
+                        shares: SVTToRedeem,
+                        nftIds: new uint256[](0),
+                        nftAmounts: new uint256[](0)
+                    }),
+                    address(this),
+                    false
+                );
             }
             positionTotal -= shares;
             emit FlushWithdrawal(flushIndex, shares);
@@ -571,7 +577,7 @@ contract MetaVault is
     function _syncDeposit(address[] memory vaults) internal returns (bool) {
         bool hadEffect;
         for (uint256 i; i < vaults.length; i++) {
-            uint256 svts = _spoolClaimSmartVaultTokens(vaults[i]);
+            uint256 svts = _spoolBurnDepositNfts(vaults[i], _smartVaultToDepositNftIds);
             if (svts > 0) {
                 hadEffect = true;
             }
@@ -633,18 +639,18 @@ contract MetaVault is
      * @param slippages for redeemFast
      */
     function reallocate(uint256[][][] calldata slippages) external {
-        ReallocationVars memory vars = ReallocationVars(0, 0, _isViewExecution());
+        ReallocationVars memory vars = ReallocationVars(0, 0, tx.origin == address(0));
         if (!vars.isViewExecution) {
             _checkRole(ROLE_DO_HARD_WORKER, msg.sender);
         }
+        /// there should be no pending sync
+        _checkPendingSync();
         /// cache
         address[] memory vaults = _smartVaults.list;
         /// track required adjustment for vaults positions
         uint256[] memory positionToAdd = new uint256[](vaults.length);
         for (uint256 i; i < vaults.length; i++) {
-            /// claim all SVTs first
-            _spoolClaimSmartVaultTokens(vaults[i]);
-
+            if (smartVaultToDepositNftIdFromReallocation[vaults[i]] > 0) revert PendingReallocationSync();
             uint256 currentPosition = smartVaultToPosition[vaults[i]];
             /// calculate the amount of MetaVault shares which should be allocated to that vault
             uint256 desiredPosition = smartVaultToAllocation[vaults[i]] * positionTotal / 100_00;
@@ -664,7 +670,15 @@ contract MetaVault is
                     continue;
                 }
                 smartVaultToPosition[vaults[i]] -= positionDif;
-                vars.withdrawnAssets += _spoolRedeemFast(vaults[i], svtsToRedeem, slippages[i]);
+                vars.withdrawnAssets += smartVaultManager.redeemFast(
+                    RedeemBag({
+                        smartVault: vaults[i],
+                        shares: svtsToRedeem,
+                        nftIds: new uint256[](0),
+                        nftAmounts: new uint256[](0)
+                    }),
+                    slippages[i]
+                )[0];
             }
         }
         if (vars.isViewExecution) {
@@ -680,8 +694,7 @@ contract MetaVault is
                 smartVaultToPosition[vaults[i]] += positionToAdd[i];
                 /// calculate amount of assets based on MetaVault shares ratio
                 uint256 amount = positionToAdd[i] * vars.withdrawnAssets / vars.positionChangeTotal;
-                uint256 nftId = _spoolDeposit(vaults[i], amount);
-                _smartVaultToDepositNftIdsFromReallocation[vaults[i]].add(nftId);
+                smartVaultToDepositNftIdFromReallocation[vaults[i]] = _spoolDeposit(vaults[i], amount);
             }
             newPositionTotal += smartVaultToPosition[vaults[i]];
         }
@@ -695,25 +708,30 @@ contract MetaVault is
     }
 
     /**
-     * @dev Helper to check the reallocation status of MetaVault
+     * @dev Finalize reallocation of MetaVault
      * @return result
      * false - no pending reallocation.
      * true - there was reallocation, which was successfully processed by DHW
      * revert - DHW should be run
      */
-    function reallocationStatus() external returns (bool result) {
+    function reallocateSync() external returns (bool result) {
         /// cache
         address[] memory vaults = _smartVaults.list;
         for (uint256 i; i < vaults.length; i++) {
-            uint256 svts = _spoolBurnDepositNfts(vaults[i], _smartVaultToDepositNftIdsFromReallocation);
+            uint256[] memory depositNftIds = new uint256[](1);
+            depositNftIds[0] = smartVaultToDepositNftIdFromReallocation[vaults[i]];
+            uint256[] memory nftAmounts = new uint256[](1);
+            nftAmounts[0] = ISmartVault(vaults[i]).balanceOfFractional(address(this), depositNftIds[0]);
+            uint256 svts = smartVaultManager.claimSmartVaultTokens(vaults[i], depositNftIds, nftAmounts);
             if (svts > 0) {
                 result = true;
             }
+            smartVaultToDepositNftIdFromReallocation[vaults[i]] = 0;
         }
     }
 
-    function _isViewExecution() internal view returns (bool) {
-        return tx.origin == address(0);
+    function _checkPendingSync() internal view {
+        if (index.sync < index.flush) revert PendingSync();
     }
 
     /**
@@ -725,26 +743,15 @@ contract MetaVault is
     function _spoolDeposit(address vault, uint256 amount) internal returns (uint256 nftId) {
         uint256[] memory assets = new uint256[](1);
         assets[0] = amount;
-        DepositBag memory bag = DepositBag({
-            smartVault: vault,
-            assets: assets,
-            receiver: address(this),
-            doFlush: false,
-            referral: address(0)
-        });
-        nftId = smartVaultManager.deposit(bag);
-    }
-
-    /**
-     * @dev claim smart vault tokens (SVTs)
-     * will revert if balance is zero or deposit was not processed by DHW
-     * it is intentional to ensure that in all places it is used deposits of MetaVault are finalized first
-     * @param vault address
-     */
-    function _spoolClaimSmartVaultTokens(address vault) internal returns (uint256) {
-        uint256 a = _spoolBurnDepositNfts(vault, _smartVaultToDepositNftIds);
-        uint256 b = _spoolBurnDepositNfts(vault, _smartVaultToDepositNftIdsFromReallocation);
-        return a + b;
+        nftId = smartVaultManager.deposit(
+            DepositBag({
+                smartVault: vault,
+                assets: assets,
+                receiver: address(this),
+                doFlush: false,
+                referral: address(0)
+            })
+        );
     }
 
     /**
@@ -768,37 +775,9 @@ contract MetaVault is
                 // make sure there is actual balance for given nft id
                 if (nftAmounts[i] == 0) revert NoDepositNft(depositNftIds[i]);
             }
-            smartVaultToDepositNfts[vault].clean();
             svts = smartVaultManager.claimSmartVaultTokens(vault, depositNftIds, nftAmounts);
+            smartVaultToDepositNfts[vault].clean();
         }
-    }
-
-    /**
-     * @dev redeem from Spool
-     * @param vault address
-     * @param shares amount
-     * @return nftId for redeem
-     */
-    function _spoolRedeem(address vault, uint256 shares) internal returns (uint256 nftId) {
-        RedeemBag memory bag =
-            RedeemBag({smartVault: vault, shares: shares, nftIds: new uint256[](0), nftAmounts: new uint256[](0)});
-        nftId = smartVaultManager.redeem(bag, address(this), false);
-    }
-
-    /**
-     * @dev redeem fast from Spool
-     * @param vault address
-     * @param shares amount
-     * @param slippages for redeemFast
-     * @return amount of assets withdrawn
-     */
-    function _spoolRedeemFast(address vault, uint256 shares, uint256[][] calldata slippages)
-        internal
-        returns (uint256 amount)
-    {
-        RedeemBag memory bag =
-            RedeemBag({smartVault: vault, shares: shares, nftIds: new uint256[](0), nftAmounts: new uint256[](0)});
-        amount = smartVaultManager.redeemFast(bag, slippages)[0];
     }
 
     /**
