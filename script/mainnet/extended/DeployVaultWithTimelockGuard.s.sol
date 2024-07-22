@@ -19,6 +19,7 @@ contract DeployVaultWithTimelockGuard is MainnetExtendedSetup {
 
     function execute() public override {
         // deploy TimelockGuard contract
+        vm.broadcast(privKey);
         TimelockGuard guard = new TimelockGuard(spoolAccessControl);
 
         // get guard data
@@ -40,6 +41,7 @@ contract DeployVaultWithTimelockGuard is MainnetExtendedSetup {
         spoolAccessControl.transferSmartVaultOwnership(vault, smartVaultOwner);
         vm.stopBroadcast();
 
+        console.log("TimeLock deployed: %s", address(guard));
         console.log("SmartVault deployed: %s", vault);
     }
 

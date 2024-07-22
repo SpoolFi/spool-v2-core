@@ -39,6 +39,7 @@ test = 'no-test'
 # compiler
 optimizer_runs = 99999
 libraries = [
+    "script/helper/Arrays.sol:Arrays:0x1eb431a15a272a3351dcb3be7ad37f4bf7c8ab50",
     'script/helper/ArraysHelper.sol:ArraysHelper:0x5665Aa09D1A8b3775024e62E82A902Ae760eebbA',
     'src/libraries/ArrayMapping.sol:ArrayMappingUint256:0xB6B08a9ed9282c695ddFbfA81d9ebF208b4c1De0',
     'src/libraries/ReallocationLib.sol:ReallocationLib:0x49CE6640EB2D89F80395C1a3695cc3a01b5C7bc1',

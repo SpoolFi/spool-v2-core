@@ -190,5 +190,8 @@
   "riskProviders": {
       "spoolLabs": "0xC216aD6280f4fa92A5159EF383a1206D432481c8",
       "DeFi": "0x9098c4936138536849d7ee6447777626ea202bd1"
+  },
+  "guards": {
+      "timelockGuard": "0xC8E48fc7Ebd0db581570244BC98858aFc9036a56"
   }
 }
