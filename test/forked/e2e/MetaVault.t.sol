@@ -360,11 +360,19 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
         vm.startPrank(user1);
         metaVault.claim(0);
+        // it is not possible to claim second time
+        vm.expectRevert(MetaVault.NothingToClaim.selector);
+        metaVault.claim(0);
         vm.stopPrank();
         vm.startPrank(user2);
         metaVault.claim(0);
+        // it is not possible to claim second time
+        vm.expectRevert(MetaVault.NothingToClaim.selector);
+        metaVault.claim(0);
         vm.stopPrank();
 
+        assertEq(metaVault.userToFlushToDepositedAssets(user1, 0), 0);
+        assertEq(metaVault.userToFlushToDepositedAssets(user2, 0), 0);
         assertEq(metaVault.balanceOf(user1), 100e6);
         assertEq(metaVault.balanceOf(user2), 50e6);
 

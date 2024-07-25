@@ -411,6 +411,7 @@ contract MetaVault is
         uint256 mintedInFlush = flushToMintedShares[flushIndex];
         uint256 depositedInFlush = flushToDepositedAssets[flushIndex];
         uint256 userShares = mintedInFlush * userAssets / depositedInFlush;
+        delete userToFlushToDepositedAssets[msg.sender][flushIndex];
         _transfer(address(this), msg.sender, userShares);
         emit Claim(msg.sender, flushIndex, userShares);
     }
@@ -450,9 +451,9 @@ contract MetaVault is
 
     /**
      * @dev anybody can flush deposits and redeems accumulated on MetaVault.
-     * @return bool indicating whether flush had some effect / reverts if not all deposit nfts are claimed/claimable
+     * @return hadEffect bool indicating whether flush had some effect / reverts if not all deposit nfts are claimed/claimable
      */
-    function flush() external returns (bool) {
+    function flush() external returns (bool hadEffect) {
         address[] memory vaults = _smartVaults.list;
         if (vaults.length > 0) {
             /// previous flush should be synced
@@ -463,22 +464,20 @@ contract MetaVault is
             // we process withdrawal first to ensure all SVTs are collected
             bool withdrawalIsNeeded = _flushWithdrawal(vaults);
             bool depositIsNeeded = _flushDeposit(vaults);
-            bool hadEffect = withdrawalIsNeeded || depositIsNeeded;
+            hadEffect = withdrawalIsNeeded || depositIsNeeded;
             if (hadEffect) {
                 index.flush++;
             }
-            return hadEffect;
         }
-        return false;
     }
 
     /**
      * @dev Deposits into all managed smart vaults based on allocation.
      * On deposits MetaVault receives deposit nfts.
      * @param vaults to flush
-     * @return bool indicating whether flush had some effect
+     * @return hadEffect bool indicating whether flush had some effect
      */
-    function _flushDeposit(address[] memory vaults) internal returns (bool) {
+    function _flushDeposit(address[] memory vaults) internal returns (bool hadEffect) {
         /// if there are assets available for deposits
         uint256 assets = availableAssets;
         if (assets > 0) {
@@ -498,20 +497,19 @@ contract MetaVault is
             }
             positionTotal += assets;
             availableAssets = 0;
+            hadEffect = true;
             emit FlushDeposit(index.flush, assets);
-            return true;
         }
-        return false;
     }
 
     /**
      * @dev Redeem all shares from last non-initiated unfulfilled withdrawal index.
      * On redeems MetaVault burns deposit nfts for SVTs and burns SVTs for redeem on Spool.
      * @param vaults to flush
-     * @return bool indicating whether flush had some effect
+     * @return hadEffect bool indicating whether flush had some effect
      * reverts if not all deposit nfts are claimed/claimable => DHW is needed
      */
-    function _flushWithdrawal(address[] memory vaults) internal returns (bool) {
+    function _flushWithdrawal(address[] memory vaults) internal returns (bool hadEffect) {
         /// if there are open positions
         if (positionTotal > 0) {
             uint128 flushIndex = index.flush;
@@ -543,39 +541,35 @@ contract MetaVault is
                 );
             }
             positionTotal -= shares;
+            hadEffect = true;
             emit FlushWithdrawal(flushIndex, shares);
-            return true;
         }
-        return false;
     }
 
     /**
      * @dev anybody can sync MetaVault deposits and withdrawals
-     * @return bool indicating whether sync had some effect
+     * @return hadEffect bool indicating whether sync had some effect
      * reverts if not all deposit nfts are claimed/claimable or not all withdrawal nfts are claimed/claimable => DHW is needed
      */
-    function sync() external returns (bool) {
+    function sync() external returns (bool hadEffect) {
         address[] memory vaults = _smartVaults.list;
         if (vaults.length > 0) {
             bool depositIsNeeded = _syncDeposit(vaults);
             bool withdrawalIsNeeded = _syncWithdrawal(vaults);
-            bool hadEffect = withdrawalIsNeeded || depositIsNeeded;
+            hadEffect = withdrawalIsNeeded || depositIsNeeded;
             if (hadEffect) {
                 index.sync++;
             }
-            return hadEffect;
         }
-        return false;
     }
 
     /**
      * @dev Claims all SVTs by burning deposit nfts
      * @param vaults to sync
-     * @return bool indicating whether sync had some effect
+     * @return hadEffect bool indicating whether sync had some effect
      * reverts if not all deposit nfts are claimed/claimable => DHW is needed
      */
-    function _syncDeposit(address[] memory vaults) internal returns (bool) {
-        bool hadEffect;
+    function _syncDeposit(address[] memory vaults) internal returns (bool hadEffect) {
         for (uint256 i; i < vaults.length; i++) {
             uint256 svts = _spoolBurnDepositNfts(vaults[i], _smartVaultToDepositNftIds);
             if (svts > 0) {
@@ -599,16 +593,15 @@ contract MetaVault is
             _mint(address(this), toMint);
             emit SyncDeposit(syncIndex, toMint);
         }
-        return hadEffect;
     }
 
     /**
      * @dev Claim all withdrawals by burning withdrawal nfts
      * @param vaults to sync
-     * @return bool indicating whether sync had some effect
+     * @return hadEffect bool indicating whether sync had some effect
      * reverts if not all withdrawal nfts are claimable => DHW is needed
      */
-    function _syncWithdrawal(address[] memory vaults) internal returns (bool) {
+    function _syncWithdrawal(address[] memory vaults) internal returns (bool hadEffect) {
         uint128 flushIndex = index.sync;
         if (flushToRedeemedShares[flushIndex] > 0) {
             /// aggregate withdrawn assets from all smart vaults
@@ -620,10 +613,9 @@ contract MetaVault is
             }
             /// we fulfill last unprocessed withdrawal index
             flushToWithdrawnAssets[flushIndex] = withdrawnAssets;
+            hadEffect = true;
             emit SyncWithdrawal(flushIndex, withdrawnAssets);
-            return true;
         }
-        return false;
     }
 
     struct ReallocationVars {
@@ -656,20 +648,20 @@ contract MetaVault is
             uint256 desiredPosition = smartVaultToAllocation[vaults[i]] * positionTotal / 100_00;
             /// if more MetaVault shares should be deposited we save this data for later
             if (desiredPosition > currentPosition) {
-                uint256 positionDif = desiredPosition - currentPosition;
-                positionToAdd[i] = positionDif;
-                vars.positionChangeTotal += positionDif;
+                uint256 positionDiff = desiredPosition - currentPosition;
+                positionToAdd[i] = positionDiff;
+                vars.positionChangeTotal += positionDiff;
                 // if amount of MetaVault shares should be reduced we perform redeemFast
             } else if (desiredPosition < currentPosition) {
-                uint256 positionDif = currentPosition - desiredPosition;
+                uint256 positionDiff = currentPosition - desiredPosition;
                 /// previously all SVTs shares were claimed,
                 /// so we can calculate the proportion of SVTs to be withdrawn using MetaVault deposited shares ratio
-                uint256 svtsToRedeem = positionDif * ISmartVault(vaults[i]).balanceOf(address(this)) / currentPosition;
+                uint256 svtsToRedeem = positionDiff * ISmartVault(vaults[i]).balanceOf(address(this)) / currentPosition;
                 if (vars.isViewExecution) {
                     emit SvtToRedeem(vaults[i], svtsToRedeem);
                     continue;
                 }
-                smartVaultToPosition[vaults[i]] -= positionDif;
+                smartVaultToPosition[vaults[i]] -= positionDiff;
                 vars.withdrawnAssets += smartVaultManager.redeemFast(
                     RedeemBag({
                         smartVault: vaults[i],
