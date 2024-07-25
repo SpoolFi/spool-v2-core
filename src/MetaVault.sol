@@ -718,7 +718,7 @@ contract MetaVault is
             if (svts > 0) {
                 result = true;
             }
-            smartVaultToDepositNftIdFromReallocation[vaults[i]] = 0;
+            delete smartVaultToDepositNftIdFromReallocation[vaults[i]];
         }
     }
 
@@ -802,9 +802,9 @@ contract MetaVault is
     function onERC1155Received(address, address from, uint256, uint256, bytes calldata)
         external
         view
-        validateToken(from)
         returns (bytes4)
     {
+        _validateToken(from);
         /// bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))
         return 0xf23a6e61;
     }
@@ -812,9 +812,9 @@ contract MetaVault is
     function onERC1155BatchReceived(address, address from, uint256[] calldata, uint256[] calldata, bytes calldata)
         external
         view
-        validateToken(from)
         returns (bytes4)
     {
+        _validateToken(from);
         /// bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))
         return 0xbc197c81;
     }
@@ -822,10 +822,9 @@ contract MetaVault is
     /**
      * @dev only ERC1155 tokens directly minted from managed smart vaults are accepted
      */
-    modifier validateToken(address from) {
+    function _validateToken(address from) internal view {
         if (!_smartVaults.includes[msg.sender]) revert TokenNotSupported();
         if (from != address(0)) revert NftTransferForbidden();
-        _;
     }
 
     /// @dev permit() can be batched with mint() using multicall enabling 1 tx UX
