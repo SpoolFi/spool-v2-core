@@ -42,14 +42,18 @@ contract MetaVaultFactory is UpgradeableBeacon, SpoolAccessControllable {
      * @param symbol for MetaVault
      * @return metaVault deployed
      */
-    function deployMetaVault(address asset, string memory name, string memory symbol)
-        external
-        onlyRole(ROLE_META_VAULT_DEPLOYER, msg.sender)
-        returns (MetaVault)
-    {
+    function deployMetaVault(
+        address asset,
+        string memory name,
+        string memory symbol,
+        address[] calldata vaults,
+        uint256[] calldata allocations
+    ) external onlyRole(ROLE_META_VAULT_DEPLOYER, msg.sender) returns (MetaVault) {
         _validateAsset(asset);
 
-        address metaVault = address(new BeaconProxy(address(this), _encodeInitializationCalldata(asset, name, symbol)));
+        address metaVault = address(
+            new BeaconProxy(address(this), _encodeInitializationCalldata(asset, name, symbol, vaults, allocations))
+        );
 
         emit MetaVaultDeployed(metaVault, msg.sender);
 
@@ -64,15 +68,21 @@ contract MetaVaultFactory is UpgradeableBeacon, SpoolAccessControllable {
      * @param salt for address determination
      * @return metaVault deployed
      */
-    function deployMetaVaultDeterministically(address asset, string memory name, string memory symbol, bytes32 salt)
-        external
-        onlyRole(ROLE_META_VAULT_DEPLOYER, msg.sender)
-        returns (MetaVault)
-    {
+    function deployMetaVaultDeterministically(
+        address asset,
+        string memory name,
+        string memory symbol,
+        bytes32 salt,
+        address[] calldata vaults,
+        uint256[] calldata allocations
+    ) external onlyRole(ROLE_META_VAULT_DEPLOYER, msg.sender) returns (MetaVault) {
         _validateAsset(asset);
 
-        address metaVaultAddress =
-            address(new BeaconProxy{salt: salt}(address(this), _encodeInitializationCalldata(asset, name, symbol)));
+        address metaVaultAddress = address(
+            new BeaconProxy{salt: salt}(
+                address(this), _encodeInitializationCalldata(asset, name, symbol, vaults, allocations)
+            )
+        );
 
         emit MetaVaultDeployed(metaVaultAddress, msg.sender);
 
@@ -87,11 +97,14 @@ contract MetaVaultFactory is UpgradeableBeacon, SpoolAccessControllable {
      * @param salt for address determination
      * @return predictedAddress
      */
-    function predictDeterministicAddress(address asset, string memory name, string memory symbol, bytes32 salt)
-        external
-        view
-        returns (address)
-    {
+    function predictDeterministicAddress(
+        address asset,
+        string memory name,
+        string memory symbol,
+        bytes32 salt,
+        address[] calldata vaults,
+        uint256[] calldata allocations
+    ) external view returns (address) {
         return address(
             uint160(
                 uint256(
@@ -103,7 +116,10 @@ contract MetaVaultFactory is UpgradeableBeacon, SpoolAccessControllable {
                             keccak256(
                                 abi.encodePacked(
                                     type(BeaconProxy).creationCode,
-                                    abi.encode(address(this), _encodeInitializationCalldata(asset, name, symbol))
+                                    abi.encode(
+                                        address(this),
+                                        _encodeInitializationCalldata(asset, name, symbol, vaults, allocations)
+                                    )
                                 )
                             )
                         )
@@ -120,12 +136,16 @@ contract MetaVaultFactory is UpgradeableBeacon, SpoolAccessControllable {
      * @param symbol for MetaVault
      * @return initializationCalldata
      */
-    function _encodeInitializationCalldata(address asset, string memory name, string memory symbol)
-        private
-        pure
-        returns (bytes memory)
-    {
-        return abi.encodeWithSignature("initialize(address,string,string)", asset, name, symbol);
+    function _encodeInitializationCalldata(
+        address asset,
+        string memory name,
+        string memory symbol,
+        address[] calldata vaults,
+        uint256[] calldata allocations
+    ) private pure returns (bytes memory) {
+        return abi.encodeWithSignature(
+            "initialize(address,string,string,address[],uint256[])", asset, name, symbol, vaults, allocations
+        );
     }
 
     /**

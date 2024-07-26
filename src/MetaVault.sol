@@ -71,6 +71,14 @@ contract MetaVault is
      */
     event SyncWithdrawal(uint256 indexed flush, uint256 assets);
     /**
+     * @dev reallocate has run
+     */
+    event Reallocate(uint256 indexed index);
+    /**
+     * @dev reallocateSync has run
+     */
+    event ReallocateSync(uint256 indexed index);
+    /**
      * @dev SmartVaults have been changed
      */
     event SmartVaultsChange(address[] previous, address[] current);
@@ -221,9 +229,13 @@ contract MetaVault is
     }
 
     /**
-     * @dev current flush index. Used to process batch of mints and redeems
+     * @dev current flush index. Used to process batch of deposits and redeems
      */
     Index public index;
+    /**
+     * @dev current reallocation index
+     */
+    Index public reallocationIndex;
     /**
      * @dev total amount of assets deposited by users in particular flush cycle
      */
@@ -268,12 +280,19 @@ contract MetaVault is
 
     // ========================== INITIALIZER ==========================
 
-    function initialize(address asset_, string memory name_, string memory symbol_) external initializer {
+    function initialize(
+        address asset_,
+        string memory name_,
+        string memory symbol_,
+        address[] calldata vaults,
+        uint256[] calldata allocations
+    ) external initializer {
         __Ownable2Step_init();
         __Multicall_init();
         __ERC20_init(name_, symbol_);
         asset = IERC20MetadataUpgradeable(asset_);
         _decimals = uint8(asset.decimals());
+        _addSmartVaults(vaults, allocations);
         asset.approve(address(smartVaultManager), type(uint256).max);
     }
 
@@ -309,16 +328,26 @@ contract MetaVault is
      * @param allocations for all smart vaults
      */
     function addSmartVaults(address[] calldata vaults, uint256[] calldata allocations) external onlyOwner {
-        /// if there is pending sync adding smart vaults is prohibited
-        _checkPendingSync();
-        address[] memory previousVaults = _smartVaults.list;
-        if (previousVaults.length + vaults.length > MAX_SMART_VAULT_AMOUNT) revert MaxSmartVaultAmount();
-        for (uint256 i; i < vaults.length; i++) {
-            _validateSmartVault(vaults[i]);
+        _addSmartVaults(vaults, allocations);
+    }
+
+    /**
+     * @param vaults list to add
+     * @param allocations for all smart vaults
+     */
+    function _addSmartVaults(address[] calldata vaults, uint256[] calldata allocations) internal {
+        if (vaults.length > 0) {
+            /// if there is pending sync adding smart vaults is prohibited
+            _checkPendingSync();
+            address[] memory previousVaults = _smartVaults.list;
+            if (previousVaults.length + vaults.length > MAX_SMART_VAULT_AMOUNT) revert MaxSmartVaultAmount();
+            for (uint256 i; i < vaults.length; i++) {
+                _validateSmartVault(vaults[i]);
+            }
+            _smartVaults.addList(vaults);
+            emit SmartVaultsChange(previousVaults, _smartVaults.list);
+            _setSmartVaultAllocations(allocations);
         }
-        _smartVaults.addList(vaults);
-        emit SmartVaultsChange(previousVaults, _smartVaults.list);
-        _setSmartVaultAllocations(allocations);
     }
 
     /**
@@ -326,15 +355,17 @@ contract MetaVault is
      * @param vaults list to remove
      */
     function removeSmartVaults(address[] calldata vaults) external {
-        /// vault can be removed from managed list only when
-        // its allocation and position are zero
-        for (uint256 i; i < vaults.length; i++) {
-            if (smartVaultToAllocation[vaults[i]] > 0) revert NonZeroAllocation();
-            if (smartVaultToPosition[vaults[i]] > 0) revert NonZeroPosition();
+        if (vaults.length > 0) {
+            /// vault can be removed from managed list only when
+            // its allocation and position are zero
+            for (uint256 i; i < vaults.length; i++) {
+                if (smartVaultToAllocation[vaults[i]] > 0) revert NonZeroAllocation();
+                if (smartVaultToPosition[vaults[i]] > 0) revert NonZeroPosition();
+            }
+            address[] memory previousVaults = _smartVaults.list;
+            _smartVaults.removeList(vaults);
+            emit SmartVaultsChange(previousVaults, _smartVaults.list);
         }
-        address[] memory previousVaults = _smartVaults.list;
-        _smartVaults.removeList(vaults);
-        emit SmartVaultsChange(previousVaults, _smartVaults.list);
     }
 
     /**
@@ -458,9 +489,6 @@ contract MetaVault is
         if (vaults.length > 0) {
             /// previous flush should be synced
             _checkPendingSync();
-            for (uint256 i; i < vaults.length; i++) {
-                if (smartVaultToDepositNftIdFromReallocation[vaults[i]] > 0) revert PendingReallocationSync();
-            }
             // we process withdrawal first to ensure all SVTs are collected
             bool withdrawalIsNeeded = _flushWithdrawal(vaults);
             bool depositIsNeeded = _flushDeposit(vaults);
@@ -642,7 +670,6 @@ contract MetaVault is
         /// track required adjustment for vaults positions
         uint256[] memory positionToAdd = new uint256[](vaults.length);
         for (uint256 i; i < vaults.length; i++) {
-            if (smartVaultToDepositNftIdFromReallocation[vaults[i]] > 0) revert PendingReallocationSync();
             uint256 currentPosition = smartVaultToPosition[vaults[i]];
             /// calculate the amount of MetaVault shares which should be allocated to that vault
             uint256 desiredPosition = smartVaultToAllocation[vaults[i]] * positionTotal / 100_00;
@@ -697,16 +724,21 @@ contract MetaVault is
         } else if (newPositionTotal > positionTotal) {
             smartVaultToPosition[vaults[0]] -= newPositionTotal - positionTotal;
         }
+        if (vars.withdrawnAssets > 0) {
+            emit Reallocate(reallocationIndex.flush);
+            reallocationIndex.flush++;
+        }
     }
 
     /**
      * @dev Finalize reallocation of MetaVault
-     * @return result
+     * @return hadEffect
      * false - no pending reallocation.
      * true - there was reallocation, which was successfully processed by DHW
      * revert - DHW should be run
      */
-    function reallocateSync() external returns (bool result) {
+    function reallocateSync() external returns (bool hadEffect) {
+        if (reallocationIndex.flush == reallocationIndex.sync) return hadEffect;
         /// cache
         address[] memory vaults = _smartVaults.list;
         for (uint256 i; i < vaults.length; i++) {
@@ -716,14 +748,19 @@ contract MetaVault is
             nftAmounts[0] = ISmartVault(vaults[i]).balanceOfFractional(address(this), depositNftIds[0]);
             uint256 svts = smartVaultManager.claimSmartVaultTokens(vaults[i], depositNftIds, nftAmounts);
             if (svts > 0) {
-                result = true;
+                hadEffect = true;
             }
             delete smartVaultToDepositNftIdFromReallocation[vaults[i]];
+        }
+        if (hadEffect) {
+            emit ReallocateSync(reallocationIndex.sync);
+            reallocationIndex.sync++;
         }
     }
 
     function _checkPendingSync() internal view {
         if (index.sync < index.flush) revert PendingSync();
+        if (reallocationIndex.sync < reallocationIndex.flush) revert PendingReallocationSync();
     }
 
     /**

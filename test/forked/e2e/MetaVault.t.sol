@@ -72,7 +72,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
             )
         );
         metaVault = MetaVault(address(new ERC1967Proxy(metaVaultImpl, "")));
-        metaVault.initialize(address(usdc), "MetaVault", "M");
+        metaVault.initialize(address(usdc), "MetaVault", "M", new address[](0), new uint256[](0));
         vm.stopPrank();
 
         vm.startPrank(user1);
@@ -662,12 +662,26 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         {
             changeAllocation(50_00, 50_00);
 
+            {
+                (uint128 index, uint128 syncIndex) = metaVault.reallocationIndex();
+                assertEq(index, 0);
+                assertEq(syncIndex, 0);
+            }
+
             metaVault.reallocate(slippages);
 
             assertEq(metaVault.getSmartVaultDepositNftIds(vault1).length, 0);
             assertEq(metaVault.getSmartVaultDepositNftIds(vault2).length, 0);
             assertEq(metaVault.smartVaultToDepositNftIdFromReallocation(vault1), 0);
             assertTrue(metaVault.smartVaultToDepositNftIdFromReallocation(vault2) > 0);
+            {
+                (uint128 index, uint128 syncIndex) = metaVault.reallocationIndex();
+                assertEq(index, 1);
+                assertEq(syncIndex, 0);
+            }
+
+            vm.expectRevert(MetaVault.PendingReallocationSync.selector);
+            metaVault.reallocate(slippages);
 
             _flushVaults(ISmartVault(vault2));
             _dhw(strategies);
@@ -679,6 +693,11 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
             assertEq(metaVault.getSmartVaultDepositNftIds(vault2).length, 0);
             assertEq(metaVault.smartVaultToDepositNftIdFromReallocation(vault1), 0);
             assertEq(metaVault.smartVaultToDepositNftIdFromReallocation(vault2), 0);
+            {
+                (uint128 index, uint128 syncIndex) = metaVault.reallocationIndex();
+                assertEq(index, 1);
+                assertEq(syncIndex, 1);
+            }
 
             assertApproxEqAbs(ISmartVault(vault1).balanceOf(address(metaVault)), 50e21, 1e20);
             assertApproxEqAbs(ISmartVault(vault2).balanceOf(address(metaVault)), 50e21, 1e20);
