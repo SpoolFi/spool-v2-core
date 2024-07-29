@@ -107,6 +107,13 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.stopPrank();
     }
 
+    function assertVaultBalance(address vault, uint256 balance) internal {
+        address[] memory v = new address[](1);
+        v[0] = vault;
+        (uint256 totalBalance,) = metaVault.getBalances(v);
+        assertApproxEqAbs(totalBalance, balance, 3);
+    }
+
     function test_smartVaultIsValid() external {
         // same asset group, zero management and deposit fee vault is valid
         assertTrue(metaVault.smartVaultIsValid(address(vault1)));
@@ -265,21 +272,6 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         }
     }
 
-    function test_smartVaultSupported() external {
-        assertFalse(metaVault.smartVaultSupported(address(vault1)));
-        {
-            address[] memory v = new address[](1);
-            v[0] = address(vault1);
-            uint256[] memory allocations = new uint256[](1);
-            allocations[0] = 100_00;
-            vm.startPrank(owner);
-            metaVault.addSmartVaults(v, allocations);
-            vm.stopPrank();
-        }
-        assertTrue(metaVault.smartVaultSupported(address(vault1)));
-        assertFalse(metaVault.smartVaultSupported(address(vault2)));
-    }
-
     function test_removeSmartVaults() external {
         setVaults(90_00, 10_00);
         // vault cannot be removed if its allocation is non zero
@@ -317,7 +309,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.stopPrank();
         assertEq(metaVault.balanceOf(user1), 0);
         assertEq(metaVault.userToFlushToDepositedAssets(user1, 0), 100e6);
-        assertEq(metaVault.availableAssets(), 100e6);
+        assertEq(metaVault.flushToDepositedAssets(0), 100e6);
         assertEq(metaVault.totalSupply(), 0);
 
         vm.startPrank(user1);
@@ -325,7 +317,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.stopPrank();
         assertEq(metaVault.balanceOf(user1), 0);
         assertEq(metaVault.userToFlushToDepositedAssets(user1, 0), 120e6);
-        assertEq(metaVault.availableAssets(), 120e6);
+        assertEq(metaVault.flushToDepositedAssets(0), 120e6);
         assertEq(metaVault.totalSupply(), 0);
 
         vm.startPrank(user2);
@@ -333,7 +325,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.stopPrank();
         assertEq(metaVault.balanceOf(user2), 0);
         assertEq(metaVault.userToFlushToDepositedAssets(user2, 0), 30e6);
-        assertEq(metaVault.availableAssets(), 150e6);
+        assertEq(metaVault.flushToDepositedAssets(0), 150e6);
         assertEq(metaVault.totalSupply(), 0);
     }
 
@@ -419,7 +411,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.stopPrank();
 
         assertEq(metaVault.balanceOf(user1), 80e6);
-        assertEq(metaVault.availableAssets(), 0);
+        assertEq(metaVault.flushToDepositedAssets(0), 100e6);
         assertEq(metaVault.totalSupply(), 80e6);
         assertEq(metaVault.userToFlushToRedeemedShares(user1, 1), 20e6);
         assertEq(usdc.balanceOf(address(metaVault)), 0);
@@ -429,7 +421,6 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.stopPrank();
 
         assertEq(metaVault.balanceOf(user1), 70e6);
-        assertEq(metaVault.availableAssets(), 0);
         assertEq(metaVault.totalSupply(), 70e6);
         assertEq(metaVault.userToFlushToRedeemedShares(user1, 1), 30e6);
         assertEq(usdc.balanceOf(address(metaVault)), 0);
@@ -518,13 +509,12 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
         metaVault.flush();
 
-        assertEq(metaVault.availableAssets(), 0);
+        assertEq(metaVault.flushToDepositedAssets(0), 100e6);
         assertEq(usdc.balanceOf(address(metaVault)), 0);
-        assertEq(metaVault.positionTotal(), 100e6);
-        assertEq(metaVault.smartVaultToPosition(vault1), 91e6);
-        assertEq(metaVault.smartVaultToPosition(vault2), 9e6);
-        assertEq(metaVault.getSmartVaultDepositNftIds(vault1).length, 1);
-        assertEq(metaVault.getSmartVaultDepositNftIds(vault2).length, 1);
+        assertVaultBalance(vault1, 0);
+        assertVaultBalance(vault2, 0);
+        assertTrue(metaVault.smartVaultToDepositNftId(vault1) == 1);
+        assertTrue(metaVault.smartVaultToDepositNftId(vault2) == 1);
         assertEq(metaVault.smartVaultToDepositNftIdFromReallocation(vault1), 0);
         assertEq(metaVault.smartVaultToDepositNftIdFromReallocation(vault2), 0);
 
@@ -546,11 +536,11 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         _syncVaults(vaults);
         metaVault.sync();
 
-        assertEq(metaVault.positionTotal(), 100e6);
-        assertEq(metaVault.smartVaultToPosition(vault1), 91e6);
-        assertEq(metaVault.smartVaultToPosition(vault2), 9e6);
-        assertEq(metaVault.getSmartVaultDepositNftIds(vault1).length, 0);
-        assertEq(metaVault.getSmartVaultDepositNftIds(vault2).length, 0);
+        assertVaultBalance(vault1, 91e6);
+        assertVaultBalance(vault2, 9e6);
+
+        assertTrue(metaVault.smartVaultToDepositNftId(vault1) == 0);
+        assertTrue(metaVault.smartVaultToDepositNftId(vault2) == 0);
         assertApproxEqAbs(ISmartVault(vault1).balanceOf(address(metaVault)), 91e21, 1e20);
         assertApproxEqAbs(ISmartVault(vault2).balanceOf(address(metaVault)), 9e21, 1e20);
     }
@@ -558,7 +548,6 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
     function test_flush_withdrawal_only() external {
         setVaults(90_00, 10_00);
 
-        // if there are no open positions flush doesn't do anything
         {
             (uint128 flush, uint128 sync) = metaVault.index();
             assertEq(flush, 0);
@@ -592,14 +581,13 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         _dhw(strategies);
         _syncVaults(vaults);
 
-        assertEq(metaVault.positionTotal(), 90e6);
         {
             (uint128 flush, uint128 sync) = metaVault.index();
             assertEq(flush, 2);
             assertEq(sync, 1);
         }
-        assertEq(metaVault.smartVaultToPosition(vault1), 81e6);
-        assertEq(metaVault.smartVaultToPosition(vault2), 9e6);
+        assertVaultBalance(vault1, 81e6);
+        assertVaultBalance(vault2, 9e6);
         assertEq(metaVault.flushToSmartVaultToWithdrawalNftId(1, vault1), MAXIMAL_DEPOSIT_ID + 1);
         assertEq(metaVault.flushToSmartVaultToWithdrawalNftId(1, vault2), MAXIMAL_DEPOSIT_ID + 1);
     }
@@ -670,8 +658,8 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
             metaVault.reallocate(slippages);
 
-            assertEq(metaVault.getSmartVaultDepositNftIds(vault1).length, 0);
-            assertEq(metaVault.getSmartVaultDepositNftIds(vault2).length, 0);
+            assertTrue(metaVault.smartVaultToDepositNftId(vault1) == 0);
+            assertTrue(metaVault.smartVaultToDepositNftId(vault2) == 0);
             assertEq(metaVault.smartVaultToDepositNftIdFromReallocation(vault1), 0);
             assertTrue(metaVault.smartVaultToDepositNftIdFromReallocation(vault2) > 0);
             {
@@ -680,7 +668,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
                 assertEq(syncIndex, 0);
             }
 
-            vm.expectRevert(MetaVault.PendingReallocationSync.selector);
+            vm.expectRevert(MetaVault.PendingSync.selector);
             metaVault.reallocate(slippages);
 
             _flushVaults(ISmartVault(vault2));
@@ -689,8 +677,8 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
             metaVault.reallocateSync();
 
-            assertEq(metaVault.getSmartVaultDepositNftIds(vault1).length, 0);
-            assertEq(metaVault.getSmartVaultDepositNftIds(vault2).length, 0);
+            assertTrue(metaVault.smartVaultToDepositNftId(vault1) == 0);
+            assertTrue(metaVault.smartVaultToDepositNftId(vault2) == 0);
             assertEq(metaVault.smartVaultToDepositNftIdFromReallocation(vault1), 0);
             assertEq(metaVault.smartVaultToDepositNftIdFromReallocation(vault2), 0);
             {
@@ -701,11 +689,10 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
             assertApproxEqAbs(ISmartVault(vault1).balanceOf(address(metaVault)), 50e21, 1e20);
             assertApproxEqAbs(ISmartVault(vault2).balanceOf(address(metaVault)), 50e21, 1e20);
-            assertEq(metaVault.availableAssets(), 0);
             assertEq(usdc.balanceOf(address(metaVault)), 0);
 
-            assertApproxEqAbs(_deploySpool.spoolLens().getSmartVaultAssetBalances(vault1, false)[0], 50e6, 2);
-            assertApproxEqAbs(_deploySpool.spoolLens().getSmartVaultAssetBalances(vault2, false)[0], 50e6, 2);
+            assertVaultBalance(vault1, 50e6);
+            assertVaultBalance(vault2, 50e6);
         }
 
         // second reallocation
@@ -722,11 +709,10 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
             assertApproxEqAbs(ISmartVault(vault1).balanceOf(address(metaVault)), 15e21, 1e20);
             assertApproxEqAbs(ISmartVault(vault2).balanceOf(address(metaVault)), 85e21, 1e20);
-            assertEq(metaVault.availableAssets(), 0);
             assertEq(usdc.balanceOf(address(metaVault)), 0);
 
-            assertApproxEqAbs(_deploySpool.spoolLens().getSmartVaultAssetBalances(vault1, false)[0], 15e6, 2);
-            assertApproxEqAbs(_deploySpool.spoolLens().getSmartVaultAssetBalances(vault2, false)[0], 85e6, 2);
+            assertVaultBalance(vault1, 15e6);
+            assertVaultBalance(vault2, 85e6);
         }
 
         // third reallocation
@@ -743,11 +729,10 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
             assertApproxEqAbs(ISmartVault(vault1).balanceOf(address(metaVault)), 100e21, 1e20);
             assertEq(ISmartVault(vault2).balanceOf(address(metaVault)), 0);
-            assertEq(metaVault.availableAssets(), 0);
             assertEq(usdc.balanceOf(address(metaVault)), 0);
 
-            assertApproxEqAbs(_deploySpool.spoolLens().getSmartVaultAssetBalances(vault1, false)[0], 100e6, 2);
-            assertEq(_deploySpool.spoolLens().getSmartVaultAssetBalances(vault2, false)[0], 0);
+            assertVaultBalance(vault1, 100e6);
+            assertVaultBalance(vault2, 0);
         }
     }
 
@@ -800,6 +785,35 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
             assertApproxEqAbs(amount, 10e21, 1e20);
             vm.stopPrank();
         }
+    }
+
+    function test_multicall() external {
+        setVaults(50_00, 50_00);
+
+        vm.startPrank(user1);
+        metaVault.deposit(100e6);
+        vm.stopPrank();
+
+        metaVault.flush();
+        _flushVaults(vaults);
+        _dhw(strategies);
+        _syncVaults(vaults);
+        metaVault.sync();
+
+        vm.startPrank(user1);
+        bytes[] memory data = new bytes[](2);
+        data[0] = abi.encodeWithSelector(MetaVault.claim.selector, 0);
+        data[1] = abi.encodeWithSelector(MetaVault.redeem.selector, 20e6);
+        metaVault.multicall(data);
+
+        assertEq(metaVault.balanceOf(user1), 80e6);
+        assertEq(metaVault.totalSupply(), 80e6);
+        assertEq(metaVault.userToFlushToRedeemedShares(user1, 1), 20e6);
+        assertEq(usdc.balanceOf(address(metaVault)), 0);
+    }
+
+    function test_pausing() external {
+        // vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_PAUSER));
     }
 
     function _createVault(
