@@ -56,7 +56,7 @@
     "proxy": "0x23Daf34e2b9Af02A74dC19cB52Af727B19403874"
   },
   "SpoolAccessControl": {
-    "implementation": "0x90598107C463169a9AE18ba53bF2f7e3eB2f08B2",
+    "implementation": "0xB8Fb182bE348D7cA51576A29a7eb7420d3b761aE",
     "proxy": "0x7b533e72E0cDC63AacD8cDB926AC402b846Fbd13"
   },
   "SpoolLens": {
