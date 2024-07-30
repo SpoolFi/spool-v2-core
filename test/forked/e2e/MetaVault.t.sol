@@ -96,6 +96,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.startPrank(owner);
         metaVault.addSmartVaults(v, allocations);
         vm.stopPrank();
+        reallocate();
     }
 
     function changeAllocation(uint256 allocation1, uint256 allocation2) internal {
@@ -105,6 +106,13 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.startPrank(owner);
         metaVault.setSmartVaultAllocations(allocations);
         vm.stopPrank();
+    }
+
+    function reallocate() internal {
+        uint256[][][] memory slippages = new uint256[][][](2);
+        slippages[0] = new uint256[][](1);
+        slippages[1] = new uint256[][](1);
+        metaVault.reallocate(slippages);
     }
 
     function assertVaultBalance(address vault, uint256 balance) internal {
@@ -601,9 +609,6 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
     function test_reallocate() external {
         setVaults(90_00, 10_00);
-        uint256[][][] memory slippages = new uint256[][][](2);
-        slippages[0] = new uint256[][](1);
-        slippages[1] = new uint256[][](1);
 
         vm.startPrank(user1);
         metaVault.deposit(100e6);
@@ -625,7 +630,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
                 assertEq(syncIndex, 0);
             }
 
-            metaVault.reallocate(slippages);
+            reallocate();
 
             assertTrue(metaVault.smartVaultToDepositNftId(vault1) == 0);
             assertTrue(metaVault.smartVaultToDepositNftId(vault2) == 0);
@@ -638,7 +643,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
             }
 
             vm.expectRevert(MetaVault.PendingSync.selector);
-            metaVault.reallocate(slippages);
+            reallocate();
 
             _flushVaults(ISmartVault(vault2));
             _dhw(strategies);
@@ -668,7 +673,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         {
             changeAllocation(15_00, 85_00);
 
-            metaVault.reallocate(slippages);
+            reallocate();
 
             _flushVaults(ISmartVault(vault2));
             _dhw(strategies);
@@ -688,7 +693,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         {
             changeAllocation(100_00, 0);
 
-            metaVault.reallocate(slippages);
+            reallocate();
 
             // vault with zero allocation will be removed on reallocation
             {

@@ -144,6 +144,10 @@ contract MetaVault is
      * @dev Called method is paused
      */
     error Paused(bytes4 selector);
+    /**
+     * @dev Flush is blocked until reallocation is not done
+     */
+    error NeedReallocation();
 
     // ========================== IMMUTABLES ==========================
 
@@ -242,6 +246,10 @@ contract MetaVault is
      * @dev selectively pause functions
      */
     mapping(bytes4 => bool) public selectorToPaused;
+    /**
+     * @dev indicates that allocation has changed and there is a need for reallocation
+     */
+    bool public needReallocation;
 
     // ========================== CONSTRUCTOR ==========================
 
@@ -270,7 +278,7 @@ contract MetaVault is
         __ERC20_init(name_, symbol_);
         asset = IERC20MetadataUpgradeable(asset_);
         _decimals = uint8(asset.decimals());
-        _addSmartVaults(vaults, allocations);
+        _addSmartVaults(vaults, allocations, true);
         asset.approve(address(smartVaultManager), type(uint256).max);
     }
 
@@ -319,14 +327,14 @@ contract MetaVault is
     function addSmartVaults(address[] calldata vaults, uint256[] calldata allocations) external onlyOwner {
         _checkNotPaused();
         _checkPendingSync();
-        _addSmartVaults(vaults, allocations);
+        _addSmartVaults(vaults, allocations, false);
     }
 
     /**
      * @param vaults list to add
      * @param allocations for all smart vaults
      */
-    function _addSmartVaults(address[] calldata vaults, uint256[] calldata allocations) internal {
+    function _addSmartVaults(address[] calldata vaults, uint256[] calldata allocations, bool initialization) internal {
         if (vaults.length > 0) {
             /// if there is pending sync adding smart vaults is prohibited
             if (_smartVaults.list.length + vaults.length > MAX_SMART_VAULT_AMOUNT) revert MaxSmartVaultAmount();
@@ -335,7 +343,7 @@ contract MetaVault is
             }
             _smartVaults.addList(vaults);
             emit SmartVaultsChange(_smartVaults.list);
-            _setSmartVaultAllocations(allocations);
+            _setSmartVaultAllocations(allocations, initialization);
         }
     }
 
@@ -345,7 +353,7 @@ contract MetaVault is
      */
     function setSmartVaultAllocations(uint256[] calldata allocations) external onlyOwner {
         _checkNotPaused();
-        _setSmartVaultAllocations(allocations);
+        _setSmartVaultAllocations(allocations, false);
     }
 
     /**
@@ -367,7 +375,7 @@ contract MetaVault is
      * @dev set allocations for managed smart vaults
      * @param allocations to set
      */
-    function _setSmartVaultAllocations(uint256[] calldata allocations) internal {
+    function _setSmartVaultAllocations(uint256[] calldata allocations, bool initialization) internal {
         address[] memory vaults = _smartVaults.list;
         if (allocations.length != vaults.length) revert ArgumentLengthMismatch();
         uint256 sum;
@@ -377,6 +385,9 @@ contract MetaVault is
         }
         if (sum != 100_00) revert WrongAllocation();
         emit AllocationChange(allocations);
+        if (!initialization) {
+            needReallocation = true;
+        }
     }
 
     // ========================== USER FACING ==========================
@@ -458,13 +469,15 @@ contract MetaVault is
     }
 
     /**
-     * @dev anybody can flush deposits and redeems accumulated on MetaVault.
+     * @dev flush deposits and redeems accumulated on MetaVault.
      * @return hadEffect bool indicating whether flush had some effect / reverts if not all deposit nfts are claimed/claimable
      */
     function flush() external returns (bool hadEffect) {
         _checkNotPaused();
         _checkOperator();
         _checkPendingSync();
+        if (needReallocation) revert NeedReallocation();
+
         address[] memory vaults = _smartVaults.list;
         if (vaults.length > 0) {
             uint128 flushIndex = index.flush;
@@ -706,6 +719,7 @@ contract MetaVault is
                 }
             }
         }
+        needReallocation = false;
     }
 
     /**
