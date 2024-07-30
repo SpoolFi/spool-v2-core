@@ -272,37 +272,6 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         }
     }
 
-    function test_removeSmartVaults() external {
-        setVaults(90_00, 10_00);
-        // vault cannot be removed if its allocation is non zero
-        {
-            address[] memory v = new address[](2);
-            v[0] = address(vault1);
-            v[1] = address(vault2);
-            uint256[] memory allocations = new uint256[](2);
-            allocations[0] = 90_00;
-            allocations[1] = 10_00;
-            vm.startPrank(owner);
-            vm.expectRevert(MetaVault.NonZeroAllocation.selector);
-            metaVault.removeSmartVaults(v);
-            vm.stopPrank();
-        }
-        // remove vault
-        {
-            uint256[] memory allocations = new uint256[](2);
-            allocations[0] = 0;
-            allocations[1] = 100_00;
-            vm.startPrank(owner);
-            metaVault.setSmartVaultAllocations(allocations);
-            address[] memory v = new address[](1);
-            v[0] = address(vault1);
-            metaVault.removeSmartVaults(v);
-            v[0] = address(vault2);
-            vm.stopPrank();
-            assertEq(metaVault.getSmartVaults(), v);
-        }
-    }
-
     function test_deposit() external {
         vm.startPrank(user1);
         metaVault.deposit(100e6);
@@ -721,6 +690,13 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
             metaVault.reallocate(slippages);
 
+            // vault with zero allocation will be removed on reallocation
+            {
+                address[] memory v = metaVault.getSmartVaults();
+                assertEq(v.length, 1);
+                assertEq(v[0], vault1);
+            }
+
             _flushVaults(ISmartVault(vault1));
             _dhw(strategies);
             _syncVaults(ISmartVault(vault1));
@@ -813,7 +789,36 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
     }
 
     function test_pausing() external {
-        // vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_PAUSER));
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_PAUSER, address(this)));
+        metaVault.setPaused(MetaVault.deposit.selector, true);
+
+        assertFalse(metaVault.selectorToPaused(MetaVault.deposit.selector));
+
+        vm.startPrank(_spoolAdmin);
+        _deploySpool.spoolAccessControl().grantRole(ROLE_PAUSER, address(this));
+        vm.stopPrank();
+
+        metaVault.setPaused(MetaVault.deposit.selector, true);
+        assertTrue(metaVault.selectorToPaused(MetaVault.deposit.selector));
+
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(MetaVault.Paused.selector, MetaVault.deposit.selector));
+        metaVault.deposit(1);
+        vm.stopPrank();
+
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_UNPAUSER, address(this)));
+        metaVault.setPaused(MetaVault.deposit.selector, false);
+
+        vm.startPrank(_spoolAdmin);
+        _deploySpool.spoolAccessControl().grantRole(ROLE_UNPAUSER, address(this));
+        vm.stopPrank();
+
+        metaVault.setPaused(MetaVault.deposit.selector, false);
+        assertFalse(metaVault.selectorToPaused(MetaVault.deposit.selector));
+
+        vm.startPrank(user1);
+        metaVault.deposit(1);
+        vm.stopPrank();
     }
 
     function _createVault(

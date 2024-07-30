@@ -133,10 +133,6 @@ contract MetaVault is
      */
     error InvalidVaultAsset();
     /**
-     * @dev To remove managed smart vault its allocation should be set to zero and all SVTs should be burned
-     */
-    error NonZeroAllocation();
-    /**
      * @dev Maximum smart vault amount is exceeded
      */
     error MaxSmartVaultAmount();
@@ -340,25 +336,6 @@ contract MetaVault is
             _smartVaults.addList(vaults);
             emit SmartVaultsChange(_smartVaults.list);
             _setSmartVaultAllocations(allocations);
-        }
-    }
-
-    /**
-     * @dev Anybody can remove smart vault from managed list if its allocation is zero
-     * @param vaults list to remove
-     */
-    function removeSmartVaults(address[] calldata vaults) external {
-        _checkNotPaused();
-        if (vaults.length > 0) {
-            /// vault can be removed from managed list only when
-            // its allocation and position are zero
-            for (uint256 i; i < vaults.length; i++) {
-                if (smartVaultToAllocation[vaults[i]] > 0 || ISmartVault(vaults[i]).balanceOf(address(this)) > 0) {
-                    revert NonZeroAllocation();
-                }
-            }
-            _smartVaults.removeList(vaults);
-            emit SmartVaultsChange(_smartVaults.list);
         }
     }
 
@@ -642,68 +619,92 @@ contract MetaVault is
         uint256 withdrawnAssets;
         /// total equivalent of MetaVault shares for position change
         uint256 positionChangeTotal;
+        /// amount of vaults to remove
+        uint256 vaultsToRemoveCount;
+        /// index for populating list of vaults for removal
+        uint256 vaultToRemoveIndex;
+        /// flag to check whether it is a estimation transaction to get svts amount
         bool isViewExecution;
     }
 
     /**
      * @dev only DoHardWorker can reallocate positions
+     * if smartVaultToAllocation is zero all funds are withdrawn from this vault and it is removed from _smartVault.list
      * @param slippages for redeemFast
      */
     function reallocate(uint256[][][] calldata slippages) external {
         _checkNotPaused();
         _checkOperator();
         _checkPendingSync();
-        ReallocationVars memory vars = ReallocationVars(0, 0, tx.origin == address(0));
+        ReallocationVars memory vars = ReallocationVars(0, 0, 0, 0, tx.origin == address(0));
         /// cache
         address[] memory vaults = _smartVaults.list;
         /// track required adjustment for vaults positions
+        /// uint256 max means vault should be removed
         uint256[] memory positionToAdd = new uint256[](vaults.length);
         (uint256 totalBalance, uint256[][] memory balances) = getBalances(vaults);
-        for (uint256 i; i < vaults.length; i++) {
-            uint256 currentPosition = balances[i][0];
-            uint256 desiredPosition = smartVaultToAllocation[vaults[i]] * totalBalance / 100_00;
-            /// if more MetaVault shares should be deposited we save this data for later
-            if (desiredPosition > currentPosition) {
-                uint256 positionDiff = desiredPosition - currentPosition;
-                positionToAdd[i] = positionDiff;
-                vars.positionChangeTotal += positionDiff;
-                // if amount of MetaVault shares should be reduced we perform redeemFast
-            } else if (desiredPosition < currentPosition) {
-                uint256 positionDiff = currentPosition - desiredPosition;
-                /// previously all SVTs shares were claimed,
-                /// so we can calculate the proportion of SVTs to be withdrawn using MetaVault deposited shares ratio
-                uint256 svtsToRedeem = positionDiff * ISmartVault(vaults[i]).balanceOf(address(this)) / currentPosition;
-                if (vars.isViewExecution) {
-                    emit SvtToRedeem(vaults[i], svtsToRedeem);
-                    continue;
-                }
-                vars.withdrawnAssets += smartVaultManager.redeemFast(
-                    RedeemBag({
-                        smartVault: vaults[i],
-                        shares: svtsToRedeem,
-                        nftIds: new uint256[](0),
-                        nftAmounts: new uint256[](0)
-                    }),
-                    slippages[i]
-                )[0];
-            }
-        }
-        if (vars.isViewExecution) {
-            return;
-        }
-
-        /// now we will perform deposits
-        if (vars.withdrawnAssets > 0) {
+        if (totalBalance > 0) {
             for (uint256 i; i < vaults.length; i++) {
-                /// only if there are "MetaVault shares to deposit"
-                if (positionToAdd[i] > 0) {
-                    /// calculate amount of assets based on MetaVault shares ratio
-                    uint256 amount = positionToAdd[i] * vars.withdrawnAssets / vars.positionChangeTotal;
-                    smartVaultToDepositNftIdFromReallocation[vaults[i]] = _spoolDeposit(vaults[i], amount);
+                uint256 currentPosition = balances[i][0];
+                uint256 desiredPosition = smartVaultToAllocation[vaults[i]] * totalBalance / 100_00;
+                /// if more MetaVault shares should be deposited we save this data for later
+                if (desiredPosition > currentPosition) {
+                    uint256 positionDiff = desiredPosition - currentPosition;
+                    positionToAdd[i] = positionDiff;
+                    vars.positionChangeTotal += positionDiff;
+                    // if amount of MetaVault shares should be reduced we perform redeemFast
+                } else if (desiredPosition < currentPosition) {
+                    uint256 positionDiff = currentPosition - desiredPosition;
+                    /// previously all SVTs shares were claimed,
+                    /// so we can calculate the proportion of SVTs to be withdrawn using MetaVault deposited shares ratio
+                    uint256 svtsToRedeem =
+                        positionDiff * ISmartVault(vaults[i]).balanceOf(address(this)) / currentPosition;
+                    if (vars.isViewExecution) {
+                        emit SvtToRedeem(vaults[i], svtsToRedeem);
+                        continue;
+                    }
+                    vars.withdrawnAssets += smartVaultManager.redeemFast(
+                        RedeemBag({
+                            smartVault: vaults[i],
+                            shares: svtsToRedeem,
+                            nftIds: new uint256[](0),
+                            nftAmounts: new uint256[](0)
+                        }),
+                        slippages[i]
+                    )[0];
+                    // means we need to remove vault
+                    if (desiredPosition == 0) {
+                        positionToAdd[i] = type(uint256).max;
+                        vars.vaultsToRemoveCount++;
+                    }
                 }
             }
-            emit Reallocate(reallocationIndex.flush);
-            reallocationIndex.flush++;
+            if (vars.isViewExecution) {
+                return;
+            }
+
+            /// now we will perform deposits and vaults removal
+            if (vars.withdrawnAssets > 0) {
+                address[] memory vaultsToRemove = new address[](vars.vaultsToRemoveCount);
+                for (uint256 i; i < vaults.length; i++) {
+                    if (positionToAdd[i] == type(uint256).max) {
+                        vaultsToRemove[vars.vaultToRemoveIndex] = vaults[i];
+                        vars.vaultToRemoveIndex++;
+                        /// only if there are "MetaVault shares to deposit"
+                    } else if (positionToAdd[i] > 0) {
+                        /// calculate amount of assets based on MetaVault shares ratio
+                        uint256 amount = positionToAdd[i] * vars.withdrawnAssets / vars.positionChangeTotal;
+                        smartVaultToDepositNftIdFromReallocation[vaults[i]] = _spoolDeposit(vaults[i], amount);
+                    }
+                }
+                emit Reallocate(reallocationIndex.flush);
+                reallocationIndex.flush++;
+                /// remove smart vault from managed list on reallocation
+                if (vaultsToRemove.length > 0) {
+                    _smartVaults.removeList(vaultsToRemove);
+                    emit SmartVaultsChange(_smartVaults.list);
+                }
+            }
         }
     }
 
@@ -723,11 +724,13 @@ contract MetaVault is
         for (uint256 i; i < vaults.length; i++) {
             uint256[] memory depositNftIds = new uint256[](1);
             depositNftIds[0] = smartVaultToDepositNftIdFromReallocation[vaults[i]];
-            uint256[] memory nftAmounts = new uint256[](1);
-            nftAmounts[0] = ISmartVault(vaults[i]).balanceOfFractional(address(this), depositNftIds[0]);
-            smartVaultManager.claimSmartVaultTokens(vaults[i], depositNftIds, nftAmounts);
-            hadEffect = true;
-            delete smartVaultToDepositNftIdFromReallocation[vaults[i]];
+            if (depositNftIds[0] > 0) {
+                uint256[] memory nftAmounts = new uint256[](1);
+                nftAmounts[0] = ISmartVault(vaults[i]).balanceOfFractional(address(this), depositNftIds[0]);
+                smartVaultManager.claimSmartVaultTokens(vaults[i], depositNftIds, nftAmounts);
+                hadEffect = true;
+                delete smartVaultToDepositNftIdFromReallocation[vaults[i]];
+            }
         }
         if (hadEffect) {
             emit ReallocateSync(reallocationIndex.sync);
