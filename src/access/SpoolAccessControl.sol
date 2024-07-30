@@ -66,7 +66,7 @@ contract SpoolAccessControl is AccessControlUpgradeable, PausableUpgradeable, IS
     function transferSmartVaultOwnership(address smartVault, address newOwner) external {
         if (msg.sender != smartVaultOwner[smartVault]) revert OwnableUnauthorizedAccount(msg.sender);
         smartVaultOwnerPending[smartVault] = newOwner;
-        emit SmartVaultOwnershipTransferStarted(msg.sender, newOwner);
+        emit SmartVaultOwnershipTransferStarted(smartVault, msg.sender, newOwner);
     }
 
     /**
@@ -81,7 +81,7 @@ contract SpoolAccessControl is AccessControlUpgradeable, PausableUpgradeable, IS
         bytes32 smartVaultRole = _getSmartVaultRole(smartVault, ROLE_SMART_VAULT_ADMIN);
         _revokeRole(smartVaultRole, oldOwner);
         _grantRole(smartVaultRole, newOwner);
-        emit SmartVaultOwnershipTransferred(oldOwner, newOwner);
+        emit SmartVaultOwnershipTransferred(smartVault, oldOwner, newOwner);
     }
 
     function grantSmartVaultRole(address smartVault, bytes32 role, address account)

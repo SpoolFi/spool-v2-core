@@ -171,15 +171,21 @@ interface ISpoolAccessControl is IAccessControlUpgradeable {
 
     /**
      * @notice SmartVault owner initiated transfer
+     * @param smartVault address
      * @param previousOwner address
      * @param newOwner address
      */
-    event SmartVaultOwnershipTransferStarted(address indexed previousOwner, address indexed newOwner);
+    event SmartVaultOwnershipTransferStarted(
+        address indexed smartVault, address indexed previousOwner, address indexed newOwner
+    );
 
     /**
      * @notice Ownership transfer is finalized
+     * @param smartVault address
      * @param previousOwner address
      * @param newOwner address
      */
-    event SmartVaultOwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event SmartVaultOwnershipTransferred(
+        address indexed smartVault, address indexed previousOwner, address indexed newOwner
+    );
 }
