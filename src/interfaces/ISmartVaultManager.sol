@@ -130,6 +130,11 @@ interface ISmartVaultManager is ISmartVaultRegistry {
     /* ========== EXTERNAL VIEW FUNCTIONS ========== */
 
     /**
+     * @dev Check whether all DHW runs were completed for given flush index
+     */
+    function areAllDhwRunsCompleted(address smartVault, uint256 flushIndex) external view returns (bool);
+
+    /**
      * @notice Get smartVault fees
      * @param smartVault Smart vault.
      * @return SmartVaultFees
