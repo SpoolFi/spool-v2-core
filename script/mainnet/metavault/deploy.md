@@ -1,0 +1,4 @@
+- Upgrade SmartVaultManager to support MetaVault functionality
+- Deploy MetaVaultGuard
+- Deploy MetaVault implementation
+- Deploy MetaVaultFactory

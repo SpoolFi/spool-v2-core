@@ -11,7 +11,7 @@ import "@openzeppelin-upgradeable/utils/MulticallUpgradeable.sol";
 import "./access/SpoolAccessControllable.sol";
 import "./libraries/ListMap.sol";
 import "./interfaces/ISmartVaultManager.sol";
-import "./interfaces/IAssetGroupRegistry.sol";
+import "./interfaces/IMetaVaultGuard.sol";
 import "./interfaces/ISpoolLens.sol";
 import "./external/interfaces/dai/IDAI.sol";
 import "./external/interfaces/permit2/IPermit2.sol";
@@ -121,18 +121,6 @@ contract MetaVault is
      */
     error ArgumentLengthMismatch();
     /**
-     * @dev Only SmartVaults with zero management fee are supported
-     */
-    error InvalidVaultManagementFee();
-    /**
-     * @dev Only SmartVaults with zero deposit fee are supported
-     */
-    error InvalidVaultDepositFee();
-    /**
-     * @dev Only SmartVaults with the same underlying assets are supported
-     */
-    error InvalidVaultAsset();
-    /**
      * @dev Maximum smart vault amount is exceeded
      */
     error MaxSmartVaultAmount();
@@ -160,9 +148,9 @@ contract MetaVault is
      */
     ISmartVaultManager internal immutable smartVaultManager;
     /**
-     * @dev AssetGroupRegistry contract
+     * @dev MetaVaultGuard contract
      */
-    IAssetGroupRegistry internal immutable assetGroupRegistry;
+    IMetaVaultGuard internal immutable metaVaultGuard;
     /**
      * @dev SpoolLens contract
      */
@@ -173,7 +161,7 @@ contract MetaVault is
     /**
      * @dev Underlying asset used for investments
      */
-    IERC20MetadataUpgradeable public asset;
+    address public asset;
     /**
      * @dev decimals of shares to match those in asset
      */
@@ -260,34 +248,35 @@ contract MetaVault is
     constructor(
         ISmartVaultManager smartVaultManager_,
         ISpoolAccessControl spoolAccessControl_,
-        IAssetGroupRegistry assetGroupRegistry_,
+        IMetaVaultGuard metaVaultGuard_,
         ISpoolLens spoolLens_
     ) SpoolAccessControllable(spoolAccessControl_) {
         if (
-            address(smartVaultManager_) == address(0) || address(assetGroupRegistry_) == address(0)
+            address(smartVaultManager_) == address(0) || address(metaVaultGuard_) == address(0)
                 || address(spoolLens_) == address(0)
         ) revert ConfigurationAddressZero();
         smartVaultManager = smartVaultManager_;
-        assetGroupRegistry = assetGroupRegistry_;
+        metaVaultGuard = metaVaultGuard_;
         spoolLens = spoolLens_;
     }
 
     // ========================== INITIALIZER ==========================
 
     function initialize(
+        address owner,
         address asset_,
         string memory name_,
         string memory symbol_,
         address[] calldata vaults,
         uint256[] calldata allocations
     ) external initializer {
-        __Ownable2Step_init();
         __Multicall_init();
         __ERC20_init(name_, symbol_);
-        asset = IERC20MetadataUpgradeable(asset_);
-        _decimals = uint8(asset.decimals());
+        asset = asset_;
+        _decimals = uint8(IERC20MetadataUpgradeable(asset).decimals());
         _addSmartVaults(vaults, allocations, true);
-        asset.approve(address(smartVaultManager), type(uint256).max);
+        IERC20MetadataUpgradeable(asset).approve(address(smartVaultManager), type(uint256).max);
+        _transferOwnership(owner);
     }
 
     // ==================== PAUSING ====================
@@ -320,21 +309,12 @@ contract MetaVault is
     }
 
     /**
-     * @dev is smart vault valid to be managed by MetaVault
-     * @return true or reverts
-     */
-    function smartVaultIsValid(address vault) external view returns (bool) {
-        return _validateSmartVault(vault);
-    }
-
-    /**
      * @dev Owner of MetaVault can add new smart vaults for management
      * @param vaults list to add
      * @param allocations for all smart vaults
      */
     function addSmartVaults(address[] calldata vaults, uint256[] calldata allocations) external onlyOwner {
         _checkNotPaused();
-        _checkPendingSync();
         _addSmartVaults(vaults, allocations, false);
     }
 
@@ -346,9 +326,7 @@ contract MetaVault is
         if (vaults.length > 0) {
             /// if there is pending sync adding smart vaults is prohibited
             if (_smartVaults.list.length + vaults.length > MAX_SMART_VAULT_AMOUNT) revert MaxSmartVaultAmount();
-            for (uint256 i; i < vaults.length; i++) {
-                _validateSmartVault(vaults[i]);
-            }
+            metaVaultGuard.validateSmartVaults(asset, vaults);
             _smartVaults.addList(vaults);
             emit SmartVaultsChange(_smartVaults.list);
             _setSmartVaultAllocations(allocations, initialization);
@@ -362,21 +340,6 @@ contract MetaVault is
     function setSmartVaultAllocations(uint256[] calldata allocations) external onlyOwner {
         _checkNotPaused();
         _setSmartVaultAllocations(allocations, false);
-    }
-
-    /**
-     * @dev Check if given smart vault can be managed by MetaVault
-     * @param vault to validate
-     */
-    function _validateSmartVault(address vault) internal view returns (bool) {
-        SmartVaultFees memory fees = smartVaultManager.getSmartVaultFees(vault);
-        /// management and deposit fees should be zero
-        if (fees.managementFeePct > 0) revert InvalidVaultManagementFee();
-        if (fees.depositFeePct > 0) revert InvalidVaultDepositFee();
-        address[] memory vaultAssets = assetGroupRegistry.listAssetGroup(smartVaultManager.assetGroupId(vault));
-        /// assetGroup should match the underlying asset of MetaVault
-        if (vaultAssets.length != 1 || vaultAssets[0] != address(asset)) revert InvalidVaultAsset();
-        return true;
     }
 
     /**
@@ -410,7 +373,7 @@ contract MetaVault is
         /// MetaVault has now more funds to manage
         flushToDepositedAssets[flushIndex] += amount;
         userToFlushToDepositedAssets[msg.sender][flushIndex] += amount;
-        asset.safeTransferFrom(msg.sender, address(this), amount);
+        IERC20MetadataUpgradeable(asset).safeTransferFrom(msg.sender, address(this), amount);
         emit Deposit(msg.sender, flushIndex, amount);
     }
 
@@ -456,7 +419,7 @@ contract MetaVault is
         amount = shares * flushToWithdrawnAssets[flushIndex] / flushToRedeemedShares[flushIndex];
         /// delete entry for user to disable repeated withdrawal
         delete userToFlushToRedeemedShares[msg.sender][flushIndex];
-        asset.safeTransfer(msg.sender, amount);
+        IERC20MetadataUpgradeable(asset).safeTransfer(msg.sender, amount);
         emit Withdraw(msg.sender, flushIndex, amount);
     }
 
@@ -836,13 +799,13 @@ contract MetaVault is
     /// @dev if asset supports EIP712
     function permitAsset(uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
         _checkNotPaused();
-        IERC20PermitUpgradeable(address(asset)).permit(msg.sender, address(this), amount, deadline, v, r, s);
+        IERC20PermitUpgradeable(asset).permit(msg.sender, address(this), amount, deadline, v, r, s);
     }
 
     /// @dev if asset is DAI
     function permitDai(uint256 nonce, uint256 deadline, bool allowed, uint8 v, bytes32 r, bytes32 s) external {
         _checkNotPaused();
-        IDAI(address(asset)).permit(msg.sender, address(this), nonce, deadline, allowed, v, r, s);
+        IDAI(asset).permit(msg.sender, address(this), nonce, deadline, allowed, v, r, s);
     }
 
     /// @dev if permit is not supported for asset, Permit2 contract from Uniswap can be used - https://github.com/Uniswap/permit2

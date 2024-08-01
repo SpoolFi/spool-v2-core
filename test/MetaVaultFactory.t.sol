@@ -9,6 +9,7 @@ import "../src/MetaVault.sol";
 import "../src/MetaVaultFactory.sol";
 import "../src/SmartVault.sol";
 import "../src/access/SpoolAccessControl.sol";
+import "../src/MetaVaultGuard.sol";
 import "../src/SpoolLens.sol";
 import "./mocks/MockToken.sol";
 
@@ -21,6 +22,7 @@ contract MetaVaultFactoryTest is Test {
     uint256[] allocations;
     SpoolAccessControl accessControl;
     IAssetGroupRegistry assetGroupRegistry;
+    IMetaVaultGuard metaVaultGuard;
     ISpoolLens spoolLens;
 
     address tokenAllowed;
@@ -62,6 +64,7 @@ contract MetaVaultFactoryTest is Test {
         );
 
         ISmartVaultManager smartVaultManager = ISmartVaultManager(address(0x4));
+        metaVaultGuard = new MetaVaultGuardMock(smartVaultManager, assetGroupRegistry, IGuardManager(address(0xef)));
         vm.mockCall(
             address(smartVaultManager),
             abi.encodeWithSelector(ISmartVaultManager.getSmartVaultFees.selector, address(vault)),
@@ -73,7 +76,7 @@ contract MetaVaultFactoryTest is Test {
             abi.encode(1)
         );
 
-        address implementation = address(new MetaVault(smartVaultManager, accessControl, assetGroupRegistry, spoolLens));
+        address implementation = address(new MetaVault(smartVaultManager, accessControl, metaVaultGuard, spoolLens));
 
         factory = new MetaVaultFactory(implementation, accessControl, assetGroupRegistry);
     }
@@ -152,7 +155,7 @@ contract MetaVaultFactoryTest is Test {
         accessControl.grantRole(ROLE_META_VAULT_DEPLOYER, address(this));
 
         address predictedAddress = factory.predictDeterministicAddress(
-            tokenAllowed, "test", "TST", keccak256("salt"), new address[](0), new uint256[](0)
+            address(this), tokenAllowed, "test", "TST", keccak256("salt"), new address[](0), new uint256[](0)
         );
 
         vm.expectEmit(false, false, false, false);
@@ -171,7 +174,7 @@ contract MetaVaultFactoryTest is Test {
 
         /// upgrade implementation of MetaVault
         factory.upgradeTo(
-            address(new MetaVault2(ISmartVaultManager(address(0x4)), accessControl, assetGroupRegistry, spoolLens))
+            address(new MetaVault2(ISmartVaultManager(address(0x4)), accessControl, metaVaultGuard, spoolLens))
         );
         assertEq(MetaVault2(address(vault)).version(), 2);
     }
@@ -181,11 +184,23 @@ contract MetaVault2 is MetaVault {
     constructor(
         ISmartVaultManager smartVaultManager_,
         ISpoolAccessControl spoolAccessControl_,
-        IAssetGroupRegistry assetGroupRegistry_,
+        IMetaVaultGuard metaVaultGuard_,
         ISpoolLens spoolLens
-    ) MetaVault(smartVaultManager_, spoolAccessControl_, assetGroupRegistry_, spoolLens) {}
+    ) MetaVault(smartVaultManager_, spoolAccessControl_, metaVaultGuard_, spoolLens) {}
 
     function version() external pure returns (uint256) {
         return 2;
+    }
+}
+
+contract MetaVaultGuardMock is MetaVaultGuard {
+    constructor(
+        ISmartVaultManager smartVaultManager_,
+        IAssetGroupRegistry assetGroupRegistry_,
+        IGuardManager guardManager_
+    ) MetaVaultGuard(smartVaultManager_, assetGroupRegistry_, guardManager_) {}
+
+    function validateSmartVaults(address, address[] calldata) external pure override returns (bool) {
+        return true;
     }
 }

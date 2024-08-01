@@ -14,6 +14,8 @@ import "../ForkTestFixtureDeployment.sol";
 import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 
 import "../../../src/MetaVault.sol";
+import "../../../src/MetaVaultGuard.sol";
+import "../../../src/MetaVaultFactory.sol";
 import "../../../src/libraries/ListMap.sol";
 import "../../../src/managers/DepositManager.sol";
 import "../../../src/managers/WithdrawalManager.sol";
@@ -29,6 +31,9 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
     address public vault1;
     address public vault2;
 
+    MetaVaultGuard metaVaultGuard;
+    MetaVaultFactory metaVaultFactory;
+
     address[] public strategies;
 
     address owner = address(0x19);
@@ -42,6 +47,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.startPrank(_spoolAdmin);
         _deploySpool.spoolAccessControl().grantRole(ROLE_ALLOCATION_PROVIDER, address(mockAllocationProvider));
         _deploySpool.spoolAccessControl().grantRole(ROLE_DO_HARD_WORKER, address(this));
+        _deploySpool.spoolAccessControl().grantRole(ROLE_META_VAULT_DEPLOYER, owner);
         vm.stopPrank();
 
         uint256 assetGroupIdUSDC = _getAssetGroupId(USDC_KEY);
@@ -62,17 +68,19 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         _dealTokens(user2);
         _dealTokens(owner);
 
-        vm.startPrank(owner);
+        metaVaultGuard =
+            new MetaVaultGuard(_smartVaultManager, _deploySpool.assetGroupRegistry(), _deploySpool.guardManager());
+
         address metaVaultImpl = address(
             new MetaVault(
-                _smartVaultManager,
-                _deploySpool.spoolAccessControl(),
-                _deploySpool.assetGroupRegistry(),
-                _deploySpool.spoolLens()
+                _smartVaultManager, _deploySpool.spoolAccessControl(), metaVaultGuard, _deploySpool.spoolLens()
             )
         );
-        metaVault = MetaVault(address(new ERC1967Proxy(metaVaultImpl, "")));
-        metaVault.initialize(address(usdc), "MetaVault", "M", new address[](0), new uint256[](0));
+        metaVaultFactory =
+            new MetaVaultFactory(metaVaultImpl, _deploySpool.spoolAccessControl(), _deploySpool.assetGroupRegistry());
+        vm.startPrank(owner);
+        metaVault =
+            metaVaultFactory.deployMetaVault(address(usdc), "MetaVault", "M", new address[](0), new uint256[](0));
         vm.stopPrank();
 
         vm.startPrank(user1);
@@ -120,63 +128,6 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         v[0] = vault;
         (uint256 totalBalance,) = metaVault.getBalances(v);
         assertApproxEqAbs(totalBalance, balance, 3);
-    }
-
-    function test_smartVaultIsValid() external {
-        // same asset group, zero management and deposit fee vault is valid
-        assertTrue(metaVault.smartVaultIsValid(address(vault1)));
-        assertTrue(metaVault.smartVaultIsValid(address(vault2)));
-        // different asset group is not valid
-        {
-            uint256 assetGroup = _getAssetGroupId(USDT_KEY);
-            address vault = address(
-                _createVault(
-                    assetGroup,
-                    Arrays.toArray(_getStrategyAddress(AAVE_V2_KEY, assetGroup)),
-                    uint16a16Lib.set(uint16a16.wrap(0), Arrays.toArray(FULL_PERCENT)),
-                    address(0),
-                    0,
-                    0,
-                    100
-                )
-            );
-            vm.expectRevert(MetaVault.InvalidVaultAsset.selector);
-            metaVault.smartVaultIsValid(vault);
-        }
-        // non zero management fee is not valid
-        {
-            uint256 assetGroup = _getAssetGroupId(USDC_KEY);
-            address vault = address(
-                _createVault(
-                    assetGroup,
-                    Arrays.toArray(_getStrategyAddress(AAVE_V2_KEY, assetGroup)),
-                    uint16a16Lib.set(uint16a16.wrap(0), Arrays.toArray(FULL_PERCENT)),
-                    address(0),
-                    10,
-                    0,
-                    100
-                )
-            );
-            vm.expectRevert(MetaVault.InvalidVaultManagementFee.selector);
-            metaVault.smartVaultIsValid(vault);
-        }
-        // non zero deposit fee is not valid
-        {
-            uint256 assetGroup = _getAssetGroupId(USDC_KEY);
-            address vault = address(
-                _createVault(
-                    assetGroup,
-                    Arrays.toArray(_getStrategyAddress(AAVE_V2_KEY, assetGroup)),
-                    uint16a16Lib.set(uint16a16.wrap(0), Arrays.toArray(FULL_PERCENT)),
-                    address(0),
-                    0,
-                    10,
-                    100
-                )
-            );
-            vm.expectRevert(MetaVault.InvalidVaultDepositFee.selector);
-            metaVault.smartVaultIsValid(vault);
-        }
     }
 
     function test_addSmartVaults() external {

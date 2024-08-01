@@ -52,7 +52,9 @@ contract MetaVaultFactory is UpgradeableBeacon, SpoolAccessControllable {
         _validateAsset(asset);
 
         address metaVault = address(
-            new BeaconProxy(address(this), _encodeInitializationCalldata(asset, name, symbol, vaults, allocations))
+            new BeaconProxy(
+                address(this), _encodeInitializationCalldata(msg.sender, asset, name, symbol, vaults, allocations)
+            )
         );
 
         emit MetaVaultDeployed(metaVault, msg.sender);
@@ -80,7 +82,7 @@ contract MetaVaultFactory is UpgradeableBeacon, SpoolAccessControllable {
 
         address metaVaultAddress = address(
             new BeaconProxy{salt: salt}(
-                address(this), _encodeInitializationCalldata(asset, name, symbol, vaults, allocations)
+                address(this), _encodeInitializationCalldata(msg.sender, asset, name, symbol, vaults, allocations)
             )
         );
 
@@ -91,6 +93,7 @@ contract MetaVaultFactory is UpgradeableBeacon, SpoolAccessControllable {
 
     /**
      * @dev Predicts deployment address deterministically
+     * @param owner address
      * @param asset address
      * @param name for MetaVault
      * @param symbol for MetaVault
@@ -98,6 +101,7 @@ contract MetaVaultFactory is UpgradeableBeacon, SpoolAccessControllable {
      * @return predictedAddress
      */
     function predictDeterministicAddress(
+        address owner,
         address asset,
         string memory name,
         string memory symbol,
@@ -118,7 +122,7 @@ contract MetaVaultFactory is UpgradeableBeacon, SpoolAccessControllable {
                                     type(BeaconProxy).creationCode,
                                     abi.encode(
                                         address(this),
-                                        _encodeInitializationCalldata(asset, name, symbol, vaults, allocations)
+                                        _encodeInitializationCalldata(owner, asset, name, symbol, vaults, allocations)
                                     )
                                 )
                             )
@@ -131,12 +135,14 @@ contract MetaVaultFactory is UpgradeableBeacon, SpoolAccessControllable {
 
     /**
      * @dev Encodes calldata for MetaVault initialization
+     * @param owner address
      * @param asset address
      * @param name for MetaVault
      * @param symbol for MetaVault
      * @return initializationCalldata
      */
     function _encodeInitializationCalldata(
+        address owner,
         address asset,
         string memory name,
         string memory symbol,
@@ -144,7 +150,13 @@ contract MetaVaultFactory is UpgradeableBeacon, SpoolAccessControllable {
         uint256[] calldata allocations
     ) private pure returns (bytes memory) {
         return abi.encodeWithSignature(
-            "initialize(address,string,string,address[],uint256[])", asset, name, symbol, vaults, allocations
+            "initialize(address,address,string,string,address[],uint256[])",
+            owner,
+            asset,
+            name,
+            symbol,
+            vaults,
+            allocations
         );
     }
 

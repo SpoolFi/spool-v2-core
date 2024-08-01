@@ -22,6 +22,8 @@ import {SmartVaultFactory} from "../src/SmartVaultFactory.sol";
 import {SmartVaultFactoryHpf} from "../src/SmartVaultFactoryHpf.sol";
 import {Swapper} from "../src/Swapper.sol";
 import {SpoolLens} from "../src/SpoolLens.sol";
+import {MetaVaultGuard} from "../src/MetaVaultGuard.sol";
+import {MetaVaultFactory} from "../src/MetaVaultFactory.sol";
 import "../src/managers/DepositManager.sol";
 import "../src/managers/WithdrawalManager.sol";
 import "../src/strategies/GhostStrategy.sol";
@@ -57,6 +59,8 @@ contract DeploySpool {
     LinearAllocationProvider public linearAllocationProvider;
     UniformAllocationProvider public uniformAllocationProvider;
     SpoolLens public spoolLens;
+    MetaVaultGuard public metaVaultGuard;
+    MetaVaultFactory public metaVaultFactory;
 
     function deploySpool() public {
         TransparentUpgradeableProxy proxy;
@@ -134,12 +138,8 @@ contract DeploySpool {
         }
 
         {
-            StrategyRegistry implementation = new StrategyRegistry(
-                masterWallet,
-                spoolAccessControl,
-                usdPriceFeedManager,
-                address(ghostStrategy)
-            );
+            StrategyRegistry implementation =
+                new StrategyRegistry(masterWallet, spoolAccessControl, usdPriceFeedManager, address(ghostStrategy));
             proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
             strategyRegistry = StrategyRegistry(address(proxy));
             strategyRegistry.initialize(
@@ -166,8 +166,15 @@ contract DeploySpool {
         }
 
         {
-            DepositManager implementation =
-            new DepositManager(strategyRegistry, usdPriceFeedManager, guardManager, actionManager, spoolAccessControl, masterWallet, address(ghostStrategy));
+            DepositManager implementation = new DepositManager(
+                strategyRegistry,
+                usdPriceFeedManager,
+                guardManager,
+                actionManager,
+                spoolAccessControl,
+                masterWallet,
+                address(ghostStrategy)
+            );
             proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
             depositManager = DepositManager(address(proxy));
 
@@ -365,6 +372,8 @@ contract DeploySpool {
         uniformAllocationProvider =
             UniformAllocationProvider(contractsJson().getAddress(".UniformAllocationProvider.proxy"));
         spoolLens = SpoolLens(contractsJson().getAddress(".SpoolLens.proxy"));
+        metaVaultGuard = MetaVaultGuard(contractsJson().getAddress(".MetaVaultGuard.proxy"));
+        metaVaultFactory = MetaVaultFactory(contractsJson().getAddress(".MetaVaultFactory"));
     }
 
     function test_mock_DeploySpool() external pure {}

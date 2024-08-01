@@ -13,3 +13,4 @@
 /deploy/*.contracts.json
 
 !/deploy/sample.constants.json
+/script/local
