@@ -14,6 +14,7 @@ import "../ForkTestFixtureDeployment.sol";
 import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 
 import "../../../src/MetaVault.sol";
+import "../../../src/interfaces/IMetaVault.sol";
 import "../../../src/MetaVaultGuard.sol";
 import "../../../src/MetaVaultFactory.sol";
 import "../../../src/libraries/ListMap.sol";
@@ -183,7 +184,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
                 );
             }
             vm.startPrank(owner);
-            vm.expectRevert(MetaVault.MaxSmartVaultAmount.selector);
+            vm.expectRevert(IMetaVault.MaxSmartVaultAmount.selector);
             metaVault.addSmartVaults(vaultsToAdd, new uint256[](1));
             vm.stopPrank();
         }
@@ -197,7 +198,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
             allocations[0] = 50_00;
             allocations[1] = 40_00;
             vm.startPrank(owner);
-            vm.expectRevert(MetaVault.WrongAllocation.selector);
+            vm.expectRevert(IMetaVault.WrongAllocation.selector);
             metaVault.setSmartVaultAllocations(allocations);
             vm.stopPrank();
         }
@@ -206,7 +207,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
             uint256[] memory allocations = new uint256[](1);
             allocations[0] = 100_00;
             vm.startPrank(owner);
-            vm.expectRevert(MetaVault.ArgumentLengthMismatch.selector);
+            vm.expectRevert(IMetaVault.ArgumentLengthMismatch.selector);
             metaVault.setSmartVaultAllocations(allocations);
             vm.stopPrank();
         }
@@ -217,7 +218,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
             allocations[1] = 30_00;
             allocations[2] = 50_00;
             vm.startPrank(owner);
-            vm.expectRevert(MetaVault.ArgumentLengthMismatch.selector);
+            vm.expectRevert(IMetaVault.ArgumentLengthMismatch.selector);
             metaVault.setSmartVaultAllocations(allocations);
             vm.stopPrank();
         }
@@ -274,20 +275,20 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         metaVault.sync();
 
         vm.startPrank(address(0x123456));
-        vm.expectRevert(MetaVault.NothingToClaim.selector);
+        vm.expectRevert(IMetaVault.NothingToClaim.selector);
         metaVault.claim(0);
         vm.stopPrank();
 
         vm.startPrank(user1);
         metaVault.claim(0);
         // it is not possible to claim second time
-        vm.expectRevert(MetaVault.NothingToClaim.selector);
+        vm.expectRevert(IMetaVault.NothingToClaim.selector);
         metaVault.claim(0);
         vm.stopPrank();
         vm.startPrank(user2);
         metaVault.claim(0);
         // it is not possible to claim second time
-        vm.expectRevert(MetaVault.NothingToClaim.selector);
+        vm.expectRevert(IMetaVault.NothingToClaim.selector);
         metaVault.claim(0);
         vm.stopPrank();
 
@@ -381,7 +382,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
         // cannot withdraw before redeem request is fulfilled
         vm.startPrank(user1);
-        vm.expectRevert(MetaVault.NothingToWithdraw.selector);
+        vm.expectRevert(IMetaVault.NothingToWithdraw.selector);
         metaVault.withdraw(2);
         vm.stopPrank();
 
@@ -395,7 +396,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
         // random user cannot withdraw anything if he has not requested
         vm.startPrank(address(0x98765));
-        vm.expectRevert(MetaVault.NothingToWithdraw.selector);
+        vm.expectRevert(IMetaVault.NothingToWithdraw.selector);
         metaVault.withdraw(1);
         vm.stopPrank();
 
@@ -403,7 +404,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.startPrank(user1);
         metaVault.withdraw(1);
         // cannot withdraw second time
-        vm.expectRevert(MetaVault.NothingToWithdraw.selector);
+        vm.expectRevert(IMetaVault.NothingToWithdraw.selector);
         metaVault.withdraw(1);
         vm.stopPrank();
 
@@ -447,7 +448,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         assertEq(metaVault.smartVaultToDepositNftIdFromReallocation(vault2), 0);
 
         // second flushDeposit is blocked until previous one is not synced
-        vm.expectRevert(MetaVault.PendingSync.selector);
+        vm.expectRevert(IMetaVault.PendingSync.selector);
         metaVault.flush();
     }
 
@@ -593,7 +594,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
                 assertEq(syncIndex, 0);
             }
 
-            vm.expectRevert(MetaVault.PendingSync.selector);
+            vm.expectRevert(IMetaVault.PendingSync.selector);
             reallocate();
 
             _flushVaults(ISmartVault(vault2));
@@ -734,8 +735,8 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
         vm.startPrank(user1);
         bytes[] memory data = new bytes[](2);
-        data[0] = abi.encodeWithSelector(MetaVault.claim.selector, 0);
-        data[1] = abi.encodeWithSelector(MetaVault.redeem.selector, 20e6);
+        data[0] = abi.encodeWithSelector(IMetaVault.claim.selector, 0);
+        data[1] = abi.encodeWithSelector(IMetaVault.redeem.selector, 20e6);
         metaVault.multicall(data);
 
         assertEq(metaVault.balanceOf(user1), 80e6);
@@ -746,31 +747,31 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
     function test_pausing() external {
         vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_PAUSER, address(this)));
-        metaVault.setPaused(MetaVault.deposit.selector, true);
+        metaVault.setPaused(IMetaVault.deposit.selector, true);
 
-        assertFalse(metaVault.selectorToPaused(MetaVault.deposit.selector));
+        assertFalse(metaVault.selectorToPaused(IMetaVault.deposit.selector));
 
         vm.startPrank(_spoolAdmin);
         _deploySpool.spoolAccessControl().grantRole(ROLE_PAUSER, address(this));
         vm.stopPrank();
 
-        metaVault.setPaused(MetaVault.deposit.selector, true);
-        assertTrue(metaVault.selectorToPaused(MetaVault.deposit.selector));
+        metaVault.setPaused(IMetaVault.deposit.selector, true);
+        assertTrue(metaVault.selectorToPaused(IMetaVault.deposit.selector));
 
         vm.startPrank(user1);
-        vm.expectRevert(abi.encodeWithSelector(MetaVault.Paused.selector, MetaVault.deposit.selector));
+        vm.expectRevert(abi.encodeWithSelector(IMetaVault.Paused.selector, IMetaVault.deposit.selector));
         metaVault.deposit(1);
         vm.stopPrank();
 
         vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_UNPAUSER, address(this)));
-        metaVault.setPaused(MetaVault.deposit.selector, false);
+        metaVault.setPaused(IMetaVault.deposit.selector, false);
 
         vm.startPrank(_spoolAdmin);
         _deploySpool.spoolAccessControl().grantRole(ROLE_UNPAUSER, address(this));
         vm.stopPrank();
 
-        metaVault.setPaused(MetaVault.deposit.selector, false);
-        assertFalse(metaVault.selectorToPaused(MetaVault.deposit.selector));
+        metaVault.setPaused(IMetaVault.deposit.selector, false);
+        assertFalse(metaVault.selectorToPaused(IMetaVault.deposit.selector));
 
         vm.startPrank(user1);
         metaVault.deposit(1);

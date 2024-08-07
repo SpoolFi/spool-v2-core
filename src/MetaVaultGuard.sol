@@ -22,23 +22,6 @@ contract MetaVaultGuard is IMetaVaultGuard {
      */
     IGuardManager internal immutable guardManager;
 
-    /**
-     * @dev Only SmartVaults with zero management fee are supported
-     */
-    error InvalidVaultManagementFee();
-    /**
-     * @dev Only SmartVaults with zero deposit fee are supported
-     */
-    error InvalidVaultDepositFee();
-    /**
-     * @dev Only SmartVaults with the same underlying assets are supported
-     */
-    error InvalidVaultAsset();
-    /**
-     * @dev Any guard on SmartVault is prohibited
-     */
-    error NoGuardsAllowed();
-
     // ========================== CONSTRUCTOR ==========================
 
     constructor(
@@ -55,20 +38,12 @@ contract MetaVaultGuard is IMetaVaultGuard {
         guardManager = guardManager_;
     }
 
-    /**
-     * @dev Check if given smart vault can be managed by MetaVault
-     * @param asset for MetaVault
-     * @param smartVault to validate
-     */
+    /// @inheritdoc IMetaVaultGuard
     function validateSmartVault(address asset, address smartVault) external view virtual returns (bool) {
         return _validateSmartVault(asset, smartVault);
     }
 
-    /**
-     * @dev Check if given smart vault can be managed by MetaVault
-     * @param asset for MetaVault
-     * @param smartVaults to validate
-     */
+    /// @inheritdoc IMetaVaultGuard
     function validateSmartVaults(address asset, address[] calldata smartVaults) external view virtual returns (bool) {
         for (uint256 i; i < smartVaults.length; i++) {
             _validateSmartVault(asset, smartVaults[i]);

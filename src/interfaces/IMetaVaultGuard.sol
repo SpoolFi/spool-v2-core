@@ -2,16 +2,38 @@
 pragma solidity 0.8.17;
 
 interface IMetaVaultGuard {
-    /**
-     * @notice validates smart vault addition to particular MetaVault
-     * @return address of asset
-     */
-    function validateSmartVault(address metaVault, address smartVault) external view returns (bool);
+    // ========================== ERRORS ==========================
 
     /**
-     * @dev Check if given smart vault can be managed by MetaVault
-     * @param metaVault manager
+     * @dev Only SmartVaults with zero management fee are supported
+     */
+    error InvalidVaultManagementFee();
+    /**
+     * @dev Only SmartVaults with zero deposit fee are supported
+     */
+    error InvalidVaultDepositFee();
+    /**
+     * @dev Only SmartVaults with the same underlying assets are supported
+     */
+    error InvalidVaultAsset();
+    /**
+     * @dev Any guard on SmartVault is prohibited
+     */
+    error NoGuardsAllowed();
+
+    // ========================== FUNCTIONS ==========================
+
+    /**
+     * @notice Check if given smart vault can be managed by MetaVault
+     * @param asset for MetaVault
+     * @param smartVault to validate
+     */
+    function validateSmartVault(address asset, address smartVault) external view returns (bool);
+
+    /**
+     * @notice Check if given smart vault can be managed by MetaVault
+     * @param asset for MetaVault
      * @param smartVaults to validate
      */
-    function validateSmartVaults(address metaVault, address[] calldata smartVaults) external view returns (bool);
+    function validateSmartVaults(address asset, address[] calldata smartVaults) external view returns (bool);
 }
