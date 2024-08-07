@@ -449,7 +449,6 @@ contract MetaVault is
      */
     function flush() external {
         _checkNotPaused();
-        _checkOperator();
         _checkPendingSync();
         if (needReallocation) revert NeedReallocation();
 
@@ -523,7 +522,6 @@ contract MetaVault is
      */
     function sync() external {
         _checkNotPaused();
-        _checkOperator();
         address[] memory vaults = _smartVaults.list;
         Index memory index_ = index;
         if (vaults.length > 0 && index_.sync < index_.flush) {
@@ -714,7 +712,6 @@ contract MetaVault is
      */
     function reallocateSync() external {
         _checkNotPaused();
-        _checkOperator();
         if (reallocationIndex.flush == reallocationIndex.sync) return;
         bool hadEffect;
         /// cache
