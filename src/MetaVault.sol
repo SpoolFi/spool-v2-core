@@ -93,6 +93,10 @@ contract MetaVault is
      * @dev Emitted when method is paused / unpaused
      */
     event PausedChange(bytes4 selector, bool paused);
+    /**
+     * @dev Emitted when needReallocation is changed
+     */
+    event NeedReallocationState(bool state);
 
     // ========================== ERRORS ==========================
 
@@ -358,6 +362,7 @@ contract MetaVault is
         emit AllocationChange(allocations);
         if (!initialization) {
             needReallocation = true;
+            emit NeedReallocationState(true);
         }
     }
 
@@ -700,6 +705,7 @@ contract MetaVault is
             }
         }
         needReallocation = false;
+        emit NeedReallocationState(false);
     }
 
     /**
