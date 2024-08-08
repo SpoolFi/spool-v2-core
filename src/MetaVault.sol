@@ -332,7 +332,9 @@ contract MetaVault is
                     hadEffect = true;
                 }
             }
-            emit FlushDeposit(index.flush, assets);
+            if (hadEffect) {
+                emit FlushDeposit(index.flush, assets);
+            }
         }
     }
 
@@ -364,7 +366,9 @@ contract MetaVault is
                     hadEffect = true;
                 }
             }
-            emit FlushWithdrawal(flushIndex, shares);
+            if (hadEffect) {
+                emit FlushWithdrawal(flushIndex, shares);
+            }
         }
     }
 
