@@ -1,4 +1,5 @@
 - Upgrade SmartVaultManager to support MetaVault functionality
+- Upgrade DepositSwap to support swap and deposit into MetaVault
 - Deploy MetaVaultGuard
 - Deploy MetaVault implementation
 - Deploy MetaVaultFactory

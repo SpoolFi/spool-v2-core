@@ -12,6 +12,7 @@ import "../../mocks/MockAllocationProvider.sol";
 import "../ForkTestFixtureDeployment.sol";
 
 import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin/token/ERC20/extensions/ERC20Permit.sol";
 
 import "../../../src/MetaVault.sol";
 import "../../../src/interfaces/IMetaVault.sol";
@@ -20,6 +21,9 @@ import "../../../src/MetaVaultFactory.sol";
 import "../../../src/libraries/ListMap.sol";
 import "../../../src/managers/DepositManager.sol";
 import "../../../src/managers/WithdrawalManager.sol";
+
+import "../../utils/SigUtils.sol";
+import "../../utils/SigUtilsDai.sol";
 
 import "forge-std/console.sol";
 
@@ -746,36 +750,116 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
     }
 
     function test_pausing() external {
-        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_PAUSER, address(this)));
-        metaVault.setPaused(IMetaVault.deposit.selector, true);
+        bytes4 depositSelector = bytes4(keccak256(abi.encodePacked("deposit(uint256)")));
 
-        assertFalse(metaVault.selectorToPaused(IMetaVault.deposit.selector));
+        vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_PAUSER, address(this)));
+        metaVault.setPaused(depositSelector, true);
+
+        assertFalse(metaVault.selectorToPaused(depositSelector));
 
         vm.startPrank(_spoolAdmin);
         _deploySpool.spoolAccessControl().grantRole(ROLE_PAUSER, address(this));
         vm.stopPrank();
 
-        metaVault.setPaused(IMetaVault.deposit.selector, true);
-        assertTrue(metaVault.selectorToPaused(IMetaVault.deposit.selector));
+        metaVault.setPaused(depositSelector, true);
+        assertTrue(metaVault.selectorToPaused(depositSelector));
 
         vm.startPrank(user1);
-        vm.expectRevert(abi.encodeWithSelector(IMetaVault.Paused.selector, IMetaVault.deposit.selector));
+        vm.expectRevert(abi.encodeWithSelector(IMetaVault.Paused.selector, depositSelector));
         metaVault.deposit(1);
         vm.stopPrank();
 
         vm.expectRevert(abi.encodeWithSelector(MissingRole.selector, ROLE_UNPAUSER, address(this)));
-        metaVault.setPaused(IMetaVault.deposit.selector, false);
+        metaVault.setPaused(depositSelector, false);
 
         vm.startPrank(_spoolAdmin);
         _deploySpool.spoolAccessControl().grantRole(ROLE_UNPAUSER, address(this));
         vm.stopPrank();
 
-        metaVault.setPaused(IMetaVault.deposit.selector, false);
-        assertFalse(metaVault.selectorToPaused(IMetaVault.deposit.selector));
+        metaVault.setPaused(depositSelector, false);
+        assertFalse(metaVault.selectorToPaused(depositSelector));
 
         vm.startPrank(user1);
         metaVault.deposit(1);
         vm.stopPrank();
+    }
+
+    function test_depositUsdcWithPermit() external {
+        ERC20Permit asset = ERC20Permit(address(usdc));
+        SigUtils sigUtils = new SigUtils(asset.DOMAIN_SEPARATOR());
+        uint256 userPrivateKey = 0xA11CE;
+        address userAddress = vm.addr(userPrivateKey);
+
+        _dealTokens(userAddress);
+
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: userAddress,
+            spender: address(metaVault),
+            value: 1e6,
+            nonce: asset.nonces(userAddress),
+            deadline: block.timestamp + 1 minutes
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(permit);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivateKey, digest);
+
+        assertEq(usdc.allowance(userAddress, address(metaVault)), 0);
+        assertEq(usdc.balanceOf(address(metaVault)), 0);
+        uint256 userBalanceBefore = usdc.balanceOf(userAddress);
+
+        vm.startPrank(userAddress);
+        bytes[] memory data = new bytes[](2);
+        data[0] = abi.encodeWithSelector(IMetaVault.permitAsset.selector, permit.value, permit.deadline, v, r, s);
+        data[1] = abi.encodeWithSelector(bytes4(keccak256(abi.encodePacked("deposit(uint256)"))), permit.value);
+        metaVault.multicall(data);
+        vm.stopPrank();
+
+        assertEq(usdc.allowance(userAddress, address(metaVault)), 0);
+        assertEq(usdc.balanceOf(address(metaVault)), permit.value);
+
+        uint256 userBalanceAfter = usdc.balanceOf(userAddress);
+
+        assertEq(userBalanceBefore - userBalanceAfter, permit.value);
+    }
+
+    function test_depositDaiWithPermit() external {
+        vm.startPrank(owner);
+        MetaVault metaVault2 =
+            metaVaultFactory.deployMetaVault(address(dai), "MetaVault", "M", new address[](0), new uint256[](0));
+        vm.stopPrank();
+
+        ERC20Permit asset = ERC20Permit(address(dai));
+        SigUtilsDai sigUtils = new SigUtilsDai(asset.DOMAIN_SEPARATOR());
+        uint256 userPrivateKey = 0xA11CE;
+        address userAddress = vm.addr(userPrivateKey);
+
+        _dealTokens(userAddress);
+
+        uint256 nonce = asset.nonces(userAddress);
+        uint256 deadline = block.timestamp + 1 minutes;
+
+        (uint8 v, bytes32 r, bytes32 s) =
+            vm.sign(userPrivateKey, sigUtils.getTypedDataHash(userAddress, address(metaVault2), nonce, deadline, true));
+
+        assertEq(dai.allowance(userAddress, address(metaVault2)), 0);
+        assertEq(dai.balanceOf(address(metaVault2)), 0);
+        uint256 userBalanceBefore = dai.balanceOf(userAddress);
+
+        uint256 amount = 1e18;
+        {
+            vm.startPrank(userAddress);
+            bytes[] memory data = new bytes[](2);
+            //  permitDai(uint256 nonce, uint256 deadline, bool allowed, uint8 v, bytes32 r, bytes32 s)
+            data[0] = abi.encodeWithSelector(IMetaVault.permitDai.selector, nonce, deadline, true, v, r, s);
+            data[1] = abi.encodeWithSelector(bytes4(keccak256(abi.encodePacked("deposit(uint256)"))), amount);
+            metaVault2.multicall(data);
+            vm.stopPrank();
+        }
+
+        assertEq(dai.allowance(userAddress, address(metaVault2)), type(uint256).max);
+        assertEq(dai.balanceOf(address(metaVault2)), amount);
+
+        assertEq(userBalanceBefore - dai.balanceOf(userAddress), amount);
     }
 
     function _createVault(

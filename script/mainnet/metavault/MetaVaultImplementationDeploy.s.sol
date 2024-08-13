@@ -19,10 +19,10 @@ contract MetaVaultImplementationDeploy is MainnetExtendedSetup {
     }
 
     function execute() public override {
-        vm.broadcast(_deployerPrivateKey);
-
+        vm.startBroadcast(_deployerPrivateKey);
         address implementation =
             address(new MetaVault(smartVaultManager, spoolAccessControl, metaVaultGuard, spoolLens));
+        vm.stopBroadcast();
 
         contractsJson().add("MetaVaultImplementation", implementation);
     }

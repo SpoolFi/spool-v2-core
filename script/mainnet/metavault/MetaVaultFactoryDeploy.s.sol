@@ -21,9 +21,9 @@ contract MetaVaultFactoryDeploy is MainnetExtendedSetup {
     function execute() public override {
         address metaVaultImplementation = contractsJson().getAddress(".MetaVaultImplementation");
 
-        vm.broadcast(_deployerPrivateKey);
-
+        vm.startBroadcast(_deployerPrivateKey);
         address factory = address(new MetaVaultFactory(metaVaultImplementation, spoolAccessControl, assetGroupRegistry));
+        vm.stopBroadcast();
 
         contractsJson().add("MetaVaultFactory", factory);
     }

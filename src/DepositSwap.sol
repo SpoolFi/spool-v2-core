@@ -9,6 +9,7 @@ import "./interfaces/IDepositManager.sol";
 import "./interfaces/IDepositSwap.sol";
 import "./interfaces/ISmartVaultManager.sol";
 import "./interfaces/ISwapper.sol";
+import "./interfaces/IMetaVault.sol";
 import "./interfaces/CommonErrors.sol";
 
 /**
@@ -47,55 +48,88 @@ contract DepositSwap is IDepositSwap {
     /* ========== EXTERNAL FUNCTIONS ========== */
 
     function swapAndDeposit(SwapDepositBag calldata swapDepositBag) external payable returns (uint256 nftId) {
-        if (swapDepositBag.inTokens.length != swapDepositBag.inAmounts.length) revert InvalidArrayLength();
-        uint256 msgValue = msg.value;
+        _prepareSwap(swapDepositBag.inTokens, swapDepositBag.inAmounts);
+
+        address[] memory outTokens =
+            _assetGroupRegistry.listAssetGroup(_smartVaultManager.assetGroupId(swapDepositBag.smartVault));
+
+        uint256[] memory outAmounts =
+            _doSwap(swapDepositBag.inTokens, swapDepositBag.swapInfo, outTokens, address(_smartVaultManager));
+        // Deposit into the smart vault.
+        nftId = _smartVaultManager.deposit(
+            DepositBag(
+                swapDepositBag.smartVault,
+                outAmounts,
+                swapDepositBag.receiver,
+                swapDepositBag.referral,
+                swapDepositBag.doFlush
+            )
+        );
+
+        _finalizeSwap(swapDepositBag.inTokens);
+    }
+
+    function swapAndDepositIntoMetaVault(
+        IMetaVault metaVault,
+        address[] calldata inTokens,
+        uint256[] calldata inAmounts,
+        SwapInfo[] calldata swapInfo
+    ) external payable {
+        _prepareSwap(inTokens, inAmounts);
+
+        address[] memory outTokens = new address[](1);
+        outTokens[0] = metaVault.asset();
+
+        uint256[] memory outAmounts = _doSwap(inTokens, swapInfo, outTokens, address(metaVault));
+        // Deposit into the smart vault.
+        metaVault.deposit(outAmounts[0], msg.sender);
+
+        _finalizeSwap(inTokens);
+    }
+
+    /* ========== INTERNAL FUNCTIONS ========== */
+
+    function _prepareSwap(address[] calldata inTokens, uint256[] calldata inAmounts) internal {
+        if (inTokens.length != inAmounts.length) revert InvalidArrayLength();
 
         // Wrap eth if needed.
         if (msg.value > 0) {
-            _weth.deposit{value: msgValue}();
+            _weth.deposit{value: msg.value}();
         }
 
         // Transfer the tokens from the caller to the swapper.
-        for (uint256 i; i < swapDepositBag.inTokens.length; ++i) {
-            IERC20(swapDepositBag.inTokens[i]).safeTransferFrom(
-                msg.sender, address(_swapper), swapDepositBag.inAmounts[i]
-            );
+        for (uint256 i; i < inTokens.length; ++i) {
+            IERC20(inTokens[i]).safeTransferFrom(msg.sender, address(_swapper), inAmounts[i]);
 
-            if (swapDepositBag.inTokens[i] == address(_weth) && msgValue > 0) {
-                IERC20(address(_weth)).safeTransfer(address(_swapper), msgValue);
+            if (inTokens[i] == address(_weth) && msg.value > 0) {
+                IERC20(address(_weth)).safeTransfer(address(_swapper), msg.value);
             }
         }
+    }
 
-        {
-            address[] memory outTokens =
-                _assetGroupRegistry.listAssetGroup(_smartVaultManager.assetGroupId(swapDepositBag.smartVault));
-            // Make the swap.
-            _swapper.swap(swapDepositBag.inTokens, swapDepositBag.swapInfo, outTokens, address(this));
-            uint256[] memory outAmounts = new uint256[](outTokens.length);
-            // Figure out how much we got out of the swap.
-            for (uint256 i; i < outTokens.length; ++i) {
-                outAmounts[i] = IERC20(outTokens[i]).balanceOf(address(this));
-                IERC20(outTokens[i]).safeApprove(address(_smartVaultManager), outAmounts[i]);
-            }
-
-            // Deposit into the smart vault.
-            nftId = _smartVaultManager.deposit(
-                DepositBag(
-                    swapDepositBag.smartVault,
-                    outAmounts,
-                    swapDepositBag.receiver,
-                    swapDepositBag.referral,
-                    swapDepositBag.doFlush
-                )
-            );
+    function _doSwap(
+        address[] calldata inTokens,
+        SwapInfo[] calldata swapInfo,
+        address[] memory outTokens,
+        address target
+    ) internal returns (uint256[] memory outAmounts) {
+        // Make the swap.
+        _swapper.swap(inTokens, swapInfo, outTokens, address(this));
+        outAmounts = new uint256[](outTokens.length);
+        // Figure out how much we got out of the swap.
+        for (uint256 i; i < outTokens.length; ++i) {
+            outAmounts[i] = IERC20(outTokens[i]).balanceOf(address(this));
+            IERC20(outTokens[i]).safeApprove(target, outAmounts[i]);
         }
+    }
 
+    function _finalizeSwap(address[] calldata inTokens) internal {
         // Return unswapped tokens.
         uint256 returnBalance;
-        for (uint256 i; i < swapDepositBag.inTokens.length; ++i) {
-            returnBalance = IERC20(swapDepositBag.inTokens[i]).balanceOf(address(this));
+        for (uint256 i; i < inTokens.length; ++i) {
+            returnBalance = IERC20(inTokens[i]).balanceOf(address(this));
             if (returnBalance > 0) {
-                IERC20(swapDepositBag.inTokens[i]).safeTransfer(msg.sender, returnBalance);
+                IERC20(inTokens[i]).safeTransfer(msg.sender, returnBalance);
             }
         }
         if (msg.value > 0) {

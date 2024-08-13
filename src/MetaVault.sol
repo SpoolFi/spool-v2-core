@@ -235,13 +235,22 @@ contract MetaVault is
 
     /// @inheritdoc IMetaVault
     function deposit(uint256 amount) external {
+        _deposit(amount, msg.sender);
+    }
+
+    /// @inheritdoc IMetaVault
+    function deposit(uint256 amount, address receiver) external {
+        _deposit(amount, receiver);
+    }
+
+    function _deposit(uint256 amount, address receiver) internal {
         _checkNotPaused();
         uint128 flushIndex = index.flush;
         // MetaVault has now more funds to manage
         flushToDepositedAssets[flushIndex] += amount;
-        userToFlushToDepositedAssets[msg.sender][flushIndex] += amount;
+        userToFlushToDepositedAssets[receiver][flushIndex] += amount;
         IERC20MetadataUpgradeable(asset).safeTransferFrom(msg.sender, address(this), amount);
-        emit Deposit(msg.sender, flushIndex, amount);
+        emit Deposit(receiver, flushIndex, amount);
     }
 
     /// @inheritdoc IMetaVault
@@ -288,13 +297,6 @@ contract MetaVault is
      */
     function _checkPendingSync() internal view {
         if (index.sync < index.flush || reallocationIndex.sync < reallocationIndex.flush) revert PendingSync();
-    }
-
-    /**
-     * @dev check the caller if it is not estimation transaction
-     */
-    function _checkOperator() internal view {
-        if (tx.origin != address(0)) _checkRole(ROLE_DO_HARD_WORKER, msg.sender);
     }
 
     /// @inheritdoc IMetaVault
@@ -474,7 +476,7 @@ contract MetaVault is
     /// @inheritdoc IMetaVault
     function reallocate(uint256[][][] calldata slippages) external {
         _checkNotPaused();
-        _checkOperator();
+        if (tx.origin != address(0)) _checkRole(ROLE_DO_HARD_WORKER, msg.sender);
         _checkPendingSync();
         ReallocationVars memory vars = ReallocationVars(0, 0, 0, 0, tx.origin == address(0));
         // cache
@@ -638,7 +640,7 @@ contract MetaVault is
         return 0xbc197c81;
     }
 
-    // @dev permitAsset(), permitDai(), permitUniswap() can be batched with mint() using multicall enabling 1 tx UX
+    // @dev permitAsset(), permitDai() can be batched with deposit(), swapAndDeposit() using multicall enabling 1 tx UX
     // ========================== PERMIT ASSET ==========================
 
     /// @inheritdoc IMetaVault
@@ -651,17 +653,5 @@ contract MetaVault is
     function permitDai(uint256 nonce, uint256 deadline, bool allowed, uint8 v, bytes32 r, bytes32 s) external {
         _checkNotPaused();
         IDAI(asset).permit(msg.sender, address(this), nonce, deadline, allowed, v, r, s);
-    }
-
-    /// @inheritdoc IMetaVault
-    function permitUniswap(
-        PermitTransferFrom calldata permitTransferFrom,
-        SignatureTransferDetails calldata signatureTransferDetails,
-        bytes calldata signature
-    ) external {
-        _checkNotPaused();
-        IPermit2(PERMIT2_ADDRESS).permitTransferFrom(
-            permitTransferFrom, signatureTransferDetails, msg.sender, signature
-        );
     }
 }

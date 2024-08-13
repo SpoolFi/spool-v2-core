@@ -5,7 +5,6 @@ import "@openzeppelin-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
 
 import "../external/interfaces/dai/IDAI.sol";
-import "../external/interfaces/permit2/IPermit2.sol";
 
 interface IMetaVault is IERC20Upgradeable, IERC1155ReceiverUpgradeable {
     // ========================== ERRORS ==========================
@@ -146,6 +145,13 @@ interface IMetaVault is IERC20Upgradeable, IERC1155ReceiverUpgradeable {
     function deposit(uint256 amount) external;
 
     /**
+     * @notice deposit assets into MetaVault
+     * @param amount of assets
+     * @param receiver of future shares
+     */
+    function deposit(uint256 amount, address receiver) external;
+
+    /**
      * @notice flush deposits and redeems accumulated on MetaVault.
      */
     function flush() external;
@@ -205,13 +211,6 @@ interface IMetaVault is IERC20Upgradeable, IERC1155ReceiverUpgradeable {
 
     /// @notice if asset is DAI
     function permitDai(uint256 nonce, uint256 deadline, bool allowed, uint8 v, bytes32 r, bytes32 s) external;
-
-    /// @notice if permit is not supported for asset, Permit2 contract from Uniswap can be used - https://github.com/Uniswap/permit2
-    function permitUniswap(
-        PermitTransferFrom memory permitTransferFrom,
-        SignatureTransferDetails memory signatureTransferDetails,
-        bytes memory signature
-    ) external;
 
     /**
      * @notice only DoHardWorker can reallocate positions

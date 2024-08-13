@@ -21,8 +21,7 @@ contract SmartVaultManagerUpgrade is MainnetExtendedSetup {
     }
 
     function execute() public override {
-        vm.broadcast(_deployerPrivateKey);
-
+        vm.startBroadcast(_deployerPrivateKey);
         address implementation = address(
             new SmartVaultManager(
                 spoolAccessControl,
@@ -36,9 +35,8 @@ contract SmartVaultManagerUpgrade is MainnetExtendedSetup {
                 address(ghostStrategy)
             )
         );
-
-        vm.broadcast(_deployerPrivateKey);
         proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(smartVaultManager))), implementation);
+        vm.stopBroadcast();
 
         contractsJson().addProxy("SmartVaultManager", implementation, address(smartVaultManager));
     }
