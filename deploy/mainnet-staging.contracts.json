@@ -39,7 +39,7 @@
     "implementation": "0xE411921ee9EeDfEFd7b9Ae15bF232bd36949Fcbc",
     "proxy": "0x468DC7826898497D2494659b61D7899F4b6ceD72"
   },
-  "MetaVaultFactory": "0xf8e7e02E4b826E98b1c8f190650A0ba0abbF65aa",
+  "MetaVaultFactory": "0x28a3a4f4D469Fb33601639Db40a800ca6776A3d0",
   "MetaVaultGuard": {
     "implementation": "0x4f080E5AEdd2D8CDD78E56FE924f9E94a6B8C238",
     "proxy": "0x929e220B97bC7EF95634b76846f027497bf4Dc55"
