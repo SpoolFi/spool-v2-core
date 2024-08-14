@@ -44,7 +44,7 @@
     "implementation": "0x4f080E5AEdd2D8CDD78E56FE924f9E94a6B8C238",
     "proxy": "0x929e220B97bC7EF95634b76846f027497bf4Dc55"
   },
-  "MetaVaultImplementation": "0x75cF5100449dfF3c2ee8A50Bf5db6e7c12266dFC",
+  "MetaVaultImplementation": "0x07cB0C3f6F358684b6b0581378d914F69770f84B",
   "ProxyAdmin": "0x3Ffda89A5F87D99DE88Bc0617d95C7e5dDe0408f",
   "RewardManager": {
     "implementation": "0x7BAcF2D8fA5DfcbF5a570c6eF243D84dA257c813",

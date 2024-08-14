@@ -239,6 +239,7 @@ contract MetaVault is
     function setMaxReallocationSlippage(uint256 value) external onlyOwner {
         if (value > 100_00) revert MaxReallocationSlippage();
         maxReallocationSlippage = value;
+        emit MaxReallocationSlippageChange(value);
     }
 
     // ========================== USER FACING ==========================
