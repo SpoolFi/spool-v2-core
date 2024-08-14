@@ -1,5 +1,6 @@
 - Upgrade SmartVaultManager to support MetaVault functionality
 - Upgrade DepositSwap to support swap and deposit into MetaVault
+- Upgrade SpoolLens to provide data on DHW completeness for MetaVaults
 - Deploy MetaVaultGuard
 - Deploy MetaVault implementation
 - Deploy MetaVaultFactory

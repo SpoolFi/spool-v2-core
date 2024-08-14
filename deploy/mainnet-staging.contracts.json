@@ -16,7 +16,7 @@
     "proxy": "0xDc962D69F5fFa5e0e61826196119E34E908a320d"
   },
   "DepositSwap": {
-    "implementation": "0xcE7F66BD505a80129Ef25b06207Ac49620A55522",
+    "implementation": "0x34a086a4321196EF5cA8ac74bB170695A8c0a9d1",
     "proxy": "0x74AD50d6208Fe9caB6e9e6E2015Aa4f001D5906E"
   },
   "ExponentialAllocationProvider": {
@@ -65,7 +65,7 @@
     "proxy": "0xE336E6dD21563Ed7785fa66562aE14194a720FBc"
   },
   "SpoolLens": {
-    "implementation": "0xE08bE40E1D7434ffF403966d93952cbbeE64C27F",
+    "implementation": "0xec0785074C1d277CF7e657d25dB42F84E3332B5c",
     "proxy": "0x02cE10513AfAf102172651B7DC6f1A6359717421"
   },
   "StrategyRegistry": {
