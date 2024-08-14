@@ -142,3 +142,8 @@ bytes32 constant ROLE_SWAPPER = keccak256("SWAPPER");
  * @dev Grants permission to deploy MetaVaults
  */
 bytes32 constant ROLE_META_VAULT_DEPLOYER = keccak256("ROLE_META_VAULT_DEPLOYER");
+
+/**
+ * @dev Grants permission to call reallocate() on MetaVaults
+ */
+bytes32 constant ROLE_META_VAULT_REALLOCATOR = keccak256("ROLE_META_VAULT_REALLOCATOR");

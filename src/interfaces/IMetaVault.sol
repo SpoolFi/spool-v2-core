@@ -49,6 +49,10 @@ interface IMetaVault is IERC20Upgradeable, IERC1155ReceiverUpgradeable {
      * @dev Flush is blocked until reallocation is not done
      */
     error NeedReallocation();
+    /**
+     * @dev Reallocation failed because more assets were lost then specified by MetaVault owner
+     */
+    error MaxReallocationSlippage();
 
     // ========================== EVENTS ==========================
 
@@ -116,6 +120,10 @@ interface IMetaVault is IERC20Upgradeable, IERC1155ReceiverUpgradeable {
      * @dev data for calculating share price of MVT
      */
     event SharePrice(uint256 totalBalance, uint256 totalSupply);
+    /**
+     * @dev Emitted when maxReallocationSlippage is changed
+     */
+    event MaxReallocationSlippageChange(uint256 value);
 
     // ========================== FUNCTIONS ==========================
 
@@ -123,6 +131,11 @@ interface IMetaVault is IERC20Upgradeable, IERC1155ReceiverUpgradeable {
      * @notice Maximum amount of smart vaults MetaVault can manage
      */
     function MAX_SMART_VAULT_AMOUNT() external view returns (uint256);
+
+    /**
+     * @notice Maximum allowed percentage change of funds during reallocation in base points
+     */
+    function maxReallocationSlippage() external view returns (uint256);
 
     /**
      * @notice Owner of MetaVault can add new smart vaults for management
@@ -139,8 +152,17 @@ interface IMetaVault is IERC20Upgradeable, IERC1155ReceiverUpgradeable {
     /**
      * @notice claim MetaVault shares
      * @param flushIndex to claim from
+     * @return shares claimed
      */
-    function claim(uint128 flushIndex) external;
+    function claim(uint128 flushIndex) external returns (uint256 shares);
+
+    /**
+     * @notice amount of shares user will get from provided flushIndex
+     * @param user address
+     * @param flushIndex index
+     * @return shares will be claimed
+     */
+    function claimable(address user, uint128 flushIndex) external returns (uint256 shares);
 
     /**
      * @notice deposit assets into MetaVault
@@ -293,4 +315,12 @@ interface IMetaVault is IERC20Upgradeable, IERC1155ReceiverUpgradeable {
      * @param flushIndex index
      */
     function withdraw(uint128 flushIndex) external returns (uint256 amount);
+
+    /**
+     * @notice get amount of assets user will get from particular flush index
+     * @param user address
+     * @param flushIndex index
+     * @return amount of assets
+     */
+    function withdrawable(address user, uint128 flushIndex) external returns (uint256 amount);
 }

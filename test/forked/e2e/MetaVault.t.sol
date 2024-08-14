@@ -25,6 +25,8 @@ import "../../../src/managers/WithdrawalManager.sol";
 import "../../utils/SigUtils.sol";
 import "../../utils/SigUtilsDai.sol";
 
+import "../../mocks/MockAaveV2Strategy.sol";
+
 import "forge-std/console.sol";
 
 contract MetaVaultTest is ForkTestFixtureDeployment {
@@ -39,6 +41,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
     MetaVaultGuard metaVaultGuard;
     MetaVaultFactory metaVaultFactory;
 
+    MockAaveV2Strategy mockAaveStrategy;
     address[] public strategies;
 
     address owner = address(0x19);
@@ -51,7 +54,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         mockAllocationProvider = new MockAllocationProvider();
         vm.startPrank(_spoolAdmin);
         _deploySpool.spoolAccessControl().grantRole(ROLE_ALLOCATION_PROVIDER, address(mockAllocationProvider));
-        _deploySpool.spoolAccessControl().grantRole(ROLE_DO_HARD_WORKER, address(this));
+        _deploySpool.spoolAccessControl().grantRole(ROLE_META_VAULT_REALLOCATOR, address(this));
         _deploySpool.spoolAccessControl().grantRole(ROLE_META_VAULT_DEPLOYER, owner);
         vm.stopPrank();
 
@@ -59,6 +62,17 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
         address strategy1 = _getStrategyAddress(AAVE_V2_KEY, assetGroupIdUSDC);
         address strategy2 = _getStrategyAddress(COMPOUND_V2_KEY, assetGroupIdUSDC);
+        vm.store(address(_deploySpool.proxyAdmin()), bytes32(uint256(0)), bytes32(uint256(uint160(address(this)))));
+        address implementation = address(
+            new MockAaveV2Strategy(
+                _deploySpool.assetGroupRegistry(),
+                _deploySpool.spoolAccessControl(),
+                ILendingPoolAddressesProvider(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5)
+            )
+        );
+        _deploySpool.proxyAdmin().upgrade(TransparentUpgradeableProxy(payable(strategy1)), implementation);
+        mockAaveStrategy = MockAaveV2Strategy(strategy1);
+
         strategies.push(strategy1);
         strategies.push(strategy2);
 
@@ -142,6 +156,27 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         if (!vaultFound) {
             revert("Vault not found");
         }
+    }
+
+    function test_setMaxReallocationSlippage() external {
+        // max is 1%
+        assertEq(metaVault.maxReallocationSlippage(), 1_00);
+        //not owner cannot change it
+        vm.startPrank(user1);
+        vm.expectRevert("Ownable: caller is not the owner");
+        metaVault.setMaxReallocationSlippage(5_00);
+        vm.stopPrank();
+
+        vm.startPrank(owner);
+        // only owner can change it
+        metaVault.setMaxReallocationSlippage(5_00);
+        assertEq(metaVault.maxReallocationSlippage(), 5_00);
+
+        // setting it more than to 100% is not allowed
+        vm.expectRevert(IMetaVault.MaxReallocationSlippage.selector);
+        metaVault.setMaxReallocationSlippage(100_01);
+
+        vm.stopPrank();
     }
 
     function test_addSmartVaults() external {
@@ -289,12 +324,21 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
         vm.startPrank(address(0x123456));
         vm.expectRevert(IMetaVault.NothingToClaim.selector);
+        metaVault.claimable(address(0x123456), 0);
+        vm.expectRevert(IMetaVault.NothingToClaim.selector);
         metaVault.claim(0);
         vm.stopPrank();
 
         vm.startPrank(user1);
-        metaVault.claim(0);
+        {
+            uint256 claimable = metaVault.claimable(user1, 0);
+            uint256 claimed = metaVault.claim(0);
+            assertEq(claimable, claimed);
+            assertEq(claimable, metaVault.balanceOf(user1));
+        }
         // it is not possible to claim second time
+        vm.expectRevert(IMetaVault.NothingToClaim.selector);
+        metaVault.claimable(user1, 0);
         vm.expectRevert(IMetaVault.NothingToClaim.selector);
         metaVault.claim(0);
         vm.stopPrank();
@@ -396,6 +440,8 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         // cannot withdraw before redeem request is fulfilled
         vm.startPrank(user1);
         vm.expectRevert(IMetaVault.NothingToWithdraw.selector);
+        metaVault.withdrawable(user1, 2);
+        vm.expectRevert(IMetaVault.NothingToWithdraw.selector);
         metaVault.withdraw(2);
         vm.stopPrank();
 
@@ -410,13 +456,21 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         // random user cannot withdraw anything if he has not requested
         vm.startPrank(address(0x98765));
         vm.expectRevert(IMetaVault.NothingToWithdraw.selector);
+        metaVault.withdrawable(address(0x98765), 1);
+        vm.expectRevert(IMetaVault.NothingToWithdraw.selector);
         metaVault.withdraw(1);
         vm.stopPrank();
 
         uint256 user1BalanceBefore = usdc.balanceOf(user1);
         vm.startPrank(user1);
-        metaVault.withdraw(1);
+        {
+            uint256 withdrawable = metaVault.withdrawable(user1, 1);
+            uint256 withdrawn = metaVault.withdraw(1);
+            assertEq(withdrawable, withdrawn);
+        }
         // cannot withdraw second time
+        vm.expectRevert(IMetaVault.NothingToWithdraw.selector);
+        metaVault.withdrawable(user1, 1);
         vm.expectRevert(IMetaVault.NothingToWithdraw.selector);
         metaVault.withdraw(1);
         vm.stopPrank();
@@ -595,6 +649,12 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
                 assertEq(syncIndex, 0);
             }
 
+            // emulate loss during reallocation
+            mockAaveStrategy.setLoss(50_00);
+            vm.expectRevert(IMetaVault.MaxReallocationSlippage.selector);
+            reallocate();
+
+            mockAaveStrategy.setLoss(0);
             reallocate();
 
             assertTrue(metaVault.smartVaultToDepositNftId(vault1) == 0);

@@ -78,6 +78,9 @@ contract MetaVault is
     /// @inheritdoc IMetaVault
     mapping(address => uint256) public smartVaultToManagerFlushIndex;
 
+    // @inheritdoc IMetaVault
+    uint256 public maxReallocationSlippage;
+
     /**
      * @dev both start with zero.
      * if sync == flush it means whole cycle is completed
@@ -155,6 +158,8 @@ contract MetaVault is
         _addSmartVaults(vaults, allocations, true);
         IERC20MetadataUpgradeable(asset).approve(address(smartVaultManager), type(uint256).max);
         _transferOwnership(owner);
+        // 1% by default
+        maxReallocationSlippage = 1_00;
     }
 
     // ==================== PAUSING ====================
@@ -231,6 +236,11 @@ contract MetaVault is
         }
     }
 
+    function setMaxReallocationSlippage(uint256 value) external onlyOwner {
+        if (value > 100_00) revert MaxReallocationSlippage();
+        maxReallocationSlippage = value;
+    }
+
     // ========================== USER FACING ==========================
 
     /// @inheritdoc IMetaVault
@@ -254,14 +264,19 @@ contract MetaVault is
     }
 
     /// @inheritdoc IMetaVault
-    function claim(uint128 flushIndex) external {
+    function claim(uint128 flushIndex) external returns (uint256 shares) {
         _checkNotPaused();
-        uint256 userAssets = userToFlushToDepositedAssets[msg.sender][flushIndex];
-        if (index.sync < flushIndex || userAssets == 0) revert NothingToClaim();
-        uint256 shares = flushToMintedShares[flushIndex] * userAssets / flushToDepositedAssets[flushIndex];
+        shares = claimable(msg.sender, flushIndex);
         delete userToFlushToDepositedAssets[msg.sender][flushIndex];
         _transfer(address(this), msg.sender, shares);
         emit Claim(msg.sender, flushIndex, shares);
+    }
+
+    /// @inheritdoc IMetaVault
+    function claimable(address user, uint128 flushIndex) public view returns (uint256) {
+        uint256 assets = userToFlushToDepositedAssets[user][flushIndex];
+        if (index.sync < flushIndex || assets == 0) revert NothingToClaim();
+        return flushToMintedShares[flushIndex] * assets / flushToDepositedAssets[flushIndex];
     }
 
     /// @inheritdoc IMetaVault
@@ -279,15 +294,20 @@ contract MetaVault is
     /// @inheritdoc IMetaVault
     function withdraw(uint128 flushIndex) external returns (uint256 amount) {
         _checkNotPaused();
-        uint256 shares = userToFlushToRedeemedShares[msg.sender][flushIndex];
-        // user can withdraw funds only for synced flush
-        if (index.sync < flushIndex || shares == 0) revert NothingToWithdraw();
-        // amount of funds user get from specified withdrawal index
-        amount = shares * flushToWithdrawnAssets[flushIndex] / flushToRedeemedShares[flushIndex];
+        amount = withdrawable(msg.sender, flushIndex);
         // delete entry for user to disable repeated withdrawal
         delete userToFlushToRedeemedShares[msg.sender][flushIndex];
         IERC20MetadataUpgradeable(asset).safeTransfer(msg.sender, amount);
         emit Withdraw(msg.sender, flushIndex, amount);
+    }
+
+    /// @inheritdoc IMetaVault
+    function withdrawable(address user, uint128 flushIndex) public view returns (uint256) {
+        uint256 shares = userToFlushToRedeemedShares[user][flushIndex];
+        // user can withdraw funds only for synced flush
+        if (index.sync < flushIndex || shares == 0) revert NothingToWithdraw();
+        // amount of funds user get from specified withdrawal index
+        return shares * flushToWithdrawnAssets[flushIndex] / flushToRedeemedShares[flushIndex];
     }
 
     // ========================== SPOOL INTERACTIONS ==========================
@@ -473,7 +493,7 @@ contract MetaVault is
     struct ReallocationVars {
         // total amount of assets withdrawn during the reallocation
         uint256 withdrawnAssets;
-        // total equivalent of MetaVault shares for position change
+        // total position change
         uint256 positionChangeTotal;
         // amount of vaults to remove
         uint256 vaultsToRemoveCount;
@@ -486,7 +506,7 @@ contract MetaVault is
     /// @inheritdoc IMetaVault
     function reallocate(uint256[][][] calldata slippages) external {
         _checkNotPaused();
-        if (tx.origin != address(0)) _checkRole(ROLE_DO_HARD_WORKER, msg.sender);
+        if (tx.origin != address(0)) _checkRole(ROLE_META_VAULT_REALLOCATOR, msg.sender);
         _checkPendingSync();
         ReallocationVars memory vars = ReallocationVars(0, 0, 0, 0, tx.origin == address(0));
         // cache
@@ -537,13 +557,23 @@ contract MetaVault is
 
             // now we will perform deposits and vaults removal
             if (vars.withdrawnAssets > 0) {
+                // check that we have not lost more money then specified by MetaVault owner
+                {
+                    (uint256 newTotalBalance,) = _getBalances(vaults);
+                    uint256 shouldBeBalance = newTotalBalance + vars.withdrawnAssets;
+                    uint256 maxAllowedChange = totalBalance * maxReallocationSlippage / 100_00;
+                    if (totalBalance > shouldBeBalance && totalBalance - shouldBeBalance > maxAllowedChange) {
+                        revert MaxReallocationSlippage();
+                    }
+                }
                 address[] memory vaultsToRemove = new address[](vars.vaultsToRemoveCount);
                 for (uint256 i; i < vaults.length; i++) {
                     if (positionToAdd[i] == type(uint256).max) {
+                        // collect vaults for removal
                         vaultsToRemove[vars.vaultToRemoveIndex] = vaults[i];
                         vars.vaultToRemoveIndex++;
-                        // only if there are "MetaVault shares to deposit"
                     } else if (positionToAdd[i] > 0) {
+                        // only if there are "MetaVault shares to deposit"
                         // calculate amount of assets based on MetaVault shares ratio
                         uint256 amount = positionToAdd[i] * vars.withdrawnAssets / vars.positionChangeTotal;
                         smartVaultToDepositNftIdFromReallocation[vaults[i]] = _spoolDeposit(vaults[i], amount);
