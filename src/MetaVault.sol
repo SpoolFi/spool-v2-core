@@ -380,10 +380,11 @@ contract MetaVault is
         address[] memory vaults = _smartVaults.list;
         Index memory index_ = index;
         if (vaults.length > 0 && index_.sync < index_.flush) {
-            bool depositHadEffect = _syncDeposit(vaults, index_.sync);
+            (bool depositHadEffect, uint256 totalBalance) = _syncDeposit(vaults, index_.sync);
             bool withdrawalHadEffect = _syncWithdrawal(vaults, index_.sync);
             if (depositHadEffect || withdrawalHadEffect) {
                 index.sync++;
+                emit SharePrice(totalBalance, totalSupply());
             }
         }
     }
@@ -394,7 +395,10 @@ contract MetaVault is
      * @return hadEffect bool indicating whether sync had some effect
      * reverts if not all deposit nfts are claimed/claimable => DHW is needed
      */
-    function _syncDeposit(address[] memory vaults, uint128 syncIndex) internal returns (bool hadEffect) {
+    function _syncDeposit(address[] memory vaults, uint128 syncIndex)
+        internal
+        returns (bool hadEffect, uint256 totalBalance)
+    {
         uint256 depositedAssets = flushToDepositedAssets[syncIndex];
         if (depositedAssets > 0) {
             for (uint256 i; i < vaults.length; i++) {
@@ -410,16 +414,16 @@ contract MetaVault is
                     hadEffect = true;
                 }
             }
-            if (hadEffect) {
-                (uint256 totalBalance,) = getBalances(vaults);
-                uint256 totalSupply_ = totalSupply();
-                uint256 toMint = totalSupply_ == 0
-                    ? depositedAssets
-                    : (totalSupply_ * depositedAssets) / (totalBalance - depositedAssets);
-                flushToMintedShares[syncIndex] = toMint;
-                _mint(address(this), toMint);
-                emit SyncDeposit(syncIndex, toMint);
-            }
+        }
+        (totalBalance,) = _getBalances(vaults);
+        if (hadEffect) {
+            uint256 totalSupply_ = totalSupply();
+            uint256 toMint = totalSupply_ == 0
+                ? depositedAssets
+                : (totalSupply_ * depositedAssets) / (totalBalance - depositedAssets);
+            flushToMintedShares[syncIndex] = toMint;
+            _mint(address(this), toMint);
+            emit SyncDeposit(syncIndex, toMint);
         }
     }
 
@@ -450,12 +454,18 @@ contract MetaVault is
     }
 
     /// @inheritdoc IMetaVault
-    function getBalances(address[] memory vaults) public returns (uint256 totalBalance, uint256[][] memory balances) {
-        balances = spoolLens.getUserVaultAssetBalances(
+    function getBalances() public returns (uint256 totalBalance, uint256[] memory balances) {
+        return _getBalances(_smartVaults.list);
+    }
+
+    function _getBalances(address[] memory vaults) internal returns (uint256 totalBalance, uint256[] memory balances) {
+        uint256[][] memory balances_ = spoolLens.getUserVaultAssetBalances(
             address(this), vaults, new uint256[][](vaults.length), new bool[](vaults.length)
         );
-        for (uint256 i; i < balances.length; i++) {
-            totalBalance += balances[i][0];
+        balances = new uint256[](balances_.length);
+        for (uint256 i; i < balances_.length; i++) {
+            totalBalance += balances_[i][0];
+            balances[i] = balances_[i][0];
         }
         return (totalBalance, balances);
     }
@@ -484,10 +494,10 @@ contract MetaVault is
         // track required adjustment for vaults positions
         // uint256 max means vault should be removed
         uint256[] memory positionToAdd = new uint256[](vaults.length);
-        (uint256 totalBalance, uint256[][] memory balances) = getBalances(vaults);
+        (uint256 totalBalance, uint256[] memory balances) = _getBalances(vaults);
         if (totalBalance > 0) {
             for (uint256 i; i < vaults.length; i++) {
-                uint256 currentPosition = balances[i][0];
+                uint256 currentPosition = balances[i];
                 uint256 desiredPosition = smartVaultToAllocation[vaults[i]] * totalBalance / 100_00;
                 // if more MetaVault shares should be deposited we save this data for later
                 if (desiredPosition > currentPosition) {

@@ -112,6 +112,10 @@ interface IMetaVault is IERC20Upgradeable, IERC1155ReceiverUpgradeable {
      * @dev Emitted when needReallocation is changed
      */
     event NeedReallocationState(bool state);
+    /**
+     * @dev data for calculating share price of MVT
+     */
+    event SharePrice(uint256 totalBalance, uint256 totalSupply);
 
     // ========================== FUNCTIONS ==========================
 
@@ -183,12 +187,9 @@ interface IMetaVault is IERC20Upgradeable, IERC1155ReceiverUpgradeable {
 
     /**
      * @notice get the balance of underlying asset invested into smart vaults
-     * @param vaults addresses
      * @return totalBalance of MetaVault and balances for each particular smart vault
      */
-    function getBalances(address[] memory vaults)
-        external
-        returns (uint256 totalBalance, uint256[][] memory balances);
+    function getBalances() external returns (uint256 totalBalance, uint256[] memory balances);
 
     /**
      * @notice get the list of smart vaults currently managed by MetaVault

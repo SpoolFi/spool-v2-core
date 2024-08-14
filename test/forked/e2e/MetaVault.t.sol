@@ -129,10 +129,19 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
     }
 
     function assertVaultBalance(address vault, uint256 balance) internal {
-        address[] memory v = new address[](1);
-        v[0] = vault;
-        (uint256 totalBalance,) = metaVault.getBalances(v);
-        assertApproxEqAbs(totalBalance, balance, 3);
+        address[] memory vs = metaVault.getSmartVaults();
+        (, uint256[] memory balances) = metaVault.getBalances();
+        bool vaultFound;
+        for (uint256 i; i < vs.length; i++) {
+            if (vs[i] == vault) {
+                assertApproxEqAbs(balances[i], balance, 3);
+                vaultFound = true;
+                break;
+            }
+        }
+        if (!vaultFound) {
+            revert("Vault not found");
+        }
     }
 
     function test_addSmartVaults() external {
@@ -669,7 +678,6 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
             assertEq(usdc.balanceOf(address(metaVault)), 0);
 
             assertVaultBalance(vault1, 100e6);
-            assertVaultBalance(vault2, 0);
         }
     }
 
