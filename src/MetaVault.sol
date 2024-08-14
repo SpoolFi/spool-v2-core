@@ -320,9 +320,17 @@ contract MetaVault is
         if (index.sync < index.flush || reallocationIndex.sync < reallocationIndex.flush) revert PendingSync();
     }
 
+    /**
+     * @dev check that the caller is operator of MetaVaults
+     */
+    function _checkOperator() internal view {
+        if (tx.origin != address(0)) _checkRole(ROLE_META_VAULT_OPERATOR, msg.sender);
+    }
+
     /// @inheritdoc IMetaVault
     function flush() external {
         _checkNotPaused();
+        _checkOperator();
         _checkPendingSync();
         if (needReallocation) revert NeedReallocation();
 
@@ -398,6 +406,7 @@ contract MetaVault is
     /// @inheritdoc IMetaVault
     function sync() external {
         _checkNotPaused();
+        _checkOperator();
         address[] memory vaults = _smartVaults.list;
         Index memory index_ = index;
         if (vaults.length > 0 && index_.sync < index_.flush) {
@@ -507,7 +516,7 @@ contract MetaVault is
     /// @inheritdoc IMetaVault
     function reallocate(uint256[][][] calldata slippages) external {
         _checkNotPaused();
-        if (tx.origin != address(0)) _checkRole(ROLE_META_VAULT_REALLOCATOR, msg.sender);
+        _checkOperator();
         _checkPendingSync();
         ReallocationVars memory vars = ReallocationVars(0, 0, 0, 0, tx.origin == address(0));
         // cache
@@ -597,6 +606,7 @@ contract MetaVault is
     /// @inheritdoc IMetaVault
     function reallocateSync() external {
         _checkNotPaused();
+        _checkOperator();
         if (reallocationIndex.flush == reallocationIndex.sync) return;
         bool hadEffect;
         // cache
