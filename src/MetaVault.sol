@@ -484,7 +484,7 @@ contract MetaVault is
     }
 
     /// @inheritdoc IMetaVault
-    function getBalances() public returns (uint256 totalBalance, uint256[] memory balances) {
+    function getBalances() external returns (uint256 totalBalance, uint256[] memory balances) {
         return _getBalances(_smartVaults.list);
     }
 
