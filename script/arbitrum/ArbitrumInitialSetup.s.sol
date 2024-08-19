@@ -40,7 +40,10 @@ contract ArbitrumInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesI
 
         deployStrategies(spoolAccessControl, assetGroupRegistry, swapper, address(proxyAdmin), strategyRegistry);
 
-        // postDeploySpool(deployerAddress);
+        string memory profile = vm.envString("FOUNDRY_PROFILE");
+        if(Strings.equal(profile, "arbitrum-production")) {
+            postDeploySpool(deployerAddress);
+        }
     }
 
     function assets(string memory assetKey) public view virtual override returns (address) {

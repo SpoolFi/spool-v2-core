@@ -42,7 +42,10 @@ contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
             spoolAccessControl, assetGroupRegistry, swapper, address(proxyAdmin), strategyRegistry, extended
         );
 
-        postDeploySpool(deployerAddress);
+        string memory profile = vm.envString("FOUNDRY_PROFILE");
+        if(Strings.equal(profile, "mainnet-production")) {
+            postDeploySpool(deployerAddress);
+        }
     }
 
     function assets(string memory assetKey) public view virtual override returns (address) {

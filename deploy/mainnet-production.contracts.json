@@ -9,16 +9,8 @@
     "proxy": "0x6c22dfAD4414cfb786A4173A7E4547A94E56e263"
   },
   "DepositManager": {
-<<<<<<< HEAD:deploy/mainnet.contracts.json
-    "implementation": "0x671534a368AfB2c5E7a0170A4ED37DC4C387F48c",
-    "proxy": "0xDc962D69F5fFa5e0e61826196119E34E908a320d"
-||||||| 9933630:deploy/mainnet.contracts.json
-    "implementation": "0x93f6Ca0Be49839e127AbAD41cEf6783e47dc259b",
-    "proxy": "0x823Ba38992825FF37E72B6c3D669a09173B8F7bf"
-=======
     "implementation": "0x9CA3AdfA4c4151834a86740d4E8cFc50CE53dA62",
     "proxy": "0x823Ba38992825FF37E72B6c3D669a09173B8F7bf"
->>>>>>> main:deploy/mainnet-production.contracts.json
   },
   "DepositSwap": {
     "implementation": "0xcE7F66BD505a80129Ef25b06207Ac49620A55522",
@@ -50,31 +42,16 @@
     "implementation": "0x00dB3649F09F89B84afD26DefEddD0BF21818440",
     "proxy": "0x0271704B01A276e2334e1eC50c9512276fee9FA1"
   },
-<<<<<<< HEAD:deploy/mainnet.contracts.json
-  "SmartVaultFactory": "0x075B70C2b0931eC82ceb91Ad20e0FC44f88bA99D",
-||||||| 9933630:deploy/mainnet.contracts.json
-  "SmartVaultFactory": "0x8049Fc710D4a1Deea6a6bCeF772C166CEd7A82F5",
-  "SmartVaultFactoryHpf": "0x362599Cdc123e3FFEB7c0812d769128D180667E8",
-=======
   "SmartVaultBeneficiaryFactoryHpf": "0x34e51Cc3Db85F2B8bB1E2E31a9131cb9737228a9",
   "SmartVaultFactory": "0x8049Fc710D4a1Deea6a6bCeF772C166CEd7A82F5",
   "SmartVaultFactoryHpf": "0x362599Cdc123e3FFEB7c0812d769128D180667E8",
->>>>>>> main:deploy/mainnet-production.contracts.json
   "SmartVaultManager": {
     "implementation": "0x5Be60b7F67566c51b394B489715Cb06f12dEb318",
     "proxy": "0x6c1708833Cf8Bc1c7be6389dF1721B29d76090DA"
   },
   "SpoolAccessControl": {
-<<<<<<< HEAD:deploy/mainnet.contracts.json
-    "implementation": "0x85365E3d47C34466477518a5F6A869d2C68dF194",
-    "proxy": "0xE336E6dD21563Ed7785fa66562aE14194a720FBc"
-||||||| 9933630:deploy/mainnet.contracts.json
-    "implementation": "0x9D7f606968cE7fE8323531607435F8BEbB2dF41e",
-    "proxy": "0x7b533e72E0cDC63AacD8cDB926AC402b846Fbd13"
-=======
     "implementation": "0xB8Fb182bE348D7cA51576A29a7eb7420d3b761aE",
     "proxy": "0x7b533e72E0cDC63AacD8cDB926AC402b846Fbd13"
->>>>>>> main:deploy/mainnet-production.contracts.json
   },
   "SpoolLens": {
     "implementation": "0xE08bE40E1D7434ffF403966d93952cbbeE64C27F",
@@ -102,51 +79,12 @@
   },
   "strategies": {
     "aave-v2": {
-<<<<<<< HEAD:deploy/mainnet.contracts.json
-      "aave-v2-dai": "0x2AE9CAA6Ad990D6790a2e21F69Bd93f2ccACdEc9",
-      "aave-v2-usdc": "0xe5f6b00e9261049704e66598B26BDbd1B648d674",
-      "aave-v2-usdt": "0x041ce771478a9c4986BB9F812053bBF38079D7e7",
-      "implementation": "0xE5a941e12191e353A0709c6F11C82a212f1fc7dC"
-||||||| 9933630:deploy/mainnet.contracts.json
-      "aave-v2-dai": "0x27f38719608422Af8a31509CBBB5fAcD582f6e1F",
-      "aave-v2-usdc": "0xc6C65c730D7CB5FA22903DBcCB64973be4Fd4629",
-      "aave-v2-usdt": "0xCfdEa0499D00f6ecae256F0FC9daCC837D48409e",
-      "implementation": "0x3597F15739771b8e040c0cFac048752946B79e9D"
-=======
       "aave-v2-dai": "0x27f38719608422Af8a31509CBBB5fAcD582f6e1F",
       "aave-v2-usdc": "0xc6C65c730D7CB5FA22903DBcCB64973be4Fd4629",
       "aave-v2-usdt": "0xCfdEa0499D00f6ecae256F0FC9daCC837D48409e",
       "implementation": "0x3Bb41F7A05535CC05Ab6263dd01a4fa3462bE3c9"
->>>>>>> main:deploy/mainnet-production.contracts.json
     },
     "compound-v2": {
-<<<<<<< HEAD:deploy/mainnet.contracts.json
-      "compound-v2-dai": "0x03Cc74E1A8D91E6B2b28237058cdE4b339741c04",
-      "compound-v2-usdc": "0xf434ABE350682850e41B5b15837e29f0c606DFce",
-      "compound-v2-usdt": "0x1Ef5dd09408d75509d43a53cB8fB0fEa93b7a4a4",
-      "implementation": "0x9fDD20F888Efa05DcC877cff36d287f8437569a0"
-    },
-    "convex-3pool": {
-      "implementation": "0xb4C5ccCF7c332e6C3123512526C27a4017FEeD5B",
-      "proxy": "0xD93C67509CC0cf45C1E9bADB7D03f5cD92103878"
-    },
-    "convex-alusd": {
-      "implementation": "0xef027aCb91a4Ce2c1B9319A6451f4F915Ed66B32",
-      "proxy": "0x60Ed987fb1106E0048CeafCcDd6af7f75A2CBD46"
-    },
-    "convex-stfrxeth": {
-      "implementation": "0xDCcca5E2892f101e9d50fb19e15195562457D8D4",
-      "proxy": "0x2273b95B203a1782A2AA75d568e3C5f57708E4B2"
-    },
-    "curve-3pool": {
-      "implementation": "0xb3752bBb715aCAe2A3E9c28200B5A0B319f583Ef",
-      "proxy": "0x83DFeBE34b3Da9538c8457b819871D8b3e6B5E28"
-||||||| 9933630:deploy/mainnet.contracts.json
-      "compound-v2-dai": "0x013022c7ca735eF6ba55cd3eaccB4Ebb3be484e9",
-      "compound-v2-usdc": "0xfC8610aE1D1cc5f30c932E9FF4ac37E3f1a6337d",
-      "compound-v2-usdt": "0xac997F24Ef9f5fc2A3c050eA14d1d017db20a1d1",
-      "implementation": "0x6Ab817bD92A1c3075d8f1ceD160984EA4E5F8d89"
-=======
       "compound-v2-dai": "0x013022c7ca735eF6ba55cd3eaccB4Ebb3be484e9",
       "compound-v2-usdc": "0xfC8610aE1D1cc5f30c932E9FF4ac37E3f1a6337d",
       "compound-v2-usdt": "0xac997F24Ef9f5fc2A3c050eA14d1d017db20a1d1",
@@ -172,25 +110,8 @@
       "ethena-usdc": "0x265cc52678887e59D1b66F3D93BBAB7658Bc0337",
       "ethena-usde": "0xa43DbC866806d0DCdc5f19510de62090B2301d18",
       "implementation": "0xDd118AEd7643D152708EbFee068aB3eA181F431E"
->>>>>>> main:deploy/mainnet-production.contracts.json
     },
     "gearbox-v3": {
-<<<<<<< HEAD:deploy/mainnet.contracts.json
-      "gearbox-v3-usdc": "0x09Fca6640E016750b8B6C7c7d98f47D435a5B224",
-      "gearbox-v3-weth": "0x6C3b0401815A4d92DA2F3BA8e2809587C2D095EC",
-      "implementation": "0x62422c81cC7cDfEA6dAECe3218eD503539Ce7d39"
-    },
-    "metamorpho-gauntlet": {
-      "implementation": "0x699ae3BCBa5b76ea1E8373b944332D0a3a50eCCd",
-      "metamorpho-gauntlet-dai-core": "0x140f7e6cb92A399E9c70235879d7504D8c9fE784",
-      "metamorpho-gauntlet-lrt-core": "0xddFb9C33a20Abeb6B540a7Af31b115a0FDb403fB",
-      "metamorpho-gauntlet-mkr-blended": "0xCd6883d1b7F1295D1B81F6A94174993e4BED0bc0",
-      "metamorpho-gauntlet-usdt-prime": "0x3D0686fd0A9673d696A8AdeF569DAEDeD95bA061"
-||||||| 9933630:deploy/mainnet.contracts.json
-        "gearbox-v3-usdc":"0xb4a7fb51D06760B5F622643B7276c003418732bD",
-        "gearbox-v3-weth": "0xD92B65d2321076FBAc23FCfC9A9Fd5Ed2E98B758",
-        "implementation":"0x615a54527c08e15d9276EDfb707e7F457aBCF3Ae"
-=======
       "gearbox-v3-usdc": "0xb4a7fb51D06760B5F622643B7276c003418732bD",
       "gearbox-v3-weth": "0xD92B65d2321076FBAc23FCfC9A9Fd5Ed2E98B758",
       "implementation": "0xb170F18dca153752b2F35304e5ea581373095f4e",
@@ -209,43 +130,18 @@
       "metamorpho-re7-weth": "0xee7fA506CDC3E3698087B25dE72eeAC37131119d",
       "metamorpho-steakhouse-pyusd": "0x92e19a03468356FEd850EAF6cA5f25d8d6Ebf5AD",
       "metamorpho-steakhouse-usdc": "0x173F7C86757bFD9Aea8D218Ac03E2Bc787F31fE4"
->>>>>>> main:deploy/mainnet-production.contracts.json
     },
     "morpho-aave-v2": {
-<<<<<<< HEAD:deploy/mainnet.contracts.json
-      "implementation": "0x438a0bb793412159357340d07Fb5A1f7aCA5b796",
-      "morpho-aave-v2-dai": "0x578Cf55Ff29722A5fe7e1202bB89fac030142d66",
-      "morpho-aave-v2-usdc": "0x633500e0EfF56d8853bD51Ac0B19C1cA95Db612e",
-      "morpho-aave-v2-usdt": "0xc1a8CA78c14E06aC4dAbff1B10cC115FF6a95556"
-||||||| 9933630:deploy/mainnet.contracts.json
-      "implementation": "0x7b2121D7d8699aF6420941AE06834625ce650623",
-      "morpho-aave-v2-dai": "0xfE6D982a773F4251dA4Ba04fc8fE7F2717413599",
-      "morpho-aave-v2-usdc": "0xa51C0a9F2d688c8943F029feC00a3c9193aAdf81",
-      "morpho-aave-v2-usdt": "0xd353b46208493F1515d5f5c67A86795cf509c598"
-=======
       "implementation": "0xdD55DAb8A52b1E2983a9c7297650DBA857dB4e3b",
       "morpho-aave-v2-dai": "0xfE6D982a773F4251dA4Ba04fc8fE7F2717413599",
       "morpho-aave-v2-usdc": "0xa51C0a9F2d688c8943F029feC00a3c9193aAdf81",
       "morpho-aave-v2-usdt": "0xd353b46208493F1515d5f5c67A86795cf509c598"
->>>>>>> main:deploy/mainnet-production.contracts.json
     },
     "morpho-compound-v2": {
-<<<<<<< HEAD:deploy/mainnet.contracts.json
-      "implementation": "0xe1821C399D84C3da9895669BEA8AACD075ed41F4",
-      "morpho-compound-v2-dai": "0x67d2D608714A26305629db6FFC430e153BA7f2Cf",
-      "morpho-compound-v2-usdc": "0x3ddD826b8570A0bFf8d52652FE7920947CD32a94",
-      "morpho-compound-v2-usdt": "0x58AF659B2440ec3b2772a8b7fd8972f7fdEB9105"
-||||||| 9933630:deploy/mainnet.contracts.json
-      "implementation": "0x879BF9a1BBBa52dAd6C0d4a804EC3Bc088A51c7d",
-      "morpho-compound-v2-dai": "0xcab95acA532aD88C68fe464bD276C5beEb6FE373",
-      "morpho-compound-v2-usdc": "0x07D01228801cAc1EFEB36481370e5b532C7935a4",
-      "morpho-compound-v2-usdt": "0xb7364aF55b4A0393d070AEEB2D8a6468f82e178e"
-=======
       "implementation": "0x40844863f1a8945499501111f71eCdABDBedDEf5",
       "morpho-compound-v2-dai": "0xcab95acA532aD88C68fe464bD276C5beEb6FE373",
       "morpho-compound-v2-usdc": "0x07D01228801cAc1EFEB36481370e5b532C7935a4",
       "morpho-compound-v2-usdt": "0xb7364aF55b4A0393d070AEEB2D8a6468f82e178e"
->>>>>>> main:deploy/mainnet-production.contracts.json
     },
     "notional-finance": {
       "implementation": "0x6194D01936D64e6d12972ba054c705eAf302592F",
@@ -253,81 +149,22 @@
       "notional-finance-usdc": "0xF4ebA6AdFB2f54EfBBb0B079f15eD5f177367b75"
     },
     "oeth-holding": {
-<<<<<<< HEAD:deploy/mainnet.contracts.json
-      "implementation": "0xc8872861229eF1a68367cCEfC17AE2F2550De352",
-      "proxy": "0x24bF10e52bF0109A5aDeB3Bef7DEccB4Bb140bfd"
-||||||| 9933630:deploy/mainnet.contracts.json
-      "implementation": "0x4349909E23B4CDdd4d8573D75D21B5E6FBFb36A8",
-      "proxy": "0x39E5c2a796082eB553c1b0656e09E49583D12CB8"
-=======
       "implementation": "0x120da9fA3F56D2179FACab9Ce9b3D00dF4BE1575",
       "proxy": "0x39E5c2a796082eB553c1b0656e09E49583D12CB8"
->>>>>>> main:deploy/mainnet-production.contracts.json
     },
     "reth-holding": {
-<<<<<<< HEAD:deploy/mainnet.contracts.json
-      "implementation": "0x6d8DBc3875A8f4005eDd94b633212cCC5d74062B",
-      "proxy": "0x7aFf34F17CED3Bc39A94aD250372119a2762876b"
-||||||| 9933630:deploy/mainnet.contracts.json
-      "implementation": "0xefC54333d3Fc82a7BE86ECAB7Eab1E3834B32909",
-      "proxy": "0x019834Ef2ec086e495668aa4E06B4d31119beC71"
-=======
       "implementation": "0x56a20C5D76d41338fBd5D7cB7Db37e937143f910",
       "proxy": "0x019834Ef2ec086e495668aa4E06B4d31119beC71"
->>>>>>> main:deploy/mainnet-production.contracts.json
     },
     "sfrxeth-holding": {
-<<<<<<< HEAD:deploy/mainnet.contracts.json
-      "implementation": "0x5049Cc6e8BaA9F053Fa5357395784DaDc0cd469f",
-      "proxy": "0x68b19781cBE5724b1666D944C729aa15d6925E0b"
-||||||| 9933630:deploy/mainnet.contracts.json
-      "implementation": "0xAcB8e69668c5005bC14e83D2f4aAC15E7186D797",
-      "proxy": "0x6d0e6242FE023675487BccA4Ab989a91D0932a51"
-=======
       "implementation": "0xeFD8CE62CA1cd5C309ee1421496E8657036E9373",
       "proxy": "0x6d0e6242FE023675487BccA4Ab989a91D0932a51"
->>>>>>> main:deploy/mainnet-production.contracts.json
     },
     "steth-holding": {
-<<<<<<< HEAD:deploy/mainnet.contracts.json
-      "implementation": "0x7fd3f41F2dE554d8528Db74294a4382f4718F3Ad",
-      "proxy": "0xB91fC3a5Cf81470Ad17B36d111Ab4E35947F98D8"
-||||||| 9933630:deploy/mainnet.contracts.json
-      "implementation": "0x89fd0a5549d402595c9db1be92564c486fb10b96",
-      "proxy": "0x504d272aC93e7ffAcAcB7DD69061c9b4D0781410"
-=======
       "implementation": "0xc4962991713ff1e5EF4Ac4BA6f5B2292D5b65383",
       "proxy": "0x504d272aC93e7ffAcAcB7DD69061c9b4D0781410"
->>>>>>> main:deploy/mainnet-production.contracts.json
     },
     "yearn-v2": {
-<<<<<<< HEAD:deploy/mainnet.contracts.json
-      "implementation": "0xc464EE4cbE8eFC9112a29dC8C840bBa60E635CF3",
-      "yearn-v2-dai": "0xCA7D7c54Ba78E77de188E277D6D5C6D339F19d0B",
-      "yearn-v2-usdc": "0x3660e3e7BEF5ff78Fd3ee89837A4384672F1B9Ea",
-      "yearn-v2-usdt": "0xBd30B329a9A9A24E31aBFa5C757E83476646aB8F"
-||||||| 9933630:deploy/mainnet.contracts.json
-      "implementation": "0x13b727aBD64063629fcc1b9F8CbD6B4efc619c08",
-      "yearn-v2-dai": "0xb8943E7eBB7B919AAFaE261343c38F02e4182CA6",
-      "yearn-v2-usdc": "0xc61E829DF3fbD6Cf5B2f5881F190C69eE48d20DF",
-      "yearn-v2-usdt": "0x24416AE2794C222725185734c7050c008fC1d2f8"
-    },
-    "convex-3pool": {
-      "implementation": "0x63423e8358B3D00a780CCE788Ed4BCCd50ed58b2",
-      "proxy": "0x93f0F12e368b06d7914255FBA5cA47821cd5908d"
-    },
-    "convex-alusd": {
-      "implementation": "0xD049C7B5707021C39787438B95d65C9C7339EA04",
-      "proxy": "0x2cA41209c87D2a611059d85C62cc0F913068d301"
-    },
-    "curve-3pool": {
-      "implementation": "0x520AeDDdd3fb45E49ce236Df4c43B6a1a0cc061A",
-      "proxy": "0x6EB6251AF926016c60DE17aD976b9C1e2485e1F0"
-    },
-    "convex-stfrxeth": {
-     "implementation": "0xbb141226abA3b1dDfBe5EB03De9138f16198b42c",
-     "proxy": "0x5699181904Ae5781d204a0E189862f8AF9109479"
-=======
       "implementation": "0xb7F6FBbB8d11946951b14cC349DDcF7e11F74D7e",
       "yearn-v2-dai": "0xb8943E7eBB7B919AAFaE261343c38F02e4182CA6",
       "yearn-v2-usdc": "0xc61E829DF3fbD6Cf5B2f5881F190C69eE48d20DF",
@@ -342,7 +179,6 @@
     "yearn-v3-juiced": {
       "implementation": "0x123dB049CC5Ee36010f5148000754181aB87b3B3",
       "yearn-v3-juiced-dai": "0x2e988479F14Ff61586F8Fd0F09E8720484Eb6030"
->>>>>>> main:deploy/mainnet-production.contracts.json
     }
   },
   "riskProviders": {

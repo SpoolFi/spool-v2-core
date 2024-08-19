@@ -32,7 +32,14 @@
             "address": "0x4c9EDD5852cd905f086C759E8383e09bff1E68B3",
             "priceAggregator": {
                 "address": "0xa569d910839Ae8865Da8F8e70FfFb0cBA869F961",
-                "timeLimit": 3780
+                "timeLimit": 86580
+            }
+        },
+        "pyusd": {
+            "address": "0x6c3ea9036406852006290770BEdFcAbA0e23A0e8",
+            "priceAggregator": {
+                "address": "0x8f1dF6D7F2db73eECE86a18b4381F4707b918FB1",
+                "timeLimit": 86580
             }
         }
     },
@@ -41,30 +48,30 @@
             "lendingPoolAddressesProvider": "0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5",
             "dai": {
                 "aToken": "0x028171bCA77440897B824Ca71D1c56caC55b68A3",
-                "apy": 21900000000
+                "apy": 59000000000
             },
             "usdc": {
                 "aToken": "0xBcca60bB61934080951369a648Fb03DF4F96263C",
-                "apy": 22900000000
+                "apy": 30400000000
             },
             "usdt": {
                 "aToken": "0x3Ed3B47Dd13EC9a98b44e6204A523E766B225811",
-                "apy": 34500000000
+                "apy": 27700000000
             }
         },
         "compound-v2": {
             "comptroller": "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B",
             "dai": {
                 "cToken": "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643",
-                "apy": 15300000000
+                "apy": 35300000000
             },
             "usdc": {
                 "cToken": "0x39AA39c021dfbaE8faC545936693aC917d5E7563",
-                "apy": 20400000000
+                "apy": 34500000000
             },
             "usdt": {
                 "cToken": "0xf650C3d88D12dB855b8bf7D11Be6C55A4e07dCC9",
-                "apy": 27200000000
+                "apy": 34400000000
             }
         },
         "convex-base": {
@@ -73,15 +80,15 @@
         "convex-3pool": {
             "pid": 9,
             "extraRewards": false,
-            "apy": 16100000000,
-            "positiveYieldLimit": 10000000000,
+            "apy": 20100000000,
+            "positiveYieldLimit": 20000000000,
             "negativeYieldLimit": -1000000000000
         },
         "convex-alusd": {
             "pid": 36,
             "extraRewards": false,
-            "apy": 59200000000,
-            "positiveYieldLimit": 10000000000,
+            "apy": 33600000000,
+            "positiveYieldLimit": 20000000000,
             "negativeYieldLimit": -1000000000000
         },
         "convex-stfrxeth": {
@@ -95,8 +102,8 @@
             "gauge": "0xbFcF63294aD7105dEa65aA58F8AE5BE2D9d0952A",
             "pool": "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
             "token": "0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490",
-            "apy": 2700000000,
-            "positiveYieldLimit": 10000000000,
+            "apy": 10000000000,
+            "positiveYieldLimit": 20000000000,
             "negativeYieldLimit": -1000000000000
         },
         "curve-alusd": {
@@ -127,64 +134,64 @@
         "idle-best-yield-senior": {
             "dai": {
                 "idleToken": "0x3fE7940616e5Bc47b0775a0dccf6237893353bB4",
-                "apy": 37300000000
+                "apy": 49700000000
             },
             "usdc": {
                 "idleToken": "0x5274891bEC421B39D23760c04A6755eCB444797C",
-                "apy": 37300000000
+                "apy": 37600000000
             },
             "usdt": {
                 "idleToken": "0xF34842d05A1c888Ca02769A633DF37177415C2f8",
-                "apy": 37300000000
+                "apy": 58400000000
             }
         },
         "morpho-aave-v2": {
             "morpho": "0x777777c9898D384F785Ee44Acfe945efDFf5f3E0",
             "lens": "0x507fA343d0A90786d86C7cd885f5C49263A91FF4",
             "dai": {
-                "positiveYieldLimit": 10000000000,
-                "negativeYieldLimit": -1000000000000,
-                "apy": 37300000000
+                "apy": 71500000000,
+                "positiveYieldLimit": 20000000000,
+                "negativeYieldLimit": -1000000000000
             },
             "usdc": {
-                "positiveYieldLimit": 10000000000,
-                "negativeYieldLimit": -1000000000000,
-                "apy": 37300000000
+                "apy": 34400000000,
+                "positiveYieldLimit": 20000000000,
+                "negativeYieldLimit": -1000000000000
             },
             "usdt": {
-                "positiveYieldLimit": 10000000000,
-                "negativeYieldLimit": -1000000000000,
-                "apy": 37300000000
+                "apy": 38600000000,
+                "positiveYieldLimit": 20000000000,
+                "negativeYieldLimit": -1000000000000
             }
         },
         "morpho-compound-v2": {
             "morpho": "0x8888882f8f843896699869179fB6E4f7e3B58888",
             "lens": "0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67",
             "dai": {
-                "positiveYieldLimit": 10000000000,
-                "negativeYieldLimit": -1000000000000,
-                "apy": 37300000000
+                "apy": 35300000000,
+                "positiveYieldLimit": 20000000000,
+                "negativeYieldLimit": -1000000000000
             },
             "usdc": {
-                "positiveYieldLimit": 10000000000,
-                "negativeYieldLimit": -1000000000000,
-                "apy": 37300000000
+                "apy": 34500000000,
+                "positiveYieldLimit": 20000000000,
+                "negativeYieldLimit": -1000000000000
             },
             "usdt": {
-                "positiveYieldLimit": 10000000000,
-                "negativeYieldLimit": -1000000000000,
-                "apy": 37300000000
+                "apy": 42800000000,
+                "positiveYieldLimit": 20000000000,
+                "negativeYieldLimit": -1000000000000
             }
         },
         "notional-finance": {
             "notionalProxy": "0x1344A36A1B56144C3Bc62E7757377D288fDE0369",
             "dai": {
                 "nToken": "0x6EbcE2453398af200c688C7c4eBD479171231818",
-                "apy": 107800000000
+                "apy": 56500000000
             },
             "usdc": {
                 "nToken": "0x18b0Fc5A233acF1586Da7C199Ca9E3f486305A29",
-                "apy": 141600000000
+                "apy": 69800000000
             }
         },
         "oeth-holding": {
@@ -193,54 +200,28 @@
         },
         "reth-holding": {
             "rocketSwapRouter": "0x16D5A408e807db8eF7c578279BEeEe6b228f1c1C",
-            "apy": 44500000000
+            "apy": 38200000000
         },
         "sfrxeth-holding": {
             "frxEthMinter": "0xbAFA44EFE7901E04E39Dad13167D089C559c1138",
-            "apy": 54200000000
+            "apy": 45300000000
         },
         "steth-holding": {
             "lido": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
-            "apy": 50000000000
+            "apy": 36000000000
         },
         "yearn-v2": {
             "dai": {
                 "tokenVault": "0xdA816459F1AB5631232FE5e97a05BBBb94970c95",
-                "apy": 67400000000
+                "apy": 36900000000
             },
             "usdc": {
                 "tokenVault": "0xa354F35829Ae975e850e23e9615b11Da1B3dC4DE",
-                "apy": 31700000000
+                "apy": 23900000000
             },
             "usdt": {
                 "tokenVault": "0x3B27F92C0e212C671EA351827EDF93DB27cc0c65",
-                "apy": 15300000000
-            }
-        },
-        "metamorpho-gauntlet": {
-            "mkr-blended": {
-                "vault": "0xEbFA750279dEfa89b8D99bdd145a016F6292757b",
-                "rewards": ["0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0"],
-                "apy": 102600000000,
-                "underlyingAsset": "usdc"
-            },
-            "dai-core": {
-                "vault": "0x500331c9fF24D9d11aee6B07734Aa72343EA74a5",
-                "rewards": [],
-                "apy": 72800000000,
-                "underlyingAsset": "dai"
-            },
-            "lrt-core": {
-                "vault": "0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658",
-                "rewards": ["0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"],
-                "apy": 34190000000,
-                "underlyingAsset": "weth"
-            },
-            "usdt-prime": {
-                "vault": "0x8CB3649114051cA5119141a34C200D65dc0Faa73",
-                "rewards": [],
-                "apy": 60900000000,
-                "underlyingAsset": "usdt"
+                "apy": 4500000000
             }
         },
         "yearn-v3-gauged": {
@@ -267,30 +248,77 @@
                 "harvester": "0x082a5743aAdf3d0Daf750EeF24652b36a68B1e9C"
             }
         },
-        "metamorpho-gauntlet": {
-            "mkr-blended": {
+        "metamorpho": {
+            "gauntlet-mkr-blended": {
                 "vault": "0xEbFA750279dEfa89b8D99bdd145a016F6292757b",
                 "rewards": ["0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0"],
                 "apy": 102600000000,
                 "underlyingAsset": "usdc"
             },
-            "dai-core": {
+            "gauntlet-dai-core": {
                 "vault": "0x500331c9fF24D9d11aee6B07734Aa72343EA74a5",
                 "rewards": [],
                 "apy": 72800000000,
                 "underlyingAsset": "dai"
             },
-            "lrt-core": {
+            "gauntlet-lrt-core": {
                 "vault": "0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658",
                 "rewards": ["0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"],
                 "apy": 34190000000,
                 "underlyingAsset": "weth"
             },
-            "usdt-prime": {
+            "gauntlet-usdt-prime": {
                 "vault": "0x8CB3649114051cA5119141a34C200D65dc0Faa73",
                 "rewards": [],
                 "apy": 60900000000,
                 "underlyingAsset": "usdt"
+            },
+            "gauntlet-weth-prime": {
+                "vault": "0x2371e134e3455e0593363cBF89d3b6cf53740618",
+                "rewards": [],
+                "apy": 18500000000,
+                "underlyingAsset": "weth"
+            },
+            "gauntlet-usdc-prime": {
+                "vault": "0xdd0f28e19C1780eb6396170735D45153D261490d",
+                "rewards": [],
+                "apy": 91600000000,
+                "underlyingAsset": "usdc"
+            },
+            "steakhouse-usdc": {
+                "vault": "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB",
+                "rewards": [],
+                "apy": 70000000000,
+                "underlyingAsset": "usdc"
+            },
+            "steakhouse-pyusd": {
+                "vault": "0xbEEF02e5E13584ab96848af90261f0C8Ee04722a",
+                "rewards": [],
+                "apy": 39200000000,
+                "underlyingAsset": "pyusd"
+            },
+            "bprotocol-flagship-eth": {
+                "vault": "0x38989BBA00BDF8181F4082995b3DEAe96163aC5D",
+                "rewards": [],
+                "apy": 19700000000,
+                "underlyingAsset": "weth"
+            },
+            "bprotocol-flagship-usdt": {
+                "vault": "0x2C25f6C25770fFEC5959D34B94Bf898865e5D6b1",
+                "rewards": [],
+                "apy": 60900000000,
+                "underlyingAsset": "usdt"
+            },
+            "re7-weth": {
+                "vault": "0x78Fc2c2eD1A4cDb5402365934aE5648aDAd094d0",
+                "rewards": [
+                    "0xc55126051B22eBb829D00368f4B12Bde432de5Da",
+                    "0x320623b8E4fF03373931769A31Fc52A4E78B5d70",
+                    "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+                    "0x8207c1FfC5B6804F6024322CcF34F29c3541Ae26"
+                ],
+                "apy": 41100000000,
+                "underlyingAsset": "weth"
             }
         },
         "ethena": {
