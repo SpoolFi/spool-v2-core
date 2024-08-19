@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
+import "@openzeppelin/utils/Strings.sol";
 import "forge-std/Script.sol";
 import "../../src/SmartVaultFactoryHpf.sol";
 import {JsonReader} from "../helper/JsonHelper.sol";
@@ -29,8 +30,12 @@ contract DeploySmartVaultFactoryHpf is Script {
     }
 
     function init() public virtual {
-        _contractsJson = new JsonReader(vm, string.concat("deploy/mainnet.contracts.json"));
-        _constantsJson = new JsonReader(vm, string.concat("deploy/mainnet.constants.json"));
+        string memory environment = vm.envString("ENVIRONMENT");
+        require(
+            Strings.equal(environment, "production") || Strings.equal(environment, "staging"), "Environment is not set"
+        );
+        _contractsJson = new JsonReader(vm, string.concat("deploy/mainnet.", environment, ".contracts.json"));
+        _constantsJson = new JsonReader(vm, string.concat("deploy/mainnet.", environment, ".constants.json"));
 
         smartVaultFactory = SmartVaultFactory(_contractsJson.getAddress(".SmartVaultFactory"));
         spoolAccessControl = ISpoolAccessControl(_contractsJson.getAddress(".SpoolAccessControl.proxy"));

@@ -10,11 +10,11 @@ import "../../fixtures/TestFixture.sol";
 import "../../mocks/MockAllocationProvider.sol";
 import "../ForkTestFixtureDeployment.sol";
 
-contract E2E is ForkTestFixtureDeployment {
+contract E2eMainnetTest is ForkTestFixtureDeployment {
     MockAllocationProvider public mockAllocationProvider;
 
     function setUp() public {
-        _deploy();
+        _deploy(Extended.INITIAL); // deploy just initial strategies
 
         mockAllocationProvider = new MockAllocationProvider();
         vm.startPrank(_spoolAdmin);

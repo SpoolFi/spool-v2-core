@@ -47,9 +47,9 @@ contract ConvexAlusdStrategy is
     using SafeERC20 for IERC20;
     using uint16a16Lib for uint16a16;
 
-    uint256 public tokenLength;
+    uint256 private tokenLength;
 
-    ISwapper public immutable swapper;
+    ISwapper private immutable swapper;
 
     address private _pool;
     address private _lpToken;
@@ -60,9 +60,9 @@ contract ConvexAlusdStrategy is
 
     uint256 constant BASE_REWARD_COUNT = 2;
     IBooster public immutable booster;
-    IBaseRewardPool public crvRewards;
-    address public crvRewardToken;
-    address public cvxRewardToken;
+    IBaseRewardPool private crvRewards;
+    address private crvRewardToken;
+    address private cvxRewardToken;
     uint96 public pid;
     bool extraRewards;
 

@@ -27,6 +27,7 @@ contract DepositSwapIntegrationTest is TestFixture {
     IWETH9 private weth;
 
     DepositSwap depositSwap;
+    ISmartVault smartVaultWeth;
 
     function setUp() public {
         setUpBase();
@@ -48,58 +49,101 @@ contract DepositSwapIntegrationTest is TestFixture {
         tokenA = MockToken(sorted[0]);
         tokenB = MockToken(sorted[1]);
         tokenC = MockToken(sorted[2]);
+        weth = IWETH9(address(new WETH9()));
 
         assetGroupRegistry.allowToken(address(tokenA));
         assetGroupRegistry.allowToken(address(tokenB));
         assetGroupRegistry.allowToken(address(tokenC));
+        assetGroupRegistry.allowToken(address(weth));
 
-        weth = IWETH9(address(new WETH9()));
-
-        uint256 assetGroupId;
         {
-            address[] memory assetGroup = new address[](2);
-            assetGroup[0] = address(tokenA);
-            assetGroup[1] = address(tokenB);
-            assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+            uint256 assetGroupId;
+            {
+                address[] memory assetGroup = new address[](2);
+                assetGroup[0] = address(tokenA);
+                assetGroup[1] = address(tokenB);
+                assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+            }
+
+            MockStrategy strategy = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            {
+                uint256[] memory strategyRatios = new uint256[](2);
+                strategyRatios[0] = 800;
+                strategyRatios[1] = 200;
+                strategy.initialize("Strategy", strategyRatios);
+                strategyRegistry.registerStrategy(address(strategy), 0);
+            }
+
+            {
+                vm.mockCall(
+                    address(riskManager),
+                    abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+                    abi.encode(Arrays.toUint16a16(1_000))
+                );
+
+                smartVault = smartVaultFactory.deploySmartVault(
+                    SmartVaultSpecification({
+                        smartVaultName: "SmartVault",
+                        svtSymbol: "SV",
+                        baseURI: "https://token-cdn-domain/",
+                        assetGroupId: assetGroupId,
+                        actions: new IAction[](0),
+                        actionRequestTypes: new RequestType[](0),
+                        guards: new GuardDefinition[][](0),
+                        guardRequestTypes: new RequestType[](0),
+                        strategies: Arrays.toArray(address(strategy)),
+                        strategyAllocation: Arrays.toUint16a16(FULL_PERCENT),
+                        riskTolerance: 0,
+                        riskProvider: address(0),
+                        allocationProvider: address(0),
+                        managementFeePct: 0,
+                        depositFeePct: 0,
+                        allowRedeemFor: false,
+                        performanceFeePct: 0
+                    })
+                );
+            }
         }
 
-        MockStrategy strategy = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
         {
-            uint256[] memory strategyRatios = new uint256[](2);
-            strategyRatios[0] = 800;
-            strategyRatios[1] = 200;
-            strategy.initialize("Strategy", strategyRatios);
-            strategyRegistry.registerStrategy(address(strategy), 0);
-        }
+            uint256 assetGroupId;
+            {
+                address[] memory assetGroup = new address[](1);
+                assetGroup[0] = address(weth);
+                assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+            }
 
-        {
-            vm.mockCall(
-                address(riskManager),
-                abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
-                abi.encode(Arrays.toUint16a16(1_000))
-            );
+            MockStrategy strategy = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            {
+                uint256[] memory strategyRatios = new uint256[](1);
+                strategyRatios[0] = 1000;
+                strategy.initialize("Strategy WETH", strategyRatios);
+                strategyRegistry.registerStrategy(address(strategy), 0);
+            }
 
-            smartVault = smartVaultFactory.deploySmartVault(
-                SmartVaultSpecification({
-                    smartVaultName: "SmartVault",
-                    svtSymbol: "SV",
-                    baseURI: "https://token-cdn-domain/",
-                    assetGroupId: assetGroupId,
-                    actions: new IAction[](0),
-                    actionRequestTypes: new RequestType[](0),
-                    guards: new GuardDefinition[][](0),
-                    guardRequestTypes: new RequestType[](0),
-                    strategies: Arrays.toArray(address(strategy)),
-                    strategyAllocation: Arrays.toUint16a16(FULL_PERCENT),
-                    riskTolerance: 0,
-                    riskProvider: address(0),
-                    allocationProvider: address(0),
-                    managementFeePct: 0,
-                    depositFeePct: 0,
-                    allowRedeemFor: false,
-                    performanceFeePct: 0
-                })
-            );
+            {
+                smartVaultWeth = smartVaultFactory.deploySmartVault(
+                    SmartVaultSpecification({
+                        smartVaultName: "SmartVault WETH",
+                        svtSymbol: "SVW",
+                        baseURI: "https://token-cdn-domain/",
+                        assetGroupId: assetGroupId,
+                        actions: new IAction[](0),
+                        actionRequestTypes: new RequestType[](0),
+                        guards: new GuardDefinition[][](0),
+                        guardRequestTypes: new RequestType[](0),
+                        strategies: Arrays.toArray(address(strategy)),
+                        strategyAllocation: Arrays.toUint16a16(FULL_PERCENT),
+                        riskTolerance: 0,
+                        riskProvider: address(0),
+                        allocationProvider: address(0),
+                        managementFeePct: 0,
+                        depositFeePct: 0,
+                        allowRedeemFor: false,
+                        performanceFeePct: 0
+                    })
+                );
+            }
         }
     }
 
@@ -317,5 +361,34 @@ contract DepositSwapIntegrationTest is TestFixture {
         assertEq(tokenA.balanceOf(address(masterWallet)), 2 ether, "Token A - MasterWallet"); // deposited
         assertEq(tokenB.balanceOf(address(masterWallet)), 0.5 ether, "Token B - MasterWallet"); // deposited
         assertEq(IERC20(address(weth)).balanceOf(alice), 2 ether, "WETH - Alice"); // returned
+    }
+
+    function test_depositSwap_swapAndDeposit_shouldWrapEthAndDepositIt() public {
+        vm.deal(alice, 2 ether);
+
+        priceFeedManager.setExchangeRate(address(weth), 1000 * USD_DECIMALS_MULTIPLIER);
+
+        depositSwap = new DepositSwap(weth, assetGroupRegistry, smartVaultManager, swapper);
+        accessControl.grantRole(ROLE_SWAPPER, address(depositSwap));
+
+        vm.startPrank(alice);
+        IERC20(address(weth)).approve(address(depositSwap), 1 ether);
+
+        uint256 nftId = depositSwap.swapAndDeposit{value: 1 ether}(
+            SwapDepositBag(
+                Arrays.toArray(address(weth)),
+                Arrays.toArray(0),
+                new SwapInfo[](0),
+                address(smartVaultWeth),
+                alice,
+                address(0),
+                false
+            )
+        ); // Alice sends in 1 ether
+        vm.stopPrank();
+
+        assertEq(nftId, 1, "NFT ID"); // deposit is made
+        assertEq(IERC20(address(weth)).balanceOf(address(masterWallet)), 1 ether, "WETH - MasterWallet"); // deposited
+        assertEq(IERC20(address(weth)).balanceOf(alice), 0, "WETH - Alice"); // no WETH returned
     }
 }

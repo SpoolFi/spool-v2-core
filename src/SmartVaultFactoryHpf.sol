@@ -119,12 +119,8 @@ contract SmartVaultFactoryHpf is UpgradeableBeacon, SpoolAccessControllable {
     {
         _validateSpecification(specification);
 
-        address smartVaultAddress = address(
-            new BeaconProxy(
-                address(this),
-                _encodeInitializationCalldata(specification)
-            )
-        );
+        address smartVaultAddress =
+            address(new BeaconProxy(address(this), _encodeInitializationCalldata(specification)));
 
         _integrateSmartVault(smartVaultAddress, specification);
 
@@ -148,12 +144,8 @@ contract SmartVaultFactoryHpf is UpgradeableBeacon, SpoolAccessControllable {
     {
         _validateSpecification(specification);
 
-        address smartVaultAddress = address(
-            new BeaconProxy{salt: salt}(
-                address(this),
-                _encodeInitializationCalldata(specification)
-            )
-        );
+        address smartVaultAddress =
+            address(new BeaconProxy{salt: salt}(address(this), _encodeInitializationCalldata(specification)));
 
         _integrateSmartVault(smartVaultAddress, specification);
 
@@ -202,7 +194,7 @@ contract SmartVaultFactoryHpf is UpgradeableBeacon, SpoolAccessControllable {
      * @notice Validates smart vault specification.
      * @param specification Specifications for the new smart vault.
      */
-    function _validateSpecification(SmartVaultSpecification calldata specification) private view {
+    function _validateSpecification(SmartVaultSpecification calldata specification) internal view virtual {
         _assetGroupRegistry.validateAssetGroup(specification.assetGroupId);
 
         if (specification.strategies.length == 0) {
@@ -279,8 +271,9 @@ contract SmartVaultFactoryHpf is UpgradeableBeacon, SpoolAccessControllable {
      * @return initializationCalldata Enoded initialization calldata.
      */
     function _encodeInitializationCalldata(SmartVaultSpecification calldata specification)
-        private
-        pure
+        internal
+        view
+        virtual
         returns (bytes memory)
     {
         return abi.encodeWithSignature(

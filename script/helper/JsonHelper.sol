@@ -66,6 +66,17 @@ contract JsonWriter {
         content.write(path);
     }
 
+    function addVariantStrategyHelpersImplementation(string memory strategyHelpersKey, address implementation) public {
+        string memory variantStrategyHelperJson = strategyHelpersKey;
+        variantStrategyHelperJson = variantStrategyHelperJson.serialize("implementation", implementation);
+
+        string memory strategyHelpersJson = "strategy-helpers";
+        strategyHelpersJson = strategyHelpersJson.serialize(strategyHelpersKey, variantStrategyHelperJson);
+
+        string memory content = jsonWriter.serialize("strategy-helpers", strategyHelpersJson);
+        content.write(path);
+    }
+
     function addVariantStrategyVariant(string memory strategyKey, string memory variantName, address variantAddress)
         public
     {
@@ -76,6 +87,21 @@ contract JsonWriter {
         strategiesJson = strategiesJson.serialize(strategyKey, variantStrategyJson);
 
         string memory content = jsonWriter.serialize("strategies", strategiesJson);
+        content.write(path);
+    }
+
+    function addVariantStrategyHelpersVariant(
+        string memory strategyHelpersKey,
+        string memory variantName,
+        address variantAddress
+    ) public {
+        string memory variantStrategyHelperJson = strategyHelpersKey;
+        variantStrategyHelperJson = variantStrategyHelperJson.serialize(variantName, variantAddress);
+
+        string memory strategyHelpersJson = "strategy-helpers";
+        strategyHelpersJson = strategyHelpersJson.serialize(strategyHelpersKey, variantStrategyHelperJson);
+
+        string memory content = jsonWriter.serialize("strategy-helpers", strategyHelpersJson);
         content.write(path);
     }
 

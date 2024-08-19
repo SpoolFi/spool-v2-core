@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/utils/math/SafeCast.sol";
+import "@openzeppelin/utils/Strings.sol";
 import "../../src/libraries/uint16a16Lib.sol";
 import "../../src/strategies/convex/Convex3poolStrategy.sol";
 import "../../src/strategies/convex/ConvexAlusdStrategy.sol";
@@ -21,6 +22,9 @@ import "../../src/strategies/YearnV2Strategy.sol";
 import "../../src/strategies/OEthHoldingStrategy.sol";
 import "../../src/strategies/GearboxV3Strategy.sol";
 import "../../src/strategies/MetamorphoStrategy.sol";
+import "../../src/strategies/YearnV3StrategyWithJuice.sol";
+import "../../src/strategies/YearnV3StrategyWithGauge.sol";
+import "../../src/strategies/EthenaStrategy.sol";
 import "../helper/JsonHelper.sol";
 import "./AssetsInitial.s.sol";
 
@@ -37,7 +41,7 @@ string constant CURVE_STETH_KEY = "curve-steth";
 string constant CURVE_OETH_KEY = "curve-oeth";
 string constant CURVE_STFRXETH_KEY = "curve-stfrxeth";
 string constant GEARBOX_V3_KEY = "gearbox-v3";
-string constant METAMORPHO_GAUNTLET = "metamorpho-gauntlet";
+string constant METAMORPHO = "metamorpho";
 string constant IDLE_BEST_YIELD_SENIOR_KEY = "idle-best-yield-senior";
 string constant MORPHO_AAVE_V2_KEY = "morpho-aave-v2";
 string constant MORPHO_COMPOUND_V2_KEY = "morpho-compound-v2";
@@ -47,6 +51,9 @@ string constant SFRXETH_HOLDING_KEY = "sfrxeth-holding";
 string constant STETH_HOLDING_KEY = "steth-holding";
 string constant OETH_HOLDING_KEY = "oeth-holding";
 string constant YEARN_V2_KEY = "yearn-v2";
+string constant YEARN_V3_GAUGED_KEY = "yearn-v3-gauged";
+string constant YEARN_V3_JUICED_KEY = "yearn-v3-juiced";
+string constant ETHENA_KEY = "ethena";
 
 struct StandardContracts {
     ISpoolAccessControl accessControl;
@@ -74,7 +81,8 @@ contract StrategiesInitial {
         IAssetGroupRegistry assetGroupRegistry,
         ISwapper swapper,
         address proxyAdmin,
-        IStrategyRegistry strategyRegistry
+        IStrategyRegistry strategyRegistry,
+        Extended extended
     ) public {
         StandardContracts memory contracts = StandardContracts({
             accessControl: accessControl,
@@ -102,13 +110,28 @@ contract StrategiesInitial {
 
         deployYearnV2(contracts);
 
-        deployOeth(contracts, true);
+        if (extended >= Extended.OETH) {
+            deployOeth(contracts, true);
+        }
+        if (extended >= Extended.CONVEX_STETH_FRXETH) {
+            deployConvexStFrxEth(contracts, true);
+        }
+        if (extended >= Extended.GEARBOX_V3) {
+            deployGearboxV3(contracts, true);
+        }
+        MetamorphoStrategy implementation;
+        if (extended >= Extended.METAMORPHO_YEARN_V3) {
+            implementation = deployMetamorphoImplementation(contracts);
 
-        deployConvexStFrxEth(contracts, true);
+            deployMetamorpho(contracts, implementation, true, 0);
 
-        deployGearboxV3(contracts, true);
+            deployYearnV3WithGauge(contracts, true);
 
-        deployMetamorphoGauntlet(contracts, true);
+            deployYearnV3WithJuice(contracts, true);
+        }
+        if (extended >= Extended.METAMORPHO_EXTRA) {
+            deployMetamorphoExtra(contracts, implementation, true);
+        }
     }
 
     function deployAaveV2(StandardContracts memory contracts) public {
@@ -743,48 +766,211 @@ contract StrategiesInitial {
         }
     }
 
-    function deployMetamorphoGauntlet(StandardContracts memory contracts, bool register) public {
+    function deployMetamorphoImplementation(StandardContracts memory contracts)
+        public
+        returns (MetamorphoStrategy implementation)
+    {
         // create implementation contract
-        MetamorphoStrategy implementation =
+        implementation =
             new MetamorphoStrategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper);
+        contractsJson().addVariantStrategyImplementation(METAMORPHO, address(implementation));
+    }
 
-        contractsJson().addVariantStrategyImplementation(METAMORPHO_GAUNTLET, address(implementation));
+    function deployMetamorphoExtra(StandardContracts memory contracts, MetamorphoStrategy implementation, bool register)
+        public
+    {
+        deployMetamorpho(contracts, implementation, register, 1);
+    }
 
+    function deployMetamorpho(
+        StandardContracts memory contracts,
+        MetamorphoStrategy implementation,
+        bool register,
+        uint256 round
+    ) public {
         // create variant proxies
-        string[] memory variants = new string[](4);
-        variants[0] = "lrt-core";
-        variants[1] = "mkr-blended";
-        variants[2] = "usdt-prime";
-        variants[3] = "dai-core";
+        string[] memory variants;
+        if (round == 0) {
+            variants = new string[](4);
+            variants[0] = "gauntlet-lrt-core";
+            variants[1] = "gauntlet-mkr-blended";
+            variants[2] = "gauntlet-usdt-prime";
+            variants[3] = "gauntlet-dai-core";
+        } else if (round == 1) {
+            variants = new string[](7);
+            variants[0] = "gauntlet-weth-prime";
+            variants[1] = "gauntlet-usdc-prime";
+            variants[2] = "steakhouse-usdc";
+            variants[3] = "steakhouse-pyusd";
+            variants[4] = "bprotocol-flagship-eth";
+            variants[5] = "bprotocol-flagship-usdt";
+            variants[6] = "re7-weth";
+        }
+        require(variants.length > 0, "Invalid round");
 
+        _deployMetamorpho(implementation, variants, contracts, register);
+    }
+
+    function _deployMetamorpho(
+        MetamorphoStrategy implementation,
+        string[] memory variants,
+        StandardContracts memory contracts,
+        bool register
+    ) private {
         for (uint256 i; i < variants.length; ++i) {
-            string memory variantName = _getVariantName(METAMORPHO_GAUNTLET, variants[i]);
+            string memory variantName = _getVariantName(METAMORPHO, variants[i]);
 
-            address variant = _newProxy(address(implementation), contracts.proxyAdmin);
             string memory assetKey = constantsJson().getString(
-                string.concat(".strategies.", METAMORPHO_GAUNTLET, ".", variants[i], ".underlyingAsset")
+                string.concat(".strategies.", METAMORPHO, ".", variants[i], ".underlyingAsset")
             );
             uint256 assetGroupId = assetGroups(assetKey);
 
             IERC4626 vault = IERC4626(
+                constantsJson().getAddress(string.concat(".strategies.", METAMORPHO, ".", variants[i], ".vault"))
+            );
+            address[] memory rewards =
+                constantsJson().getAddressArray(string.concat(".strategies.", METAMORPHO, ".", variants[i], ".rewards"));
+            address variant =
+                _createAndInitializeMetamorpho(contracts, implementation, variantName, assetGroupId, vault, rewards);
+            if (register) {
+                _registerStrategyVariant(METAMORPHO, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+            } else {
+                contractsJson().addVariantStrategyVariant(METAMORPHO, variantName, variant);
+            }
+        }
+    }
+
+    function _createAndInitializeMetamorpho(
+        StandardContracts memory contracts,
+        MetamorphoStrategy implementation,
+        string memory variantName,
+        uint256 assetGroupId,
+        IERC4626 vault,
+        address[] memory rewards
+    ) internal virtual returns (address variant) {
+        variant = _newProxy(address(implementation), contracts.proxyAdmin);
+        MetamorphoStrategy(variant).initialize(variantName, assetGroupId, vault, 10 ** (vault.decimals() * 2), rewards);
+    }
+
+    function deployYearnV3WithGauge(StandardContracts memory contracts, bool register) public {
+        // create implementation contract
+        YearnV3StrategyWithGauge implementation =
+            new YearnV3StrategyWithGauge(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper);
+        contractsJson().addVariantStrategyImplementation(YEARN_V3_GAUGED_KEY, address(implementation));
+
+        // create variant proxies
+        string[] memory variants = new string[](3);
+        variants[0] = DAI_KEY;
+        variants[1] = USDC_KEY;
+        variants[2] = WETH_KEY;
+
+        for (uint256 i; i < variants.length; ++i) {
+            string memory variantName = _getVariantName(YEARN_V3_GAUGED_KEY, variants[i]);
+
+            IERC4626 vault = IERC4626(
                 constantsJson().getAddress(
-                    string.concat(".strategies.", METAMORPHO_GAUNTLET, ".", variants[i], ".vault")
+                    string.concat(".strategies.", YEARN_V3_GAUGED_KEY, ".", variants[i], ".tokenVault")
                 )
             );
-            address[] memory rewards = constantsJson().getAddressArray(
-                string.concat(".strategies.", METAMORPHO_GAUNTLET, ".", variants[i], ".rewards")
+            IERC4626 gauge = IERC4626(
+                constantsJson().getAddress(
+                    string.concat(".strategies.", YEARN_V3_GAUGED_KEY, ".", variants[i], ".gauge")
+                )
             );
-            MetamorphoStrategy(variant).initialize(
-                variantName, assetGroupId, vault, 10 ** (vault.decimals() * 2), rewards
+
+            address variant = _newProxy(address(implementation), contracts.proxyAdmin);
+            uint256 assetGroupId = assetGroups(variants[i]);
+            YearnV3StrategyWithGauge(variant).initialize(
+                variantName, assetGroupId, vault, gauge, 10 ** (gauge.decimals() * 2)
             );
             if (register) {
                 _registerStrategyVariant(
-                    METAMORPHO_GAUNTLET, variants[i], variant, assetGroupId, contracts.strategyRegistry
+                    YEARN_V3_GAUGED_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry
                 );
             } else {
-                contractsJson().addVariantStrategyVariant(METAMORPHO_GAUNTLET, variantName, variant);
+                contractsJson().addVariantStrategyVariant(YEARN_V3_GAUGED_KEY, variantName, variant);
             }
         }
+    }
+
+    function deployYearnV3WithJuice(StandardContracts memory contracts, bool register) public {
+        // create implementation contract
+        YearnV3StrategyWithJuice implementation =
+            new YearnV3StrategyWithJuice(contracts.assetGroupRegistry, contracts.accessControl);
+        contractsJson().addVariantStrategyImplementation(YEARN_V3_JUICED_KEY, address(implementation));
+
+        // create variant proxies
+        string[] memory variants = new string[](1);
+        variants[0] = DAI_KEY;
+
+        for (uint256 i; i < variants.length; ++i) {
+            string memory variantName = _getVariantName(YEARN_V3_JUICED_KEY, variants[i]);
+
+            IERC4626 vault = IERC4626(
+                constantsJson().getAddress(
+                    string.concat(".strategies.", YEARN_V3_JUICED_KEY, ".", variants[i], ".tokenVault")
+                )
+            );
+            IERC4626 harvester = IERC4626(
+                constantsJson().getAddress(
+                    string.concat(".strategies.", YEARN_V3_JUICED_KEY, ".", variants[i], ".harvester")
+                )
+            );
+
+            address variant = _newProxy(address(implementation), contracts.proxyAdmin);
+            uint256 assetGroupId = assetGroups(variants[i]);
+            YearnV3StrategyWithJuice(variant).initialize(
+                variantName, assetGroupId, vault, harvester, 10 ** (harvester.decimals() * 2)
+            );
+            if (register) {
+                _registerStrategyVariant(
+                    YEARN_V3_JUICED_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry
+                );
+            } else {
+                contractsJson().addVariantStrategyVariant(YEARN_V3_JUICED_KEY, variantName, variant);
+            }
+        }
+    }
+
+    function deployEthena(StandardContracts memory contracts, string memory assetKey) public {
+        string memory variant;
+        if (Strings.equal(assetKey, USDT_KEY)) {
+            variant = USDT_KEY;
+        } else if (Strings.equal(assetKey, USDC_KEY)) {
+            variant = USDC_KEY;
+        } else if (Strings.equal(assetKey, DAI_KEY)) {
+            variant = DAI_KEY;
+        } else if (Strings.equal(assetKey, USDE_KEY)) {
+            variant = USDE_KEY;
+        }
+        require(bytes(variant).length > 0, "Invalid asset group");
+
+        address implementation =
+            contractsJson().getAddress(string.concat(".strategies.", ETHENA_KEY, ".implementation"));
+
+        string memory variantName = _getVariantName(ETHENA_KEY, variant);
+
+        address proxy = _newProxy(implementation, contracts.proxyAdmin);
+        EthenaStrategy(proxy).initialize(variantName, assetGroups(variant));
+        contractsJson().addVariantStrategyVariant(ETHENA_KEY, variantName, proxy);
+    }
+
+    function deployEthenaImpl(StandardContracts memory contracts, IUsdPriceFeedManager priceFeedManager) public {
+        address USDe = constantsJson().getAddress(".assets.usde.address");
+        address sUSDe = constantsJson().getAddress(string.concat(".strategies.", ETHENA_KEY, ".sUSDe"));
+        address ENAToken = constantsJson().getAddress(string.concat(".strategies.", ETHENA_KEY, ".ENA"));
+        address implementation = address(
+            new EthenaStrategy(
+                contracts.assetGroupRegistry,
+                contracts.accessControl,
+                IERC20Metadata(USDe),
+                IsUSDe(sUSDe),
+                IERC20Metadata(ENAToken),
+                contracts.swapper,
+                priceFeedManager
+            )
+        );
+        contractsJson().addVariantStrategyImplementation(ETHENA_KEY, implementation);
     }
 
     function _newProxy(address implementation, address proxyAdmin) private returns (address) {
@@ -827,7 +1013,7 @@ contract StrategiesInitial {
     }
 
     function _getVariantName(string memory strategyKey, string memory variantKey)
-        private
+        internal
         pure
         returns (string memory)
     {

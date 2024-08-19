@@ -6,19 +6,17 @@ import "@openzeppelin/utils/Strings.sol";
 import "../../src/interfaces/Constants.sol";
 import "../../src/SmartVaultFactory.sol";
 import "../../src/external/interfaces/chainlink/AggregatorV3Interface.sol";
-import "../../script/MainnetInitialSetup.s.sol";
+import "../../script/mainnet/MainnetInitialSetup.s.sol";
 import "../libraries/Arrays.sol";
 import "./ForkTestFixture.sol";
 import "../libraries/TimeUtils.sol";
 import "../libraries/VaultValueHelpers.sol";
 
-string constant TEST_CONSTANTS_PATH = "deploy/fork-test.constants.json";
-string constant TEST_CONTRACTS_PATH = "deploy/fork-test.contracts.json";
+string constant TEST_CONSTANTS_PATH = "deploy/fork-test-mainnet.constants.json";
+string constant TEST_CONTRACTS_PATH = "deploy/fork-test-mainnet.contracts.json";
 
 contract TestMainnetInitialSetup is MainnetInitialSetup {
     function init() public virtual override {
-        super.init();
-
         _constantsJson = new JsonReader(vm, TEST_CONSTANTS_PATH);
         _contractsJson = new JsonReadWriter(vm, TEST_CONTRACTS_PATH);
     }
@@ -75,11 +73,16 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
 
     uint256 private _rn = 10;
 
-    function _deploy() internal {
+    string config;
+
+    function _setConfig() internal virtual {
+        config = vm.readFile(string.concat("deploy/mainnet-production.constants.json"));
+    }
+
+    function _deploy(Extended extended) internal {
         setUpForkTestFixture();
         vm.selectFork(mainnetForkId);
-
-        string memory config = vm.readFile("deploy/mainnet.constants.json");
+        _setConfig();
 
         vm.writeJson(config, TEST_CONSTANTS_PATH);
         vm.writeJson(Strings.toHexString(_spoolAdmin), TEST_CONSTANTS_PATH, ".proxyAdminOwner");
@@ -88,9 +91,12 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         vm.writeJson(Strings.toHexString(_feeRecipient), TEST_CONSTANTS_PATH, ".fees.ecosystemFeeReceiver");
         vm.writeJson(Strings.toHexString(_feeRecipient), TEST_CONSTANTS_PATH, ".fees.treasuryFeeReceiver");
 
+        // TestMainnetInitialSetup is expecting this file to exist
+        vm.writeJson("{}", TEST_CONTRACTS_PATH);
+
         _deploySpool = new TestMainnetInitialSetup();
         _deploySpool.init();
-        _deploySpool.doSetup(address(_deploySpool));
+        _deploySpool.doSetup(address(_deploySpool), extended);
 
         {
             uint256 assetGroupId;
@@ -667,7 +673,11 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                     _setInitialDhwParametersGeneric(parameters, i, j, 4);
                 } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                     _setInitialDhwParametersGeneric(parameters, i, j, 4);
-                } else if (Strings.equal(strategyKey, METAMORPHO_GAUNTLET)) {
+                } else if (Strings.equal(strategyKey, METAMORPHO)) {
+                    _setInitialDhwParametersGeneric(parameters, i, j, 6);
+                } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
+                    _setInitialDhwParametersGeneric(parameters, i, j, 6);
+                } else if (Strings.equal(strategyKey, YEARN_V3_JUICED_KEY)) {
                     _setInitialDhwParametersGeneric(parameters, i, j, 6);
                 } else {
                     revert(string.concat("_generateDhwParameterBag: Strategy '", strategyKey, "' not handled."));
@@ -715,8 +725,12 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
                 } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
-                } else if (Strings.equal(strategyKey, METAMORPHO_GAUNTLET)) {
+                } else if (Strings.equal(strategyKey, METAMORPHO)) {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
+                } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
+                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
+                } else if (Strings.equal(strategyKey, YEARN_V3_JUICED_KEY)) {
+                    _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
                 } else {
                     revert(string.concat("_updateDhwParameterBag: Strategy '", strategyKey, "' not handled."));
                 }
@@ -914,7 +928,11 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
-            } else if (Strings.equal(strategyKey, METAMORPHO_GAUNTLET)) {
+            } else if (Strings.equal(strategyKey, METAMORPHO)) {
+                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
+            } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
+                strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
+            } else if (Strings.equal(strategyKey, YEARN_V3_JUICED_KEY)) {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else {
                 revert(string.concat("_getRedeemFastSlippages: Strategy '", strategyKey, "' not handled."));
@@ -1021,7 +1039,11 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
             } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
-            } else if (Strings.equal(strategyKey, METAMORPHO_GAUNTLET)) {
+            } else if (Strings.equal(strategyKey, METAMORPHO)) {
+                _setInitialReallocateParamsGeneric(params, i, 3, 3);
+            } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
+                _setInitialReallocateParamsGeneric(params, i, 3, 3);
+            } else if (Strings.equal(strategyKey, YEARN_V3_JUICED_KEY)) {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
             } else {
                 revert(string.concat("_generateReallocateParamBag:: Strategy '", strategyKey, "' not handled."));
@@ -1064,7 +1086,11 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);
-            } else if (Strings.equal(strategyKey, METAMORPHO_GAUNTLET)) {
+            } else if (Strings.equal(strategyKey, METAMORPHO)) {
+                _updateReallocateParamsGeneric(params, i, strategy, logs);
+            } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
+                _updateReallocateParamsGeneric(params, i, strategy, logs);
+            } else if (Strings.equal(strategyKey, YEARN_V3_JUICED_KEY)) {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else {
                 revert(string.concat("_updateReallocateParamBag:: Strategy '", strategyKey, "' not handled."));
