@@ -95,8 +95,8 @@
     "aave-v2": {
       "aave-v2-dai": "0x2AE9CAA6Ad990D6790a2e21F69Bd93f2ccACdEc9",
       "aave-v2-usdc": "0xe5f6b00e9261049704e66598B26BDbd1B648d674",
-      "aave-v2-usdt": "0x041ce771478a9c4986BB9F812053bBF38079D7e7",
-      "implementation": "0xE5a941e12191e353A0709c6F11C82a212f1fc7dC"
+      "aave-v2-usdt": "0xCBc5e00Fc5dEcf46cF1c39c2A4bcE7F176E00869",
+      "implementation": "0xbf38b659afA68E748C0B1b2310CbEbaB2428828C"
     },
     "compound-v2": {
       "compound-v2-dai": "0x03Cc74E1A8D91E6B2b28237058cdE4b339741c04",
