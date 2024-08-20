@@ -209,7 +209,8 @@ contract MockStrategy is Strategy {
     }
 
     function safeRewardMint(uint256 _amount) private {
-        if (address(poolInfo.token) != _assetGroupRegistry.listAssetGroup(1)[0]) { // WETH
+        if (address(poolInfo.token) != _assetGroupRegistry.listAssetGroup(1)[0]) {
+            // WETH
             IERC20Mintable(address(poolInfo.token)).mint(address(this), _amount);
         }
     }

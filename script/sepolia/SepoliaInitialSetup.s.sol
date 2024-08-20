@@ -7,7 +7,7 @@ import "../DeploySpool.s.sol";
 import "./AssetsInitial.s.sol";
 import "./StrategiesInitial.s.sol";
 
-contract TestnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesInitial {
+contract SepoliaInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesInitial {
     JsonReader internal _constantsJson;
     JsonReadWriter internal _contractsJson;
 
@@ -23,18 +23,16 @@ contract TestnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
     }
 
     function init() public virtual {
-        _constantsJson = new JsonReader(vm, string.concat("deploy/testnet.constants.json"));
-        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/testnet.contracts.json"));
+        _constantsJson = new JsonReader(vm, string.concat("deploy/sepolia-production.constants.json"));
+        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/sepolia-production.contracts.json"));
     }
 
-    function doSetup(address deployerAddress) public {
+    function doSetup(address) public {
         deploySpool();
 
         setupAssets(assetGroupRegistry, usdPriceFeedManager);
 
         deployStrategies(spoolAccessControl, assetGroupRegistry, swapper, address(proxyAdmin), strategyRegistry);
-
-        //postDeploySpool(deployerAddress);
     }
 
     function assets(string memory assetKey) public view virtual override returns (address) {
@@ -59,5 +57,5 @@ contract TestnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
         return _contractsJson;
     }
 
-    function test_mock_TestnetInitialSetup() external pure {}
+    function test_mock_SepoliaInitialSetup() external pure {}
 }

@@ -7,7 +7,7 @@ import "../DeploySpool.s.sol";
 import "./AssetsInitial.s.sol";
 import "./StrategiesInitial.s.sol";
 
-contract TestnetExtendedSetup is Script, DeploySpool, AssetsInitial, StrategiesInitial {
+contract SepoliaExtendedSetup is Script, DeploySpool, AssetsInitial, StrategiesInitial {
     JsonReader internal _constantsJson;
     JsonReadWriter internal _contractsJson;
 
@@ -28,8 +28,8 @@ contract TestnetExtendedSetup is Script, DeploySpool, AssetsInitial, StrategiesI
     }
 
     function init() public virtual {
-        _constantsJson = new JsonReader(vm, string.concat("deploy/testnet.constants.json"));
-        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/testnet.contracts.json"));
+        _constantsJson = new JsonReader(vm, string.concat("deploy/sepolia-production.constants.json"));
+        _contractsJson = new JsonReadWriter(vm, string.concat("deploy/sepolia-production.contracts.json"));
     }
 
     function doSetup() public {
@@ -62,5 +62,5 @@ contract TestnetExtendedSetup is Script, DeploySpool, AssetsInitial, StrategiesI
         return _contractsJson;
     }
 
-    function test_mock_TestnetExtendedSetup() external pure {}
+    function test_mock_SepoliaExtendedSetup() external pure {}
 }

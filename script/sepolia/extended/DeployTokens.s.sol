@@ -13,6 +13,11 @@ contract DeployTokens is Script {
         ERC20Mintable usdc = new ERC20Mintable("USDC", "USDC", 6);
         ERC20Mintable usdt = new ERC20Mintable("USDT", "USDT", 6);
         WETH weth = new WETH();
+
+        console.log(address(dai));
+        console.log(address(usdc));
+        console.log(address(usdt));
+        console.log(address(weth));
     }
 }
 
