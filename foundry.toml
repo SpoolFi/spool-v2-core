@@ -28,7 +28,7 @@ local-mainnet = "http://localhost:8545"
 
 
 [profile.mainnet-production]
-# FOUNDRY_PROFILE=mainnet-production
+# FOUNDRY_PROFILE="mainnet-production"
 # inherits from default profile
 
 # project
@@ -49,7 +49,7 @@ libraries = [
 ]
 
 [profile.mainnet-staging]
-# FOUNDRY_PROFILE=mainnet-staging
+# FOUNDRY_PROFILE="mainnet-staging"
 # inherits from default profile
 
 # project
@@ -61,7 +61,7 @@ test = 'no-test'
 optimizer_runs = 200
 
 [profile.sepolia-production]
-# FOUNDRY_PROFILE=sepolia-production
+# FOUNDRY_PROFILE="sepolia-production"
 # inherits from default profile
 
 # project
@@ -79,7 +79,7 @@ libraries = [
 ]
 
 [profile.arbitrum-production]
-# FOUNDRY_PROFILE=arbitrum-production
+# FOUNDRY_PROFILE="arbitrum-production"
 # inherits from default profile
 
 # project
@@ -96,6 +96,15 @@ libraries = [
     "src/libraries/SpoolUtils.sol:SpoolUtils:0x9a6a0820738f6f18f39f9e7109fea44de85bd468",
     "src/strategies/arbitrum/libraries/GammaCamelotPriceHelper.sol:GammaCamelotPriceHelper:0x1847118d72d1c48c37c5927f7fe89a79bcce5b5f"
 ]
+
+[profile.arbitrum-staging]
+# FOUNDRY_PROFILE="arbitrum-staging"
+# inherits from default profile
+
+# project
+cache_path = 'cache/arbitrum-staging'
+broadcast = 'broadcast/arbitrum-staging'
+test = 'no-test'
 
 [profile.ci]
 # FOUNDRY_PROFILE=ci

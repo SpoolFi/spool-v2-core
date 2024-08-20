@@ -68,9 +68,32 @@ forge script MainnetInitialSetup --rpc-url $TENDERLY_TESTNET_URL \
  --skip-simulation \
  --verify \
  --etherscan-api-key $TENDERLY_API_KEY \
- --verifier-url="https://api.tenderly.co/api/v1/account/solidant-org/project/spool-v2/etherscan/verify/testnet/${TENDERLY_TESTNET_RESOURCE_ID}"
+ --verifier-url="https://api.tenderly.co/api/v1/account/solidant-org/project/spool-v2/etherscan/verify/testnet/${TENDERLY_ARBITRUM_TESTNET_RESOURCE_ID}"
 ```
-where `TENDERLY_TESTNET_URL`, `TENDERLY_API_KEY` and `TENDERLY_TESTNET_RESOURCE_ID` are entries in the `.env` file.
+where:
+- `TENDERLY_TESTNET_URL`: RPC URL of the Tenderly mainnet staging environment.
+- `TENDERLY_API_KEY`: Key that permits deployments and verification.
+- `TENDERLY_TESTNET_RESOURCE_ID`: Resource ID of the Tenderly virtual testnet (for Mainnet).
+
+The addresses of deployed contracts will be listed in the `deploy/mainnet-staging.contracts.json` file, and the detailed broadcast in the `broadcast/mainnet-staging/` folder.
+
+
+deploy and verify on Tenderly (`arbitrum-staging`) with the following:
+
+- set `FOUNDRY_PROFILE` in `.env` to `arbitrum-staging`
+
+```
+forge script ArbitrumInitialSetup --rpc-url $TENDERLY_ARBITRUM_TESTNET_URL \
+ --slow \
+ --broadcast \
+ --skip-simulation \
+ --verify \
+ --etherscan-api-key $TENDERLY_API_KEY \
+ --verifier-url="https://api.tenderly.co/api/v1/account/solidant-org/project/spool-v2/etherscan/verify/testnet/${TENDERLY_ARBITRUM_TESTNET_RESOURCE_ID}"
+```
+- `TENDERLY_ARBITRUM_TESTNET_0`: RPC URL of the Tenderly arbitrum staging environment.
+- `TENDERLY_API_KEY`: Key that permits deployments and verification.
+- `TENDERLY_ARBITRUM_TESTNET_RESOURCE_ID`: Resource ID of the Tenderly virtual testnet (for Arbitrum).
 
 The addresses of deployed contracts will be listed in the `deploy/mainnet-staging.contracts.json` file, and the detailed broadcast in the `broadcast/mainnet-staging/` folder.
 
