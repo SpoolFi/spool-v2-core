@@ -68,6 +68,7 @@
     "implementation": "0x83DFeBE34b3Da9538c8457b819871D8b3e6B5E28",
     "proxy": "0x0278787a1000B691eb1ad319f5352e03D2e1c83A"
   },
+  "SpoolMulticall": "0x98f199f1CbcB8b40441680aA62B67006C42399c3",
   "StrategyRegistry": {
     "implementation": "0xf978853Db777d00b1130Ea21d8d98E8710b0Bc56",
     "proxy": "0x85781411B4238c1665d857BFACbeD9bB6bdD271D"
