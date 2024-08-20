@@ -357,7 +357,7 @@ contract DeploySpool {
         allowlistGuard = AllowlistGuard(contractsJson().getAddress(".AllowlistGuard.proxy"));
         depositManager = DepositManager(contractsJson().getAddress(".DepositManager.proxy"));
         withdrawalManager = WithdrawalManager(contractsJson().getAddress(".WithdrawalManager.proxy"));
-        ghostStrategy = IStrategy(contractsJson().getAddress(".GhostStrategy"));
+        ghostStrategy = IStrategy(contractsJson().getAddress(".GhostStrategy.proxy"));
         exponentialAllocationProvider =
             ExponentialAllocationProvider(contractsJson().getAddress(".ExponentialAllocationProvider.proxy"));
         linearAllocationProvider =

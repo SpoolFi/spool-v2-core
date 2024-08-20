@@ -10,7 +10,6 @@ uint256 constant MAINNET_FORK_BLOCK_EXTENDED_4 = 19_982_746;
 
 // whales
 address constant USDC_WHALE = address(0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf);
->>>>>>> main
 
 // tokens
 address constant USDC = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
@@ -97,16 +96,6 @@ address constant OETH_VAULT = address(0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab
 // Gearbox V3
 address constant SDWETH_TOKEN = address(0x0418fEB7d0B25C411EB77cD654305d29FcbFf685);
 address constant SDUSDC_TOKEN = address(0x9ef444a6d7F4A5adcd68FD5329aA5240C90E14d2);
-<<<<<<< HEAD
-
-// Metamorpho
-address constant METAMORPHO_RE7_USDT = address(0x95EeF579155cd2C5510F312c8fA39208c3Be01a8);
-
-// Yearn V3
-address constant YEARN_AJNA_DAI_VAULT = 0xe24BA27551aBE96Ca401D39761cA2319Ea14e3CB; // yvAjnaDAI
-address constant YEARN_AJNA_DAI_HARVESTER = 0x082a5743aAdf3d0Daf750EeF24652b36a68B1e9C; // ysyvAjnaDAI
-||||||| 9933630
-=======
 
 // Metamorpho
 address constant METAMORPHO_RE7_USDT = address(0x95EeF579155cd2C5510F312c8fA39208c3Be01a8);
@@ -124,4 +113,3 @@ address constant sUSDe_TOKEN = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
 address constant ENA_TOKEN = 0x57e114B691Db790C35207b2e685D4A43181e6061;
 address constant ETHENA_REWARD_DISTRIBUTOR_WALLET = 0xe3880B792F6F0f8795CbAACd92E7Ca78F5d3646e;
 address constant ETHENA_REWARD_DISTRIBUTOR_CONTRACT = 0xf2fa332bD83149c66b09B45670bCe64746C6b439;
->>>>>>> main

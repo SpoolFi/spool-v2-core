@@ -59,13 +59,6 @@ test = 'no-test'
 
 # compiler
 optimizer_runs = 200
-#libraries = [
-#    "script/helper/Arrays.sol:Arrays:",
-#    'script/helper/ArraysHelper.sol:ArraysHelper:',
-#    'src/libraries/ArrayMapping.sol:ArrayMappingUint256:',
-#    'src/libraries/ReallocationLib.sol:ReallocationLib:',
-#    'src/libraries/SpoolUtils.sol:SpoolUtils:',
-#]
 
 [profile.sepolia-production]
 # FOUNDRY_PROFILE=sepolia-production

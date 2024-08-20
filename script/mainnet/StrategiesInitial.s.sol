@@ -94,44 +94,44 @@ contract StrategiesInitial {
 
         deployAaveV2(contracts);
 
-        //deployCompoundV2(contracts);
+        deployCompoundV2(contracts);
 
-        //deployConvex(contracts);
+        deployConvex(contracts);
 
-        //deployCurve(contracts);
+        deployCurve(contracts);
 
-        //deployIdle(contracts);
+        deployIdle(contracts);
 
-        //deployLsd(contracts);
+        deployLsd(contracts);
 
-        //deployMorpho(contracts);
+        deployMorpho(contracts);
 
-        //deployNotionalFinance(contracts);
+        deployNotionalFinance(contracts);
 
-        //deployYearnV2(contracts);
+        deployYearnV2(contracts);
 
-        //if (extended >= Extended.OETH) {
-        //    deployOeth(contracts, true);
-        //}
-        //if (extended >= Extended.CONVEX_STETH_FRXETH) {
-        //    deployConvexStFrxEth(contracts, true);
-        //}
-        //if (extended >= Extended.GEARBOX_V3) {
-        //    deployGearboxV3(contracts, true);
-        //}
-        //MetamorphoStrategy implementation;
-        //if (extended >= Extended.METAMORPHO_YEARN_V3) {
-        //    implementation = deployMetamorphoImplementation(contracts);
+        if (extended >= Extended.OETH) {
+            deployOeth(contracts, true);
+        }
+        if (extended >= Extended.CONVEX_STETH_FRXETH) {
+            deployConvexStFrxEth(contracts, true);
+        }
+        if (extended >= Extended.GEARBOX_V3) {
+            deployGearboxV3(contracts, true);
+        }
+        MetamorphoStrategy implementation;
+        if (extended >= Extended.METAMORPHO_YEARN_V3) {
+            implementation = deployMetamorphoImplementation(contracts);
 
-        //    deployMetamorpho(contracts, implementation, true, 0);
+            deployMetamorpho(contracts, implementation, true, 0);
 
-        //    deployYearnV3WithGauge(contracts, true);
+            deployYearnV3WithGauge(contracts, true);
 
-        //    deployYearnV3WithJuice(contracts, true);
-        //}
-        //if (extended >= Extended.METAMORPHO_EXTRA) {
-        //    deployMetamorphoExtra(contracts, implementation, true);
-        //}
+            deployYearnV3WithJuice(contracts, true);
+        }
+        if (extended >= Extended.METAMORPHO_EXTRA) {
+            deployMetamorphoExtra(contracts, implementation, true);
+        }
     }
 
     function deployAaveV2(StandardContracts memory contracts) public {
