@@ -1,0 +1,115 @@
+{
+  "ActionManager": {
+    "implementation": "0xdF2ACdCeD7CF6348cA317Ab57210C35770927857",
+    "proxy": "0xd1fcA82ED0E1774FC23e1d495974dE9C6532997e"
+  },
+  "AllowlistGuard": {
+    "implementation": "0x532c8797d21A00559B7d674eD3AF66e2AF8E673C",
+    "proxy": "0xC66E994f6183cDFf6F058B938f71c80A51918a85"
+  },
+  "AssetGroupRegistry": {
+    "implementation": "0x6c22dfAD4414cfb786A4173A7E4547A94E56e263",
+    "proxy": "0x68258d69b666dd947D7dDa797b112113615E02f6"
+  },
+  "DepositManager": {
+    "implementation": "0xDc962D69F5fFa5e0e61826196119E34E908a320d",
+    "proxy": "0xed39BF314cF89dE2eDFaeefe4eA2B9Ce178b0C91"
+  },
+  "DepositSwap": {
+    "implementation": "0x74AD50d6208Fe9caB6e9e6E2015Aa4f001D5906E",
+    "proxy": "0x6E3333152128Be8A7d5daC39464A2858ACb19E47"
+  },
+  "ExponentialAllocationProvider": {
+    "implementation": "0x4e1157b40e62782F04d7F4a915f340B8F445B008",
+    "proxy": "0x06F37ee4e643A022A3CAB3341313A72b091ee0e5"
+  },
+  "GhostStrategy": {
+    "implementation": "0xAFa7d1097D39ab3369e850Cf72ac8A0D7Fb5C2EF",
+    "proxy": "0xFB9B9EA590985A9286a0C6fb49641F0106608f03"
+  },
+  "GuardManager": {
+    "implementation": "0x32c0F2C34496e74875D826AF16f1fdbD6e224617",
+    "proxy": "0x85682645410e510E87f62c91f224DA5b476eC98E"
+  },
+  "LinearAllocationProvider": {
+    "implementation": "0xE3Eca4c4B0BB84532D43db64E505CC6eE750fD7C",
+    "proxy": "0x44a4199cE697C27E7e162dF2AC9fFE8d45BE7B9b"
+  },
+  "MasterWallet": {
+    "implementation": "0x468DC7826898497D2494659b61D7899F4b6ceD72",
+    "proxy": "0xcF96B049aA0eE5B7A303fD63DD669b02d183F668"
+  },
+  "ProxyAdmin": "0x3Ffda89A5F87D99DE88Bc0617d95C7e5dDe0408f",
+  "RewardManager": {
+    "implementation": "0x51a7fA4af8cd0C03fFc1B8AE47d7F534Fd4e2944",
+    "proxy": "0x6316e9D4501B34FFFb231Cc9d1c7499ABEbbbE92"
+  },
+  "RiskManager": {
+    "implementation": "0x0271704B01A276e2334e1eC50c9512276fee9FA1",
+    "proxy": "0xac824D90d631452538dA8810BFe1Dd9BfbA77788"
+  },
+  "SmartVaultFactory": "0xA21E327d739601FCD3e0Aa4B864E7E1aF93b531A",
+  "SmartVaultFactoryHpf": "0x8e1F2177AdcA17b96822D132279B17083dCd67d9",
+  "SmartVaultManager": {
+    "implementation": "0x6c1708833Cf8Bc1c7be6389dF1721B29d76090DA",
+    "proxy": "0xfcc6132d10FcfB2568299b23E6dfB4aed30aFafa"
+  },
+  "SpoolAccessControl": {
+    "implementation": "0xE336E6dD21563Ed7785fa66562aE14194a720FBc",
+    "proxy": "0xFE3a45d8d3A5aB30AbAe36bC098783d08301ecd7"
+  },
+  "SpoolLens": {
+    "implementation": "0x8990A9CfB797cFA407be57542eB39d1f3Bbc29be",
+    "proxy": "0xAFeDeB6FC835F2973913567CcD7875F66e94419D"
+  },
+  "StrategyRegistry": {
+    "implementation": "0x49820C1bC5e07416Cb986d89c3fe1a4e1D12faD4",
+    "proxy": "0x2Db7088637Db8709307a1e606AA5081521388CF6"
+  },
+  "Swapper": {
+    "implementation": "0x19d4f3Ff35aD98244EF9A473B80b905EB5c14649",
+    "proxy": "0x28c0aDEed2287dAcb284f1b42A840e10Bf01Ffd5"
+  },
+  "UniformAllocationProvider": {
+    "implementation": "0x6E9Ea0ae125AB9AEAe2d362fc16733Dd9deABf25",
+    "proxy": "0xE08bE40E1D7434ffF403966d93952cbbeE64C27F"
+  },
+  "UsdPriceFeedManager": {
+    "implementation": "0x3e724B66eb8F77Bbbe345685ef6F41b1D05C6815",
+    "proxy": "0xd592B0bc2daC00032391DB4d15A5716bc59A3852"
+  },
+  "WithdrawalManager": {
+    "implementation": "0x919D5CC1C1dCa1f6EaB7207f56218815CC85f4c7",
+    "proxy": "0x1F31d1DC2951b5EeB2Ec1f1e3afAbb5a830e68B0"
+  },
+  "strategies": {
+    "aave-v3": {
+      "aave-v3-dai": "0x9e94AdeC6F6be7ce4C41F8784122ed495d5093c8",
+      "aave-v3-usdc": "0xd6400979906E08eAD9383A3056786e47CFE9fA25",
+      "aave-v3-usdt": "0x03Cc74E1A8D91E6B2b28237058cdE4b339741c04",
+      "implementation": "0xe5f6b00e9261049704e66598B26BDbd1B648d674"
+    },
+    "aave-v3-swap": {
+      "aave-v3-swap-usdc": "0x91395743B7056e6371d0BE80aB4C877a8C6861CC",
+      "implementation": "0xf434ABE350682850e41B5b15837e29f0c606DFce"
+    },
+    "compound-v3": {
+      "compound-v3-usdc": "0xb4C5ccCF7c332e6C3123512526C27a4017FEeD5B",
+      "implementation": "0xA9AE97D06A13040A39f0B725bD03d3Ea8d217A9B"
+    },
+    "compound-v3-swap": {
+      "compound-v3-swap-usdc": "0x60Ed987fb1106E0048CeafCcDd6af7f75A2CBD46",
+      "implementation": "0xfe75Ef968284D7A42764553Bf19d12030a10E432"
+    },
+    "gamma-camelot": {
+      "gamma-camelot-weth-usdc-narrow": "0x6d8DBc3875A8f4005eDd94b633212cCC5d74062B",
+      "implementation": "0x501815301b348288cD9312ab929657206ec953E2"
+    }
+  },
+  "strategy-helpers": {
+    "gamma-camelot-rewards": {
+      "implementation": "0xb3752bBb715aCAe2A3E9c28200B5A0B319f583Ef",
+      "weth-usdc-narrow": "0x83DFeBE34b3Da9538c8457b819871D8b3e6B5E28"
+    }
+  }
+}
