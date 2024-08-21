@@ -324,6 +324,18 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         _syncVaults(vaults);
         metaVault.sync();
 
+        vm.startPrank(user2);
+        metaVault.deposit(50e6);
+        vm.stopPrank();
+
+        // user cannot claim from the actual flush index
+        vm.startPrank(user2);
+        vm.expectRevert(IMetaVault.NothingToClaim.selector);
+        metaVault.claimable(user2, 1);
+        vm.expectRevert(IMetaVault.NothingToClaim.selector);
+        metaVault.claim(1);
+        vm.stopPrank();
+
         vm.startPrank(address(0x123456));
         vm.expectRevert(IMetaVault.NothingToClaim.selector);
         metaVault.claimable(address(0x123456), 0);
@@ -376,8 +388,8 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         metaVault.claim(1);
         vm.stopPrank();
 
-        assertApproxEqAbs(metaVault.balanceOf(user1), 200e6, 2);
-        assertApproxEqAbs(metaVault.balanceOf(user2), 100e6, 2);
+        assertApproxEqAbs(metaVault.balanceOf(user1), 200e6, 3);
+        assertApproxEqAbs(metaVault.balanceOf(user2), 150e6, 3);
     }
 
     function test_redeem() external {
@@ -442,9 +454,9 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         // cannot withdraw before redeem request is fulfilled
         vm.startPrank(user1);
         vm.expectRevert(IMetaVault.NothingToWithdraw.selector);
-        metaVault.withdrawable(user1, 2);
+        metaVault.withdrawable(user1, 1);
         vm.expectRevert(IMetaVault.NothingToWithdraw.selector);
-        metaVault.withdraw(2);
+        metaVault.withdraw(1);
         vm.stopPrank();
 
         metaVault.flush();

@@ -276,7 +276,7 @@ contract MetaVault is
     /// @inheritdoc IMetaVault
     function claimable(address user, uint128 flushIndex) public view returns (uint256) {
         uint256 assets = userToFlushToDepositedAssets[user][flushIndex];
-        if (index.sync < flushIndex || assets == 0) revert NothingToClaim();
+        if (flushIndex >= index.sync || assets == 0) revert NothingToClaim();
         return flushToMintedShares[flushIndex] * assets / flushToDepositedAssets[flushIndex];
     }
 
@@ -306,7 +306,7 @@ contract MetaVault is
     function withdrawable(address user, uint128 flushIndex) public view returns (uint256) {
         uint256 shares = userToFlushToRedeemedShares[user][flushIndex];
         // user can withdraw funds only for synced flush
-        if (index.sync < flushIndex || shares == 0) revert NothingToWithdraw();
+        if (flushIndex >= index.sync || shares == 0) revert NothingToWithdraw();
         // amount of funds user get from specified withdrawal index
         return shares * flushToWithdrawnAssets[flushIndex] / flushToRedeemedShares[flushIndex];
     }
