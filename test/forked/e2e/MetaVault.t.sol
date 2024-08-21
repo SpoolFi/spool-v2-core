@@ -37,6 +37,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
     ISmartVault[] public vaults;
     address public vault1;
     address public vault2;
+    address public vault3;
 
     MetaVaultGuard metaVaultGuard;
     MetaVaultFactory metaVaultFactory;
@@ -79,6 +80,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         uint16a16 allocations = uint16a16Lib.set(uint16a16.wrap(0), Arrays.toArray(FULL_PERCENT));
         vault1 = address(_createVault(assetGroupIdUSDC, Arrays.toArray(strategy1), allocations, address(0), 0, 0, 100));
         vault2 = address(_createVault(assetGroupIdUSDC, Arrays.toArray(strategy2), allocations, address(0), 0, 0, 100));
+        vault3 = address(_createVault(assetGroupIdUSDC, Arrays.toArray(strategy2), allocations, address(0), 0, 0, 100));
 
         vaults.push(ISmartVault(vault1));
         vaults.push(ISmartVault(vault2));
@@ -928,6 +930,121 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         assertEq(dai.balanceOf(address(metaVault2)), amount);
 
         assertEq(userBalanceBefore - dai.balanceOf(userAddress), amount);
+    }
+
+    function test_addSmartVaultsDuringPendingFlush() external {
+        setVaults(90_00, 10_00);
+
+        uint256[][][] memory slippages = new uint256[][][](3);
+        slippages[0] = new uint256[][](1);
+        slippages[1] = new uint256[][](1);
+        slippages[2] = new uint256[][](2);
+
+        uint256 toDeposit = 100e6;
+
+        vm.startPrank(user1);
+        metaVault.deposit(toDeposit);
+        vm.stopPrank();
+
+        metaVault.flush();
+
+        {
+            vm.startPrank(owner);
+            address[] memory v = new address[](1);
+            v[0] = vault3;
+            uint256[] memory a = new uint256[](3);
+            a[0] = 80_00;
+            a[1] = 10_00;
+            a[2] = 10_00;
+            metaVault.addSmartVaults(v, a);
+            vm.stopPrank();
+        }
+
+        vm.expectRevert(IMetaVault.PendingSync.selector);
+        metaVault.reallocate(slippages);
+
+        _flushVaults(vaults);
+        _dhw(strategies);
+        _syncVaults(vaults);
+        metaVault.sync();
+
+        {
+            (uint256 total, uint256[] memory balances) = metaVault.getBalances();
+            assertApproxEqAbs(toDeposit, total, 4);
+            assertApproxEqAbs(balances[0], toDeposit * 90_00 / 100_00, 3);
+            assertApproxEqAbs(balances[1], toDeposit * 10_00 / 100_00, 3);
+            assertEq(balances[2], 0);
+        }
+        vm.expectRevert(IMetaVault.NeedReallocation.selector);
+        metaVault.flush();
+
+        metaVault.reallocate(slippages);
+        _flushVaults(ISmartVault(vault2));
+        _flushVaults(ISmartVault(vault3));
+        _dhw(strategies);
+        metaVault.reallocateSync();
+
+        {
+            (uint256 total, uint256[] memory balances) = metaVault.getBalances();
+            assertApproxEqAbs(toDeposit, total, 6);
+            assertApproxEqAbs(balances[0], toDeposit * 80_00 / 100_00, 6);
+            assertApproxEqAbs(balances[1], toDeposit * 10_00 / 100_00, 6);
+            assertApproxEqAbs(balances[2], toDeposit * 10_00 / 100_00, 6);
+        }
+    }
+
+    function test_setAllocationsDuringPendingFlush() external {
+        setVaults(90_00, 10_00);
+
+        uint256[][][] memory slippages = new uint256[][][](2);
+        slippages[0] = new uint256[][](1);
+        slippages[1] = new uint256[][](1);
+
+        uint256 toDeposit = 100e6;
+
+        vm.startPrank(user1);
+        metaVault.deposit(toDeposit);
+        vm.stopPrank();
+
+        metaVault.flush();
+
+        {
+            vm.startPrank(owner);
+            uint256[] memory a = new uint256[](2);
+            a[0] = 100_00;
+            a[1] = 0;
+            metaVault.setSmartVaultAllocations(a);
+            vm.stopPrank();
+        }
+
+        vm.expectRevert(IMetaVault.PendingSync.selector);
+        metaVault.reallocate(slippages);
+
+        _flushVaults(vaults);
+        _dhw(strategies);
+        _syncVaults(vaults);
+        metaVault.sync();
+
+        {
+            (uint256 total, uint256[] memory balances) = metaVault.getBalances();
+            assertApproxEqAbs(toDeposit, total, 4);
+            assertApproxEqAbs(balances[0], toDeposit * 90_00 / 100_00, 3);
+            assertApproxEqAbs(balances[1], toDeposit * 10_00 / 100_00, 3);
+        }
+        vm.expectRevert(IMetaVault.NeedReallocation.selector);
+        metaVault.flush();
+
+        metaVault.reallocate(slippages);
+        _flushVaults(ISmartVault(vault1));
+        _dhw(strategies);
+        metaVault.reallocateSync();
+
+        {
+            (uint256 total, uint256[] memory balances) = metaVault.getBalances();
+            assertApproxEqAbs(toDeposit, total, 6);
+            assertApproxEqAbs(balances[0], toDeposit, 6);
+            assertEq(balances.length, 1);
+        }
     }
 
     function _createVault(
