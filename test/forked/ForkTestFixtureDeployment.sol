@@ -673,7 +673,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                     _setInitialDhwParametersGeneric(parameters, i, j, 4);
                 } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                     _setInitialDhwParametersGeneric(parameters, i, j, 4);
-                } else if (Strings.equal(strategyKey, METAMORPHO)) {
+                } else if (Strings.equal(strategyKey, METAMORPHO_KEY)) {
                     _setInitialDhwParametersGeneric(parameters, i, j, 6);
                 } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
                     _setInitialDhwParametersGeneric(parameters, i, j, 6);
@@ -725,7 +725,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
                 } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
-                } else if (Strings.equal(strategyKey, METAMORPHO)) {
+                } else if (Strings.equal(strategyKey, METAMORPHO_KEY)) {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
                 } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
@@ -928,7 +928,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
-            } else if (Strings.equal(strategyKey, METAMORPHO)) {
+            } else if (Strings.equal(strategyKey, METAMORPHO_KEY)) {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
@@ -1039,7 +1039,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
             } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
-            } else if (Strings.equal(strategyKey, METAMORPHO)) {
+            } else if (Strings.equal(strategyKey, METAMORPHO_KEY)) {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
             } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
@@ -1086,7 +1086,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);
-            } else if (Strings.equal(strategyKey, METAMORPHO)) {
+            } else if (Strings.equal(strategyKey, METAMORPHO_KEY)) {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);

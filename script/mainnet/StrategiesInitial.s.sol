@@ -41,7 +41,7 @@ string constant CURVE_STETH_KEY = "curve-steth";
 string constant CURVE_OETH_KEY = "curve-oeth";
 string constant CURVE_STFRXETH_KEY = "curve-stfrxeth";
 string constant GEARBOX_V3_KEY = "gearbox-v3";
-string constant METAMORPHO = "metamorpho";
+string constant METAMORPHO_KEY = "metamorpho";
 string constant IDLE_BEST_YIELD_SENIOR_KEY = "idle-best-yield-senior";
 string constant MORPHO_AAVE_V2_KEY = "morpho-aave-v2";
 string constant MORPHO_COMPOUND_V2_KEY = "morpho-compound-v2";
@@ -119,18 +119,18 @@ contract StrategiesInitial {
         if (extended >= Extended.GEARBOX_V3) {
             deployGearboxV3(contracts, true);
         }
-        MetamorphoStrategy implementation;
         if (extended >= Extended.METAMORPHO_YEARN_V3) {
-            implementation = deployMetamorphoImplementation(contracts);
-
-            deployMetamorpho(contracts, implementation, true, 0);
+            deployMetamorpho(contracts, true);
 
             deployYearnV3WithGauge(contracts, true);
 
             deployYearnV3WithJuice(contracts, true);
         }
         if (extended >= Extended.METAMORPHO_EXTRA) {
-            deployMetamorphoExtra(contracts, implementation, true);
+            deployMetamorphoExtra(contracts, true);
+        }
+        if (extended >= Extended.GEARBOX_V3_EXTRA) {
+            deployGearboxV3Extra(contracts, true);
         }
     }
 
@@ -374,36 +374,6 @@ contract StrategiesInitial {
             );
 
             _registerStrategy(CURVE_3POOL_KEY, address(implementation), proxy, assetGroupId, contracts.strategyRegistry);
-        }
-    }
-
-    function deployGearboxV3(StandardContracts memory contracts, bool register) public {
-        // create implementation contract
-        GearboxV3Strategy implementation =
-            new GearboxV3Strategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper);
-
-        contractsJson().addVariantStrategyImplementation(GEARBOX_V3_KEY, address(implementation));
-
-        // create variant proxies
-        string[] memory variants = new string[](2);
-        variants[0] = WETH_KEY;
-        variants[1] = USDC_KEY;
-
-        for (uint256 i; i < variants.length; ++i) {
-            string memory variantName = _getVariantName(GEARBOX_V3_KEY, variants[i]);
-
-            IFarmingPool sdToken = IFarmingPool(
-                constantsJson().getAddress(string.concat(".strategies.", GEARBOX_V3_KEY, ".", variants[i], ".sdToken"))
-            );
-
-            address variant = _newProxy(address(implementation), contracts.proxyAdmin);
-            uint256 assetGroupId = assetGroups(variants[i]);
-            GearboxV3Strategy(variant).initialize(variantName, assetGroupId, sdToken);
-            if (register) {
-                _registerStrategyVariant(GEARBOX_V3_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
-            } else {
-                contractsJson().addVariantStrategyVariant(GEARBOX_V3_KEY, variantName, variant);
-            }
         }
     }
 
@@ -766,90 +736,14 @@ contract StrategiesInitial {
         }
     }
 
-    function deployMetamorphoImplementation(StandardContracts memory contracts)
-        public
-        returns (MetamorphoStrategy implementation)
-    {
-        // create implementation contract
-        implementation =
-            new MetamorphoStrategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper);
-        contractsJson().addVariantStrategyImplementation(METAMORPHO, address(implementation));
+    function deployGearboxV3(StandardContracts memory contracts, bool register) public {
+        GearboxV3Strategy implementation = deployGearboxV3Implementation(contracts);
+        deployGearboxV3(contracts, implementation, register, 0);
     }
 
-    function deployMetamorphoExtra(StandardContracts memory contracts, MetamorphoStrategy implementation, bool register)
-        public
-    {
-        deployMetamorpho(contracts, implementation, register, 1);
-    }
-
-    function deployMetamorpho(
-        StandardContracts memory contracts,
-        MetamorphoStrategy implementation,
-        bool register,
-        uint256 round
-    ) public {
-        // create variant proxies
-        string[] memory variants;
-        if (round == 0) {
-            variants = new string[](4);
-            variants[0] = "gauntlet-lrt-core";
-            variants[1] = "gauntlet-mkr-blended";
-            variants[2] = "gauntlet-usdt-prime";
-            variants[3] = "gauntlet-dai-core";
-        } else if (round == 1) {
-            variants = new string[](7);
-            variants[0] = "gauntlet-weth-prime";
-            variants[1] = "gauntlet-usdc-prime";
-            variants[2] = "steakhouse-usdc";
-            variants[3] = "steakhouse-pyusd";
-            variants[4] = "bprotocol-flagship-eth";
-            variants[5] = "bprotocol-flagship-usdt";
-            variants[6] = "re7-weth";
-        }
-        require(variants.length > 0, "Invalid round");
-
-        _deployMetamorpho(implementation, variants, contracts, register);
-    }
-
-    function _deployMetamorpho(
-        MetamorphoStrategy implementation,
-        string[] memory variants,
-        StandardContracts memory contracts,
-        bool register
-    ) private {
-        for (uint256 i; i < variants.length; ++i) {
-            string memory variantName = _getVariantName(METAMORPHO, variants[i]);
-
-            string memory assetKey = constantsJson().getString(
-                string.concat(".strategies.", METAMORPHO, ".", variants[i], ".underlyingAsset")
-            );
-            uint256 assetGroupId = assetGroups(assetKey);
-
-            IERC4626 vault = IERC4626(
-                constantsJson().getAddress(string.concat(".strategies.", METAMORPHO, ".", variants[i], ".vault"))
-            );
-            address[] memory rewards =
-                constantsJson().getAddressArray(string.concat(".strategies.", METAMORPHO, ".", variants[i], ".rewards"));
-            address variant =
-                _createAndInitializeMetamorpho(contracts, implementation, variantName, assetGroupId, vault, rewards);
-            if (register) {
-                _registerStrategyVariant(METAMORPHO, variants[i], variant, assetGroupId, contracts.strategyRegistry);
-            } else {
-                contractsJson().addVariantStrategyVariant(METAMORPHO, variantName, variant);
-            }
-        }
-    }
-
-    function _createAndInitializeMetamorpho(
-        StandardContracts memory contracts,
-        MetamorphoStrategy implementation,
-        string memory variantName,
-        uint256 assetGroupId,
-        IERC4626 vault,
-        address[] memory rewards
-    ) internal virtual returns (address variant) {
-        variant = _newProxy(address(implementation), contracts.proxyAdmin);
-        MetamorphoStrategy(variant).initialize(variantName, assetGroupId, vault, 10 ** (vault.decimals() * 2), rewards);
+    function deployMetamorpho(StandardContracts memory contracts, bool register) public {
+        MetamorphoStrategy implementation = deployMetamorphoImplementation(contracts);
+        deployMetamorpho(contracts, implementation, register, 0);
     }
 
     function deployYearnV3WithGauge(StandardContracts memory contracts, bool register) public {
@@ -932,6 +826,16 @@ contract StrategiesInitial {
         }
     }
 
+    function deployMetamorphoExtra(StandardContracts memory contracts, bool register) public {
+        MetamorphoStrategy implementation = getMetamorphoImplementation();
+        deployMetamorpho(contracts, implementation, register, 1);
+    }
+
+    function deployGearboxV3Extra(StandardContracts memory contracts, bool register) public {
+        GearboxV3Strategy implementation = getGearboxV3Implementation();
+        deployGearboxV3(contracts, implementation, register, 1);
+    }
+
     function deployEthena(StandardContracts memory contracts, string memory assetKey) public {
         string memory variant;
         if (Strings.equal(assetKey, USDT_KEY)) {
@@ -953,6 +857,166 @@ contract StrategiesInitial {
         address proxy = _newProxy(implementation, contracts.proxyAdmin);
         EthenaStrategy(proxy).initialize(variantName, assetGroups(variant));
         contractsJson().addVariantStrategyVariant(ETHENA_KEY, variantName, proxy);
+    }
+
+    function deployMetamorphoImplementation(StandardContracts memory contracts)
+        public
+        returns (MetamorphoStrategy implementation)
+    {
+        // create implementation contract
+        implementation =
+            new MetamorphoStrategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper);
+        contractsJson().addVariantStrategyImplementation(METAMORPHO_KEY, address(implementation));
+
+        return implementation;
+    }
+
+    function getMetamorphoImplementation() public view returns (MetamorphoStrategy implementation) {
+        return MetamorphoStrategy(
+            contractsJson().getAddress(string.concat(".strategies.", METAMORPHO_KEY, ".implementation"))
+        );
+    }
+
+    function deployMetamorpho(
+        StandardContracts memory contracts,
+        MetamorphoStrategy implementation,
+        bool register,
+        uint256 round
+    ) public {
+        // create variant proxies
+        string[] memory variants;
+        if (round == 0) {
+            variants = new string[](4);
+            variants[0] = "gauntlet-lrt-core";
+            variants[1] = "gauntlet-mkr-blended";
+            variants[2] = "gauntlet-usdt-prime";
+            variants[3] = "gauntlet-dai-core";
+        } else if (round == 1) {
+            variants = new string[](7);
+            variants[0] = "gauntlet-weth-prime";
+            variants[1] = "gauntlet-usdc-prime";
+            variants[2] = "steakhouse-usdc";
+            variants[3] = "steakhouse-pyusd";
+            variants[4] = "bprotocol-flagship-eth";
+            variants[5] = "bprotocol-flagship-usdt";
+            variants[6] = "re7-weth";
+        }
+        require(variants.length > 0, "Invalid round");
+
+        _deployMetamorpho(implementation, variants, contracts, register);
+    }
+
+    function _deployMetamorpho(
+        MetamorphoStrategy implementation,
+        string[] memory variants,
+        StandardContracts memory contracts,
+        bool register
+    ) private {
+        for (uint256 i; i < variants.length; ++i) {
+            string memory variantName = _getVariantName(METAMORPHO_KEY, variants[i]);
+
+            string memory assetKey = constantsJson().getString(
+                string.concat(".strategies.", METAMORPHO_KEY, ".", variants[i], ".underlyingAsset")
+            );
+            uint256 assetGroupId = assetGroups(assetKey);
+
+            IERC4626 vault = IERC4626(
+                constantsJson().getAddress(string.concat(".strategies.", METAMORPHO_KEY, ".", variants[i], ".vault"))
+            );
+            address[] memory rewards = constantsJson().getAddressArray(
+                string.concat(".strategies.", METAMORPHO_KEY, ".", variants[i], ".rewards")
+            );
+            address variant =
+                _createAndInitializeMetamorpho(contracts, implementation, variantName, assetGroupId, vault, rewards);
+            if (register) {
+                _registerStrategyVariant(METAMORPHO_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+            } else {
+                contractsJson().addVariantStrategyVariant(METAMORPHO_KEY, variantName, variant);
+            }
+        }
+    }
+
+    function _createAndInitializeMetamorpho(
+        StandardContracts memory contracts,
+        MetamorphoStrategy implementation,
+        string memory variantName,
+        uint256 assetGroupId,
+        IERC4626 vault,
+        address[] memory rewards
+    ) internal virtual returns (address variant) {
+        variant = _newProxy(address(implementation), contracts.proxyAdmin);
+        MetamorphoStrategy(variant).initialize(variantName, assetGroupId, vault, 10 ** (vault.decimals() * 2), rewards);
+    }
+
+    function deployGearboxV3Implementation(StandardContracts memory contracts)
+        public
+        returns (GearboxV3Strategy implementation)
+    {
+        implementation = new GearboxV3Strategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper);
+        contractsJson().addVariantStrategyImplementation(METAMORPHO_KEY, address(implementation));
+    }
+
+    function getGearboxV3Implementation() public view returns (GearboxV3Strategy) {
+        return GearboxV3Strategy(
+            contractsJson().getAddress(string.concat(".strategies.", GEARBOX_V3_KEY, ".implementation"))
+        );
+    }
+
+    function deployGearboxV3(
+        StandardContracts memory contracts,
+        GearboxV3Strategy implementation,
+        bool register,
+        uint256 round
+    ) public {
+        // create variant proxies
+        string[] memory variants;
+        if (round == 0) {
+            variants = new string[](2);
+            variants[0] = "weth";
+            variants[1] = "usdc";
+        } else if (round == 1) {
+            variants = new string[](2);
+            variants[0] = "dai";
+            variants[1] = "usdt";
+        }
+        require(variants.length > 0, "Invalid round");
+
+        _deployGearboxV3(implementation, variants, contracts, register);
+    }
+
+    function _deployGearboxV3(
+        GearboxV3Strategy implementation,
+        string[] memory variants,
+        StandardContracts memory contracts,
+        bool register
+    ) private {
+        for (uint256 i; i < variants.length; ++i) {
+            string memory variantName = _getVariantName(GEARBOX_V3_KEY, variants[i]);
+
+            IFarmingPool sdToken = IFarmingPool(
+                constantsJson().getAddress(string.concat(".strategies.", GEARBOX_V3_KEY, ".", variants[i], ".sdToken"))
+            );
+
+            uint256 assetGroupId = assetGroups(variants[i]);
+            address variant =
+                _createAndInitializeGearboxV3(contracts, implementation, variantName, assetGroupId, sdToken);
+            if (register) {
+                _registerStrategyVariant(GEARBOX_V3_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+            } else {
+                contractsJson().addVariantStrategyVariant(GEARBOX_V3_KEY, variantName, variant);
+            }
+        }
+    }
+
+    function _createAndInitializeGearboxV3(
+        StandardContracts memory contracts,
+        GearboxV3Strategy implementation,
+        string memory variantName,
+        uint256 assetGroupId,
+        IFarmingPool sdToken
+    ) internal virtual returns (address variant) {
+        variant = _newProxy(address(implementation), contracts.proxyAdmin);
+        GearboxV3Strategy(variant).initialize(variantName, assetGroupId, sdToken);
     }
 
     function deployEthenaImpl(StandardContracts memory contracts, IUsdPriceFeedManager priceFeedManager) public {

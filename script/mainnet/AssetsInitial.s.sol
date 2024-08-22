@@ -22,6 +22,7 @@ enum Extended {
     METAMORPHO_YEARN_V3,
     USDE,
     METAMORPHO_EXTRA,
+    GEARBOX_V3_EXTRA,
     CURRENT
 }
 

@@ -124,11 +124,23 @@
         "gearbox-v3": {
             "weth": {
                 "sdToken": "0x0418fEB7d0B25C411EB77cD654305d29FcbFf685",
-                "apy": 4638076750
+                "apy": 4638076750,
+                "underlyingAsset": "weth"
             },
             "usdc": {
                 "sdToken": "0x9ef444a6d7F4A5adcd68FD5329aA5240C90E14d2",
-                "apy": 50383793313
+                "apy": 50383793313,
+                "underlyingAsset": "usdc"
+            },
+            "dai": {
+                "sdToken": "0xC853E4DA38d9Bd1d01675355b8c8f3BBC1451973",
+                "apy": 21882657719,
+                "underlyingAsset": "dai"
+            },
+            "usdt": {
+                "sdToken": "0x16adAb68bDEcE3089D4f1626Bb5AEDD0d02471aD",
+                "apy": 41921240707,
+                "underlyingAsset": "usdt"
             }
         },
         "idle-best-yield-senior": {
