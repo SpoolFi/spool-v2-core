@@ -282,7 +282,7 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
         for (uint256 i; i < metaVaults.length; i++) {
             address[] memory smartVaults = metaVaults[i].getSmartVaults();
             bool completed = true;
-            for (uint256 j; j < metaVaults.length; j++) {
+            for (uint256 j; j < smartVaults.length; j++) {
                 uint256 flushIndex = metaVaults[i].smartVaultToManagerFlushIndex(smartVaults[j]);
                 completed = smartVaultManager.areAllDhwRunsCompleted(smartVaults[j], flushIndex);
                 if (!completed) break;

@@ -2,6 +2,7 @@
 - Upgrade DepositSwap to support swap and deposit into MetaVault
 - Upgrade SpoolLens to provide data on DHW completeness for MetaVaults
 - Deploy SpoolMulticall
+- Provide roles to SpoolMulticall - ROLE_META_VAULT_OPERATOR and ROLE_META_VAULT_REALLOCATOR
 - Deploy MetaVaultGuard
 - Deploy MetaVault implementation
 - Deploy MetaVaultFactory

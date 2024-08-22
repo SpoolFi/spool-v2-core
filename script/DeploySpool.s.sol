@@ -24,6 +24,8 @@ import {Swapper} from "../src/Swapper.sol";
 import {SpoolLens} from "../src/SpoolLens.sol";
 import {MetaVaultGuard} from "../src/MetaVaultGuard.sol";
 import {MetaVaultFactory} from "../src/MetaVaultFactory.sol";
+import {SpoolMulticall} from "../src/SpoolMulticall.sol";
+import {MetaVault} from "../src/MetaVault.sol";
 import "../src/managers/DepositManager.sol";
 import "../src/managers/WithdrawalManager.sol";
 import "../src/strategies/GhostStrategy.sol";
@@ -328,6 +330,27 @@ contract DeploySpool {
             spoolLens = SpoolLens(address(proxy));
 
             contractsJson().addProxy("SpoolLens", address(implementation), address(spoolLens));
+        }
+
+        {
+            address spoolMulticall = address(new SpoolMulticall(spoolAccessControl));
+            contractsJson().add("SpoolMulticall", spoolMulticall);
+        }
+
+        {
+            address implementation = address(new MetaVaultGuard(smartVaultManager, assetGroupRegistry, guardManager));
+            proxy = new TransparentUpgradeableProxy(implementation, address(proxyAdmin), "");
+            metaVaultGuard = MetaVaultGuard(address(proxy));
+            contractsJson().addProxy("MetaVaultGuard", implementation, address(proxy));
+        }
+
+        {
+            address implementation =
+                address(new MetaVault(smartVaultManager, spoolAccessControl, metaVaultGuard, spoolLens));
+            metaVaultFactory = new MetaVaultFactory(implementation, spoolAccessControl, assetGroupRegistry);
+
+            contractsJson().add("MetaVaultImplementation", implementation);
+            contractsJson().add("MetaVaultFactory", address(metaVaultFactory));
         }
     }
 

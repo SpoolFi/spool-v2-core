@@ -516,7 +516,7 @@ contract MetaVault is
     /// @inheritdoc IMetaVault
     function reallocate(uint256[][][] calldata slippages) external {
         _checkNotPaused();
-        _checkOperator();
+        if (tx.origin != address(0)) _checkRole(ROLE_META_VAULT_REALLOCATOR, msg.sender);
         _checkPendingSync();
         ReallocationVars memory vars = ReallocationVars(0, 0, 0, 0, tx.origin == address(0));
         // cache
@@ -581,7 +581,7 @@ contract MetaVault is
                     if (positionToAdd[i] == type(uint256).max) {
                         // collect vaults for removal
                         vaultsToRemove[vars.vaultToRemoveIndex] = vaults[i];
-                        vars.vaultToRemoveIndex++;
+                        ++vars.vaultToRemoveIndex;
                     } else if (positionToAdd[i] > 0) {
                         // only if there are "MetaVault shares to deposit"
                         // calculate amount of assets based on MetaVault shares ratio
@@ -624,7 +624,7 @@ contract MetaVault is
         }
         if (hadEffect) {
             emit ReallocateSync(reallocationIndex.sync);
-            reallocationIndex.sync++;
+            ++reallocationIndex.sync;
         }
     }
 

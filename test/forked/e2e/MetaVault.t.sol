@@ -56,6 +56,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.startPrank(_spoolAdmin);
         _deploySpool.spoolAccessControl().grantRole(ROLE_ALLOCATION_PROVIDER, address(mockAllocationProvider));
         _deploySpool.spoolAccessControl().grantRole(ROLE_META_VAULT_OPERATOR, address(this));
+        _deploySpool.spoolAccessControl().grantRole(ROLE_META_VAULT_REALLOCATOR, address(this));
         _deploySpool.spoolAccessControl().grantRole(ROLE_META_VAULT_DEPLOYER, owner);
         vm.stopPrank();
 
