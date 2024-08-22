@@ -521,9 +521,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      */
     function areAllDhwRunsCompleted(address smartVault, uint256 flushIndex) external view returns (bool) {
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
-        return _areAllDhwRunsCompleted(
-            _strategyRegistry.currentIndex(strategies_), _dhwIndexes[smartVault][flushIndex], strategies_, false
-        );
+        uint16a16 dhwIndexes_ = _dhwIndexes[smartVault][flushIndex];
+        // it means the smart vault was not even flushed
+        if (uint16a16.unwrap(dhwIndexes_) == 0) return false;
+        return _areAllDhwRunsCompleted(_strategyRegistry.currentIndex(strategies_), dhwIndexes_, strategies_, false);
     }
 
     /**
