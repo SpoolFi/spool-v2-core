@@ -64,7 +64,7 @@
     "proxy": "0x8aa6174333F75421903b2B5c70DdF8DA5D84f74F"
   },
   "StrategyRegistry": {
-    "implementation": "0x5bba135FB6F76483c55D28c2f762F7082Fee474E",
+    "implementation": "0x2b4130F3fF714857D15d366e3Cf2cbb1eA03856D",
     "proxy": "0x554c6bCB54656390aca0a0af38CA954dbE653F15"
   },
   "Swapper": {

@@ -440,8 +440,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         uint256[] memory withdrawnAssets = new uint256[](redeemFastParams.assetGroup.length);
 
         for (uint256 i; i < redeemFastParams.strategies.length; ++i) {
-            if (redeemFastParams.strategies[i] == _ghostStrategy) {
-                // skip ghost strategies
+            if (redeemFastParams.strategies[i] == _ghostStrategy || redeemFastParams.strategyShares[i] == 0) {
                 continue;
             }
 

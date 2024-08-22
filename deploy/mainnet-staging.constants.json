@@ -32,7 +32,14 @@
             "address": "0x4c9EDD5852cd905f086C759E8383e09bff1E68B3",
             "priceAggregator": {
                 "address": "0xa569d910839Ae8865Da8F8e70FfFb0cBA869F961",
-                "timeLimit": 3780
+                "timeLimit": 86580
+            }
+        },
+        "pyusd": {
+            "address": "0x6c3ea9036406852006290770BEdFcAbA0e23A0e8",
+            "priceAggregator": {
+                "address": "0x8f1dF6D7F2db73eECE86a18b4381F4707b918FB1",
+                "timeLimit": 86580
             }
         }
     },
@@ -241,30 +248,77 @@
                 "harvester": "0x082a5743aAdf3d0Daf750EeF24652b36a68B1e9C"
             }
         },
-        "metamorpho-gauntlet": {
-            "mkr-blended": {
+        "metamorpho": {
+            "gauntlet-mkr-blended": {
                 "vault": "0xEbFA750279dEfa89b8D99bdd145a016F6292757b",
                 "rewards": ["0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0"],
                 "apy": 102600000000,
                 "underlyingAsset": "usdc"
             },
-            "dai-core": {
+            "gauntlet-dai-core": {
                 "vault": "0x500331c9fF24D9d11aee6B07734Aa72343EA74a5",
                 "rewards": [],
                 "apy": 72800000000,
                 "underlyingAsset": "dai"
             },
-            "lrt-core": {
+            "gauntlet-lrt-core": {
                 "vault": "0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658",
                 "rewards": ["0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"],
                 "apy": 34190000000,
                 "underlyingAsset": "weth"
             },
-            "usdt-prime": {
+            "gauntlet-usdt-prime": {
                 "vault": "0x8CB3649114051cA5119141a34C200D65dc0Faa73",
                 "rewards": [],
                 "apy": 60900000000,
                 "underlyingAsset": "usdt"
+            },
+            "gauntlet-weth-prime": {
+                "vault": "0x2371e134e3455e0593363cBF89d3b6cf53740618",
+                "rewards": [],
+                "apy": 18500000000,
+                "underlyingAsset": "weth"
+            },
+            "gauntlet-usdc-prime": {
+                "vault": "0xdd0f28e19C1780eb6396170735D45153D261490d",
+                "rewards": [],
+                "apy": 91600000000,
+                "underlyingAsset": "usdc"
+            },
+            "steakhouse-usdc": {
+                "vault": "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB",
+                "rewards": [],
+                "apy": 70000000000,
+                "underlyingAsset": "usdc"
+            },
+            "steakhouse-pyusd": {
+                "vault": "0xbEEF02e5E13584ab96848af90261f0C8Ee04722a",
+                "rewards": [],
+                "apy": 39200000000,
+                "underlyingAsset": "pyusd"
+            },
+            "bprotocol-flagship-eth": {
+                "vault": "0x38989BBA00BDF8181F4082995b3DEAe96163aC5D",
+                "rewards": [],
+                "apy": 19700000000,
+                "underlyingAsset": "weth"
+            },
+            "bprotocol-flagship-usdt": {
+                "vault": "0x2C25f6C25770fFEC5959D34B94Bf898865e5D6b1",
+                "rewards": [],
+                "apy": 60900000000,
+                "underlyingAsset": "usdt"
+            },
+            "re7-weth": {
+                "vault": "0x78Fc2c2eD1A4cDb5402365934aE5648aDAd094d0",
+                "rewards": [
+                    "0xc55126051B22eBb829D00368f4B12Bde432de5Da",
+                    "0x320623b8E4fF03373931769A31Fc52A4E78B5d70",
+                    "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+                    "0x8207c1FfC5B6804F6024322CcF34F29c3541Ae26"
+                ],
+                "apy": 41100000000,
+                "underlyingAsset": "weth"
             }
         },
         "ethena": {
@@ -292,13 +346,13 @@
         "sfrxEth": "0xac3E018457B222d93114458476f3E3416Abbe38F",
         "stkAave": "0x4da27a545c0c5B758a6BA100e3a049001de870f5"
     },
-    "proxyAdminOwner": "0x4e736b96920a0f305022CBaAea493Ce7e49Eee6C",
-    "spoolAdmin": "0x4e736b96920a0f305022CBaAea493Ce7e49Eee6C",
+    "proxyAdminOwner": "0x2f75193EbeF14541266696Cd87dD84fF90c02B5C",
+    "spoolAdmin": "0x2f75193EbeF14541266696Cd87dD84fF90c02B5C",
     "fees": {
         "ecosystemFeePct": 800,
         "treasuryFeePct": 200,
-        "ecosystemFeeReceiver": "0x1A2921a0ABa58A0199820Cbc01fB361777edE19b",
-        "treasuryFeeReceiver": "0x1A2921a0ABa58A0199820Cbc01fB361777edE19b"
+        "ecosystemFeeReceiver": "0x2f75193EbeF14541266696Cd87dD84fF90c02B5C",
+        "treasuryFeeReceiver": "0x2f75193EbeF14541266696Cd87dD84fF90c02B5C"
     },
-    "emergencyWithdrawalWallet": "0x4e736b96920a0f305022CBaAea493Ce7e49Eee6C"
+    "emergencyWithdrawalWallet": "0x2f75193EbeF14541266696Cd87dD84fF90c02B5C"
 }
