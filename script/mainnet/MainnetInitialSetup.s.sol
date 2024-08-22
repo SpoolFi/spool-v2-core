@@ -43,7 +43,7 @@ contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
         );
 
         string memory profile = vm.envString("FOUNDRY_PROFILE");
-        if (Strings.equal(profile, "mainnet-production")) {
+        if (!Strings.equal(profile, "mainnet-staging")) {
             postDeploySpool(deployerAddress);
         }
     }
