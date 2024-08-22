@@ -83,6 +83,13 @@
     "implementation": "0x74a0EE4111e586b048EE1b6286a4F78e7DAFb63e",
     "proxy": "0xC62AD2C374D6537E286a06F4d6301DA6cd9C6D0a"
   },
+  "guards": {
+    "timelockGuard": "0xC8E48fc7Ebd0db581570244BC98858aFc9036a56"
+  },
+  "riskProviders": {
+    "spoolLabs": "0xC216aD6280f4fa92A5159EF383a1206D432481c8",
+    "DeFi": "0x9098c4936138536849d7ee6447777626ea202bd1"
+  },
   "strategies": {
     "aave-v2": {
       "aave-v2-dai": "0x27f38719608422Af8a31509CBBB5fAcD582f6e1F",
@@ -118,7 +125,9 @@
       "implementation": "0xDd118AEd7643D152708EbFee068aB3eA181F431E"
     },
     "gearbox-v3": {
+      "gearbox-v3-dai": "0xf2362689DC644450a3Ba3352bAC17A9b872b8871",
       "gearbox-v3-usdc": "0xb4a7fb51D06760B5F622643B7276c003418732bD",
+      "gearbox-v3-usdt": "0xc71da0BAB96E83EaeA92E9E6506c0A7fA0BbBB51",
       "gearbox-v3-weth": "0xD92B65d2321076FBAc23FCfC9A9Fd5Ed2E98B758",
       "implementation": "0xb170F18dca153752b2F35304e5ea581373095f4e",
       "implementation-airdrop": "0x64a21Ca82fe09712af8CeC6C5fED62e97Bae33A1"
@@ -186,12 +195,5 @@
       "implementation": "0x123dB049CC5Ee36010f5148000754181aB87b3B3",
       "yearn-v3-juiced-dai": "0x2e988479F14Ff61586F8Fd0F09E8720484Eb6030"
     }
-  },
-  "riskProviders": {
-      "spoolLabs": "0xC216aD6280f4fa92A5159EF383a1206D432481c8",
-      "DeFi": "0x9098c4936138536849d7ee6447777626ea202bd1"
-  },
-  "guards": {
-      "timelockGuard": "0xC8E48fc7Ebd0db581570244BC98858aFc9036a56"
   }
 }

@@ -953,7 +953,7 @@ contract StrategiesInitial {
         returns (GearboxV3Strategy implementation)
     {
         implementation = new GearboxV3Strategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper);
-        contractsJson().addVariantStrategyImplementation(METAMORPHO_KEY, address(implementation));
+        contractsJson().addVariantStrategyImplementation(GEARBOX_V3_KEY, address(implementation));
     }
 
     function getGearboxV3Implementation() public view returns (GearboxV3Strategy) {
