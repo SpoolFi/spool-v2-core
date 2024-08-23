@@ -366,8 +366,8 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
         assertEq(metaVault.userToFlushToDepositedAssets(user1, 0), 0);
         assertEq(metaVault.userToFlushToDepositedAssets(user2, 0), 0);
-        assertEq(metaVault.balanceOf(user1), 100e6);
-        assertEq(metaVault.balanceOf(user2), 50e6);
+        _assertMVT(metaVault.balanceOf(user1), 100e6);
+        _assertMVT(metaVault.balanceOf(user2), 50e6);
 
         vm.startPrank(user1);
         metaVault.deposit(100e6);
@@ -389,8 +389,8 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         metaVault.claim(1);
         vm.stopPrank();
 
-        assertApproxEqAbs(metaVault.balanceOf(user1), 200e6, 3);
-        assertApproxEqAbs(metaVault.balanceOf(user2), 150e6, 3);
+        _assertMVT(metaVault.balanceOf(user1), 200e6);
+        _assertMVT(metaVault.balanceOf(user2), 150e6);
     }
 
     function test_redeem() external {
@@ -408,22 +408,22 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
         vm.startPrank(user1);
         metaVault.claim(0);
-        metaVault.redeem(20e6);
+        metaVault.redeem(_mult(20e6));
         vm.stopPrank();
 
-        assertEq(metaVault.balanceOf(user1), 80e6);
+        _assertMVT(metaVault.balanceOf(user1), 80e6);
         assertEq(metaVault.flushToDepositedAssets(0), 100e6);
-        assertEq(metaVault.totalSupply(), 80e6);
-        assertEq(metaVault.userToFlushToRedeemedShares(user1, 1), 20e6);
+        _assertMVT(metaVault.totalSupply(), 80e6);
+        assertEq(metaVault.userToFlushToRedeemedShares(user1, 1), _mult(20e6));
         assertEq(usdc.balanceOf(address(metaVault)), 0);
 
         vm.startPrank(user1);
-        metaVault.redeem(10e6);
+        metaVault.redeem(_mult(10e6));
         vm.stopPrank();
 
-        assertEq(metaVault.balanceOf(user1), 70e6);
-        assertEq(metaVault.totalSupply(), 70e6);
-        assertEq(metaVault.userToFlushToRedeemedShares(user1, 1), 30e6);
+        _assertMVT(metaVault.balanceOf(user1), 70e6);
+        _assertMVT(metaVault.totalSupply(), 70e6);
+        assertEq(metaVault.userToFlushToRedeemedShares(user1, 1), _mult(30e6));
         assertEq(usdc.balanceOf(address(metaVault)), 0);
     }
 
@@ -445,11 +445,11 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
         vm.startPrank(user1);
         metaVault.claim(0);
-        metaVault.redeem(20e6);
+        metaVault.redeem(_mult(20e6));
         vm.stopPrank();
         vm.startPrank(user2);
         metaVault.claim(0);
-        metaVault.redeem(10e6);
+        metaVault.redeem(_mult(10e6));
         vm.stopPrank();
 
         // cannot withdraw before redeem request is fulfilled
@@ -490,8 +490,8 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         metaVault.withdraw(1);
         vm.stopPrank();
 
-        assertEq(metaVault.balanceOf(user1), 80e6);
-        assertEq(metaVault.totalSupply(), 270e6);
+        _assertMVT(metaVault.balanceOf(user1), 80e6);
+        _assertMVT(metaVault.totalSupply(), 270e6);
         assertEq(usdc.balanceOf(address(metaVault)), 10e6);
         assertEq(metaVault.userToFlushToRedeemedShares(user1, 1), 0);
 
@@ -503,8 +503,8 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         metaVault.withdraw(1);
         vm.stopPrank();
 
-        assertEq(metaVault.balanceOf(user2), 190e6);
-        assertEq(metaVault.totalSupply(), 270e6);
+        _assertMVT(metaVault.balanceOf(user2), 190e6);
+        _assertMVT(metaVault.totalSupply(), 270e6);
         assertApproxEqAbs(usdc.balanceOf(address(metaVault)), 0, 1);
 
         uint256 user2BalanceAfter = usdc.balanceOf(user2);
@@ -583,7 +583,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
         vm.startPrank(user1);
         metaVault.claim(0);
-        metaVault.redeem(10e6);
+        metaVault.redeem(_mult(10e6));
         vm.stopPrank();
 
         metaVault.flush();
@@ -619,7 +619,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
         vm.startPrank(user1);
         metaVault.claim(0);
-        metaVault.redeem(toRedeem);
+        metaVault.redeem(_mult(toRedeem));
         vm.stopPrank();
         metaVault.flush();
 
@@ -823,12 +823,12 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.startPrank(user1);
         bytes[] memory data = new bytes[](2);
         data[0] = abi.encodeWithSelector(IMetaVault.claim.selector, 0);
-        data[1] = abi.encodeWithSelector(IMetaVault.redeem.selector, 20e6);
+        data[1] = abi.encodeWithSelector(IMetaVault.redeem.selector, _mult(20e6));
         metaVault.multicall(data);
 
-        assertEq(metaVault.balanceOf(user1), 80e6);
-        assertEq(metaVault.totalSupply(), 80e6);
-        assertEq(metaVault.userToFlushToRedeemedShares(user1, 1), 20e6);
+        _assertMVT(metaVault.balanceOf(user1), 80e6);
+        _assertMVT(metaVault.totalSupply(), 80e6);
+        assertEq(metaVault.userToFlushToRedeemedShares(user1, 1), _mult(20e6));
         assertEq(usdc.balanceOf(address(metaVault)), 0);
     }
 
@@ -1058,6 +1058,14 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
             assertApproxEqAbs(balances[0], toDeposit, 6);
             assertEq(balances.length, 1);
         }
+    }
+
+    function _assertMVT(uint256 a, uint256 b) internal {
+        assertApproxEqAbs(a, _mult(b), 10 * INITIAL_SHARE_MULTIPLIER);
+    }
+
+    function _mult(uint256 a) internal pure returns (uint256) {
+        return a * INITIAL_SHARE_MULTIPLIER;
     }
 
     function _createVault(

@@ -56,6 +56,12 @@ contract MetaVault is
 
     /// @inheritdoc IMetaVault
     address public asset;
+
+    /**
+     * @dev Amount of shares to lock to prevent inflation attack
+     */
+    uint256 internal sharesToLock;
+
     /**
      * @dev decimals of shares to match those in asset
      */
@@ -158,6 +164,7 @@ contract MetaVault is
         _addSmartVaults(vaults, allocations, true);
         IERC20MetadataUpgradeable(asset).approve(address(smartVaultManager), type(uint256).max);
         _transferOwnership(owner);
+        sharesToLock = 10 ** (_decimals * 2 / 3);
         // 1% by default
         maxReallocationSlippage = 1_00;
     }
@@ -448,9 +455,18 @@ contract MetaVault is
         (totalBalance,) = _getBalances(vaults);
         if (hadEffect) {
             uint256 totalSupply_ = totalSupply();
-            uint256 toMint = totalSupply_ == 0
-                ? depositedAssets
-                : (totalSupply_ * depositedAssets) / (totalBalance - depositedAssets);
+            uint256 toMint;
+            if (totalSupply_ < sharesToLock) {
+                toMint = depositedAssets * INITIAL_SHARE_MULTIPLIER;
+                uint256 lockedSharesLeftToMint = sharesToLock - totalSupply_;
+                if (toMint < lockedSharesLeftToMint) {
+                    lockedSharesLeftToMint = toMint;
+                }
+                toMint -= lockedSharesLeftToMint;
+                _mint(INITIAL_LOCKED_SHARES_ADDRESS, lockedSharesLeftToMint);
+            } else {
+                toMint = (totalSupply_ * depositedAssets) / (totalBalance - depositedAssets);
+            }
             flushToMintedShares[syncIndex] = toMint;
             _mint(address(this), toMint);
             emit SyncDeposit(syncIndex, toMint);
