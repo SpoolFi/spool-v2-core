@@ -81,6 +81,19 @@ contract JsonWriter {
         content.write(path);
     }
 
+    function addVariantStrategyImplementation(string memory strategyKey, string memory terminus, address implementation)
+        public
+    {
+        string memory variantStrategyJson = strategyKey;
+        variantStrategyJson = variantStrategyJson.serialize(string.concat("implementation-", terminus), implementation);
+
+        string memory strategiesJson = "strategies";
+        strategiesJson = strategiesJson.serialize(strategyKey, variantStrategyJson);
+
+        string memory content = jsonWriter.serialize("strategies", strategiesJson);
+        content.write(path);
+    }
+
     function addVariantStrategyHelpersImplementation(string memory strategyHelpersKey, address implementation) public {
         string memory variantStrategyHelperJson = strategyHelpersKey;
         variantStrategyHelperJson = variantStrategyHelperJson.serialize("implementation", implementation);

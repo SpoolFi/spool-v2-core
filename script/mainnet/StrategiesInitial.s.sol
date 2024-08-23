@@ -21,6 +21,7 @@ import "../../src/strategies/StEthHoldingStrategy.sol";
 import "../../src/strategies/YearnV2Strategy.sol";
 import "../../src/strategies/OEthHoldingStrategy.sol";
 import "../../src/strategies/GearboxV3Strategy.sol";
+import "../../src/strategies/GearboxV3SwapStrategy.sol";
 import "../../src/strategies/MetamorphoStrategy.sol";
 import "../../src/strategies/YearnV3StrategyWithJuice.sol";
 import "../../src/strategies/YearnV3StrategyWithGauge.sol";
@@ -82,6 +83,7 @@ contract StrategiesInitial {
         ISwapper swapper,
         address proxyAdmin,
         IStrategyRegistry strategyRegistry,
+        UsdPriceFeedManager priceFeedManager,
         Extended extended
     ) public {
         StandardContracts memory contracts = StandardContracts({
@@ -131,6 +133,9 @@ contract StrategiesInitial {
         }
         if (extended >= Extended.GEARBOX_V3_EXTRA) {
             deployGearboxV3Extra(contracts, true);
+        }
+        if (extended >= Extended.GEARBOX_V3_SWAP) {
+            deployGearboxV3Swap(contracts, priceFeedManager, true);
         }
     }
 
@@ -836,6 +841,15 @@ contract StrategiesInitial {
         deployGearboxV3(contracts, implementation, register, 1);
     }
 
+    function deployGearboxV3Swap(
+        StandardContracts memory contracts,
+        UsdPriceFeedManager priceFeedManager,
+        bool register
+    ) public {
+        GearboxV3SwapStrategy implementation = deployGearboxV3SwapImplementation(contracts, priceFeedManager);
+        deployGearboxV3Swap(contracts, implementation, register, 1);
+    }
+
     function deployEthena(StandardContracts memory contracts, string memory assetKey) public {
         string memory variant;
         if (Strings.equal(assetKey, USDT_KEY)) {
@@ -956,6 +970,15 @@ contract StrategiesInitial {
         contractsJson().addVariantStrategyImplementation(GEARBOX_V3_KEY, address(implementation));
     }
 
+    function deployGearboxV3SwapImplementation(
+        StandardContracts memory contracts,
+        IUsdPriceFeedManager priceFeedManager
+    ) public returns (GearboxV3SwapStrategy implementation) {
+        implementation =
+        new GearboxV3SwapStrategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper, priceFeedManager);
+        contractsJson().addVariantStrategyImplementation(GEARBOX_V3_KEY, "swap", address(implementation));
+    }
+
     function getGearboxV3Implementation() public view returns (GearboxV3Strategy) {
         return GearboxV3Strategy(
             contractsJson().getAddress(string.concat(".strategies.", GEARBOX_V3_KEY, ".implementation"))
@@ -1006,6 +1029,59 @@ contract StrategiesInitial {
                 contractsJson().addVariantStrategyVariant(GEARBOX_V3_KEY, variantName, variant);
             }
         }
+    }
+
+    function deployGearboxV3Swap(
+        StandardContracts memory contracts,
+        GearboxV3SwapStrategy implementation,
+        bool register,
+        uint256 round
+    ) public {
+        // create variant proxies
+        string[] memory variants;
+        if (round == 0) {
+            variants = new string[](2);
+            variants[0] = "crvusd-usdc";
+            variants[1] = "gho-usdc";
+        }
+        require(variants.length > 0, "Invalid round");
+
+        _deployGearboxV3Swap(implementation, variants, contracts, register);
+    }
+
+    function _deployGearboxV3Swap(
+        GearboxV3SwapStrategy implementation,
+        string[] memory variants,
+        StandardContracts memory contracts,
+        bool register
+    ) private {
+        for (uint256 i; i < variants.length; ++i) {
+            string memory variantName = _getVariantName(GEARBOX_V3_KEY, variants[i]);
+
+            IFarmingPool sdToken = IFarmingPool(
+                constantsJson().getAddress(string.concat(".strategies.", GEARBOX_V3_KEY, ".", variants[i], ".sdToken"))
+            );
+
+            uint256 assetGroupId = assetGroups(variants[i]);
+            address variant =
+                _createAndInitializeGearboxV3Swap(contracts, implementation, variantName, assetGroupId, sdToken);
+            if (register) {
+                _registerStrategyVariant(GEARBOX_V3_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+            } else {
+                contractsJson().addVariantStrategyVariant(GEARBOX_V3_KEY, variantName, variant);
+            }
+        }
+    }
+
+    function _createAndInitializeGearboxV3Swap(
+        StandardContracts memory contracts,
+        GearboxV3SwapStrategy implementation,
+        string memory variantName,
+        uint256 assetGroupId,
+        IFarmingPool sdToken
+    ) internal virtual returns (address variant) {
+        variant = _newProxy(address(implementation), contracts.proxyAdmin);
+        GearboxV3SwapStrategy(variant).initialize(variantName, assetGroupId, sdToken);
     }
 
     function _createAndInitializeGearboxV3(

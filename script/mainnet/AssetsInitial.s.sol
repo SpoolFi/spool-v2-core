@@ -23,6 +23,7 @@ enum Extended {
     USDE,
     METAMORPHO_EXTRA,
     GEARBOX_V3_EXTRA,
+    GEARBOX_V3_SWAP,
     CURRENT
 }
 

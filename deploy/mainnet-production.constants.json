@@ -141,6 +141,16 @@
                 "sdToken": "0x16adAb68bDEcE3089D4f1626Bb5AEDD0d02471aD",
                 "apy": 41921240707,
                 "underlyingAsset": "usdt"
+            },
+            "crvusd": {
+                "sdToken": "0xfBCA378AeA93EADD6882299A3d74D8641Cc0C4BC",
+                "apy": 0,
+                "underlyingAsset": "usdc"
+            },
+            "gho": {
+                "sdToken": "0xE2037090f896A858E3168B978668F22026AC52e7",
+                "apy": 0,
+                "underlyingAsset": "usdc"
             }
         },
         "idle-best-yield-senior": {

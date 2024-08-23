@@ -42,10 +42,10 @@ contract GearboxV3Strategy is Strategy {
     IFarmingPool public sdToken;
 
     /// @notice exchangeRate at the last DHW.
-    uint256 private _lastExchangeRate;
+    uint256 internal _lastExchangeRate;
 
     /// @notice precision for yield calculation
-    uint256 private _mantissa;
+    uint256 internal _mantissa;
 
     /// @notice maximum balance allowed of the staking token
     uint256 private constant _MAX_BALANCE = 1e32;
@@ -60,6 +60,7 @@ contract GearboxV3Strategy is Strategy {
 
     function initialize(string memory strategyName_, uint256 assetGroupId_, IFarmingPool sdToken_)
         external
+        virtual
         initializer
     {
         __Strategy_init(strategyName_, assetGroupId_);
@@ -84,7 +85,7 @@ contract GearboxV3Strategy is Strategy {
         return _assetRatio;
     }
 
-    function getUnderlyingAssetAmounts() external view returns (uint256[] memory amounts) {
+    function getUnderlyingAssetAmounts() external view virtual returns (uint256[] memory amounts) {
         amounts = new uint256[](1);
         amounts[0] = _getdTokenValue(sdToken.balanceOf(address(this)));
     }
@@ -96,6 +97,7 @@ contract GearboxV3Strategy is Strategy {
 
     function _compound(address[] calldata tokens, SwapInfo[] calldata swapInfo, uint256[] calldata)
         internal
+        virtual
         override
         returns (int256 compoundedYieldPercentage)
     {
@@ -128,6 +130,7 @@ contract GearboxV3Strategy is Strategy {
 
     function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
         internal
+        virtual
         override
     {
         _depositToProtocolInternal(IERC20(tokens[0]), amounts[0]);
@@ -136,13 +139,13 @@ contract GearboxV3Strategy is Strategy {
     /**
      * @notice Withdraw lp tokens from the GearboxV3 market
      */
-    function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata) internal override {
+    function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata) internal virtual override {
         uint256 dTokenWithdrawAmount = (sdToken.balanceOf(address(this)) * ssts) / totalSupply();
 
         _redeemFromProtocolInternal(dTokenWithdrawAmount);
     }
 
-    function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
+    function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal virtual override {
         uint256 sdTokenBalance = sdToken.balanceOf(address(this));
 
         _redeemFromProtocolInternal(sdTokenBalance);
@@ -153,6 +156,7 @@ contract GearboxV3Strategy is Strategy {
     function _getUsdWorth(uint256[] memory exchangeRates, IUsdPriceFeedManager priceFeedManager)
         internal
         view
+        virtual
         override
         returns (uint256 usdValue)
     {
@@ -170,7 +174,7 @@ contract GearboxV3Strategy is Strategy {
      * @param dTokenAmount dToken amount
      * @return tokenAmount value of `dTokenAmount` in asset tokens
      */
-    function _getdTokenValue(uint256 dTokenAmount) private view returns (uint256) {
+    function _getdTokenValue(uint256 dTokenAmount) internal view returns (uint256) {
         if (dTokenAmount == 0) {
             return 0;
         }

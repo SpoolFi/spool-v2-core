@@ -39,7 +39,13 @@ contract MainnetInitialSetup is Script, DeploySpool, AssetsInitial, StrategiesIn
         setupAssets(assetGroupRegistry, usdPriceFeedManager, extended);
 
         deployStrategies(
-            spoolAccessControl, assetGroupRegistry, swapper, address(proxyAdmin), strategyRegistry, extended
+            spoolAccessControl,
+            assetGroupRegistry,
+            swapper,
+            address(proxyAdmin),
+            strategyRegistry,
+            usdPriceFeedManager,
+            extended
         );
 
         string memory profile = vm.envString("FOUNDRY_PROFILE");
