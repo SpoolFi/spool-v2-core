@@ -12,7 +12,7 @@ import "../../interfaces/ISwapper.sol";
 /// array passed to the strategy.
 /// @dev swaps "tokenInAmount" of "tokenIn" to "tokenOut" using "slippages"
 /// to build swap payload for Swapper.
-library SwapAdapter {
+abstract contract SwapAdapter {
     using SafeERC20 for IERC20;
 
     /// @dev used for parameter gatherer to prepare swap payload
@@ -21,21 +21,20 @@ library SwapAdapter {
     /// @dev thrown if slippages array is not valid for swap
     error SwapSlippage();
 
-    uint256 constant MIN_ARGS_LENGTH = 3;
     uint256 constant LENGTH_OFFSET = 1;
     uint256 constant DATA_OFFSET = 2;
 
     /// @dev swaps "tokenInAmount" of "tokenIn" to "tokenOut" using "slippages" to build swap payload for Swapper
-    function swap(
+    function _swap(
         ISwapper swapper,
         address tokenIn,
         address tokenOut,
         uint256 tokenInAmount,
         uint256[] calldata slippages,
         uint256 offset
-    ) external returns (uint256) {
+    ) internal virtual returns (uint256) {
         // used for parameter gatherer in order to prepare swap calldata
-        if (_isViewExecution() && slippages[0] == 1) {
+        if (isViewExecution() && slippages[0] == 1) {
             emit SwapEstimation(tokenIn, tokenOut, tokenInAmount);
             return 0;
         }
@@ -65,7 +64,7 @@ library SwapAdapter {
         payload = BytesUint256Lib.decode(toDecode, bytesLength);
     }
 
-    function _isViewExecution() private view returns (bool) {
+    function isViewExecution() private view returns (bool) {
         return tx.origin == address(0);
     }
 }

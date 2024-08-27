@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import "@openzeppelin/token/ERC20/IERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "./GearboxV3Strategy.sol";
-import "./libraries/SwapAdapter.sol";
+import "./helpers/SwapAdapter.sol";
 
 // One asset
 // One reward: GEAR
@@ -22,14 +22,8 @@ import "./libraries/SwapAdapter.sol";
 // Therefore, we consider dTokens and sdTokens to be equivalent in value.
 //
 // Liquidity availability on redeem is subject to usual supply/borrow rules.
-contract GearboxV3SwapStrategy is GearboxV3Strategy {
+contract GearboxV3SwapStrategy is GearboxV3Strategy, SwapAdapter {
     using SafeERC20 for IERC20;
-
-    /// @dev used for parameter gatherer to prepare swap payload
-    event SwapEstimation(address tokenIn, address tokenOut, uint256 tokenInAmount);
-
-    /// @dev thrown if slippages array is not valid for swap
-    error SwapSlippage();
 
     // @notice underlying pool token
     address public underlying;
@@ -98,7 +92,7 @@ contract GearboxV3SwapStrategy is GearboxV3Strategy {
         internal
         override
     {
-        amounts[0] = SwapAdapter.swap(swapper, tokens[0], underlying, amounts[0], slippages, 0);
+        amounts[0] = _swap(swapper, tokens[0], underlying, amounts[0], slippages, 0);
         if (amounts[0] > 0) {
             _depositToProtocolInternal(IERC20(underlying), amounts[0]);
         }
@@ -108,10 +102,11 @@ contract GearboxV3SwapStrategy is GearboxV3Strategy {
         internal
         override
     {
-        uint256 balanceBefore = IERC20(underlying).balanceOf(address(this));
         super._redeemFromProtocol(tokens, ssts, slippages);
-        uint256 balance = IERC20(underlying).balanceOf(address(this)) - balanceBefore;
-        SwapAdapter.swap(swapper, underlying, tokens[0], balance, slippages, 0);
+        uint256 balance = IERC20(underlying).balanceOf(address(this));
+        if (balance > 0) {
+            _swap(swapper, underlying, tokens[0], balance, slippages, 0);
+        }
     }
 
     function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
