@@ -177,7 +177,9 @@ contract StrategiesInitial {
             address variant = _newProxy(address(implementation), contracts.proxyAdmin);
             uint256 assetGroupId = assetGroups(variants[i]);
             AaveV2Strategy(variant).initialize(variantName, assetGroupId);
-            _registerStrategyVariant(AAVE_V2_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+            _registerStrategyVariant(
+                AAVE_V2_KEY, variants[i], variant, assetGroupId, ATOMIC_STRATEGY, contracts.strategyRegistry
+            );
         }
     }
 
@@ -250,7 +252,9 @@ contract StrategiesInitial {
             address variant = _newProxy(address(implementation), contracts.proxyAdmin);
             uint256 assetGroupId = assetGroups(variants[i]);
             CompoundV2Strategy(variant).initialize(variantName, assetGroupId, cToken);
-            _registerStrategyVariant(COMPOUND_V2_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+            _registerStrategyVariant(
+                COMPOUND_V2_KEY, variants[i], variant, assetGroupId, ATOMIC_STRATEGY, contracts.strategyRegistry
+            );
         }
     }
 
@@ -319,7 +323,12 @@ contract StrategiesInitial {
             }
 
             _registerStrategy(
-                CONVEX_3POOL_KEY, address(implementation), proxy, assetGroupId, contracts.strategyRegistry
+                CONVEX_3POOL_KEY,
+                address(implementation),
+                proxy,
+                assetGroupId,
+                ATOMIC_STRATEGY,
+                contracts.strategyRegistry
             );
         }
 
@@ -386,7 +395,12 @@ contract StrategiesInitial {
             }
 
             _registerStrategy(
-                CONVEX_ALUSD_KEY, address(implementation), proxy, assetGroupId, contracts.strategyRegistry
+                CONVEX_ALUSD_KEY,
+                address(implementation),
+                proxy,
+                assetGroupId,
+                ATOMIC_STRATEGY,
+                contracts.strategyRegistry
             );
         }
     }
@@ -435,7 +449,14 @@ contract StrategiesInitial {
                 CURVE_3POOL_KEY, pool, assetMapping, gauge, positiveYieldLimit, negativeYieldLimit
             );
 
-            _registerStrategy(CURVE_3POOL_KEY, address(implementation), proxy, assetGroupId, contracts.strategyRegistry);
+            _registerStrategy(
+                CURVE_3POOL_KEY,
+                address(implementation),
+                proxy,
+                assetGroupId,
+                ATOMIC_STRATEGY,
+                contracts.strategyRegistry
+            );
         }
     }
 
@@ -465,7 +486,12 @@ contract StrategiesInitial {
             uint256 assetGroupId = assetGroups(variants[i]);
             IdleStrategy(variant).initialize(variantName, assetGroupId, idleToken);
             _registerStrategyVariant(
-                IDLE_BEST_YIELD_SENIOR_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry
+                IDLE_BEST_YIELD_SENIOR_KEY,
+                variants[i],
+                variant,
+                assetGroupId,
+                ATOMIC_STRATEGY,
+                contracts.strategyRegistry
             );
         }
     }
@@ -489,7 +515,12 @@ contract StrategiesInitial {
             REthHoldingStrategy(payable(proxy)).initialize(RETH_HOLDING_KEY);
 
             _registerStrategy(
-                RETH_HOLDING_KEY, address(implementation), proxy, assetGroupId, contracts.strategyRegistry
+                RETH_HOLDING_KEY,
+                address(implementation),
+                proxy,
+                assetGroupId,
+                ATOMIC_STRATEGY,
+                contracts.strategyRegistry
             );
         }
 
@@ -522,7 +553,12 @@ contract StrategiesInitial {
             SfrxEthHoldingStrategy(payable(proxy)).initialize(SFRXETH_HOLDING_KEY);
 
             _registerStrategy(
-                SFRXETH_HOLDING_KEY, address(implementation), proxy, assetGroupId, contracts.strategyRegistry
+                SFRXETH_HOLDING_KEY,
+                address(implementation),
+                proxy,
+                assetGroupId,
+                ATOMIC_STRATEGY,
+                contracts.strategyRegistry
             );
         }
 
@@ -544,7 +580,12 @@ contract StrategiesInitial {
             StEthHoldingStrategy(payable(proxy)).initialize(STETH_HOLDING_KEY);
 
             _registerStrategy(
-                STETH_HOLDING_KEY, address(implementation), proxy, assetGroupId, contracts.strategyRegistry
+                STETH_HOLDING_KEY,
+                address(implementation),
+                proxy,
+                assetGroupId,
+                ATOMIC_STRATEGY,
+                contracts.strategyRegistry
             );
         }
     }
@@ -603,7 +644,7 @@ contract StrategiesInitial {
                     variantName, assetGroupId, poolToken, positiveYieldLimit, negativeYieldLimit
                 );
                 _registerStrategyVariant(
-                    MORPHO_AAVE_V2_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry
+                    MORPHO_AAVE_V2_KEY, variants[i], variant, assetGroupId, ATOMIC_STRATEGY, contracts.strategyRegistry
                 );
             }
         }
@@ -662,7 +703,12 @@ contract StrategiesInitial {
                     variantName, assetGroupId, poolToken, positiveYieldLimit, negativeYieldLimit
                 );
                 _registerStrategyVariant(
-                    MORPHO_COMPOUND_V2_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry
+                    MORPHO_COMPOUND_V2_KEY,
+                    variants[i],
+                    variant,
+                    assetGroupId,
+                    ATOMIC_STRATEGY,
+                    contracts.strategyRegistry
                 );
             }
         }
@@ -698,7 +744,7 @@ contract StrategiesInitial {
             uint256 assetGroupId = assetGroups(variants[i]);
             NotionalFinanceStrategy(variant).initialize(variantName, assetGroupId, nToken);
             _registerStrategyVariant(
-                NOTIONAL_FINANCE_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry
+                NOTIONAL_FINANCE_KEY, variants[i], variant, assetGroupId, ATOMIC_STRATEGY, contracts.strategyRegistry
             );
         }
     }
@@ -725,7 +771,9 @@ contract StrategiesInitial {
             address variant = _newProxy(address(implementation), contracts.proxyAdmin);
             uint256 assetGroupId = assetGroups(variants[i]);
             YearnV2Strategy(variant).initialize(variantName, assetGroupId, yTokenVault);
-            _registerStrategyVariant(YEARN_V2_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+            _registerStrategyVariant(
+                YEARN_V2_KEY, variants[i], variant, assetGroupId, ATOMIC_STRATEGY, contracts.strategyRegistry
+            );
         }
     }
 
@@ -757,7 +805,12 @@ contract StrategiesInitial {
 
         if (register) {
             _registerStrategy(
-                OETH_HOLDING_KEY, address(implementation), proxy, assetGroupId, contracts.strategyRegistry
+                OETH_HOLDING_KEY,
+                address(implementation),
+                proxy,
+                assetGroupId,
+                ATOMIC_STRATEGY,
+                contracts.strategyRegistry
             );
         }
     }
@@ -792,7 +845,12 @@ contract StrategiesInitial {
 
             if (register) {
                 _registerStrategy(
-                    CONVEX_STFRXETH_KEY, address(implementation), proxy, assetGroupId, contracts.strategyRegistry
+                    CONVEX_STFRXETH_KEY,
+                    address(implementation),
+                    proxy,
+                    assetGroupId,
+                    ATOMIC_STRATEGY,
+                    contracts.strategyRegistry
                 );
             }
         }
@@ -841,7 +899,7 @@ contract StrategiesInitial {
             );
             if (register) {
                 _registerStrategyVariant(
-                    YEARN_V3_GAUGED_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry
+                    YEARN_V3_GAUGED_KEY, variants[i], variant, assetGroupId, ATOMIC_STRATEGY, contracts.strategyRegistry
                 );
             } else {
                 contractsJson().addVariantStrategyVariant(YEARN_V3_GAUGED_KEY, variantName, variant);
@@ -880,7 +938,7 @@ contract StrategiesInitial {
             );
             if (register) {
                 _registerStrategyVariant(
-                    YEARN_V3_JUICED_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry
+                    YEARN_V3_JUICED_KEY, variants[i], variant, assetGroupId, ATOMIC_STRATEGY, contracts.strategyRegistry
                 );
             } else {
                 contractsJson().addVariantStrategyVariant(YEARN_V3_JUICED_KEY, variantName, variant);
@@ -1019,7 +1077,9 @@ contract StrategiesInitial {
             address variant =
                 _createAndInitializeMetamorpho(contracts, implementation, variantName, assetGroupId, vault, rewards);
             if (register) {
-                _registerStrategyVariant(METAMORPHO_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+                _registerStrategyVariant(
+                    METAMORPHO_KEY, variants[i], variant, assetGroupId, ATOMIC_STRATEGY, contracts.strategyRegistry
+                );
             } else {
                 contractsJson().addVariantStrategyVariant(METAMORPHO_KEY, variantName, variant);
             }
@@ -1115,7 +1175,9 @@ contract StrategiesInitial {
             address variant =
                 _createAndInitializeGearboxV3(contracts, implementation, variantName, assetGroupId, sdToken);
             if (register) {
-                _registerStrategyVariant(GEARBOX_V3_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+                _registerStrategyVariant(
+                    GEARBOX_V3_KEY, variants[i], variant, assetGroupId, ATOMIC_STRATEGY, contracts.strategyRegistry
+                );
             } else {
                 contractsJson().addVariantStrategyVariant(GEARBOX_V3_KEY, variantName, variant);
             }
@@ -1161,7 +1223,9 @@ contract StrategiesInitial {
             address variant =
                 _createAndInitializeGearboxV3Swap(contracts, implementation, variantName, assetGroupId, sdToken);
             if (register) {
-                _registerStrategyVariant(GEARBOX_V3_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+                _registerStrategyVariant(
+                    GEARBOX_V3_KEY, variants[i], variant, assetGroupId, ATOMIC_STRATEGY, contracts.strategyRegistry
+                );
             } else {
                 contractsJson().addVariantStrategyVariant(GEARBOX_V3_KEY, variantName, variant);
             }
@@ -1219,11 +1283,12 @@ contract StrategiesInitial {
         address implementation,
         address proxy,
         uint256 assetGroupId,
+        uint256 atomicityClassification,
         IStrategyRegistry strategyRegistry
     ) private {
         int256 apy = constantsJson().getInt256(string.concat(".strategies.", strategyKey, ".apy"));
 
-        strategyRegistry.registerStrategy(proxy, apy);
+        strategyRegistry.registerStrategy(proxy, apy, atomicityClassification);
 
         strategies[strategyKey][assetGroupId] = proxy;
         addressToStrategyKey[proxy] = strategyKey;
@@ -1235,12 +1300,14 @@ contract StrategiesInitial {
         string memory variantKey,
         address variant,
         uint256 assetGroupId,
+        uint256 atomicityClassification,
         IStrategyRegistry strategyRegistry
     ) private {
         int256 apy = constantsJson().getInt256(string.concat(".strategies.", strategyKey, ".", variantKey, ".apy"));
         string memory variantName = _getVariantName(strategyKey, variantKey);
 
-        strategyRegistry.registerStrategy(variant, apy);
+        strategyRegistry.registerStrategy(variant, apy, atomicityClassification);
+
         setStrategy(strategyKey, variantName, assetGroupId, variant);
         contractsJson().addVariantStrategyVariant(strategyKey, variantName, variant);
     }

@@ -47,11 +47,11 @@ contract PlatformFeesTest is TestFixture {
         {
             strategyA = new MockStrategy2(assetGroupRegistry, accessControl, assetGroupId);
             strategyA.initialize("StratA");
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy2(assetGroupRegistry, accessControl, assetGroupId);
             strategyB.initialize("StratB");
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategiesA = Arrays.toArray(address(strategyA));
             strategiesB = Arrays.toArray(address(strategyB));
@@ -597,7 +597,7 @@ contract SmartVaultFeesTest is TestFixture {
         {
             strategyA = new MockStrategy2(assetGroupRegistry, accessControl, assetGroupId);
             strategyA.initialize("StratA");
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategiesA = Arrays.toArray(address(strategyA));
         }
@@ -2639,11 +2639,11 @@ contract AllFeesTest is TestFixture {
         {
             strategyA = new MockStrategy2(assetGroupRegistry, accessControl, assetGroupId);
             strategyA.initialize("StratA");
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy2(assetGroupRegistry, accessControl, assetGroupId);
             strategyB.initialize("StratB");
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategiesA = Arrays.toArray(address(strategyA), address(strategyB));
         }
@@ -3058,11 +3058,11 @@ contract HighPerformanceFeesTest is TestFixture {
         {
             strategyA = new MockStrategy2(assetGroupRegistry, accessControl, assetGroupId);
             strategyA.initialize("StratA");
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy2(assetGroupRegistry, accessControl, assetGroupId);
             strategyB.initialize("StratB");
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategiesA = Arrays.toArray(address(strategyA), address(strategyB));
         }

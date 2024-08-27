@@ -5,6 +5,7 @@ import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/utils/math/SafeCast.sol";
 import "../interfaces/IMasterWallet.sol";
 import "../interfaces/IStrategy.sol";
+import "../interfaces/IStrategyNonAtomic.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/ISwapper.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
@@ -120,6 +121,24 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
      */
     mapping(address => int256) internal _apys;
 
+    /**
+     * @notice Atomicity classification for strategies.
+     * @dev strategy => classification
+     */
+    mapping(address => uint256) internal _atomicityClassification;
+
+    /**
+     * @notice Status of the DHW for strategies.
+     * @dev strategy => status
+     */
+    mapping(address => uint256) internal _dhwStatus;
+
+    /**
+     * @notice User shares withdrawn from the strategy.
+     * @dev user => strategy => index => shares withdrawn
+     */
+    mapping(address => mapping(address => mapping(uint256 => uint256))) internal _userSharesWithdrawn;
+
     constructor(
         IMasterWallet masterWallet_,
         ISpoolAccessControl accessControl_,
@@ -231,12 +250,30 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         return result;
     }
 
+    function atomicityClassifications(address[] calldata strategies) external view returns (uint256[] memory) {
+        uint256[] memory classifications = new uint256[](strategies.length);
+        for (uint256 i; i < strategies.length; ++i) {
+            classifications[i] = _atomicityClassification[strategies[i]];
+        }
+
+        return classifications;
+    }
+
+    function dhwStatuses(address[] calldata strategies) external view returns (uint256[] memory) {
+        uint256[] memory statuses = new uint256[](strategies.length);
+        for (uint256 i; i < strategies.length; ++i) {
+            statuses[i] = _dhwStatus[strategies[i]];
+        }
+
+        return statuses;
+    }
+
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     /**
      * @notice Add strategy to registry
      */
-    function registerStrategy(address strategy, int256 apy) external {
+    function registerStrategy(address strategy, int256 apy, uint256 atomicityClassification) external {
         _checkRole(ROLE_SPOOL_ADMIN, msg.sender);
 
         if (_removedStrategies[strategy]) revert StrategyPreviouslyRemoved(strategy);
@@ -247,8 +284,11 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         _dhwAssetRatios[strategy] = IStrategy(strategy).assetRatio();
         _stateAtDhw[address(strategy)][0].timestamp = SafeCast.toUint32(block.timestamp);
 
-        emit StrategyRegistered(strategy);
+        emit StrategyRegistered(strategy, atomicityClassification);
         _setStrategyApy(strategy, apy);
+        if (atomicityClassification > ATOMIC_STRATEGY) {
+            _atomicityClassification[strategy] = atomicityClassification;
+        }
     }
 
     /**
@@ -260,7 +300,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
     function doHardWork(DoHardWorkParameterBag calldata dhwParams) external whenNotPaused nonReentrant {
         unchecked {
-            // Check if is run after the expiry time
+            // Check if is run after the expiry time.
             if (dhwParams.validUntil < block.timestamp) revert DoHardWorkParametersExpired();
 
             // Can only be run by do-hard-worker.
@@ -339,6 +379,10 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                         revert NotSameAssetGroup();
                     }
 
+                    if (_dhwStatus[strategy] == DHW_IN_PROGRESS) {
+                        revert StrategyDhwInProgress(strategy);
+                    }
+
                     uint256 dhwIndex = _currentIndexes[strategy];
 
                     // Transfer deposited assets to the strategy.
@@ -367,28 +411,168 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
                     // Bookkeeping.
                     _dhwAssetRatios[strategy] = IStrategy(strategy).assetRatio();
-                    _exchangeRates[strategy][dhwIndex].setValues(assetGroupExchangeRates);
-                    _assetsWithdrawn[strategy][dhwIndex].setValues(dhwInfo.assetsWithdrawn);
-                    for (uint256 k; k < dhwInfo.assetsWithdrawn.length; ++k) {
+                    for (uint256 k; k < assetGroup.length; ++k) {
+                        _assetsWithdrawn[strategy][dhwIndex][k] += dhwInfo.assetsWithdrawn[k];
                         _assetsNotClaimed[strategy][k] += dhwInfo.assetsWithdrawn[k];
                     }
 
+                    // update index even if DHW needs continuation, so that flushes can be done
                     ++_currentIndexes[strategy];
 
-                    int256 yield = int256(_stateAtDhw[strategy][dhwIndex - 1].yield);
-                    yield += dhwInfo.yieldPercentage + yield * dhwInfo.yieldPercentage / YIELD_FULL_PERCENT_INT;
+                    if (dhwInfo.continuationNeeded) {
+                        _dhwStatus[strategy] = DHW_IN_PROGRESS;
+                    } else {
+                        int256 yield = int256(_stateAtDhw[strategy][dhwIndex - 1].yield);
+                        yield += dhwInfo.yieldPercentage + yield * dhwInfo.yieldPercentage / YIELD_FULL_PERCENT_INT;
 
-                    _stateAtDhw[strategy][dhwIndex] = StateAtDhwIndex({
-                        sharesMinted: SafeCast.toUint128(dhwInfo.sharesMinted), // shares should not exceed uint128
-                        totalStrategyValue: SafeCast.toUint128(dhwInfo.valueAtDhw), // measured in USD
-                        totalSSTs: SafeCast.toUint128(dhwInfo.totalSstsAtDhw), // shares should not exceed uint128
-                        yield: SafeCast.toInt96(yield), // accumulate the yield from before
-                        timestamp: SafeCast.toUint32(block.timestamp)
-                    });
+                        _stateAtDhw[strategy][dhwIndex] = StateAtDhwIndex({
+                            sharesMinted: SafeCast.toUint128(dhwInfo.sharesMinted), // shares should not exceed uint128
+                            totalStrategyValue: SafeCast.toUint128(dhwInfo.valueAtDhw), // measured in USD
+                            totalSSTs: SafeCast.toUint128(dhwInfo.totalSstsAtDhw), // shares should not exceed uint128
+                            yield: SafeCast.toInt96(yield), // accumulate the yield from before
+                            timestamp: SafeCast.toUint32(block.timestamp)
+                        });
 
-                    _updateApy(strategy, dhwIndex, dhwInfo.yieldPercentage);
+                        _exchangeRates[strategy][dhwIndex].setValues(assetGroupExchangeRates);
 
-                    emit StrategyDhw(strategy, dhwIndex, dhwInfo);
+                        _updateApy(strategy, dhwIndex, dhwInfo.yieldPercentage);
+
+                        emit StrategyDhw(strategy, dhwIndex, dhwInfo);
+                    }
+                }
+            }
+        }
+    }
+
+    function doHardWorkContinue(DoHardWorkContinuationParameterBag calldata dhwContParams)
+        external
+        whenNotPaused
+        nonReentrant
+    {
+        unchecked {
+            // Check if is run after the expiry time.
+            if (dhwContParams.validUntil < block.timestamp) revert DoHardWorkParametersExpired();
+
+            // Can only be run by do-hard-worker.
+            if (!_isViewExecution()) {
+                _checkRole(ROLE_DO_HARD_WORKER, msg.sender);
+            }
+
+            if (
+                dhwContParams.tokens.length != dhwContParams.exchangeRateSlippages.length
+                    || dhwContParams.strategies.length != dhwContParams.baseYields.length
+                    || dhwContParams.strategies.length != dhwContParams.continuationData.length
+            ) {
+                revert InvalidArrayLength();
+            }
+
+            // Get exchange rates for tokens and validate them against slippages.
+            uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(dhwContParams.tokens, _priceFeedManager);
+            for (uint256 i; i < dhwContParams.tokens.length; ++i) {
+                if (
+                    exchangeRates[i] < dhwContParams.exchangeRateSlippages[i][0]
+                        || exchangeRates[i] > dhwContParams.exchangeRateSlippages[i][1]
+                ) {
+                    revert ExchangeRateOutOfSlippages();
+                }
+            }
+
+            PlatformFees memory platformFeesMemory = _platformFees;
+
+            // Process each group of strategies in turn.
+            for (uint256 i; i < dhwContParams.strategies.length; ++i) {
+                if (
+                    dhwContParams.strategies[i].length != dhwContParams.baseYields[i].length
+                        || dhwContParams.strategies[i].length != dhwContParams.continuationData[i].length
+                ) {
+                    revert InvalidArrayLength();
+                }
+
+                // Get exchange rates for this group of strategies.
+                uint256 assetGroupId = IStrategy(dhwContParams.strategies[i][0]).assetGroupId();
+                address[] memory assetGroup = IStrategy(dhwContParams.strategies[i][0]).assets();
+                uint256[] memory assetGroupExchangeRates = new uint256[](assetGroup.length);
+
+                for (uint256 j; j < assetGroup.length; ++j) {
+                    bool found = false;
+
+                    for (uint256 k; k < dhwContParams.tokens.length; ++k) {
+                        if (assetGroup[j] == dhwContParams.tokens[k]) {
+                            assetGroupExchangeRates[j] = exchangeRates[k];
+
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        revert InvalidTokenList();
+                    }
+                }
+
+                // Process each strategy in this group.
+                uint256 numStrategies = dhwContParams.strategies[i].length;
+                for (uint256 j; j < numStrategies; ++j) {
+                    address strategy = dhwContParams.strategies[i][j];
+
+                    if (strategy == _ghostStrategy) {
+                        revert GhostStrategyUsed();
+                    }
+
+                    _checkRole(ROLE_STRATEGY, strategy);
+
+                    if (IStrategy(strategy).assetGroupId() != assetGroupId) {
+                        revert NotSameAssetGroup();
+                    }
+
+                    if (_dhwStatus[strategy] != DHW_IN_PROGRESS) {
+                        revert StrategyDhwFinished(strategy);
+                    }
+
+                    // DHW index is incremented on DHW even if continuation is needed.
+                    uint256 dhwIndex = _currentIndexes[strategy] - 1;
+
+                    // Continue the hard work on the strategy.
+                    DhwInfo memory dhwContInfo = IStrategyNonAtomic(strategy).doHardWorkContinue(
+                        StrategyDhwContinuationParameterBag({
+                            assetGroup: assetGroup,
+                            exchangeRates: assetGroupExchangeRates,
+                            masterWallet: address(_masterWallet),
+                            priceFeedManager: _priceFeedManager,
+                            baseYield: dhwContParams.baseYields[i][j],
+                            platformFees: platformFeesMemory,
+                            continuationData: dhwContParams.continuationData[i][j]
+                        })
+                    );
+
+                    // Bookkeeping.
+                    _dhwAssetRatios[strategy] = IStrategy(strategy).assetRatio();
+                    for (uint256 k; k < assetGroup.length; ++k) {
+                        _assetsWithdrawn[strategy][dhwIndex][k] += dhwContInfo.assetsWithdrawn[k];
+                        _assetsNotClaimed[strategy][k] += dhwContInfo.assetsWithdrawn[k];
+                    }
+
+                    if (!dhwContInfo.continuationNeeded) {
+                        _dhwStatus[strategy] = DHW_FINISHED;
+
+                        int256 yield = int256(_stateAtDhw[strategy][dhwIndex - 1].yield);
+                        yield +=
+                            dhwContInfo.yieldPercentage + yield * dhwContInfo.yieldPercentage / YIELD_FULL_PERCENT_INT;
+
+                        _stateAtDhw[strategy][dhwIndex] = StateAtDhwIndex({
+                            sharesMinted: SafeCast.toUint128(dhwContInfo.sharesMinted), // shares should not exceed uint128
+                            totalStrategyValue: SafeCast.toUint128(dhwContInfo.valueAtDhw), // measured in USD
+                            totalSSTs: SafeCast.toUint128(dhwContInfo.totalSstsAtDhw), // shares should not exceed uint128
+                            yield: SafeCast.toInt96(yield), // accumulate the yield from before
+                            timestamp: SafeCast.toUint32(block.timestamp)
+                        });
+
+                        _exchangeRates[strategy][dhwIndex].setValues(assetGroupExchangeRates);
+
+                        _updateApy(strategy, dhwIndex, dhwContInfo.yieldPercentage);
+
+                        emit StrategyDhw(strategy, dhwIndex, dhwContInfo);
+                    }
                 }
             }
         }
@@ -444,6 +628,10 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                 continue;
             }
 
+            if (_dhwStatus[redeemFastParams.strategies[i]] > DHW_FINISHED) {
+                revert StrategyNotReady();
+            }
+
             uint256[] memory strategyWithdrawnAssets = IStrategy(redeemFastParams.strategies[i]).redeemFast(
                 redeemFastParams.strategyShares[i],
                 address(_masterWallet),
@@ -493,16 +681,29 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                 revert DhwNotRunYetForIndex(strategy, dhwIndex);
             }
 
+            uint256[] memory withdrawnAssets = _claimWithdrawnAssets(strategy, dhwIndex, strategyShares[i], assetGroup);
             for (uint256 j = 0; j < totalWithdrawnAssets.length; j++) {
-                uint256 withdrawnAssets =
-                    _assetsWithdrawn[strategy][dhwIndex][j] * strategyShares[i] / _sharesRedeemed[strategy][dhwIndex];
-                totalWithdrawnAssets[j] += withdrawnAssets;
-                _assetsNotClaimed[strategy][j] -= withdrawnAssets;
-                // there will be dust left after all vaults sync
+                totalWithdrawnAssets[j] += withdrawnAssets[j];
             }
         }
 
         return totalWithdrawnAssets;
+    }
+
+    function _claimWithdrawnAssets(
+        address strategy_,
+        uint256 dhwIndex_,
+        uint256 strategyShares_,
+        address[] memory assetGroup_
+    ) private returns (uint256[] memory withdrawnAssets) {
+        withdrawnAssets = new uint256[](assetGroup_.length);
+
+        for (uint256 i = 0; i < assetGroup_.length; ++i) {
+            withdrawnAssets[i] =
+                _assetsWithdrawn[strategy_][dhwIndex_][i] * strategyShares_ / _sharesRedeemed[strategy_][dhwIndex_];
+            _assetsNotClaimed[strategy_][i] -= withdrawnAssets[i];
+            // there will be dust left after all vaults sync
+        }
     }
 
     function emergencyWithdraw(
@@ -550,6 +751,86 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         _redeemStrategyShares(strategies, shares, withdrawalSlippages, redeemer);
     }
 
+    function redeemStrategySharesAsync(address[] calldata strategies, uint256[] calldata shares)
+        external
+        checkNonReentrant
+    {
+        if (strategies.length != shares.length) {
+            revert InvalidArrayLength();
+        }
+
+        for (uint256 i; i < strategies.length; ++i) {
+            address strategy = strategies[i];
+
+            if (strategy == _ghostStrategy) {
+                revert GhostStrategyUsed();
+            }
+            _checkRole(ROLE_STRATEGY, strategy);
+
+            uint256 strategyShares = shares[i];
+            uint256 index = _currentIndexes[strategy];
+            _sharesRedeemed[strategy][index] += strategyShares;
+            _userSharesWithdrawn[msg.sender][strategy][index] += strategyShares;
+
+            IStrategy(strategy).releaseShares(msg.sender, strategyShares);
+
+            emit StrategySharesRedeemInitiated(strategy, msg.sender, strategyShares, index);
+        }
+    }
+
+    function claimStrategyShareWithdrawals(
+        address[] calldata strategies,
+        uint256[] calldata strategyIndexes,
+        address recipient
+    ) external checkNonReentrant {
+        if (strategies.length != strategyIndexes.length) {
+            revert InvalidArrayLength();
+        }
+
+        uint256 assetGroupId;
+        address[] memory assetGroup;
+        uint256[] memory totalWithdrawnAssets;
+
+        for (uint256 i; i < strategies.length; ++i) {
+            address strategy = strategies[i];
+
+            if (strategy == _ghostStrategy) {
+                continue;
+            }
+            _checkRole(ROLE_STRATEGY, strategy);
+
+            uint256 strategyAssetGroupId = IStrategy(strategy).assetGroupId();
+            if (assetGroup.length == 0) {
+                assetGroupId = strategyAssetGroupId;
+                assetGroup = IStrategy(strategy).assets();
+                totalWithdrawnAssets = new uint256[](assetGroup.length);
+            } else {
+                if (assetGroupId != strategyAssetGroupId) {
+                    revert NotSameAssetGroup();
+                }
+            }
+
+            uint256 strategyIndex = strategyIndexes[i];
+            uint256 strategyShares = _userSharesWithdrawn[msg.sender][strategy][strategyIndex];
+
+            _userSharesWithdrawn[msg.sender][strategy][strategyIndex] = 0;
+
+            uint256[] memory withdrawnAssets =
+                _claimWithdrawnAssets(strategy, strategyIndex, strategyShares, assetGroup);
+            for (uint256 j = 0; j < totalWithdrawnAssets.length; ++j) {
+                totalWithdrawnAssets[j] += withdrawnAssets[j];
+            }
+
+            emit StrategySharesRedeemClaimed(strategy, msg.sender, recipient, strategyShares, withdrawnAssets);
+        }
+
+        for (uint256 i; i < totalWithdrawnAssets.length; ++i) {
+            if (totalWithdrawnAssets[i] > 0) {
+                _masterWallet.transfer(IERC20(assetGroup[i]), recipient, totalWithdrawnAssets[i]);
+            }
+        }
+    }
+
     function _redeemStrategyShares(
         address[] calldata strategies,
         uint256[] calldata shares,
@@ -557,10 +838,14 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         address redeemer
     ) private {
         for (uint256 i; i < strategies.length; ++i) {
-            if (strategies[i] == _ghostStrategy) {
+            if (strategies[i] == _ghostStrategy || shares[i] == 0) {
                 continue;
             }
             _checkRole(ROLE_STRATEGY, strategies[i]);
+
+            if (_dhwStatus[strategies[i]] > DHW_FINISHED) {
+                revert StrategyNotReady();
+            }
 
             address[] memory assetGroup = IStrategy(strategies[i]).assets();
 

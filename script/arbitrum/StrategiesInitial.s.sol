@@ -111,7 +111,15 @@ contract StrategiesInitial {
                 constantsJson().getAddress(string.concat(".strategies.", AAVE_V3_KEY, ".", variants[i], ".aToken"))
             );
             AaveV3Strategy(variant).initialize(variantName, assetGroupId, aToken);
-            _registerStrategyVariant(AAVE_V3_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+
+            RegisterStrategyVariantA memory input;
+            input.strategyKey = AAVE_V3_KEY;
+            input.variantKey = variants[i];
+            input.variant = variant;
+            input.assetGroupId = assetGroupId;
+            input.atomicityClassification = ATOMIC_STRATEGY;
+            input.strategyRegistry = contracts.strategyRegistry;
+            _registerStrategyVariant(input);
         }
     }
 
@@ -147,7 +155,15 @@ contract StrategiesInitial {
             constantsJson().getAddress(string.concat(".strategies.", AAVE_V3_SWAP_KEY, ".", USDC_KEY, ".aToken"))
         );
         AaveV3SwapStrategy(variant).initialize(variantName, assetGroupId, aToken);
-        _registerStrategyVariant(AAVE_V3_SWAP_KEY, USDC_KEY, variant, assetGroupId, contracts.strategyRegistry);
+
+        RegisterStrategyVariantA memory input;
+        input.strategyKey = AAVE_V3_SWAP_KEY;
+        input.variantKey = USDC_KEY;
+        input.variant = variant;
+        input.assetGroupId = assetGroupId;
+        input.atomicityClassification = ATOMIC_STRATEGY;
+        input.strategyRegistry = contracts.strategyRegistry;
+        _registerStrategyVariant(input);
     }
 
     function deployCompoundV3(StandardContracts memory contracts) public {
@@ -179,7 +195,15 @@ contract StrategiesInitial {
             address variant = _newProxy(address(implementation), contracts.proxyAdmin);
             uint256 assetGroupId = assetGroups(variants[i]);
             CompoundV3Strategy(variant).initialize(variantName, assetGroupId, cToken);
-            _registerStrategyVariant(COMPOUND_V3_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+
+            RegisterStrategyVariantA memory input;
+            input.strategyKey = COMPOUND_V3_KEY;
+            input.variantKey = variants[i];
+            input.variant = variant;
+            input.assetGroupId = assetGroupId;
+            input.atomicityClassification = ATOMIC_STRATEGY;
+            input.strategyRegistry = contracts.strategyRegistry;
+            _registerStrategyVariant(input);
         }
     }
 
@@ -209,7 +233,15 @@ contract StrategiesInitial {
         address variant = _newProxy(address(implementation), contracts.proxyAdmin);
         uint256 assetGroupId = assetGroups(USDC_KEY);
         CompoundV3SwapStrategy(variant).initialize(variantName, assetGroupId, cToken);
-        _registerStrategyVariant(COMPOUND_V3_SWAP_KEY, USDC_KEY, variant, assetGroupId, contracts.strategyRegistry);
+
+        RegisterStrategyVariantA memory input;
+        input.strategyKey = COMPOUND_V3_SWAP_KEY;
+        input.variantKey = USDC_KEY;
+        input.variant = variant;
+        input.assetGroupId = assetGroupId;
+        input.atomicityClassification = ATOMIC_STRATEGY;
+        input.strategyRegistry = contracts.strategyRegistry;
+        _registerStrategyVariant(input);
     }
 
     function deployGammaCamelot(StandardContracts memory contracts) public {
@@ -244,9 +276,16 @@ contract StrategiesInitial {
 
         // add to json file and register
         contractsJson().addVariantStrategyImplementation(GAMMA_CAMELOT_KEY, address(implementation));
-        _registerStrategyVariant(
-            GAMMA_CAMELOT_KEY, key, variant, data.assetGroupId, data.apy, contracts.strategyRegistry
-        );
+
+        RegisterStrategyVariantB memory input;
+        input.strategyKey = GAMMA_CAMELOT_KEY;
+        input.variantKey = key;
+        input.variant = variant;
+        input.assetGroupId = data.assetGroupId;
+        input.apy = data.apy;
+        input.atomicityClassification = ATOMIC_STRATEGY;
+        input.strategyRegistry = contracts.strategyRegistry;
+        _registerStrategyVariant(input);
     }
 
     function _getGammaCamelotData(string[] memory poolKeySplit) private view returns (GammaCamelotData memory data) {
@@ -282,49 +321,38 @@ contract StrategiesInitial {
         address implementation,
         address proxy,
         uint256 assetGroupId,
+        uint256 atomicityClassification,
         IStrategyRegistry strategyRegistry
     ) private {
         int256 apy = constantsJson().getInt256(string.concat(".strategies.", strategyKey, ".apy"));
 
-        strategyRegistry.registerStrategy(proxy, apy);
+        strategyRegistry.registerStrategy(proxy, apy, atomicityClassification);
 
         strategies[strategyKey][assetGroupId] = proxy;
         addressToStrategyKey[proxy] = strategyKey;
         contractsJson().addProxyStrategy(strategyKey, implementation, proxy);
     }
 
-    function _registerStrategyVariant(
-        string memory strategyKey,
-        string memory variantKey,
-        address variant,
-        uint256 assetGroupId,
-        IStrategyRegistry strategyRegistry
-    ) private {
-        int256 apy = constantsJson().getInt256(string.concat(".strategies.", strategyKey, ".", variantKey, ".apy"));
-        string memory variantName = _getVariantName(strategyKey, variantKey);
+    function _registerStrategyVariant(RegisterStrategyVariantA memory input) private {
+        int256 apy =
+            constantsJson().getInt256(string.concat(".strategies.", input.strategyKey, ".", input.variantKey, ".apy"));
+        string memory variantName = _getVariantName(input.strategyKey, input.variantKey);
 
-        strategyRegistry.registerStrategy(variant, apy);
+        input.strategyRegistry.registerStrategy(input.variant, apy, input.atomicityClassification);
 
-        strategies[strategyKey][assetGroupId] = variant;
-        addressToStrategyKey[variant] = strategyKey;
-        contractsJson().addVariantStrategyVariant(strategyKey, variantName, variant);
+        strategies[input.strategyKey][input.assetGroupId] = input.variant;
+        addressToStrategyKey[input.variant] = input.strategyKey;
+        contractsJson().addVariantStrategyVariant(input.strategyKey, variantName, input.variant);
     }
 
-    function _registerStrategyVariant(
-        string memory strategyKey,
-        string memory variantKey,
-        address variant,
-        uint256 assetGroupId,
-        int256 apy,
-        IStrategyRegistry strategyRegistry
-    ) private {
-        string memory variantName = _getVariantName(strategyKey, variantKey);
+    function _registerStrategyVariant(RegisterStrategyVariantB memory input) private {
+        string memory variantName = _getVariantName(input.strategyKey, input.variantKey);
 
-        strategyRegistry.registerStrategy(variant, apy);
+        input.strategyRegistry.registerStrategy(input.variant, input.apy, input.atomicityClassification);
 
-        strategies[strategyKey][assetGroupId] = variant;
-        addressToStrategyKey[variant] = strategyKey;
-        contractsJson().addVariantStrategyVariant(strategyKey, variantName, variant);
+        strategies[input.strategyKey][input.assetGroupId] = input.variant;
+        addressToStrategyKey[input.variant] = input.strategyKey;
+        contractsJson().addVariantStrategyVariant(input.strategyKey, variantName, input.variant);
     }
 
     function _getVariantName(string memory strategyKey, string memory variantKey)
@@ -343,4 +371,23 @@ contract StrategiesInitial {
     }
 
     function test_mock_StrategiesInitial() external pure {}
+
+    struct RegisterStrategyVariantA {
+        string strategyKey;
+        string variantKey;
+        address variant;
+        uint256 assetGroupId;
+        uint256 atomicityClassification;
+        IStrategyRegistry strategyRegistry;
+    }
+
+    struct RegisterStrategyVariantB {
+        string strategyKey;
+        string variantKey;
+        address variant;
+        uint256 assetGroupId;
+        int256 apy;
+        uint256 atomicityClassification;
+        IStrategyRegistry strategyRegistry;
+    }
 }

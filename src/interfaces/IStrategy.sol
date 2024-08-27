@@ -50,6 +50,7 @@ struct StrategyDhwParameterBag {
  * @custom:member yieldPercentage Yield percentage from the previous DHW.
  * @custom:member valueAtDhw Value of the strategy at the end of DHW.
  * @custom:member totalSstsAtDhw Total SSTs at the end of DHW.
+ * @custom:member continuationNeeded Flag indicating if continuation of the DHW is needed.
  */
 struct DhwInfo {
     uint256 sharesMinted;
@@ -57,6 +58,7 @@ struct DhwInfo {
     int256 yieldPercentage;
     uint256 valueAtDhw;
     uint256 totalSstsAtDhw;
+    bool continuationNeeded;
 }
 
 /**
@@ -74,6 +76,12 @@ error NotFastRedeemer(address user);
  * @notice Used when asset group ID is not correctly initialized.
  */
 error InvalidAssetGroupIdInitialization();
+
+/**
+ * @notice Used when non-privileged user is trying to release strategy shares.
+ * @param user User that tried to release strategy shares.
+ */
+error NotShareReleasor(address user);
 
 interface IStrategy is IERC20Upgradeable {
     /* ========== EVENTS ========== */
@@ -164,11 +172,12 @@ interface IStrategy is IERC20Upgradeable {
     /**
      * @notice Releases shares back to strategy.
      * @dev Requirements:
-     * - caller must have role ROLE_SMART_VAULT_MANAGER
-     * @param smartVault Smart vault releasing shares.
+     * - caller must have role ROLE_SMART_VAULT_MANAGER or
+     * - caller must have role ROLE_STRATEGY_REGISTRY
+     * @param releasee User releasing shares.
      * @param amount Amount of strategy shares to release.
      */
-    function releaseShares(address smartVault, uint256 amount) external;
+    function releaseShares(address releasee, uint256 amount) external;
 
     /**
      * @notice Instantly redeems strategy shares for assets.

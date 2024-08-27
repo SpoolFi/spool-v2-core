@@ -203,7 +203,7 @@ contract ApyIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), YIELD_FULL_PERCENT_INT * 1 / 100);
+            strategyRegistry.registerStrategy(address(strategyA), YIELD_FULL_PERCENT_INT * 1 / 100, 0);
         }
 
         address[] memory vaultStrategies = Arrays.toArray(address(strategyA));

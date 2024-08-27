@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
+import "forge-std/console.sol";
+
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/utils/math/Math.sol";
@@ -415,6 +417,16 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             revert InvalidArrayLength();
         }
 
+        {
+            uint256[] memory atomicityClassifications =
+                _strategyRegistry.atomicityClassifications(reallocateParams.strategies);
+            for (uint256 i; i < reallocateParams.strategies.length; ++i) {
+                if (atomicityClassifications[i] > ATOMIC_STRATEGY) {
+                    revert NonAtomicReallocation();
+                }
+            }
+        }
+
         uint256 assetGroupId_ = _smartVaultAssetGroups[reallocateParams.smartVaults[0]];
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
         for (uint256 i; i < reallocateParams.smartVaults.length; ++i) {
@@ -494,8 +506,15 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint16a16[2] memory packedIndexes = [indexes, _getPreviousDhwIndexes(smartVault, flushIndex.toSync)];
 
         // If DHWs haven't been run yet, we can't sync
-        if (!_areAllDhwRunsCompleted(_strategyRegistry.currentIndex(strategies_), indexes, strategies_, revertIfError))
-        {
+        if (
+            !_areAllDhwRunsCompleted(
+                _strategyRegistry.currentIndex(strategies_),
+                indexes,
+                _strategyRegistry.dhwStatuses(strategies_),
+                strategies_,
+                revertIfError
+            )
+        ) {
             return;
         }
 
@@ -524,7 +543,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint16a16 dhwIndexes_ = _dhwIndexes[smartVault][flushIndex];
         // it means the smart vault was not even flushed
         if (uint16a16.unwrap(dhwIndexes_) == 0) return false;
-        return _areAllDhwRunsCompleted(_strategyRegistry.currentIndex(strategies_), dhwIndexes_, strategies_, false);
+        return _areAllDhwRunsCompleted(
+            _strategyRegistry.currentIndex(strategies_),
+            dhwIndexes_,
+            _strategyRegistry.dhwStatuses(strategies_),
+            strategies_,
+            false
+        );
     }
 
     /**
@@ -533,6 +558,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function _areAllDhwRunsCompleted(
         uint256[] memory currentStrategyIndexes,
         uint16a16 dhwIndexes_,
+        uint256[] memory dhwStatuses,
         address[] memory strategies_,
         bool revertIfError
     ) private view returns (bool) {
@@ -541,13 +567,20 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
                 continue;
             }
 
-            if (dhwIndexes_.get(i) >= currentStrategyIndexes[i]) {
-                if (revertIfError) {
-                    revert DhwNotRunYetForIndex(strategies_[i], dhwIndexes_.get(i));
-                }
-
-                return false;
+            uint256 dhwIndex = dhwIndexes_.get(i);
+            if (
+                dhwIndex + 1 < currentStrategyIndexes[i]
+                    || (dhwIndex + 1 == currentStrategyIndexes[i] && dhwStatuses[i] < DHW_IN_PROGRESS)
+            ) {
+                // DHW for that index completed
+                continue;
             }
+
+            if (revertIfError) {
+                revert DhwNotRunYetForIndex(strategies_[i], dhwIndex);
+            }
+
+            return false;
         }
 
         return true;
@@ -586,7 +619,15 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         // If DHWs haven't been run yet, we can't sync
-        if (!_areAllDhwRunsCompleted(_strategyRegistry.currentIndex(strategies_), indexes, strategies_, false)) {
+        if (
+            !_areAllDhwRunsCompleted(
+                _strategyRegistry.currentIndex(strategies_),
+                indexes,
+                _strategyRegistry.dhwStatuses(strategies_),
+                strategies_,
+                false
+            )
+        ) {
             return (oldTotalSVTs, 0, 0, new uint256[](strategies_.length));
         }
 
@@ -649,8 +690,15 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint16a16 indexes = _dhwIndexes[smartVault][flushIndex.toSync];
 
         // If DHWs haven't been run yet, we can't sync
-        if (!_areAllDhwRunsCompleted(_strategyRegistry.currentIndex(bag2.strategies), indexes, bag2.strategies, false))
-        {
+        if (
+            !_areAllDhwRunsCompleted(
+                _strategyRegistry.currentIndex(bag2.strategies),
+                indexes,
+                _strategyRegistry.dhwStatuses(bag2.strategies),
+                bag2.strategies,
+                false
+            )
+        ) {
             return newBalance;
         }
 

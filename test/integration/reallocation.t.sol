@@ -257,11 +257,11 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vault
@@ -418,15 +418,15 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vault
@@ -613,15 +613,15 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vault
@@ -796,15 +796,15 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vault
@@ -982,15 +982,15 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -1202,15 +1202,15 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -1422,15 +1422,15 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -1644,15 +1644,15 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -1880,15 +1880,15 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -2116,15 +2116,15 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -2352,15 +2352,15 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -2588,15 +2588,15 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -2825,16 +2825,16 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
             strategyA.setWithdrawalFee(20_00);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -3066,16 +3066,16 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
             strategyA.setWithdrawalFee(20_00);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -3307,15 +3307,15 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -3551,11 +3551,11 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(20, 10));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(22, 9));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -3836,15 +3836,15 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vault
@@ -4026,11 +4026,11 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vault
@@ -4190,11 +4190,11 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -4242,11 +4242,11 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -4294,11 +4294,11 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -4347,15 +4347,15 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -4415,19 +4415,19 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId1);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId1);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
             strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId2);
             strategyC.initialize("StratC", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyC), 0);
+            strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
 
             strategyD = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId2);
             strategyD.initialize("StratD", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyD), 0);
+            strategyRegistry.registerStrategy(address(strategyD), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -4483,11 +4483,11 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -4531,11 +4531,11 @@ contract ReallocationIntegrationTest is Test {
         {
             strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyA.initialize("StratA", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA), 0);
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
             strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategyB.initialize("StratB", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyB), 0);
+            strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
         }
 
         // setup smart vaults
@@ -4562,6 +4562,55 @@ contract ReallocationIntegrationTest is Test {
         );
         reallocationParams.validUntil = TimeUtils.getTimestampInPast(1);
         vm.expectRevert(ReallocationParametersExpired.selector);
+        smartVaultManager.reallocate(reallocationParams);
+        vm.stopPrank();
+    }
+
+    function test_reallocate_shouldRevertWhenReallocatingWithNonAtomicStrategy() public {
+        // setup asset group with TokenA
+        uint256 assetGroupId;
+        {
+            assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(tokenA)));
+
+            priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
+        }
+
+        // setup strategies
+        MockStrategy strategyA;
+        MockStrategy strategyB;
+        {
+            strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyA.initialize("StratA", Arrays.toArray(1));
+            strategyRegistry.registerStrategy(address(strategyA), 0, NON_ATOMIC_DEPOSIT_STRATEGY);
+
+            strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
+            strategyB.initialize("StratB", Arrays.toArray(1));
+            strategyRegistry.registerStrategy(address(strategyB), 0, NON_ATOMIC_DEPOSIT_STRATEGY);
+        }
+
+        // setup smart vaults
+        ISmartVault smartVaultA;
+        {
+            SmartVaultSpecification memory specification = _getSmartVaultSpecification();
+            specification.smartVaultName = "SmartVaultA";
+            specification.assetGroupId = assetGroupId;
+            specification.strategies = Arrays.toArray(address(strategyA), address(strategyB));
+            vm.mockCall(
+                address(riskManager),
+                abi.encodeWithSelector(IRiskManager.calculateAllocation.selector),
+                abi.encode(Arrays.toUint16a16(60_00, 40_00))
+            );
+            smartVaultA = smartVaultFactory.deploySmartVault(specification);
+        }
+
+        // reallocate
+        vm.startPrank(reallocator);
+        ReallocateParamBag memory reallocationParams = generateReallocateParamBag(
+            Arrays.toArray(address(smartVaultA)),
+            Arrays.toArray(address(strategyA), address(strategyB)),
+            assetGroupRegistry.listAssetGroup(assetGroupId)
+        );
+        vm.expectRevert(NonAtomicReallocation.selector);
         smartVaultManager.reallocate(reallocationParams);
         vm.stopPrank();
     }

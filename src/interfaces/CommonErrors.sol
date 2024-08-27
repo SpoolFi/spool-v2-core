@@ -43,3 +43,7 @@ error AddressNotContract(address address_);
  * @param address_ Address of the tx.origin
  */
 error OnlyViewExecution(address address_);
+
+error NonAtomicStrategy();
+
+error StrategyNotReady();

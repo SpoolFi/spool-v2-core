@@ -84,3 +84,17 @@ uint256 constant MAX_ACTION_COUNT = 10;
 
 /// @dev ID of null asset group. Should not be used by any strategy or smart vault.
 uint256 constant NULL_ASSET_GROUP_ID = 0;
+
+/// @dev Marker that strategy has finished its last DHW.
+uint256 constant DHW_FINISHED = 1;
+
+/// @dev Marker that strategy has a DHW in progress.
+uint256 constant DHW_IN_PROGRESS = 2;
+
+uint256 constant ATOMIC_STRATEGY = 0;
+
+uint256 constant NON_ATOMIC_DEPOSIT_STRATEGY = 1;
+
+uint256 constant NON_ATOMIC_WITHDRAWAL_STRATEGY = 2;
+
+uint256 constant FULLY_NON_ATOMIC_STRATEGY = NON_ATOMIC_DEPOSIT_STRATEGY | NON_ATOMIC_WITHDRAWAL_STRATEGY;

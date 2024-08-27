@@ -312,11 +312,15 @@ abstract contract Strategy is ERC20Upgradeable, SpoolAccessControllable, IStrate
         _transfer(address(this), smartVault, amount);
     }
 
-    function releaseShares(address smartVault, uint256 amount)
-        external
-        onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
-    {
-        _transfer(smartVault, address(this), amount);
+    function releaseShares(address releasee, uint256 amount) external {
+        if (
+            !_accessControl.hasRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
+                && !_accessControl.hasRole(ROLE_STRATEGY_REGISTRY, msg.sender)
+        ) {
+            revert NotShareReleasor(msg.sender);
+        }
+
+        _transfer(releasee, address(this), amount);
     }
 
     function emergencyWithdraw(uint256[] calldata slippages, address recipient)

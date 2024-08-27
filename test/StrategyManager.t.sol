@@ -30,22 +30,39 @@ contract StrategyRegistryTest is Test {
         address strategy = address(new MockStrategy());
         assertFalse(accessControl.hasRole(ROLE_STRATEGY, strategy));
 
-        strategyRegistry.registerStrategy(strategy, 0);
+        strategyRegistry.registerStrategy(strategy, 0, ATOMIC_STRATEGY);
         assertTrue(accessControl.hasRole(ROLE_STRATEGY, strategy));
 
         vm.expectRevert(abi.encodeWithSelector(StrategyAlreadyRegistered.selector, strategy));
-        strategyRegistry.registerStrategy(strategy, 0);
+        strategyRegistry.registerStrategy(strategy, 0, ATOMIC_STRATEGY);
+    }
+
+    function test_registerStrategy_nonAtomic() public {
+        address strategyA = address(new MockStrategy());
+        address strategyB = address(new MockStrategy());
+        address strategyC = address(new MockStrategy());
+
+        strategyRegistry.registerStrategy(strategyA, 0, ATOMIC_STRATEGY);
+        strategyRegistry.registerStrategy(strategyB, 0, NON_ATOMIC_DEPOSIT_STRATEGY);
+        strategyRegistry.registerStrategy(strategyC, 0, NON_ATOMIC_WITHDRAWAL_STRATEGY);
+
+        uint256[] memory atomicityClassifications =
+            strategyRegistry.atomicityClassifications(Arrays.toArray(strategyA, strategyB, strategyC));
+        assertEq(
+            atomicityClassifications,
+            Arrays.toArray(ATOMIC_STRATEGY, NON_ATOMIC_DEPOSIT_STRATEGY, NON_ATOMIC_WITHDRAWAL_STRATEGY)
+        );
     }
 
     function test_registerStrategy_revertPreviouslyRemoved() public {
         address strategy = address(new MockStrategy());
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(this));
 
-        strategyRegistry.registerStrategy(strategy, 0);
+        strategyRegistry.registerStrategy(strategy, 0, ATOMIC_STRATEGY);
         strategyRegistry.removeStrategy(strategy);
 
         vm.expectRevert(abi.encodeWithSelector(StrategyPreviouslyRemoved.selector, strategy));
-        strategyRegistry.registerStrategy(strategy, 0);
+        strategyRegistry.registerStrategy(strategy, 0, ATOMIC_STRATEGY);
     }
 
     function test_removeStrategy_revertNotVaultManager() public {
@@ -67,7 +84,7 @@ contract StrategyRegistryTest is Test {
         address strategy = address(new MockStrategy());
         accessControl.grantRole(ROLE_SMART_VAULT_MANAGER, address(this));
 
-        strategyRegistry.registerStrategy(strategy, 0);
+        strategyRegistry.registerStrategy(strategy, 0, ATOMIC_STRATEGY);
         assertTrue(accessControl.hasRole(ROLE_STRATEGY, strategy));
 
         strategyRegistry.removeStrategy(strategy);
@@ -194,7 +211,7 @@ contract StrategyRegistryTest is Test {
         accessControl.grantRole(ROLE_STRATEGY_APY_SETTER, address(0xa));
 
         int256 initialStrategyApy = 100000;
-        strategyRegistry.registerStrategy(strategy, initialStrategyApy);
+        strategyRegistry.registerStrategy(strategy, initialStrategyApy, ATOMIC_STRATEGY);
         address[] memory strategies = new address[](1);
         strategies[0] = strategy;
 

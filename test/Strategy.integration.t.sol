@@ -32,7 +32,7 @@ contract StrategyIntegrationTest is TestFixture {
             assetGroupId
         );
         strategy.initialize("Strat", Arrays.toArray(1));
-        strategyRegistry.registerStrategy(address(strategy), 0);
+        strategyRegistry.registerStrategy(address(strategy), 0, ATOMIC_STRATEGY);
 
         // need to push some tokens to the strategy for deposit
         tokenA.mint(address(strategy), 1234 * 10 ** tokenA.decimals());
@@ -82,7 +82,7 @@ contract StrategyIntegrationTest is TestFixture {
             assetGroupId
         );
         strategy.initialize("Strat", Arrays.toArray(1, 1));
-        strategyRegistry.registerStrategy(address(strategy), 0);
+        strategyRegistry.registerStrategy(address(strategy), 0, ATOMIC_STRATEGY);
 
         // need to push some tokens to the strategy for deposit
         tokenA.mint(address(strategy), 1111 * 10 ** tokenA.decimals());
@@ -146,7 +146,7 @@ contract StrategyIntegrationTest is TestFixture {
             assetGroupId
         );
         strategy.initialize("Strat", Arrays.toArray(1, 1));
-        strategyRegistry.registerStrategy(address(strategy), 0);
+        strategyRegistry.registerStrategy(address(strategy), 0, ATOMIC_STRATEGY);
 
         // need to push some tokens to the strategy for deposit
         tokenA.mint(address(strategy), 3333 * 10 ** tokenA.decimals());
@@ -207,7 +207,7 @@ contract StrategyIntegrationTest is TestFixture {
             assetGroupId
         );
         strategy.initialize("Strat", Arrays.toArray(1));
-        strategyRegistry.registerStrategy(address(strategy), 0);
+        strategyRegistry.registerStrategy(address(strategy), 0, ATOMIC_STRATEGY);
 
         // need to push some tokens to the strategy for deposit
         tokenA.mint(address(strategy), 1234 * 10 ** tokenA.decimals());

@@ -49,9 +49,21 @@ error TreasuryFeeTooLarge(uint256 treasuryFeePct);
 
 /**
  * @notice Used when user tries to re-add a strategy that was previously removed from the system.
- * @param strategy Strategy address
+ * @param strategy Strategy address.
  */
 error StrategyPreviouslyRemoved(address strategy);
+
+/**
+ * @notice Used when a strategy has a DHW in progress but flow requires DHW to be finished.
+ * @param strategy Strategy address.
+ */
+error StrategyDhwInProgress(address strategy);
+
+/**
+ * @notice Used when a strategy has finished its last DHW but flow requires DHW to be in progress.
+ * @param strategy Strategy address.
+ */
+error StrategyDhwFinished(address strategy);
 
 /**
  * @notice Represents change of state for a strategy during a DHW.
@@ -88,6 +100,16 @@ struct DoHardWorkParameterBag {
     SwapInfo[][][] compoundSwapInfo;
     uint256[][][] strategySlippages;
     int256[][] baseYields;
+    address[] tokens;
+    uint256[2][] exchangeRateSlippages;
+    uint256 validUntil;
+}
+
+// TODO: should we only allow one strategy per call?
+struct DoHardWorkContinuationParameterBag {
+    address[][] strategies;
+    int256[][] baseYields;
+    bytes[][] continuationData;
     address[] tokens;
     uint256[2][] exchangeRateSlippages;
     uint256 validUntil;
@@ -201,6 +223,23 @@ interface IStrategyRegistry {
      */
     function platformFees() external view returns (PlatformFees memory fees);
 
+    /**
+     * @notice Gets atomicity classification for strategies.
+     * @param strategies Strategies.
+     * @return atomicityClassifications Atomicity classifications for strategies.
+     */
+    function atomicityClassifications(address[] calldata strategies)
+        external
+        view
+        returns (uint256[] memory atomicityClassifications);
+
+    /**
+     * @notice Gets DHW statuses for strategies.
+     * @param strategies Strategies.
+     * @return statuses DHW statuses for strategies.
+     */
+    function dhwStatuses(address[] calldata strategies) external view returns (uint256[] memory statuses);
+
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 
     /**
@@ -209,8 +248,13 @@ interface IStrategyRegistry {
      * - caller must have role ROLE_SPOOL_ADMIN
      * @param strategy Address of strategy to register.
      * @param apy Apy of the strategy at the time of the registration.
+     * @param atomicityClassification Atomicity classification of the strategy.
+     *        - 0: atomic
+     *        - 1: non-atomic deposits
+     *        - 2: non-atomic withdrawals
+     *        - 3: non-atomic deposits and withdrawals
      */
-    function registerStrategy(address strategy, int256 apy) external;
+    function registerStrategy(address strategy, int256 apy, uint256 atomicityClassification) external;
 
     /**
      * @notice Removes strategy from the system.
@@ -259,6 +303,8 @@ interface IStrategyRegistry {
      * @param dhwParams Parameters for do hard work.
      */
     function doHardWork(DoHardWorkParameterBag calldata dhwParams) external;
+
+    function doHardWorkContinue(DoHardWorkContinuationParameterBag calldata dhwContParams) external;
 
     /**
      * @notice Adds deposits to strategies to be processed at next do-hard-work.
@@ -322,11 +368,20 @@ interface IStrategyRegistry {
         uint256[][] calldata withdrawalSlippages
     ) external;
 
+    function redeemStrategySharesAsync(address[] calldata strategies, uint256[] calldata shares) external;
+
+    function claimStrategyShareWithdrawals(
+        address[] calldata strategies,
+        uint256[] calldata strategyIndexes,
+        address recipient
+    ) external;
+
     /**
      * @notice Strategy was registered
      * @param strategy Strategy address
+     * @param atomicityClassification Atomicity classification of the strategy
      */
-    event StrategyRegistered(address indexed strategy);
+    event StrategyRegistered(address indexed strategy, uint256 atomicityClassification);
 
     /**
      * @notice Strategy was removed
@@ -381,6 +436,33 @@ interface IStrategyRegistry {
      * @param assetsWithdrawn Amounts of withdrawn assets
      */
     event StrategySharesRedeemed(
+        address indexed strategy,
+        address indexed owner,
+        address indexed recipient,
+        uint256 shares,
+        uint256[] assetsWithdrawn
+    );
+
+    /**
+     * @notice Strategy shares redeem has been initiated
+     * @param strategy Strategy address
+     * @param owner Address that owns the shares
+     * @param shares Amount of shares that were redeemed
+     * @param strategyIndex DHW index of the strategy
+     */
+    event StrategySharesRedeemInitiated(
+        address indexed strategy, address indexed owner, uint256 shares, uint256 strategyIndex
+    );
+
+    /**
+     * @notice Strategy shares redeem has been claimed
+     * @param strategy Strategy address
+     * @param owner Address that redeemed the shares
+     * @param recipient Address that received the withdrawn funds
+     * @param shares Amount of shares that were redeemed
+     * @param assetsWithdrawn Amounts of withdrawn assets
+     */
+    event StrategySharesRedeemClaimed(
         address indexed strategy,
         address indexed owner,
         address indexed recipient,

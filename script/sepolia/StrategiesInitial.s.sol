@@ -82,7 +82,9 @@ contract StrategiesInitial {
             address variant = _newBeaconProxy(address(beacon));
             uint256 assetGroupId = assetGroups(variants[i]);
             MockProtocolStrategy(variant).initialize(variantName, assetGroupId, protocol);
-            _registerClientStrategyVariant(name, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+            _registerClientStrategyVariant(
+                name, variants[i], variant, assetGroupId, ATOMIC_STRATEGY, contracts.strategyRegistry
+            );
         }
     }
 
@@ -107,7 +109,9 @@ contract StrategiesInitial {
             address variant = _newBeaconProxy(address(beacon));
             uint256 assetGroupId = assetGroups(variants[i]);
             MockProtocolStrategy(variant).initialize(variantName, assetGroupId, protocol);
-            _registerStrategyVariant(MOCK_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
+            _registerStrategyVariant(
+                MOCK_KEY, variants[i], variant, assetGroupId, ATOMIC_STRATEGY, contracts.strategyRegistry
+            );
         }
     }
 
@@ -138,11 +142,12 @@ contract StrategiesInitial {
         address implementation,
         address proxy,
         uint256 assetGroupId,
+        uint256 atomicityClassification,
         IStrategyRegistry strategyRegistry
     ) private {
         int256 apy = constantsJson().getInt256(string.concat(".strategies.", strategyKey, ".apy"));
 
-        strategyRegistry.registerStrategy(proxy, apy);
+        strategyRegistry.registerStrategy(proxy, apy, atomicityClassification);
 
         strategies[strategyKey][assetGroupId] = proxy;
         addressToStrategyKey[proxy] = strategyKey;
@@ -154,12 +159,13 @@ contract StrategiesInitial {
         string memory variantKey,
         address variant,
         uint256 assetGroupId,
+        uint256 atomicityClassification,
         IStrategyRegistry strategyRegistry
     ) private {
         int256 apy = constantsJson().getInt256(string.concat(".strategies.", strategyKey, ".", variantKey, ".apy"));
         string memory variantName = _getVariantName(strategyKey, variantKey);
 
-        strategyRegistry.registerStrategy(variant, apy);
+        strategyRegistry.registerStrategy(variant, apy, atomicityClassification);
 
         strategies[strategyKey][assetGroupId] = variant;
         addressToStrategyKey[variant] = strategyKey;
@@ -171,12 +177,13 @@ contract StrategiesInitial {
         string memory variantKey,
         address variant,
         uint256 assetGroupId,
+        uint256 atomicityClassification,
         IStrategyRegistry strategyRegistry
     ) private {
         int256 apy = constantsJson().getInt256(string.concat(".strategies.", MOCK_KEY, ".", variantKey, ".apy"));
         string memory variantName = _getVariantName(strategyKey, variantKey);
 
-        strategyRegistry.registerStrategy(variant, apy);
+        strategyRegistry.registerStrategy(variant, apy, atomicityClassification);
 
         strategies[strategyKey][assetGroupId] = variant;
         addressToStrategyKey[variant] = strategyKey;

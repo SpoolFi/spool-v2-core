@@ -62,19 +62,19 @@ contract DhwTest is TestFixture {
         strategyRatios[1] = 71;
         strategyRatios[2] = 4300;
         strategyA.initialize("StratA", strategyRatios);
-        strategyRegistry.registerStrategy(address(strategyA), 0);
+        strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
         strategyRatios[1] = 74;
         strategyRatios[2] = 4500;
         strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
         strategyB.initialize("StratB", strategyRatios);
-        strategyRegistry.registerStrategy(address(strategyB), 0);
+        strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
         strategyRatios[1] = 76;
         strategyRatios[2] = 4600;
         strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
         strategyC.initialize("StratC", strategyRatios);
-        strategyRegistry.registerStrategy(address(strategyC), 0);
+        strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
 
         accessControl.grantRole(ROLE_MASTER_WALLET_MANAGER, address(strategyRegistry));
         accessControl.grantRole(ROLE_STRATEGY_REGISTRY, address(strategyRegistry));
@@ -570,7 +570,7 @@ contract DhwMatchingTest is TestFixture {
 
         strategy = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
         strategy.initialize("StratA", Arrays.toArray(1));
-        strategyRegistry.registerStrategy(address(strategy), 0);
+        strategyRegistry.registerStrategy(address(strategy), 0, ATOMIC_STRATEGY);
 
         SmartVaultSpecification memory specification = SmartVaultSpecification({
             smartVaultName: "SmartVaultA",
@@ -958,7 +958,7 @@ contract DhwMatchingTest is TestFixture {
             // create new strategy using above asset group
             strategy = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
             strategy.initialize("StratA", Arrays.toArray(1, 2));
-            strategyRegistry.registerStrategy(address(strategy), 0);
+            strategyRegistry.registerStrategy(address(strategy), 0, ATOMIC_STRATEGY);
 
             // create new smart vault using above strategy
             SmartVaultSpecification memory specification = SmartVaultSpecification({

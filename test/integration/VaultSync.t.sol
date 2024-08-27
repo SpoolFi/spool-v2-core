@@ -223,7 +223,7 @@ contract VaultSyncTest is IntegrationTestFixture {
         MockStrategy strategyD = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupDId);
         strategyD.initialize("StratD", Arrays.toArray(10000));
 
-        strategyRegistry.registerStrategy(address(strategyD), 0);
+        strategyRegistry.registerStrategy(address(strategyD), 0, ATOMIC_STRATEGY);
 
         address[] memory smartVaultStrategiesSingle = Arrays.toArray(address(strategyD));
         {

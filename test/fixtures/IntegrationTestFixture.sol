@@ -62,17 +62,17 @@ contract IntegrationTestFixture is TestFixture {
         uint256[] memory strategyRatios = Arrays.toArray(1000, 71, 4300);
         strategyA = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
         strategyA.initialize("StratA", strategyRatios);
-        strategyRegistry.registerStrategy(address(strategyA), 0);
+        strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
 
         strategyRatios = Arrays.toArray(1000, 74, 4500);
         strategyB = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
         strategyB.initialize("StratB", strategyRatios);
-        strategyRegistry.registerStrategy(address(strategyB), 0);
+        strategyRegistry.registerStrategy(address(strategyB), 0, ATOMIC_STRATEGY);
 
         strategyRatios = Arrays.toArray(1000, 76, 4600);
         strategyC = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
         strategyC.initialize("StratC", strategyRatios);
-        strategyRegistry.registerStrategy(address(strategyC), 0);
+        strategyRegistry.registerStrategy(address(strategyC), 0, ATOMIC_STRATEGY);
 
         priceFeedManager.setExchangeRate(address(tokenA), 1200 * USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenB), 16400 * USD_DECIMALS_MULTIPLIER);

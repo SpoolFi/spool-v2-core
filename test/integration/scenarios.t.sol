@@ -198,19 +198,19 @@ contract ScenariosTest is Test {
         {
             strategyA1 = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupIdA);
             strategyA1.initialize("StratA1", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA1), 0);
+            strategyRegistry.registerStrategy(address(strategyA1), 0, ATOMIC_STRATEGY);
 
             strategyA2 = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupIdA);
             strategyA2.initialize("StratA2", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA2), 0);
+            strategyRegistry.registerStrategy(address(strategyA2), 0, ATOMIC_STRATEGY);
 
             strategyA3 = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupIdA);
             strategyA3.initialize("StratA3", Arrays.toArray(1));
-            strategyRegistry.registerStrategy(address(strategyA3), 0);
+            strategyRegistry.registerStrategy(address(strategyA3), 0, ATOMIC_STRATEGY);
 
             strategyAB1 = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupIdAB);
             strategyAB1.initialize("StratAB1", Arrays.toArray(1, 1));
-            strategyRegistry.registerStrategy(address(strategyAB1), 0);
+            strategyRegistry.registerStrategy(address(strategyAB1), 0, ATOMIC_STRATEGY);
         }
     }
 

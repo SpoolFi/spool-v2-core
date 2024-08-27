@@ -189,9 +189,9 @@ contract SmartVaultManagerTest is TestFixture {
         strategies[1] = address(strategy2);
         strategies[2] = address(strategy3);
 
-        strategyRegistry.registerStrategy(address(strategy1), 0);
-        strategyRegistry.registerStrategy(address(strategy2), 0);
-        strategyRegistry.registerStrategy(address(strategy3), 0);
+        strategyRegistry.registerStrategy(address(strategy1), 0, ATOMIC_STRATEGY);
+        strategyRegistry.registerStrategy(address(strategy2), 0, ATOMIC_STRATEGY);
+        strategyRegistry.registerStrategy(address(strategy3), 0, ATOMIC_STRATEGY);
 
         return (strategies, assetGroupId);
     }
