@@ -61,31 +61,14 @@ contract GearboxV3SwapStrategy is GearboxV3Strategy, SwapAdapter {
         _lastExchangeRate = (_mantissa * dToken.expectedLiquidity()) / dToken.totalSupply();
     }
 
-    function _compound(address[] calldata, SwapInfo[] calldata swapInfo, uint256[] calldata)
+    function _compound(address[] calldata, SwapInfo[] calldata swapInfo, uint256[] calldata slippages)
         internal
         override
         returns (int256 compoundedYieldPercentage)
     {
         address[] memory tokens = new address[](1);
         tokens[0] = address(underlying);
-        if (swapInfo.length > 0) {
-            uint256 gearBalance = _getGearboxReward();
-
-            if (gearBalance > 0) {
-                gear.safeTransfer(address(swapper), gearBalance);
-                address[] memory tokensIn = new address[](1);
-                tokensIn[0] = address(gear);
-                uint256 swappedAmount = swapper.swap(tokensIn, swapInfo, tokens, address(this))[0];
-
-                if (swappedAmount > 0) {
-                    uint256 sdTokenBalanceBefore = sdToken.balanceOf(address(this));
-                    _depositToProtocolInternal(IERC20(tokens[0]), swappedAmount);
-
-                    compoundedYieldPercentage =
-                        _calculateYieldPercentage(sdTokenBalanceBefore, sdToken.balanceOf(address(this)));
-                }
-            }
-        }
+        compoundedYieldPercentage = _compoundInternal(tokens, swapInfo, slippages);
     }
 
     function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata slippages)
