@@ -95,13 +95,13 @@ contract GearboxV3Strategy is Strategy {
      */
     function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
-    function _compound(address[] calldata, SwapInfo[] calldata swapInfo, uint256[] calldata slippages)
+    function _compound(address[] calldata tokens, SwapInfo[] calldata swapInfo, uint256[] calldata slippages)
         internal
         virtual
         override
         returns (int256 compoundedYieldPercentage)
     {
-        compoundedYieldPercentage = _compoundInternal(assets(), swapInfo, slippages);
+        compoundedYieldPercentage = _compoundInternal(tokens, swapInfo, slippages);
     }
 
     function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {
