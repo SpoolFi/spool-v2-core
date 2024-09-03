@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import "@openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "forge-std/Test.sol";
 import "../src/interfaces/RequestType.sol";
 import "../src/DepositSwap.sol";
@@ -420,12 +421,14 @@ contract DepositSwapIntegrationTest is TestFixture {
         vm.startPrank(alice);
         tokenA.approve(address(depositSwap), 2 ether);
 
-        MetaVault metaVault = new MetaVault(
+        MetaVault metaVaultImplementation = new MetaVault(
             ISmartVaultManager(address(0x1)),
             ISpoolAccessControl(address(0x2)),
             IMetaVaultGuard(address(0x3)),
             ISpoolLens(address(0x4))
         );
+        MetaVault metaVault =
+            MetaVault(address(new TransparentUpgradeableProxy(address(metaVaultImplementation), address(0x1), "")));
         metaVault.initialize(address(this), address(tokenB), "MV", "MVT", new address[](0), new uint256[](0));
 
         depositSwap.swapAndDepositIntoMetaVault(
