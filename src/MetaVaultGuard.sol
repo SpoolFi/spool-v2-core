@@ -45,6 +45,7 @@ contract MetaVaultGuard is IMetaVaultGuard {
 
     /// @inheritdoc IMetaVaultGuard
     function validateSmartVaults(address asset, address[] calldata smartVaults) external view virtual returns (bool) {
+        if (smartVaults.length == 0) revert InvalidArrayLength();
         for (uint256 i; i < smartVaults.length; i++) {
             _validateSmartVault(asset, smartVaults[i]);
         }

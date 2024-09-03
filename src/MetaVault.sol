@@ -138,6 +138,7 @@ contract MetaVault is
         IMetaVaultGuard metaVaultGuard_,
         ISpoolLens spoolLens_
     ) SpoolAccessControllable(spoolAccessControl_) {
+        _disableInitializers();
         if (
             address(smartVaultManager_) == address(0) || address(metaVaultGuard_) == address(0)
                 || address(spoolLens_) == address(0)
@@ -713,12 +714,12 @@ contract MetaVault is
     /// @inheritdoc IMetaVault
     function permitAsset(uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
         _checkNotPaused();
-        IERC20PermitUpgradeable(asset).permit(msg.sender, address(this), amount, deadline, v, r, s);
+        try IERC20PermitUpgradeable(asset).permit(msg.sender, address(this), amount, deadline, v, r, s) {} catch {}
     }
 
     /// @inheritdoc IMetaVault
     function permitDai(uint256 nonce, uint256 deadline, bool allowed, uint8 v, bytes32 r, bytes32 s) external {
         _checkNotPaused();
-        IDAI(asset).permit(msg.sender, address(this), nonce, deadline, allowed, v, r, s);
+        try IDAI(asset).permit(msg.sender, address(this), nonce, deadline, allowed, v, r, s) {} catch {}
     }
 }
