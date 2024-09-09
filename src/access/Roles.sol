@@ -137,3 +137,23 @@ bytes32 constant ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR = keccak256("EMERGENCY_WITHD
  * Should be granted to the DepositSwap contract.
  */
 bytes32 constant ROLE_SWAPPER = keccak256("SWAPPER");
+
+/**
+ * @dev Grants permission to deploy MetaVaults
+ */
+bytes32 constant ROLE_META_VAULT_DEPLOYER = keccak256("META_VAULT_DEPLOYER");
+
+/**
+ * @dev Grants permission to call flush(), sync(), reallocateSync() on MetaVaults
+ */
+bytes32 constant ROLE_META_VAULT_OPERATOR = keccak256("META_VAULT_OPERATOR");
+
+/**
+ * @dev Grants permission to call reallocate() on MetaVaults
+ */
+bytes32 constant ROLE_META_VAULT_REALLOCATOR = keccak256("META_VAULT_REALLOCATOR");
+
+/**
+ * @dev Grants permission to use SpoolMulticall
+ */
+bytes32 constant ROLE_SPOOL_MULTI_CALLER = keccak256("SPOOL_MULTI_CALLER");

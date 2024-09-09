@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "./ISwapper.sol";
+import "./IMetaVault.sol";
 
 /**
  * @notice Input for swapping and depositing assets.
@@ -37,4 +38,25 @@ interface IDepositSwap {
      * @return depositNftId ID of the minted deposit NFT.
      */
     function swapAndDeposit(SwapDepositBag calldata swapDepositBag) external payable returns (uint256 depositNftId);
+
+    /**
+     * @notice Swaps tokens input tokens based on provided swap info and
+     * deposits swapped tokens into the smart vault.
+     *
+     * When sent eth, it will wrap it into WETH. After wrapping, WETH can be swapped
+     * if it is included in inTokens parameter.
+     * @dev Unswapped tokens are transferred back to the caller.
+     * Requirements:
+     * - caller must set approval for this contract on input tokens in input amount
+     * @param metaVault for deposit
+     * @param inTokens tokens for swap
+     * @param inAmounts token amounts for swap
+     * @param swapInfo for swapper to perform the swap
+     */
+    function swapAndDepositIntoMetaVault(
+        IMetaVault metaVault,
+        address[] calldata inTokens,
+        uint256[] calldata inAmounts,
+        SwapInfo[] calldata swapInfo
+    ) external payable;
 }

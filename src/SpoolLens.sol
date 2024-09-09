@@ -14,6 +14,7 @@ import "./interfaces/IWithdrawalManager.sol";
 import "./interfaces/CommonErrors.sol";
 import "./interfaces/Constants.sol";
 import "./interfaces/IAllocationProvider.sol";
+import "./interfaces/IMetaVault.sol";
 import "./access/SpoolAccessControllable.sol";
 
 /// @notice Used when strategies length is 0 or more than the cap.
@@ -268,6 +269,25 @@ contract SpoolLens is ISpoolLens, SpoolAccessControllable {
             uint256 vaultSharesTotal = ISmartVault(smartVaults[i]).totalSupply();
 
             balances[i] = _getUserStrategyBalancesByVault(smartVaults[i], vaultSharesUser, vaultSharesTotal);
+        }
+    }
+
+    /**
+     * @dev Check whether all DHW runs were completed for metaVaults
+     * @param metaVaults to check
+     * @return result list of booleans for each metaVault
+     */
+    function areAllDhwRunsCompleted(IMetaVault[] calldata metaVaults) external view returns (bool[] memory result) {
+        result = new bool[](metaVaults.length);
+        for (uint256 i; i < metaVaults.length; i++) {
+            address[] memory smartVaults = metaVaults[i].getSmartVaults();
+            bool completed = true;
+            for (uint256 j; j < smartVaults.length; j++) {
+                uint256 flushIndex = metaVaults[i].smartVaultToManagerFlushIndex(smartVaults[j]);
+                completed = smartVaultManager.areAllDhwRunsCompleted(smartVaults[j], flushIndex);
+                if (!completed) break;
+            }
+            result[i] = completed;
         }
     }
 

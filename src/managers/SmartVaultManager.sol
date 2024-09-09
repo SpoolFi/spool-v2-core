@@ -128,6 +128,13 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
+     * @notice SmartVault fees
+     */
+    function getSmartVaultFees(address smartVault) external view returns (SmartVaultFees memory) {
+        return _smartVaultFees[smartVault];
+    }
+
+    /**
      * @notice SmartVault strategies
      */
     function strategies(address smartVault) external view returns (address[] memory) {
@@ -507,6 +514,17 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         flushIndex.toSync++;
         _flushIndexes[smartVault] = flushIndex;
         _lastDhwTimestampSynced[smartVault] = syncResult.dhwTimestamp;
+    }
+
+    /**
+     * @dev Check whether all DHW runs were completed for given flush index
+     */
+    function areAllDhwRunsCompleted(address smartVault, uint256 flushIndex) external view returns (bool) {
+        address[] memory strategies_ = _smartVaultStrategies[smartVault];
+        uint16a16 dhwIndexes_ = _dhwIndexes[smartVault][flushIndex];
+        // it means the smart vault was not even flushed
+        if (uint16a16.unwrap(dhwIndexes_) == 0) return false;
+        return _areAllDhwRunsCompleted(_strategyRegistry.currentIndex(strategies_), dhwIndexes_, strategies_, false);
     }
 
     /**

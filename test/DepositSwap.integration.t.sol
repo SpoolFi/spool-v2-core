@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import "@openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "forge-std/Test.sol";
 import "../src/interfaces/RequestType.sol";
 import "../src/DepositSwap.sol";
 import "../src/SmartVaultFactory.sol";
+import "../src/MetaVault.sol";
 import "../src/Swapper.sol";
 import "./libraries/Arrays.sol";
 import "./libraries/Constants.sol";
@@ -390,5 +392,53 @@ contract DepositSwapIntegrationTest is TestFixture {
         assertEq(nftId, 1, "NFT ID"); // deposit is made
         assertEq(IERC20(address(weth)).balanceOf(address(masterWallet)), 1 ether, "WETH - MasterWallet"); // deposited
         assertEq(IERC20(address(weth)).balanceOf(alice), 0, "WETH - Alice"); // no WETH returned
+    }
+
+    function test_swapAndDepositIntoMetaVault() external {
+        tokenA.mint(alice, 2 ether);
+
+        MockExchange exchangeAB = new MockExchange(tokenA, tokenB, priceFeedManager);
+        tokenB.mint(address(exchangeAB), 1000 ether);
+
+        vm.startPrank(swapperAdmin);
+        swapper.updateExchangeAllowlist(Arrays.toArray(address(exchangeAB)), Arrays.toArray(true));
+        vm.stopPrank();
+
+        priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
+        priceFeedManager.setExchangeRate(address(tokenB), 1 * USD_DECIMALS_MULTIPLIER);
+
+        depositSwap = new DepositSwap(weth, assetGroupRegistry, smartVaultManager, swapper);
+        accessControl.grantRole(ROLE_SWAPPER, address(depositSwap));
+
+        SwapInfo[] memory swapInfo = new SwapInfo[](1);
+        uint256 swapAmount = 0.4 ether;
+        swapInfo[0] = SwapInfo(
+            address(exchangeAB),
+            address(tokenA),
+            abi.encodeWithSelector(exchangeAB.swap.selector, address(tokenA), swapAmount, address(depositSwap))
+        );
+
+        vm.startPrank(alice);
+        tokenA.approve(address(depositSwap), 2 ether);
+
+        MetaVault metaVaultImplementation = new MetaVault(
+            ISmartVaultManager(address(0x1)),
+            ISpoolAccessControl(address(0x2)),
+            IMetaVaultGuard(address(0x3)),
+            ISpoolLens(address(0x4))
+        );
+        MetaVault metaVault =
+            MetaVault(address(new TransparentUpgradeableProxy(address(metaVaultImplementation), address(0x1), "")));
+        metaVault.initialize(address(this), address(tokenB), "MV", "MVT", new address[](0), new uint256[](0));
+
+        depositSwap.swapAndDepositIntoMetaVault(
+            metaVault, Arrays.toArray(address(tokenA)), Arrays.toArray(2 ether), swapInfo
+        );
+        vm.stopPrank();
+
+        assertEq(tokenA.balanceOf(alice), 1.6 ether, "Token A - Alice");
+        assertEq(tokenB.balanceOf(address(metaVault)), swapAmount, "Token B - MetaVault"); // swapped
+        assertEq(metaVault.flushToDepositedAssets(0), swapAmount);
+        assertEq(metaVault.userToFlushToDepositedAssets(alice, 0), swapAmount);
     }
 }
