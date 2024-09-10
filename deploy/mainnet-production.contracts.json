@@ -16,7 +16,7 @@
     "proxy": "0x823Ba38992825FF37E72B6c3D669a09173B8F7bf"
   },
   "DepositSwap": {
-    "implementation": "0xe1E49B4CB738C8840a54D8b8958ce93C621965C8",
+    "implementation": "0xf9A42821bC7B13C47A6c934704645111eaD836A9",
     "proxy": "0xd8534197Bd587F8226d12E0C864ef2CaE6f82f5C"
   },
   "ExponentialAllocationProvider": {
@@ -39,6 +39,12 @@
     "implementation": "0xA992Dee722f46752D3b7d5F11F282f8E8F9AcE3a",
     "proxy": "0xf5DcF1F6E4c661Cb28c27FfF88Adde3522Cfbe91"
   },
+  "MetaVaultFactory": "0xfE8bea6d46232f47AE5A82a9F8cb27d962A05de3",
+  "MetaVaultGuard": {
+    "implementation": "0x02a62f0b7CcAF4d641010f62D8dd4A7FcF8D8a5a",
+    "proxy": "0x17CF191C04B56DA6f7Cf67b8C2d109e302E16Fb5"
+  },
+  "MetaVaultImplementation": "0xf819382A1963f8D9c23c40EDD932Ec223Ca01bF4",
   "ProxyAdmin": "0x51c8FA2c1F093AC643f6431766b1c227d869Cb6F",
   "RewardManager": {
     "implementation": "0xAfFAd277A4Aa24c92EBd6E263726466104EB3e58",
@@ -52,7 +58,7 @@
   "SmartVaultFactory": "0x8049Fc710D4a1Deea6a6bCeF772C166CEd7A82F5",
   "SmartVaultFactoryHpf": "0x362599Cdc123e3FFEB7c0812d769128D180667E8",
   "SmartVaultManager": {
-    "implementation": "0x5C5293EabBC96a62788b4CA0D393042D4e931e81",
+    "implementation": "0x16dB68C86EDFdB60ba733563326ed392B319EB2B",
     "proxy": "0x23Daf34e2b9Af02A74dC19cB52Af727B19403874"
   },
   "SpoolAccessControl": {
@@ -60,9 +66,10 @@
     "proxy": "0x7b533e72E0cDC63AacD8cDB926AC402b846Fbd13"
   },
   "SpoolLens": {
-    "implementation": "0xd5d973374b7103541de1bc6f0b3af663e73b0eed",
+    "implementation": "0x2a9129038130146872dAFc2B413644e59a266af4",
     "proxy": "0x8aa6174333F75421903b2B5c70DdF8DA5D84f74F"
   },
+  "SpoolMulticall": "0x1a0170FF66169FF3FC14c4A5822f97c835FF9F43",
   "StrategyRegistry": {
     "implementation": "0x2b4130F3fF714857D15d366e3Cf2cbb1eA03856D",
     "proxy": "0x554c6bCB54656390aca0a0af38CA954dbE653F15"

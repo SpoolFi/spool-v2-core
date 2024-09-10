@@ -7,7 +7,7 @@ import "../../../src/SpoolLens.sol";
 import "../MainnetExtendedSetup.s.sol";
 
 /**
- *  source .env && forge script script/mainnet/metavault/SpoolLensUpgrade.s.sol:SpoolLensUpgrade --rpc-url=$MAINNET_RPC_URL --with-gas-price 10000000000 --slow --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
+ *  source .env && forge script script/mainnet/metavault/SpoolLensUpgrade.s.sol:SpoolLensUpgrade --rpc-url=$MAINNET_RPC_URL --with-gas-price 2000000000 --slow --broadcast --legacy --etherscan-api-key $ETHERSCAN_API_KEY --verify
  * @dev Optionally can change `--with-gas-price` to something more reasonable
  */
 contract SpoolLensUpgrade is MainnetExtendedSetup {
@@ -36,7 +36,9 @@ contract SpoolLensUpgrade is MainnetExtendedSetup {
                 address(ghostStrategy)
             )
         );
-        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(spoolLens))), implementation);
+        if (Strings.equal(vm.envString("FOUNDRY_PROFILE"), "mainnet-staging")) {
+            proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(spoolLens))), implementation);
+        }
         vm.stopBroadcast();
 
         contractsJson().addProxy("SpoolLens", implementation, address(spoolLens));
