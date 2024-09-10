@@ -7,7 +7,7 @@ import "../../../src/managers/SmartVaultManager.sol";
 import "../MainnetExtendedSetup.s.sol";
 
 /**
- *  source .env && forge script script/mainnet/metavault/SmartVaultManagerUpgrade.s.sol:SmartVaultManagerUpgrade --rpc-url=$MAINNET_RPC_URL --with-gas-price 10000000000 --slow --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
+ *  source .env && forge script script/mainnet/metavault/SmartVaultManagerUpgrade.s.sol:SmartVaultManagerUpgrade --rpc-url=$MAINNET_RPC_URL --with-gas-price 2000000000 --slow --broadcast --optimizer-runs 200 --legacy --etherscan-api-key $ETHERSCAN_API_KEY --verify
  * @dev Optionally can change `--with-gas-price` to something more reasonable
  */
 contract SmartVaultManagerUpgrade is MainnetExtendedSetup {
@@ -35,7 +35,9 @@ contract SmartVaultManagerUpgrade is MainnetExtendedSetup {
                 address(ghostStrategy)
             )
         );
-        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(smartVaultManager))), implementation);
+        if (Strings.equal(vm.envString("FOUNDRY_PROFILE"), "mainnet-staging")) {
+            proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(smartVaultManager))), implementation);
+        }
         vm.stopBroadcast();
 
         contractsJson().addProxy("SmartVaultManager", implementation, address(smartVaultManager));

@@ -45,7 +45,8 @@ libraries = [
     'src/libraries/ReallocationLib.sol:ReallocationLib:0x49CE6640EB2D89F80395C1a3695cc3a01b5C7bc1',
     'src/libraries/SpoolUtils.sol:SpoolUtils:0xCB3fECd1D5eabB1b18383604A28352c17Bdfef89',
     'src/strategies/libraries/EthFrxEthAssetGroupAdapter.sol:EthFrxEthAssetGroupAdapter:0xE23681bAA697EF5054E2D8C397ae59145027625D',
-    'src/strategies/libraries/EthStEthAssetGroupAdapter.sol:EthStEthAssetGroupAdapter:0x1516eb3a54377168b6b184326200f4258C3529dF'
+    'src/strategies/libraries/EthStEthAssetGroupAdapter.sol:EthStEthAssetGroupAdapter:0x1516eb3a54377168b6b184326200f4258C3529dF',
+    'src/libraries/ListMap.sol:ListMap:0xdc851a645175655f3c28c7043a72d242a2556351'
 ]
 
 [profile.mainnet-staging]

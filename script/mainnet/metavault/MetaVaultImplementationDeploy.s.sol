@@ -5,7 +5,7 @@ import {MetaVault} from "../../../src/MetaVault.sol";
 import "../MainnetExtendedSetup.s.sol";
 
 /**
- *  source .env && forge script script/mainnet/metavault/MetaVaultImplementationDeploy.s.sol:MetaVaultImplementationDeploy --rpc-url=$MAINNET_RPC_URL --with-gas-price 10000000000 --slow --broadcast --etherscan-api-key $ETHERSCAN_API_KEY --verify
+ *  source .env && forge script script/mainnet/metavault/MetaVaultImplementationDeploy.s.sol:MetaVaultImplementationDeploy --rpc-url=$MAINNET_RPC_URL --with-gas-price 2000000000 --slow --broadcast --legacy --optimizer-runs 200 --etherscan-api-key $ETHERSCAN_API_KEY --verify
  * @dev Optionally can change `--with-gas-price` to something more reasonable
  */
 contract MetaVaultImplementationDeploy is MainnetExtendedSetup {
