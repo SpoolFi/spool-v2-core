@@ -74,7 +74,7 @@ test = 'no-test'
 # compiler
 optimizer_runs = 99999
 libraries = [
-    "script/helper/ArraysHelper.sol:ArraysHelper:",
+    'src/libraries/ListMap.sol:ListMap:0x65923694389fcbe567f6735e19d6a7e7d80a17a5',
     "src/libraries/ArrayMapping.sol:ArrayMappingUint256:0xa59995f217d8c8ecfe3cd80ac00cdae33e2deeff",
     "src/libraries/ReallocationLib.sol:ReallocationLib:0x3ffda89a5f87d99de88bc0617d95c7e5dde0408f",
     "src/libraries/SpoolUtils.sol:SpoolUtils:0x5049d7d26ab755ca8489ccc30d19e92856e9be72"
