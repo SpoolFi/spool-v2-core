@@ -1,0 +1,112 @@
+{
+  "ActionManager": {
+    "implementation": "0xd1fcA82ED0E1774FC23e1d495974dE9C6532997e",
+    "proxy": "0x12f1E501CFAAa2c4A1c30a1783d0C4d3A92E3AbB"
+  },
+  "AllowlistGuard": {
+    "implementation": "0xC66E994f6183cDFf6F058B938f71c80A51918a85",
+    "proxy": "0x1bF5051Bb45085eFcadE3A338e7e3DDEc033A83C"
+  },
+  "AssetGroupRegistry": {
+    "implementation": "0x68258d69b666dd947D7dDa797b112113615E02f6",
+    "proxy": "0x6565ebFC8c40DEDE370877205299DF0842976b5a"
+  },
+  "DepositManager": {
+    "implementation": "0xed39BF314cF89dE2eDFaeefe4eA2B9Ce178b0C91",
+    "proxy": "0xfA37dd47F3596681C39D3a1b55474595BB591dc9"
+  },
+  "DepositSwap": {
+    "implementation": "0x6E3333152128Be8A7d5daC39464A2858ACb19E47",
+    "proxy": "0x5FB08e00DE169f041711206A0995410884080177"
+  },
+  "ExponentialAllocationProvider": {
+    "implementation": "0x06F37ee4e643A022A3CAB3341313A72b091ee0e5",
+    "proxy": "0x1ad0332A59aAFaC9f7dE822e4a842070A9277C68"
+  },
+  "GhostStrategy": {
+    "implementation": "0xFB9B9EA590985A9286a0C6fb49641F0106608f03",
+    "proxy": "0x85365E3d47C34466477518a5F6A869d2C68dF194"
+  },
+  "GuardManager": {
+    "implementation": "0x85682645410e510E87f62c91f224DA5b476eC98E",
+    "proxy": "0xb6EFBda134501430B6112CA67564Dd535AF332C9"
+  },
+  "LinearAllocationProvider": {
+    "implementation": "0x44a4199cE697C27E7e162dF2AC9fFE8d45BE7B9b",
+    "proxy": "0xBD330AeCD16d1ff0db8fBa6Af9838054D194a9C6"
+  },
+  "MasterWallet": {
+    "implementation": "0xcF96B049aA0eE5B7A303fD63DD669b02d183F668",
+    "proxy": "0xa4e411f65Cae185101aD5a7BF944346A487B82D9"
+  },
+  "ProxyAdmin": "0x80570E025c4Ea5d39637adbB22e9A4AB5cA79970",
+  "RewardManager": {
+    "implementation": "0x6316e9D4501B34FFFb231Cc9d1c7499ABEbbbE92",
+    "proxy": "0xcE7F66BD505a80129Ef25b06207Ac49620A55522"
+  },
+  "RiskManager": {
+    "implementation": "0xac824D90d631452538dA8810BFe1Dd9BfbA77788",
+    "proxy": "0x671534a368AfB2c5E7a0170A4ED37DC4C387F48c"
+  },
+  "SmartVaultFactory": "0x8e1F2177AdcA17b96822D132279B17083dCd67d9",
+  "SmartVaultFactoryHpf": "0x86BB0376929218ba1cb825cE2ebE801bFCcD8149",
+  "SmartVaultManager": {
+    "implementation": "0xfcc6132d10FcfB2568299b23E6dfB4aed30aFafa",
+    "proxy": "0x2638d6c0b4EF6Dee04050fA0B07CA62500435747"
+  },
+  "SpoolAccessControl": {
+    "implementation": "0xFE3a45d8d3A5aB30AbAe36bC098783d08301ecd7",
+    "proxy": "0x8325F9a463A8Aa72e1a91f57623e41Ee94d43525"
+  },
+  "SpoolLens": {
+    "implementation": "0xAFeDeB6FC835F2973913567CcD7875F66e94419D",
+    "proxy": "0x33Df6cf08Fbb10047e318989fE687294CD45A7B4"
+  },
+  "StrategyRegistry": {
+    "implementation": "0x2Db7088637Db8709307a1e606AA5081521388CF6",
+    "proxy": "0xf978853Db777d00b1130Ea21d8d98E8710b0Bc56"
+  },
+  "Swapper": {
+    "implementation": "0x28c0aDEed2287dAcb284f1b42A840e10Bf01Ffd5",
+    "proxy": "0xE411921ee9EeDfEFd7b9Ae15bF232bd36949Fcbc"
+  },
+  "UniformAllocationProvider": {
+    "implementation": "0xE08bE40E1D7434ffF403966d93952cbbeE64C27F",
+    "proxy": "0x02cE10513AfAf102172651B7DC6f1A6359717421"
+  },
+  "UsdPriceFeedManager": {
+    "implementation": "0xd592B0bc2daC00032391DB4d15A5716bc59A3852",
+    "proxy": "0xEE8D61687d3E174435BF8deb9EA6816C78236B6A"
+  },
+  "WithdrawalManager": {
+    "implementation": "0x1F31d1DC2951b5EeB2Ec1f1e3afAbb5a830e68B0",
+    "proxy": "0x6D38Bd942DFC73d92e572ec5b3c55e124B5a3E81"
+  },
+  "strategies": {
+    "mock": {
+      "beacon": "0xb3752bBb715aCAe2A3E9c28200B5A0B319f583Ef",
+      "mock-dai": "0xCc239ffF84045cc1c81203695eE5d2e05530f026",
+      "mock-usdc": "0x07Ffa21cbf983e2F2246750108D9248133c85a98",
+      "mock-usdt": "0x68b19781cBE5724b1666D944C729aa15d6925E0b",
+      "mock-weth": "0x7fd3f41F2dE554d8528Db74294a4382f4718F3Ad"
+    },
+    "mock-ape": {
+      "mock-ape-dai": "0x63EA59BcBf3a607FEee0BeDf9952e8178b72EBBB",
+      "mock-ape-usdc": "0x53aB5005EF715C020a3860C5BF9d65f83EE354Ae",
+      "mock-ape-usdt": "0x6d4A419A9C7237b9d54968ca0386CaAfA2511EBC",
+      "mock-ape-weth": "0x78c175279DdC79e26280b058a357371D23BDA358"
+    },
+    "mock-ape-2": {
+      "mock-ape-2-dai": "0xD21D40c8Ed1E7c985152d698787A18b632653DCD",
+      "mock-ape-2-usdc": "0x9B0EEC893C698969C60418d96050973fBdcFe643",
+      "mock-ape-2-usdt": "0xF8Cd232d3e548e548f3c1cC84475AC4c47bd7dFf",
+      "mock-ape-2-weth": "0x06407A1e7F36698a414BEEed7A05Ab6fA1CcAdE4"
+    },
+    "mock-drip": {
+      "mock-drip-dai": "0x8b0bDB865a1501b54967982973eDBE38cf867558",
+      "mock-drip-usdc": "0xD5f24e72F51bA893c37b7A5a2D3307ea9ecf6B83",
+      "mock-drip-usdt": "0x94D301E7133097Fba430E89b18395DABc33d2A02",
+      "mock-drip-weth": "0x303d3fA19679D30e8722DD337f1A28b1A89689Ed"
+    }
+  }
+}

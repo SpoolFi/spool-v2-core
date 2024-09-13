@@ -1,0 +1,62 @@
+{
+    "assets": {
+        "dai": {
+            "address": "0x2A3A3872c242c35093a8fc48DaC838C4B2D24a03",
+            "priceAggregator": {
+                "address": "0x14866185B1962B63C3Ea9E03Bc1da838bab34C19",
+                "timeLimit": 3780
+            }
+        },
+        "usdc": {
+            "address": "0xa6b92FCD4Ee124353C8A6AcF1Edb574F46F3f8DF",
+            "priceAggregator": {
+                "address": "0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E",
+                "timeLimit": 86580
+            }
+        },
+        "usdt": {
+            "address": "0x72d6a42377E7511Ff69aAb65Fb3C075512fCBae5",
+            "priceAggregator": {
+                "address": "0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E",
+                "timeLimit": 86580
+            }
+        },
+        "weth": {
+            "address": "0x88B25A14DaE46c33ae3EEF2B45A5ec758D9a5Ec6",
+            "priceAggregator": {
+                "address": "0x694AA1769357215DE4FAC081bf1f309aDC325306",
+                "timeLimit": 3780
+            }
+        }
+    },
+    "strategies": {
+        "mock": {
+            "dai": {
+                "apy": 70000000000,
+                "rewardTokenPerSecond": "100"
+            },
+            "usdc": {
+                "apy": 70000000000,
+                "rewardTokenPerSecond": "100"
+            },
+            "usdt": {
+                "apy": 70000000000,
+                "rewardTokenPerSecond": "100"
+            },
+            "weth": {
+                "apy": 70000000000,
+                "rewardTokenPerSecond": "100"
+            }
+        }
+    },
+    "tokens": {},
+    "proxyAdminOwner": "0x2f75193EbeF14541266696Cd87dD84fF90c02B5C",
+    "spoolAdmin": "0x2f75193EbeF14541266696Cd87dD84fF90c02B5C",
+    "fees": {
+        "ecosystemFeePct": 800,
+        "treasuryFeePct": 200,
+        "ecosystemFeeReceiver": "0x2f75193EbeF14541266696Cd87dD84fF90c02B5C",
+        "treasuryFeeReceiver": "0x2f75193EbeF14541266696Cd87dD84fF90c02B5C"
+    },
+    "emergencyWithdrawalWallet": "0x2f75193EbeF14541266696Cd87dD84fF90c02B5C"
+}
