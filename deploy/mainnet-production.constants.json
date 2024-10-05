@@ -80,6 +80,10 @@
                 "apy": 27700000000
             }
         },
+        "apxeth-holding": {
+            "pirex": "0xD664b74274DfEB538d9baC494F3a4760828B02b0",
+            "apy": 0
+        },
         "compound-v2": {
             "comptroller": "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B",
             "dai": {

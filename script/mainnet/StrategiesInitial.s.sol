@@ -5,31 +5,33 @@ import "@openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/utils/math/SafeCast.sol";
 import "@openzeppelin/utils/Strings.sol";
 import "../../src/libraries/uint16a16Lib.sol";
+import "../../src/strategies/AaveV2Strategy.sol";
+import "../../src/strategies/ApxEthHoldingStrategy.sol";
+import "../../src/strategies/CompoundV2Strategy.sol";
 import "../../src/strategies/convex/Convex3poolStrategy.sol";
 import "../../src/strategies/convex/ConvexAlusdStrategy.sol";
 import "../../src/strategies/convex/ConvexStFrxEthStrategy.sol";
 import "../../src/strategies/curve/Curve3poolStrategy.sol";
-import "../../src/strategies/AaveV2Strategy.sol";
-import "../../src/strategies/CompoundV2Strategy.sol";
+import "../../src/strategies/EthenaStrategy.sol";
+import "../../src/strategies/GearboxV3Strategy.sol";
+import "../../src/strategies/GearboxV3SwapStrategy.sol";
 import "../../src/strategies/IdleStrategy.sol";
+import "../../src/strategies/MetamorphoStrategy.sol";
 import "../../src/strategies/MorphoAaveV2Strategy.sol" as MorphoAaveV2;
 import "../../src/strategies/MorphoCompoundV2Strategy.sol" as MorphoCompoundV2;
 import "../../src/strategies/NotionalFinanceStrategy.sol";
+import "../../src/strategies/OEthHoldingStrategy.sol";
 import "../../src/strategies/REthHoldingStrategy.sol";
 import "../../src/strategies/SfrxEthHoldingStrategy.sol";
 import "../../src/strategies/StEthHoldingStrategy.sol";
 import "../../src/strategies/YearnV2Strategy.sol";
-import "../../src/strategies/OEthHoldingStrategy.sol";
-import "../../src/strategies/GearboxV3Strategy.sol";
-import "../../src/strategies/GearboxV3SwapStrategy.sol";
-import "../../src/strategies/MetamorphoStrategy.sol";
 import "../../src/strategies/YearnV3StrategyWithJuice.sol";
 import "../../src/strategies/YearnV3StrategyWithGauge.sol";
-import "../../src/strategies/EthenaStrategy.sol";
 import "../helper/JsonHelper.sol";
 import "./AssetsInitial.s.sol";
 
 string constant AAVE_V2_KEY = "aave-v2";
+string constant APXETH_HOLDING_KEY = "apxeth-holding";
 string constant COMPOUND_V2_KEY = "compound-v2";
 string constant CONVEX_BASE_KEY = "convex-base";
 string constant CONVEX_3POOL_KEY = "convex-3pool";
@@ -41,20 +43,20 @@ string constant CURVE_FRXETH_KEY = "curve-frxeth";
 string constant CURVE_STETH_KEY = "curve-steth";
 string constant CURVE_OETH_KEY = "curve-oeth";
 string constant CURVE_STFRXETH_KEY = "curve-stfrxeth";
+string constant ETHENA_KEY = "ethena";
 string constant GEARBOX_V3_KEY = "gearbox-v3";
-string constant METAMORPHO_KEY = "metamorpho";
 string constant IDLE_BEST_YIELD_SENIOR_KEY = "idle-best-yield-senior";
+string constant METAMORPHO_KEY = "metamorpho";
 string constant MORPHO_AAVE_V2_KEY = "morpho-aave-v2";
 string constant MORPHO_COMPOUND_V2_KEY = "morpho-compound-v2";
 string constant NOTIONAL_FINANCE_KEY = "notional-finance";
+string constant OETH_HOLDING_KEY = "oeth-holding";
 string constant RETH_HOLDING_KEY = "reth-holding";
 string constant SFRXETH_HOLDING_KEY = "sfrxeth-holding";
 string constant STETH_HOLDING_KEY = "steth-holding";
-string constant OETH_HOLDING_KEY = "oeth-holding";
 string constant YEARN_V2_KEY = "yearn-v2";
 string constant YEARN_V3_GAUGED_KEY = "yearn-v3-gauged";
 string constant YEARN_V3_JUICED_KEY = "yearn-v3-juiced";
-string constant ETHENA_KEY = "ethena";
 
 struct StandardContracts {
     ISpoolAccessControl accessControl;
@@ -147,6 +149,9 @@ contract StrategiesInitial {
             deployMetamorphoRound2(contracts, implementation_metamorpho, true);
             deployGearboxV3Round2(contracts, implementation_gearboxV3, true);
         }
+        if (extended >= Extended.APXETH) {
+            deployApxEth(contracts, true);
+        }
     }
 
     function deployAaveV2(StandardContracts memory contracts) public {
@@ -174,6 +179,54 @@ contract StrategiesInitial {
             AaveV2Strategy(variant).initialize(variantName, assetGroupId);
             _registerStrategyVariant(AAVE_V2_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
         }
+    }
+
+    function deployApxEth(StandardContracts memory contracts, bool register) public {
+        // create implementation contract
+        ApxEthHoldingStrategy implementation = _deployApxEthImplementation(contracts);
+
+        contractsJson().addVariantStrategyImplementation(APXETH_HOLDING_KEY, address(implementation));
+
+        // create variant proxies
+        string[] memory variants = new string[](1);
+        variants[0] = WETH_KEY;
+
+        for (uint256 i; i < variants.length; ++i) {
+            string memory variantName = _getVariantName(APXETH_HOLDING_KEY, variants[i]);
+
+            IPirexEth pirexEth =
+                IPirexEth(constantsJson().getAddress(string.concat(".strategies.", APXETH_HOLDING_KEY, ".pirex")));
+
+            uint256 assetGroupId = assetGroups(variants[i]);
+
+            address variant =
+                _deployApxEthProxyAndInitialize(contracts, implementation, variantName, assetGroupId, pirexEth);
+            if (register) {
+                _registerStrategyVariant(
+                    APXETH_HOLDING_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry
+                );
+            }
+        }
+    }
+
+    function _deployApxEthImplementation(StandardContracts memory contracts)
+        internal
+        virtual
+        returns (ApxEthHoldingStrategy)
+    {
+        return
+        new ApxEthHoldingStrategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper, assets(WETH_KEY));
+    }
+
+    function _deployApxEthProxyAndInitialize(
+        StandardContracts memory contracts,
+        ApxEthHoldingStrategy implementation,
+        string memory variantName,
+        uint256 assetGroupId,
+        IPirexEth pirexEth
+    ) internal virtual returns (address variant) {
+        variant = _newProxy(address(implementation), contracts.proxyAdmin);
+        ApxEthHoldingStrategy(payable(variant)).initialize(variantName, assetGroupId, pirexEth);
     }
 
     function deployCompoundV2(StandardContracts memory contracts) public {

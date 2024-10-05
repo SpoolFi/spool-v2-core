@@ -26,6 +26,7 @@ enum Extended {
     GEARBOX_V3_ROUND_1,
     GEARBOX_V3_SWAP,
     METAMORPHO_ROUND_2,
+    APXETH,
     CURRENT
 }
 
