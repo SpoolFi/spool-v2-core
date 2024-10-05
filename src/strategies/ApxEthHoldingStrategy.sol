@@ -7,6 +7,30 @@ import "./helpers/WethHelper.sol";
 import "../external/interfaces/strategies/apxEth/IPirexEth.sol";
 import "../interfaces/ISwapper.sol";
 
+// one asset
+// no rewards
+// slippages needed for swapping only
+// Description:
+//
+// This is a strategy where ETH is staked with Dinero via their Pirex product,
+// to be used as liquidity for ETH 2.0 validators.
+//
+// Pirex has a deposit contract where ETH is staked. This gives the Pirex token,
+// pxETH, at a 1:1 rate. PxETH earns no yield automatically and its intent is to
+// be deposited into other DeFi protocols to earn yield; However, there is a
+// native product called Autocompounder Pirex Ether (apxETH token) where pxETH
+// can be deposited. This is what we use here.
+//
+// apxETH is an ERC4626 vault; as such, we make use of our generic ERC4626
+// contract for the implementation, with some slight differences. Vault deposits
+// are autocompounded and earn yield over time, and there are no restrictions on
+// vault withdrawals.
+//
+// PxETH can be converted back to ETH via the Pirex contract, however it has a
+// wait time of up to 10 days. As such, we sell PxETH for ETH on the open market
+// for redemptions. As these markets can change, we implement the swap via our
+// generic SwapAdapter contract, allowing the clearance process to choose the
+// best parameters.
 contract ApxEthHoldingStrategy is ERC4626StrategyBase, SwapAdapter, WethHelper {
     using SafeERC20 for IERC20;
 
@@ -75,13 +99,6 @@ contract ApxEthHoldingStrategy is ERC4626StrategyBase, SwapAdapter, WethHelper {
         }
     }
 
-    function _performSwap(uint256[] calldata slippages) private {
-        uint256 balance = pxEth.balanceOf(address(this));
-        if (balance > 0) {
-            _swap(swapper, address(pxEth), weth, balance, slippages, 0);
-        }
-    }
-
     function _invalidAssetGroupToken(address[] memory tokens, IERC4626 vault_) internal view override returns (bool) {
         return tokens[0] != weth || address(pxEth) != vault_.asset();
     }
@@ -93,5 +110,12 @@ contract ApxEthHoldingStrategy is ERC4626StrategyBase, SwapAdapter, WethHelper {
      */
     function previewConstantRedeem_() internal view override returns (uint256) {
         return vault().convertToAssets(constantShareAmount());
+    }
+
+    function _performSwap(uint256[] calldata slippages) private {
+        uint256 balance = pxEth.balanceOf(address(this));
+        if (balance > 0) {
+            _swap(swapper, address(pxEth), weth, balance, slippages, 0);
+        }
     }
 }
