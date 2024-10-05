@@ -85,7 +85,7 @@ abstract contract ERC4626StrategyBase is Strategy {
         __Strategy_init(strategyName_, assetGroupId_);
         address[] memory tokens = assets();
         if (address(vault_) == address(0)) revert ConfigurationAddressZero();
-        if (tokens.length != 1 || tokens[0] != vault_.asset()) {
+        if (tokens.length != 1 || _invalidAssetGroupToken(tokens, vault_)) {
             revert InvalidAssetGroup(assetGroupId());
         }
 
@@ -116,7 +116,7 @@ abstract contract ERC4626StrategyBase is Strategy {
         amounts[0] = underlyingAssetAmount_();
     }
 
-    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public override {
+    function beforeDepositCheck(uint256[] memory amounts, uint256[] calldata slippages) public virtual override {
         _beforeDepositCheckSlippage(amounts, slippages);
         if (ERC4626Lib.isDepositFull(vault(), amounts[0])) revert BeforeDepositCheck();
         beforeDepositCheck_(vault().previewDeposit(amounts[0]));
@@ -136,7 +136,7 @@ abstract contract ERC4626StrategyBase is Strategy {
         if (!PackedRange.isWithinRange(slippages[1], amounts[0])) revert BeforeDepositCheck();
     }
 
-    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public override {
+    function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public virtual override {
         _beforeRedeemalCheckSlippages(ssts, slippages);
         beforeRedeemalCheck_(previewRedeemSSTs_(ssts));
     }
@@ -174,6 +174,7 @@ abstract contract ERC4626StrategyBase is Strategy {
 
     function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata slippages)
         internal
+        virtual
         override
     {
         uint256 slippage = _depositToProtocolSlippages(slippages);
@@ -210,7 +211,11 @@ abstract contract ERC4626StrategyBase is Strategy {
         }
     }
 
-    function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages) internal override {
+    function _redeemFromProtocol(address[] calldata, uint256 ssts, uint256[] calldata slippages)
+        internal
+        virtual
+        override
+    {
         uint256 slippage = _redeemFromProtocolSlippages(slippages);
         uint256 shares = previewRedeemSSTs_(ssts);
         _redeemFromProtocolInternal(shares, slippage);
@@ -244,7 +249,7 @@ abstract contract ERC4626StrategyBase is Strategy {
         }
     }
 
-    function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
+    function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal virtual override {
         redeem_();
         vault().redeem(ERC4626Lib.getMaxRedeem(vault()), recipient, address(this));
     }
@@ -342,5 +347,14 @@ abstract contract ERC4626StrategyBase is Strategy {
      */
     function underlyingAssetAmount_() internal view virtual returns (uint256) {
         return vault().previewRedeem(vault().balanceOf(address(this)));
+    }
+
+    /**
+     * @dev check if the token is invalid
+     * @param vault_ vault to check
+     * @return true if the token is invalid
+     */
+    function _invalidAssetGroupToken(address[] memory tokens, IERC4626 vault_) internal view virtual returns (bool) {
+        return tokens[0] != vault_.asset();
     }
 }
