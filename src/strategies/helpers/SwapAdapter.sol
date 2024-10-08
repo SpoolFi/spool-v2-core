@@ -55,7 +55,7 @@ abstract contract SwapAdapter {
 
     function _getPayload(uint256[] calldata slippages, uint256 offset) private pure returns (bytes memory payload) {
         uint256 bytesLength = slippages[offset + LENGTH_OFFSET];
-        uint256 wordsLength = (bytesLength % 32 > 0) ? (bytesLength / 32) + 1 : (bytesLength / 32);
+        uint256 wordsLength = (bytesLength + 31) / 32;
         if (slippages.length < offset + DATA_OFFSET + wordsLength) revert SwapSlippage();
         uint256[] memory toDecode = new uint256[](wordsLength);
         for (uint256 i; i < wordsLength; ++i) {
