@@ -413,7 +413,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
 
         _assertMVT(metaVault.balanceOf(user1), 80e6);
         assertEq(metaVault.flushToDepositedAssets(0), 100e6);
-        _assertMVT(metaVault.totalSupply(), 80e6);
+        _assertMVT(metaVault.totalSupply(), 100e6);
         assertEq(metaVault.userToFlushToRedeemedShares(user1, 1), _mult(20e6));
         assertEq(usdc.balanceOf(address(metaVault)), 0);
 
@@ -422,7 +422,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         vm.stopPrank();
 
         _assertMVT(metaVault.balanceOf(user1), 70e6);
-        _assertMVT(metaVault.totalSupply(), 70e6);
+        _assertMVT(metaVault.totalSupply(), 100e6);
         assertEq(metaVault.userToFlushToRedeemedShares(user1, 1), _mult(30e6));
         assertEq(usdc.balanceOf(address(metaVault)), 0);
     }
@@ -827,7 +827,7 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
         metaVault.multicall(data);
 
         _assertMVT(metaVault.balanceOf(user1), 80e6);
-        _assertMVT(metaVault.totalSupply(), 80e6);
+        _assertMVT(metaVault.totalSupply(), 100e6);
         assertEq(metaVault.userToFlushToRedeemedShares(user1, 1), _mult(20e6));
         assertEq(usdc.balanceOf(address(metaVault)), 0);
     }
@@ -1058,6 +1058,67 @@ contract MetaVaultTest is ForkTestFixtureDeployment {
             assertApproxEqAbs(balances[0], toDeposit, 6);
             assertEq(balances.length, 1);
         }
+    }
+
+    function test_redeemingOnPendingSync() external {
+        setVaults(90_00, 10_00);
+
+        // user1 deposits
+        vm.startPrank(user1);
+        metaVault.deposit(1000e6);
+        vm.stopPrank();
+        // his deposit is fully processed
+        metaVault.flush();
+        _flushVaults(vaults);
+        _dhw(strategies);
+        _syncVaults(vaults);
+        metaVault.sync();
+        // and he gets his shares
+        vm.startPrank(user1);
+        metaVault.claim(0);
+        vm.stopPrank();
+        // 1000 MVTs : 1 USDC
+        _assertMVT(metaVault.balanceOf(user1), 1000e6);
+
+        // user2 deposits twice as much as user1
+        vm.startPrank(user2);
+        metaVault.deposit(2000e6);
+        vm.stopPrank();
+        metaVault.flush();
+        _flushVaults(vaults);
+        _dhw(strategies);
+        _syncVaults(vaults);
+
+        // but user1 redeems all his shares before metavault is synced
+        vm.startPrank(user1);
+        metaVault.redeem(metaVault.balanceOf(user1));
+        vm.stopPrank();
+
+        metaVault.sync();
+
+        // user2 claims
+        vm.startPrank(user2);
+        metaVault.claim(1);
+        vm.stopPrank();
+
+        // and gets what he deserves aka 1~1 pricing
+        _assertMVT(metaVault.balanceOf(user2), 2000_000_010);
+
+        // user2 will redeem everything
+        console.log(metaVault.balanceOf(user2));
+        vm.startPrank(user2);
+        metaVault.redeem(metaVault.balanceOf(user2));
+        vm.stopPrank();
+        // user1 and user2 withdrawal requests are processed
+        metaVault.flush();
+        _flushVaults(vaults);
+        _dhw(strategies);
+        _syncVaults(vaults);
+        metaVault.sync();
+
+        // we verify that users have almost the same amounts they have deposited initially
+        assertApproxEqAbs(metaVault.withdrawable(user1, 2), 1000e6, 1000);
+        assertApproxEqAbs(metaVault.withdrawable(user2, 2), 2000e6, 1000);
     }
 
     function _assertMVT(uint256 a, uint256 b) internal {

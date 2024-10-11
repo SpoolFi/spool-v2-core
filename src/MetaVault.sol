@@ -291,7 +291,7 @@ contract MetaVault is
     /// @inheritdoc IMetaVault
     function redeem(uint256 shares) external {
         _checkNotPaused();
-        _burn(msg.sender, shares);
+        _transfer(msg.sender, address(this), shares);
         uint128 flushIndex = index.flush;
         // accumulate redeems for all users for current flush index
         flushToRedeemedShares[flushIndex] += shares;
@@ -345,7 +345,6 @@ contract MetaVault is
         address[] memory vaults = _smartVaults.list;
         if (vaults.length > 0) {
             uint128 flushIndex = index.flush;
-            // we process withdrawal first to ensure all SVTs are collected
             bool withdrawalHadEffect = _flushWithdrawal(vaults, flushIndex);
             bool depositHadEffect = _flushDeposit(vaults, flushIndex);
             if (withdrawalHadEffect || depositHadEffect) {
@@ -387,7 +386,7 @@ contract MetaVault is
     function _flushWithdrawal(address[] memory vaults, uint128 flushIndex) internal returns (bool hadEffect) {
         uint256 shares = flushToRedeemedShares[flushIndex];
         if (shares > 0) {
-            uint256 _totalSupply = totalSupply() + shares;
+            uint256 _totalSupply = totalSupply();
             for (uint256 i; i < vaults.length; i++) {
                 uint256 SVTToRedeem = ISmartVault(vaults[i]).balanceOf(address(this)) * shares / _totalSupply;
                 if (SVTToRedeem > 0) {
@@ -406,6 +405,7 @@ contract MetaVault is
                 }
             }
             if (hadEffect) {
+                _burn(address(this), shares);
                 emit FlushWithdrawal(flushIndex, shares);
             }
         }
@@ -466,7 +466,11 @@ contract MetaVault is
                 toMint -= lockedSharesLeftToMint;
                 _mint(INITIAL_LOCKED_SHARES_ADDRESS, lockedSharesLeftToMint);
             } else {
-                toMint = (totalSupply_ * depositedAssets) / (totalBalance - depositedAssets);
+                if (totalBalance > depositedAssets) {
+                    toMint = (totalSupply_ * depositedAssets) / (totalBalance - depositedAssets);
+                } else {
+                    toMint = depositedAssets * INITIAL_SHARE_MULTIPLIER;
+                }
             }
             flushToMintedShares[syncIndex] = toMint;
             _mint(address(this), toMint);
