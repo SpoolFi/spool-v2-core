@@ -132,12 +132,15 @@
       "implementation": "0xDd118AEd7643D152708EbFee068aB3eA181F431E"
     },
     "gearbox-v3": {
+      "gearbox-v3-crvusd": "0x4f3FdFE6f376EDC2A53924e1adF9A8bfc128d3c0",
       "gearbox-v3-dai": "0xf2362689DC644450a3Ba3352bAC17A9b872b8871",
+      "gearbox-v3-gho": "0x3FD9F297f7842158CfDC16Ac999eE2A4f5435020",
       "gearbox-v3-usdc": "0xb4a7fb51D06760B5F622643B7276c003418732bD",
       "gearbox-v3-usdt": "0xc71da0BAB96E83EaeA92E9E6506c0A7fA0BbBB51",
       "gearbox-v3-weth": "0xD92B65d2321076FBAc23FCfC9A9Fd5Ed2E98B758",
       "implementation": "0xb170F18dca153752b2F35304e5ea581373095f4e",
-      "implementation-airdrop": "0x64a21Ca82fe09712af8CeC6C5fED62e97Bae33A1"
+      "implementation-airdrop": "0x64a21Ca82fe09712af8CeC6C5fED62e97Bae33A1",
+      "implementation-swap": "0xCfC4f219E0f49AcE33b6122044852C2234989899"
     },
     "metamorpho": {
       "implementation": "0xDb19e40bD45920b09Ac7fF2778d4A1cA90C0A772",
