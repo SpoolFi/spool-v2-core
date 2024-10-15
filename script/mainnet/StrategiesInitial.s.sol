@@ -847,7 +847,8 @@ contract StrategiesInitial {
         bool register
     ) public {
         GearboxV3SwapStrategy implementation = deployGearboxV3SwapImplementation(contracts, priceFeedManager);
-        deployGearboxV3Swap(contracts, implementation, register, 1);
+
+        deployGearboxV3Swap(contracts, implementation, register, 0);
     }
 
     function deployEthena(StandardContracts memory contracts, string memory assetKey) public {
@@ -973,7 +974,7 @@ contract StrategiesInitial {
     function deployGearboxV3SwapImplementation(
         StandardContracts memory contracts,
         IUsdPriceFeedManager priceFeedManager
-    ) public returns (GearboxV3SwapStrategy implementation) {
+    ) public virtual returns (GearboxV3SwapStrategy implementation) {
         implementation =
         new GearboxV3SwapStrategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper, priceFeedManager);
         contractsJson().addVariantStrategyImplementation(GEARBOX_V3_KEY, "swap", address(implementation));
@@ -982,6 +983,12 @@ contract StrategiesInitial {
     function getGearboxV3Implementation() public view returns (GearboxV3Strategy) {
         return GearboxV3Strategy(
             contractsJson().getAddress(string.concat(".strategies.", GEARBOX_V3_KEY, ".implementation"))
+        );
+    }
+
+    function getGearboxV3SwapImplementation() public view returns (GearboxV3SwapStrategy implementation) {
+        return GearboxV3SwapStrategy(
+            contractsJson().getAddress(string.concat(".strategies.", GEARBOX_V3_KEY, ".implementation-swap"))
         );
     }
 
@@ -1041,8 +1048,8 @@ contract StrategiesInitial {
         string[] memory variants;
         if (round == 0) {
             variants = new string[](2);
-            variants[0] = "crvusd-usdc";
-            variants[1] = "gho-usdc";
+            variants[0] = "crvusd";
+            variants[1] = "gho";
         }
         require(variants.length > 0, "Invalid round");
 
@@ -1062,7 +1069,11 @@ contract StrategiesInitial {
                 constantsJson().getAddress(string.concat(".strategies.", GEARBOX_V3_KEY, ".", variants[i], ".sdToken"))
             );
 
-            uint256 assetGroupId = assetGroups(variants[i]);
+            string memory assetKey = constantsJson().getString(
+                string.concat(".strategies.", GEARBOX_V3_KEY, ".", variants[i], ".underlyingAsset")
+            );
+            uint256 assetGroupId = assetGroups(assetKey);
+
             address variant =
                 _createAndInitializeGearboxV3Swap(contracts, implementation, variantName, assetGroupId, sdToken);
             if (register) {
