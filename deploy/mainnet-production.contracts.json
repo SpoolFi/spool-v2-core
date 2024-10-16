@@ -3,10 +3,6 @@
     "implementation": "0xa21035da64B1D157C35Ad187afeB8D217C3BA108",
     "proxy": "0x4c6ee6eD4127a0067B9eb3b425DfCea95ac80cAe"
   },
-  "AllowlistGuard": {
-    "implementation": "0x1E1F7BE107FeadC60b9fA415199391E3ffa509c2",
-    "proxy": "0xB8d7B179bfa7AEBCFBE4174AA3ec11E47264b334"
-  },
   "AssetGroupRegistry": {
     "implementation": "0xEf2E91FE2f85bc856d5Bf36a412ba395bbbfc1A9",
     "proxy": "0x1Aa2a802BA25669531Ffd2b1fF8ae94f3D87f41A"
@@ -91,7 +87,10 @@
     "proxy": "0xC62AD2C374D6537E286a06F4d6301DA6cd9C6D0a"
   },
   "guards": {
-    "timelockGuard": "0xC8E48fc7Ebd0db581570244BC98858aFc9036a56"
+    "AllowlistGuard": {
+      "implementation": "0x1E1F7BE107FeadC60b9fA415199391E3ffa509c2",
+      "proxy": "0xB8d7B179bfa7AEBCFBE4174AA3ec11E47264b334"
+    }
   },
   "riskProviders": {
     "spoolLabs": "0xC216aD6280f4fa92A5159EF383a1206D432481c8",

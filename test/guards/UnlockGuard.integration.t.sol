@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import "../../src/interfaces/RequestType.sol";
-import "../../src/guards/TimelockGuard.sol";
+import "../../src/guards/UnlockGuard.sol";
 import "../../src/managers/AssetGroupRegistry.sol";
 import "../../src/managers/RiskManager.sol";
 import "../../src/managers/SmartVaultManager.sol";
@@ -16,14 +16,14 @@ import "../mocks/MockStrategy.sol";
 import "../libraries/Arrays.sol";
 import "../fixtures/TestFixture.sol";
 
-contract TimelockGuardIntegrationTest is TestFixture {
+contract UnlockGuardIntegrationTest is TestFixture {
     address private alice;
     address private bob;
     address private charlie;
     address private dave;
     address private eve;
 
-    TimelockGuard private timelockGuard;
+    UnlockGuard private unlockGuard;
     MockStrategy strategy;
 
     function setUp() public {
@@ -37,7 +37,7 @@ contract TimelockGuardIntegrationTest is TestFixture {
 
         uint256 assetGroupId = assetGroupRegistry.registerAssetGroup(Arrays.toArray(address(token)));
 
-        (GuardDefinition[][] memory guards, RequestType[] memory guardRequestTypes) = setUpTimelockGuard();
+        (GuardDefinition[][] memory guards, RequestType[] memory guardRequestTypes) = setUpUnlockGuard();
 
         strategy = new MockStrategy(assetGroupRegistry, accessControl, swapper, assetGroupId);
         {
@@ -77,32 +77,32 @@ contract TimelockGuardIntegrationTest is TestFixture {
             );
         }
 
-        setUpTimelock();
+        setUpUnlock();
     }
 
-    function setUpTimelockGuard() private returns (GuardDefinition[][] memory, RequestType[] memory) {
-        timelockGuard = new TimelockGuard(accessControl);
+    function setUpUnlockGuard() private returns (GuardDefinition[][] memory, RequestType[] memory) {
+        unlockGuard = new UnlockGuard(accessControl);
 
         // Setup smart vault with one guard:
-        // - check whether the person burning the deposit NFT has passed the timelock
-        // The guard is implemented using the `checkTimelock` function of the
-        // TimelockGuard contract.
+        // - check whether the person burning the deposit NFT has passed the unlock
+        // The guard is implemented using the `checkUnlock` function of the
+        // UnlockGuard contract.
         GuardDefinition[][] memory guards = new GuardDefinition[][](1);
         guards[0] = new GuardDefinition[](1);
 
         // guard call receives three parameters:
         // - address of the smart vault
-        // - ID of timelock to use for the smart vault
-        // - address to check against the timelock
+        // - ID of unlock to use for the smart vault
+        // - address to check against the unlock
         GuardParamType[] memory guardParamTypes = new GuardParamType[](2);
 
         guardParamTypes[0] = GuardParamType.VaultAddress; // address of the smart vault
-        guardParamTypes[1] = GuardParamType.Assets; // ID of the timelock, set as method param value below
+        guardParamTypes[1] = GuardParamType.Assets; // ID of the unlock, set as method param value below
 
         // define the guards
         guards[0][0] = GuardDefinition({ // guard checking the executor
-            contractAddress: address(timelockGuard),
-            methodSignature: "checkTimelock(address,uint256[])",
+            contractAddress: address(unlockGuard),
+            methodSignature: "checkUnlock(address)",
             operator: "",
             expectedValue: 0,
             methodParamTypes: guardParamTypes,
@@ -115,15 +115,15 @@ contract TimelockGuardIntegrationTest is TestFixture {
         return (guards, requestTypes);
     }
 
-    function setUpTimelock() private {
-        // allow Alice to update timelocks for the smart vault
+    function setUpUnlock() private {
+        // allow Alice to update unlocks for the smart vault
         accessControl.grantSmartVaultRole(address(smartVault), ROLE_SMART_VAULT_ADMIN, alice);
 
         vm.prank(alice);
-        timelockGuard.updateTimelock(address(smartVault), 12 days);
+        unlockGuard.updateUnlock(address(smartVault), 30 days);
     }
 
-    function test_depositWithTimelock() public {
+    function test_depositWithUnlock() public {
         token.mint(charlie, 2 ether);
         token.mint(eve, 1 ether);
         token.mint(bob, 1 ether);
@@ -166,8 +166,9 @@ contract TimelockGuardIntegrationTest is TestFixture {
 
         uint256[] memory nftAmounts = Arrays.toArray(NFT_MINTED_SHARES);
 
-        // at this point only charlie should be able to claim
+        // claim as Charlie, should fail
         vm.prank(charlie);
+        vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
         smartVaultManager.claimSmartVaultTokens(address(smartVault), nftIds[0], nftAmounts);
 
         // claim as Eve, should fail
@@ -180,9 +181,12 @@ contract TimelockGuardIntegrationTest is TestFixture {
         vm.expectRevert(abi.encodeWithSelector(GuardFailed.selector, 0));
         smartVaultManager.claimSmartVaultTokens(address(smartVault), nftIds[2], nftAmounts);
 
-        vm.warp(block.timestamp + 14 days);
+        vm.warp(block.timestamp + 22 days);
 
         // at this point everyone should be able to burn.
+        vm.prank(charlie);
+        smartVaultManager.claimSmartVaultTokens(address(smartVault), nftIds[0], nftAmounts);
+
         vm.prank(eve);
         smartVaultManager.claimSmartVaultTokens(address(smartVault), nftIds[1], nftAmounts);
 

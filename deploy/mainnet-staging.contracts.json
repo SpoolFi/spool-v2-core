@@ -3,10 +3,6 @@
     "implementation": "0x12f1E501CFAAa2c4A1c30a1783d0C4d3A92E3AbB",
     "proxy": "0x32c0F2C34496e74875D826AF16f1fdbD6e224617"
   },
-  "AllowlistGuard": {
-    "implementation": "0x1bF5051Bb45085eFcadE3A338e7e3DDEc033A83C",
-    "proxy": "0x8990A9CfB797cFA407be57542eB39d1f3Bbc29be"
-  },
   "AssetGroupRegistry": {
     "implementation": "0x6565ebFC8c40DEDE370877205299DF0842976b5a",
     "proxy": "0xB381615dC2A59334735149CBe4bc694E803333d0"
@@ -91,6 +87,12 @@
   },
   "riskProviders": {
     "spoolLabs": "0xC216aD6280f4fa92A5159EF383a1206D432481c8"
+  },
+  "guards": {
+    "AllowlistGuard": {
+      "implementation": "0x1bF5051Bb45085eFcadE3A338e7e3DDEc033A83C",
+      "proxy": "0x8990A9CfB797cFA407be57542eB39d1f3Bbc29be"
+    }
   },
   "strategies": {
     "aave-v2": {

@@ -310,7 +310,7 @@ contract DeploySpool {
             proxy = new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
             allowlistGuard = AllowlistGuard(address(proxy));
 
-            contractsJson().addProxy("AllowlistGuard", address(implementation), address(proxy));
+            contractsJson().addProxyGuard("AllowlistGuard", address(implementation), address(proxy));
         }
 
         {
@@ -384,7 +384,7 @@ contract DeploySpool {
         depositSwap = DepositSwap(contractsJson().getAddress(".DepositSwap.proxy"));
         smartVaultFactory = SmartVaultFactory(contractsJson().getAddress(".SmartVaultFactory"));
         smartVaultFactoryHpf = SmartVaultFactoryHpf(contractsJson().getAddress(".SmartVaultFactoryHpf"));
-        allowlistGuard = AllowlistGuard(contractsJson().getAddress(".AllowlistGuard.proxy"));
+        allowlistGuard = AllowlistGuard(contractsJson().getAddress(".guards.AllowlistGuard.proxy"));
         depositManager = DepositManager(contractsJson().getAddress(".DepositManager.proxy"));
         withdrawalManager = WithdrawalManager(contractsJson().getAddress(".WithdrawalManager.proxy"));
         ghostStrategy = IStrategy(contractsJson().getAddress(".GhostStrategy.proxy"));

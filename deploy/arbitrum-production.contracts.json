@@ -3,10 +3,6 @@
     "implementation": "0xf0ae2E04062815BF0b684CFa688d9E39dfAC1674",
     "proxy": "0xc80500f2e9B725Fd9CD2d06b4839E03c402CF1F6"
   },
-  "AllowlistGuard": {
-    "implementation": "0x73bE5C8f3F847Cb9a88BB24479B460dEd58758df",
-    "proxy": "0xe70896f1bcFD4feD4934d14a0eBE447D166718f7"
-  },
   "AssetGroupRegistry": {
     "implementation": "0x4EF38B4b9970aAe57f3894C71cD882a09091516E",
     "proxy": "0xb3B8D7a4ef4C6C78699bDab42837383040a3752e"
@@ -81,6 +77,12 @@
   "WithdrawalManager": {
     "implementation": "0x57ca5f4D4De92F417111Dfc70B53156a0fBd7E7b",
     "proxy": "0x11c0D854f47707334cbfB21b80Eb050687379830"
+  },
+  "guards": {
+    "AllowlistGuard": {
+      "implementation": "0x73bE5C8f3F847Cb9a88BB24479B460dEd58758df",
+      "proxy": "0xe70896f1bcFD4feD4934d14a0eBE447D166718f7"
+    }
   },
   "strategies": {
     "aave-v3": {

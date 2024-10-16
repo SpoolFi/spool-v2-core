@@ -3,10 +3,6 @@
     "implementation": "0xd1fcA82ED0E1774FC23e1d495974dE9C6532997e",
     "proxy": "0x12f1E501CFAAa2c4A1c30a1783d0C4d3A92E3AbB"
   },
-  "AllowlistGuard": {
-    "implementation": "0xC66E994f6183cDFf6F058B938f71c80A51918a85",
-    "proxy": "0x1bF5051Bb45085eFcadE3A338e7e3DDEc033A83C"
-  },
   "AssetGroupRegistry": {
     "implementation": "0x68258d69b666dd947D7dDa797b112113615E02f6",
     "proxy": "0x6565ebFC8c40DEDE370877205299DF0842976b5a"
@@ -88,6 +84,12 @@
   "WithdrawalManager": {
     "implementation": "0x1F31d1DC2951b5EeB2Ec1f1e3afAbb5a830e68B0",
     "proxy": "0x6D38Bd942DFC73d92e572ec5b3c55e124B5a3E81"
+  },
+  "guards": {
+    "AllowlistGuard": {
+      "implementation": "0xC66E994f6183cDFf6F058B938f71c80A51918a85",
+      "proxy": "0x1bF5051Bb45085eFcadE3A338e7e3DDEc033A83C"
+    }
   },
   "strategies": {
     "mock": {

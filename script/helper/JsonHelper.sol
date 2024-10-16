@@ -43,6 +43,18 @@ contract JsonWriter {
         content.write(path);
     }
 
+    function addProxyGuard(string memory guardKey, address implementation, address proxy) public {
+        string memory guardJson = guardKey;
+        guardJson.serialize("implementation", implementation);
+        guardJson = guardJson.serialize("proxy", proxy);
+
+        string memory guardsJson = "guards";
+        guardsJson = guardsJson.serialize(guardKey, guardJson);
+
+        string memory content = jsonWriter.serialize("guards", guardsJson);
+        content.write(path);
+    }
+
     function addProxyStrategy(string memory strategyKey, address implementation, address proxy) public {
         string memory strategyJson = strategyKey;
         strategyJson.serialize("implementation", implementation);
