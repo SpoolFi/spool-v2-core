@@ -89,6 +89,14 @@
     "AllowlistGuard": {
       "implementation": "0xC66E994f6183cDFf6F058B938f71c80A51918a85",
       "proxy": "0x1bF5051Bb45085eFcadE3A338e7e3DDEc033A83C"
+    },
+    "TimelockGuard": {
+      "implementation": "0x015c0d09bF00887Fd3175b28f5af559B68DE4c33",
+      "proxy": "0xABe2e7722A23BF1965e97CD8fdaD164B26503C5E"
+    },
+    "UnlockGuard": {
+      "implementation": "0xF40Ed8065B872FF3D3a0EA2E94D5d89ECD97f80D",
+      "proxy": "0x7825983fAD43ca6DCa1e86407B0e0938F28ea86f"
     }
   },
   "strategies": {
