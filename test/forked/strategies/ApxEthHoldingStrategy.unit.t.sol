@@ -102,8 +102,7 @@ contract ApxEthHoldingStrategyTest is TestFixture, ForkTestFixture {
     }
 
     function _underlyingBalanceOfStrategy() private view returns (uint256) {
-        uint256 balance = vault.balanceOf(address(apxEthHoldingStrategy));
-        return vault.previewRedeem(balance);
+        return apxEthHoldingStrategy.getUnderlyingAssetAmounts()[0];
     }
 
     function buildSlippages(MockExchange exchange, bytes memory data)
