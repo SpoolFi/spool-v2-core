@@ -63,8 +63,17 @@ contract ApxEthHoldingStrategy is ERC4626StrategyBase, SwapAdapter, WethHelper {
         __ERC4626Strategy_init(strategyName_, assetGroupId_, apxEth, constantShareAmount_);
     }
 
+    /// @dev overwritten to reduce bytecode size
     function beforeDepositCheck(uint256[] memory, uint256[] calldata) public view override {}
+    function _beforeDepositCheckSlippage(uint256[] memory, uint256[] calldata) internal override {}
     function beforeRedeemalCheck(uint256, uint256[] calldata) public view override {}
+    function beforeRedeemalCheck_(uint256) internal override {}
+    function _beforeRedeemalCheckSlippages(uint256, uint256[] calldata) internal override {}
+    function _depositToProtocolInternal(IERC20, uint256, uint256) internal override returns (uint256) {}
+    function _depositToProtocolSlippages(uint256[] calldata) internal pure override returns (uint256) {}
+    function _depositToProtocolInternalSlippages(uint256, uint256) internal override {}
+    function _redeemFromProtocolInternal(uint256 shares, uint256 slippage) internal override {}
+    function _redeemFromProtocolInternalSlippages(uint256, uint256) internal override {}
 
     function _depositToProtocol(address[] calldata, uint256[] memory amounts, uint256[] calldata) internal override {
         // WETH -> ETH

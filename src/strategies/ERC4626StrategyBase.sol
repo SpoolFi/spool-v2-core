@@ -182,7 +182,12 @@ abstract contract ERC4626StrategyBase is Strategy {
     }
 
     /// @dev can be overwritten in particular strategy to remove slippages
-    function _depositToProtocolSlippages(uint256[] calldata slippages) internal pure returns (uint256 slippage) {
+    function _depositToProtocolSlippages(uint256[] calldata slippages)
+        internal
+        pure
+        virtual
+        returns (uint256 slippage)
+    {
         if (slippages[0] == 0) {
             slippage = slippages[4];
         } else if (slippages[0] == 2) {
@@ -194,6 +199,7 @@ abstract contract ERC4626StrategyBase is Strategy {
 
     function _depositToProtocolInternal(IERC20 token, uint256 amount, uint256 slippage)
         internal
+        virtual
         returns (uint256 shares)
     {
         if (amount > 0) {
@@ -204,7 +210,7 @@ abstract contract ERC4626StrategyBase is Strategy {
     }
 
     /// @dev can be overwritten in particular strategy to remove slippages
-    function _depositToProtocolInternalSlippages(uint256 shares, uint256 slippage) internal {
+    function _depositToProtocolInternalSlippages(uint256 shares, uint256 slippage) internal virtual {
         if (shares < slippage) revert DepositSlippage();
         if (_isViewExecution()) {
             emit Slippages(true, shares, "");
@@ -234,7 +240,7 @@ abstract contract ERC4626StrategyBase is Strategy {
         }
     }
 
-    function _redeemFromProtocolInternal(uint256 shares, uint256 slippage) internal {
+    function _redeemFromProtocolInternal(uint256 shares, uint256 slippage) internal virtual {
         if (shares > 0) {
             uint256 assets = vault().redeem(redeem_(shares), address(this), address(this));
             _redeemFromProtocolInternalSlippages(assets, slippage);
@@ -242,7 +248,7 @@ abstract contract ERC4626StrategyBase is Strategy {
     }
 
     /// @dev can be overwritten in particular strategy to remove slippages
-    function _redeemFromProtocolInternalSlippages(uint256 assets, uint256 slippage) internal {
+    function _redeemFromProtocolInternalSlippages(uint256 assets, uint256 slippage) internal virtual {
         if (assets < slippage) revert RedeemalSlippage();
         if (_isViewExecution()) {
             emit Slippages(false, assets, "");
