@@ -12,10 +12,14 @@ contract MockProtocolStrategy is Strategy {
 
     MockProtocol public protocol;
 
+    uint256 _lastAccumulator;
+
     constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, MockProtocol protocol_)
         Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID)
     {
         protocol = protocol_;
+
+        (,_lastAccumulator,,) = protocol.update(address(this));
     }
 
     function initialize(string memory strategyName_, uint256 assetGroupId_) external initializer {
@@ -35,8 +39,15 @@ contract MockProtocolStrategy is Strategy {
         amounts[0] = balance;
     }
 
-    function _getYieldPercentage(int256) internal pure override returns (int256) {
-        return 0;
+    function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {
+        (,uint256 accumulator,,) = protocol.update(address(this));
+        if (_lastAccumulator == 0) {
+            return int256(accumulator);
+        }
+
+        baseYieldPercentage = _calculateYieldPercentage(_lastAccumulator, accumulator);
+
+        _lastAccumulator = accumulator;
     }
 
     function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata)
@@ -68,7 +79,7 @@ contract MockProtocolStrategy is Strategy {
             return;
         }
 
-        (uint256 shares,) = protocol.users(address(this));
+        (uint256 shares,,) = protocol.users(address(this));
 
         uint256 toWithdraw = shares * ssts / totalSupply();
 
@@ -80,7 +91,7 @@ contract MockProtocolStrategy is Strategy {
     function beforeRedeemalCheck(uint256 ssts, uint256[] calldata slippages) public view override {}
 
     function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
-        (uint256 shares,) = protocol.users(address(this));
+        (uint256 shares,,) = protocol.users(address(this));
 
         IERC20 token = IERC20(assets()[0]);
 

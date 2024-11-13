@@ -22,6 +22,7 @@ contract MockProtocol is Ownable {
     struct User {
         uint256 shares; // How many tokens the user has staked
         uint256 debt; // Reward debt
+        uint256 earned; // Rewards earned
     }
 
     // ************ VARIABLES ************
@@ -42,7 +43,7 @@ contract MockProtocol is Ownable {
 
     // ************ EVENTS ************
     event Deposit(address indexed user, uint256 amount);
-    event Withdraw(address indexed user, uint256 amount);
+    event Withdraw(address indexed user, uint256 amount, uint256 earned);
 
     // ************ CONSTRUCTOR ************
     constructor(address _token, uint256 _apy) {
@@ -64,17 +65,21 @@ contract MockProtocol is Ownable {
         emit Deposit(msg.sender, _amount);
     }
 
+    /// @dev withdraw(0) to claim rewards only
     function withdraw(uint256 _amount) external updater {
         User storage user = users[msg.sender];
-        require(_amount > 0 && _amount <= user.shares, "withdraw: not good");
+        require(_amount <= user.shares, "withdraw: not good");
+
+        uint256 earned = user.earned;
 
         user.shares -= _amount;
         user.debt = debtFor(user.shares, accumulator);
+        user.earned = 0;
         shares -= _amount;
 
-        token.transfer(msg.sender, _amount);
+        token.transfer(msg.sender, _amount + earned);
 
-        emit Withdraw(msg.sender, _amount);
+        emit Withdraw(msg.sender, _amount, earned);
     }
 
     function updateAPY(uint256 _apy) external updater onlyOwner {
@@ -83,28 +88,27 @@ contract MockProtocol is Ownable {
     }
 
     // ************ INTERNAL MUTATIVE FUNCTIONS ************
-    function update(address user) internal {
-        (uint256 _accumulator, uint256 _reward, uint256 _debt, uint256 _earned) = _update(user);
+    function _update(address _user) internal {
+        (uint256 _reward, uint256 _accumulator, uint256 _debt, uint256 _earnings) = update(_user);
 
-        accumulator = _accumulator;
-        updated = block.timestamp;
-        users[user].debt = _debt;
         token.mint(address(this), _reward);
-        token.transfer(msg.sender, _earned);
+        accumulator = _accumulator;
+        users[_user].debt = _debt;
+        users[_user].earned += _earnings;
+
+        updated = block.timestamp;
     }
 
     // ************ VIEW FUNCTIONS ************
-    function _update(address _user)
-        internal
+    function update(address _user)
+        public
         view
-        returns (uint256 _accumulator, uint256 _reward, uint256 _debt, uint256 _earned)
+        returns (uint256 _reward, uint256 _accumulator, uint256 _debt, uint256 _earnings)
     {
-        User storage user = users[_user];
-
         _reward = rewards();
         _accumulator = (shares == 0) ? accumulator : accumulator + ((_reward * scale) / shares);
-        _debt = debtFor(user.shares, _accumulator);
-        _earned = _debt - user.debt;
+        _debt = debtFor(users[_user].shares, _accumulator);
+        _earnings = _debt - users[_user].debt;
     }
 
     function debtFor(uint256 amount, uint256 _accumulator) public pure returns (uint256) {
@@ -119,14 +123,14 @@ contract MockProtocol is Ownable {
     }
 
     function balanceOf(address user) public view returns (uint256 balance) {
-        (,,, uint256 _earned) = _update(user);
+        (,,,uint256 _earnings) = update(user);
 
-        return users[user].shares + _earned;
+        return users[user].shares + users[user].earned + _earnings;
     }
 
     // ************ MODIFIERS ************
     modifier updater() {
-        update(msg.sender);
+        _update(msg.sender);
         _;
     }
 }

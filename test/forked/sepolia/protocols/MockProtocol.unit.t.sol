@@ -129,4 +129,29 @@ contract MockProtocolTest is TestFixture, ForkTestFixture {
         assertEq(tokenUnderlying.balanceOf(address(user1)), amount + yield);
         assertEq(tokenUnderlying.balanceOf(address(user2)), amount + (yield / 2));
     }
+
+    function test_claim() public {
+        uint256 amount = 1000;
+        uint256 yield = amount * apy / FULL_PERCENT;
+
+        _deal(user1, amount);
+        _deal(user2, amount);
+
+        vm.prank(address(user1));
+        protocol.deposit(amount);
+
+        vm.prank(address(user2));
+        protocol.deposit(amount);
+
+        vm.warp(block.timestamp + 52 weeks);
+
+        vm.prank(address(user1));
+        protocol.withdraw(0);
+
+        assertEq(_protocolBalance(), (amount * 2) + yield);
+        assertEq(protocol.balanceOf(user1), amount);
+        assertEq(protocol.balanceOf(user2), amount + yield);
+        assertEq(tokenUnderlying.balanceOf(address(user1)), yield);
+        assertEq(tokenUnderlying.balanceOf(address(user2)), 0);
+    }
 }

@@ -102,17 +102,17 @@ contract MockProtocolStrategyTest is TestFixture, ForkTestFixture {
         uint256 toDeposit = 1000 * 10 ** tokenUnderlying.decimals();
         _deal(address(mockProtocolStrategy), toDeposit);
 
-        uint256 usdcBalanceOfStrategyBefore = _strategyBalance();
+        uint256 balanceOfStrategyBefore = _strategyBalance();
 
         // act
         mockProtocolStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
 
         // assert
-        uint256 usdcBalanceOfStrategyAfter = _strategyBalance();
-        uint256 usdcBalanceOfProtocolAfter = _protocolBalance();
+        uint256 balanceOfStrategyAfter = _strategyBalance();
+        uint256 balanceOfProtocolAfter = _protocolBalance();
 
-        assertEq(usdcBalanceOfStrategyAfter - usdcBalanceOfStrategyBefore, toDeposit);
-        assertEq(usdcBalanceOfProtocolAfter, toDeposit);
+        assertEq(balanceOfStrategyAfter - balanceOfStrategyBefore, toDeposit);
+        assertEq(balanceOfProtocolAfter, toDeposit);
     }
 
     function test_redeemFromProtocol() public {
@@ -126,17 +126,17 @@ contract MockProtocolStrategyTest is TestFixture, ForkTestFixture {
         //   which are needed when determining how much to redeem
         mockProtocolStrategy.exposed_mint(100);
 
-        uint256 usdcBalanceOfStrategyBefore = _strategyBalance();
+        uint256 balanceOfStrategyBefore = _strategyBalance();
 
         // act
         mockProtocolStrategy.exposed_redeemFromProtocol(assetGroup, 60, new uint256[](0));
 
         // assert
-        uint256 usdcBalanceOfStrategyAfter = _strategyBalance();
-        uint256 usdcBalanceOfProtocolAfter = _protocolBalance();
+        uint256 balanceOfStrategyAfter = _strategyBalance();
+        uint256 balanceOfProtocolAfter = _protocolBalance();
 
-        assertEq(usdcBalanceOfStrategyBefore - usdcBalanceOfStrategyAfter, toDeposit * 60 / 100);
-        assertEq(usdcBalanceOfProtocolAfter, toDeposit * 40 / 100);
+        assertEq(balanceOfStrategyBefore - balanceOfStrategyAfter, toDeposit * 60 / 100);
+        assertEq(balanceOfProtocolAfter, toDeposit * 40 / 100);
     }
 
     function test_emergencyWithdrawImpl() public {
@@ -150,17 +150,56 @@ contract MockProtocolStrategyTest is TestFixture, ForkTestFixture {
         //   which are needed when determining how much to redeem
         mockProtocolStrategy.exposed_mint(100);
 
-        uint256 usdcBalanceOfStrategyBefore = _strategyBalance();
+        uint256 balanceOfStrategyBefore = _strategyBalance();
 
         // act
         mockProtocolStrategy.exposed_emergencyWithdrawImpl(new uint256[](0), emergencyWithdrawalRecipient);
 
         // assert
-        uint256 usdcBalanceOfStrategyAfter = _strategyBalance();
-        uint256 usdcBalanceOfEmergencyWithdrawalRecipient = tokenUnderlying.balanceOf(emergencyWithdrawalRecipient);
-        assertEq(usdcBalanceOfStrategyBefore - usdcBalanceOfStrategyAfter, toDeposit);
-        assertEq(usdcBalanceOfEmergencyWithdrawalRecipient, toDeposit);
-        assertEq(usdcBalanceOfStrategyAfter, 0);
+        uint256 balanceOfStrategyAfter = _strategyBalance();
+        uint256 balanceOfEmergencyWithdrawalRecipient = tokenUnderlying.balanceOf(emergencyWithdrawalRecipient);
+        assertEq(balanceOfStrategyBefore - balanceOfStrategyAfter, toDeposit);
+        assertEq(balanceOfEmergencyWithdrawalRecipient, toDeposit);
+        assertEq(balanceOfStrategyAfter, 0);
+    }
+
+    function test_getYieldPercentage() public {
+        // arrange
+        uint256 toDeposit = 1000 * 10 ** tokenUnderlying.decimals();
+        _deal(address(mockProtocolStrategy), toDeposit);
+
+        // - need to deposit into the protocol
+        mockProtocolStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
+
+        uint256 balanceOfStrategyBefore = _strategyBalance();
+
+        // - yield is gathered over time
+        vm.warp(block.timestamp + 52 weeks);
+
+        // act
+        int256 yieldPercentage = mockProtocolStrategy.exposed_getYieldPercentage(0);
+
+        // assert
+        uint256 balanceOfStrategyAfter = _strategyBalance();
+        uint256 calculatedYield = balanceOfStrategyBefore * uint256(yieldPercentage) / YIELD_FULL_PERCENT;
+        uint256 expectedYield = balanceOfStrategyAfter - balanceOfStrategyBefore;
+
+        assertGt(yieldPercentage, 0);
+        assertApproxEqAbs(calculatedYield, expectedYield, 1);
+
+        // - yield is gathered over time
+        vm.warp(block.timestamp + 26 weeks);
+
+        // act
+        yieldPercentage = mockProtocolStrategy.exposed_getYieldPercentage(0);
+
+        // assert
+        balanceOfStrategyAfter = _strategyBalance();
+        calculatedYield = balanceOfStrategyBefore * uint256(yieldPercentage) / YIELD_FULL_PERCENT;
+        expectedYield = balanceOfStrategyAfter - balanceOfStrategyBefore;
+
+        assertGt(yieldPercentage, 0);
+        assertApproxEqAbs(calculatedYield, expectedYield, 1);
     }
 
     function test_getUsdWorth() public {
@@ -185,7 +224,7 @@ contract MockProtocolStrategyTest is TestFixture, ForkTestFixture {
 
         mockProtocolStrategy.exposed_depositToProtocol(assetGroup, Arrays.toArray(toDeposit), new uint256[](0));
         mockProtocolStrategy.exposed_mint(100);
-        uint256 usdcBalanceOfStrategyBefore = _strategyBalance();
+        uint256 balanceOfStrategyBefore = _strategyBalance();
 
         // simulate 1 year of yield
         uint256 yield = toDeposit * apy / FULL_PERCENT;
@@ -193,9 +232,9 @@ contract MockProtocolStrategyTest is TestFixture, ForkTestFixture {
         vm.warp(block.timestamp + 52 weeks);
 
         mockProtocolStrategy.exposed_redeemFromProtocol(assetGroup, 100, new uint256[](0));
-        uint256 usdcBalanceOfStrategyAfter = tokenUnderlying.balanceOf(address(mockProtocolStrategy));
+        uint256 balanceOfStrategyAfter = tokenUnderlying.balanceOf(address(mockProtocolStrategy));
 
-        assertEq(usdcBalanceOfStrategyAfter, usdcBalanceOfStrategyBefore + yield);
+        assertEq(balanceOfStrategyAfter, balanceOfStrategyBefore + yield);
     }
 }
 
