@@ -18,12 +18,12 @@ contract MockProtocolStrategy is Strategy {
         Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID)
     {
         protocol = protocol_;
-
-        (,_lastAccumulator,,) = protocol.update(address(this));
     }
 
     function initialize(string memory strategyName_, uint256 assetGroupId_) external initializer {
         __Strategy_init(strategyName_, assetGroupId_);
+
+        (, _lastAccumulator,,) = protocol.update(address(this));
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {
@@ -40,7 +40,7 @@ contract MockProtocolStrategy is Strategy {
     }
 
     function _getYieldPercentage(int256) internal override returns (int256 baseYieldPercentage) {
-        (,uint256 accumulator,,) = protocol.update(address(this));
+        (, uint256 accumulator,,) = protocol.update(address(this));
         if (_lastAccumulator == 0) {
             return int256(accumulator);
         }

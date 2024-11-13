@@ -123,7 +123,7 @@ contract MockProtocol is Ownable {
     }
 
     function balanceOf(address user) public view returns (uint256 balance) {
-        (,,,uint256 _earnings) = update(user);
+        (,,, uint256 _earnings) = update(user);
 
         return users[user].shares + users[user].earned + _earnings;
     }
