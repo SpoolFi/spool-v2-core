@@ -124,6 +124,12 @@
       "mock-drip-usdc": "0xD5f24e72F51bA893c37b7A5a2D3307ea9ecf6B83",
       "mock-drip-usdt": "0x94D301E7133097Fba430E89b18395DABc33d2A02",
       "mock-drip-weth": "0x303d3fA19679D30e8722DD337f1A28b1A89689Ed"
+    },
+    "mock2": {
+      "beacon": "0x275De2e8dc0dD06C96907AA82cB2D2f42A437854",
+      "mock2-dai": "0xA612094DaF2CFc1D5dBf0Ce3123e447DC8cF96f8",
+      "mock2-usdc": "0x2AcFcd2987f90548E976Af98dEdDF3Ae92EBECDa",
+      "mock2-usdt": "0x862f226D1d00FF120EeE7109C198Ad1DF902a502"
     }
   }
 }

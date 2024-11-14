@@ -6,11 +6,11 @@ import "@openzeppelin/proxy/beacon/UpgradeableBeacon.sol";
 import "@openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/utils/math/SafeCast.sol";
 import "../../src/libraries/uint16a16Lib.sol";
-import "../../src/strategies/mocks/MockStrategy.sol";
+import "../../src/strategies/mocks/MockProtocolStrategy.sol";
 import "../helper/JsonHelper.sol";
 import "./AssetsInitial.s.sol";
 
-string constant MOCK_KEY = "mock";
+string constant MOCK_KEY = "mock2";
 
 struct StandardContracts {
     ISpoolAccessControl accessControl;
@@ -52,8 +52,8 @@ contract StrategiesInitial {
     }
 
     function _deployMockBeacon(StandardContracts memory contracts) internal returns (UpgradeableBeacon beacon) {
-        // Deploy beacon proxy
-        MockStrategy implementation = new MockStrategy(
+        // Deploy beacon proxy. upgrading this will upgrade for all strategies.
+        MockProtocolStrategy implementation = new MockProtocolStrategy(
             contracts.assetGroupRegistry,
             contracts.accessControl
         );
@@ -64,24 +64,23 @@ contract StrategiesInitial {
     }
 
     function deployClientMock(StandardContracts memory contracts, string memory name) public {
-        UpgradeableBeacon beacon = UpgradeableBeacon(contractsJson().getAddress(".strategies.mock.beacon"));
+        UpgradeableBeacon beacon = UpgradeableBeacon(contractsJson().getAddress(".strategies.mock2.beacon"));
         // create variant proxies
-        string[] memory variants = new string[](4);
+        string[] memory variants = new string[](3);
         variants[0] = DAI_KEY;
         variants[1] = USDC_KEY;
         variants[2] = USDT_KEY;
-        variants[3] = WETH_KEY;
 
         for (uint256 i; i < variants.length; ++i) {
             string memory variantName = _getVariantName(name, variants[i]);
 
-            uint256 rewardTokenPerSecond = constantsJson().getUint256(
-                string.concat(".strategies.", MOCK_KEY, ".", variants[i], ".rewardTokenPerSecond")
+            MockProtocol protocol = MockProtocol(
+                constantsJson().getAddress(string.concat(".protocols.", MOCK_KEY, ".", variants[i], ".address"))
             );
 
             address variant = _newBeaconProxy(address(beacon));
             uint256 assetGroupId = assetGroups(variants[i]);
-            MockStrategy(variant).initialize(variantName, assetGroupId, rewardTokenPerSecond);
+            MockProtocolStrategy(variant).initialize(variantName, assetGroupId, protocol);
             _registerClientStrategyVariant(name, variants[i], variant, assetGroupId, contracts.strategyRegistry);
         }
     }
@@ -91,22 +90,21 @@ contract StrategiesInitial {
         UpgradeableBeacon beacon = _deployMockBeacon(contracts);
 
         // create variant proxies
-        string[] memory variants = new string[](4);
+        string[] memory variants = new string[](3);
         variants[0] = DAI_KEY;
         variants[1] = USDC_KEY;
         variants[2] = USDT_KEY;
-        variants[3] = WETH_KEY;
 
         for (uint256 i; i < variants.length; ++i) {
             string memory variantName = _getVariantName(MOCK_KEY, variants[i]);
 
-            uint256 rewardTokenPerSecond = constantsJson().getUint256(
-                string.concat(".strategies.", MOCK_KEY, ".", variants[i], ".rewardTokenPerSecond")
+            MockProtocol protocol = MockProtocol(
+                constantsJson().getAddress(string.concat(".strategies.", MOCK_KEY, ".", variants[i], ".address"))
             );
 
             address variant = _newBeaconProxy(address(beacon));
             uint256 assetGroupId = assetGroups(variants[i]);
-            MockStrategy(variant).initialize(variantName, assetGroupId, rewardTokenPerSecond);
+            MockProtocolStrategy(variant).initialize(variantName, assetGroupId, protocol);
             _registerStrategyVariant(MOCK_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry);
         }
     }

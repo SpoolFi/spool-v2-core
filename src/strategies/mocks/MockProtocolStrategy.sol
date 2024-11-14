@@ -14,16 +14,19 @@ contract MockProtocolStrategy is Strategy {
 
     uint256 _lastAccumulator;
 
-    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, MockProtocol protocol_)
+    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_)
         Strategy(assetGroupRegistry_, accessControl_, NULL_ASSET_GROUP_ID)
-    {
-        protocol = protocol_;
-    }
+    {}
 
-    function initialize(string memory strategyName_, uint256 assetGroupId_) external initializer {
+    function initialize(string memory strategyName_, uint256 assetGroupId_, MockProtocol protocol_)
+        external
+        initializer
+    {
         __Strategy_init(strategyName_, assetGroupId_);
 
-        (, _lastAccumulator,,) = protocol.update(address(this));
+        (, _lastAccumulator,,) = protocol_.update(address(this));
+
+        protocol = protocol_;
     }
 
     function assetRatio() external pure override returns (uint256[] memory) {

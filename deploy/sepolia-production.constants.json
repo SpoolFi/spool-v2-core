@@ -30,22 +30,21 @@
         }
     },
     "strategies": {
-        "mock": {
+        "mock2": {
             "dai": {
-                "apy": 70000000000,
-                "rewardTokenPerSecond": "100"
-            },
-            "usdc": {
-                "apy": 70000000000,
-                "rewardTokenPerSecond": "100"
+                "apyProtocol": 800,
+                "apy": 80000000000,
+                "address": "0x711643789C4C1D8B5b4C4a70264b8cA23B7d4b44"
             },
             "usdt": {
-                "apy": 70000000000,
-                "rewardTokenPerSecond": "100"
+                "apyProtocol": 800,
+                "apy": 80000000000,
+                "address": "0xDcb7c837458439379E967229b68DE8b888d38775"
             },
-            "weth": {
-                "apy": 70000000000,
-                "rewardTokenPerSecond": "100"
+            "usdc": {
+                "apyProtocol": 800,
+                "apy": 80000000000,
+                "address": "0x4CF5d3CEC33C5E0381c2BCa55Ad5964f377243CD"
             }
         }
     },
