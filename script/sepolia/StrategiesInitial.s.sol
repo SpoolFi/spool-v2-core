@@ -120,7 +120,6 @@ contract StrategiesInitial {
             address(upgradableBeacon),
             ""
         );
-
         return address(proxy);
     }
 

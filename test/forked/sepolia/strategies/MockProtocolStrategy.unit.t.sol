@@ -45,10 +45,9 @@ contract MockProtocolStrategyTest is TestFixture, ForkTestFixture {
 
         mockProtocolStrategy = new MockProtocolStrategyHarness(
             assetGroupRegistry,
-            accessControl,
-            protocol
+            accessControl
         );
-        mockProtocolStrategy.initialize("mock-strategy", assetGroupId);
+        mockProtocolStrategy.initialize("mock-strategy", assetGroupId, protocol);
 
         vm.prank(address(strategyRegistry));
         accessControl.grantRole(ROLE_STRATEGY, address(mockProtocolStrategy));
@@ -240,7 +239,7 @@ contract MockProtocolStrategyTest is TestFixture, ForkTestFixture {
 
 // Exposes protocol-specific functions for unit-testing.
 contract MockProtocolStrategyHarness is MockProtocolStrategy, StrategyHarness {
-    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, MockProtocol protocol_)
-        MockProtocolStrategy(assetGroupRegistry_, accessControl_, protocol_)
+    constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_)
+        MockProtocolStrategy(assetGroupRegistry_, accessControl_)
     {}
 }
