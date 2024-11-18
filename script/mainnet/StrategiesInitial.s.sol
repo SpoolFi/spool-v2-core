@@ -124,8 +124,8 @@ contract StrategiesInitial {
         if (extended >= Extended.CONVEX_STETH_FRXETH) {
             deployConvexStFrxEth(contracts, true);
         }
-        if (extended >= Extended.GEARBOX_V3) {
-            deployGearboxV3(contracts, true);
+        if (extended >= Extended.GEARBOX_V3_ROUND_0) {
+            deployGearboxV3Round0(contracts, true);
         }
         if (extended >= Extended.METAMORPHO_ROUND_0) {
             deployMetamorphoRound0(contracts, true);
@@ -137,14 +137,15 @@ contract StrategiesInitial {
         if (extended >= Extended.METAMORPHO_ROUND_1) {
             deployMetamorphoRound1(contracts, true);
         }
-        if (extended >= Extended.GEARBOX_V3_EXTRA) {
-            deployGearboxV3Extra(contracts, true);
+        if (extended >= Extended.GEARBOX_V3_ROUND_1) {
+            deployGearboxV3Round1(contracts, true);
         }
         if (extended >= Extended.GEARBOX_V3_SWAP) {
             deployGearboxV3Swap(contracts, priceFeedManager, true);
         }
         if (extended >= Extended.METAMORPHO_ROUND_2) {
             deployMetamorphoRound2(contracts, true);
+            deployGearboxV3Round2(contracts, true);
         }
     }
 
@@ -750,7 +751,7 @@ contract StrategiesInitial {
         }
     }
 
-    function deployGearboxV3(StandardContracts memory contracts, bool register) public {
+    function deployGearboxV3Round0(StandardContracts memory contracts, bool register) public {
         GearboxV3Strategy implementation = deployGearboxV3Implementation(contracts);
         deployGearboxV3(contracts, implementation, register, 0);
     }
@@ -848,8 +849,12 @@ contract StrategiesInitial {
         deployMetamorpho(contracts, MetamorphoStrategy(implementation_metamorpho), register, 2);
     }
 
-    function deployGearboxV3Extra(StandardContracts memory contracts, bool register) public {
+    function deployGearboxV3Round1(StandardContracts memory contracts, bool register) public {
         deployGearboxV3(contracts, GearboxV3Strategy(implementation_gearboxV3), register, 1);
+    }
+
+    function deployGearboxV3Round2(StandardContracts memory contracts, bool register) public {
+        deployGearboxV3(contracts, GearboxV3Strategy(implementation_gearboxV3), register, 2);
     }
 
     function deployGearboxV3Swap(
@@ -1019,6 +1024,9 @@ contract StrategiesInitial {
             variants = new string[](2);
             variants[0] = "dai";
             variants[1] = "usdt";
+        } else if (round == 2) {
+            variants = new string[](1);
+            variants[0] = "wbtc";
         }
         require(variants.length > 0, "Invalid round");
 

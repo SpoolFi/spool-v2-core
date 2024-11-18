@@ -20,7 +20,7 @@ contract GearboxV3ExtraStrategySetup is MainnetExtendedSetup {
         // reserialize strategies
         contractsJson().reserializeKeyAddress("strategies");
 
-        deployGearboxV3Extra(contracts, false);
+        deployGearboxV3Round1(contracts, false);
     }
 
     function _createAndInitializeGearboxV3(

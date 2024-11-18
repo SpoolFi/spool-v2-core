@@ -158,6 +158,11 @@
                 "sdToken": "0xE2037090f896A858E3168B978668F22026AC52e7",
                 "apy": 0,
                 "underlyingAsset": "usdc"
+            },
+            "wbtc": {
+                "sdToken": "0xA8cE662E45E825DAF178DA2c8d5Fae97696A788A",
+                "apy": 0,
+                "underlyingAsset": "wbtc"
             }
         },
         "idle-best-yield-senior": {

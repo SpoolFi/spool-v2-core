@@ -16,7 +16,7 @@ contract GearboxV3StrategySetup is MainnetExtendedSetup {
         // reserialize strategies
         contractsJson().reserializeKeyAddress("strategies");
 
-        deployGearboxV3(contracts, false);
+        deployGearboxV3Round0(contracts, false);
     }
 
     function test_mock_GearboxV3StrategySetup() external pure {}
