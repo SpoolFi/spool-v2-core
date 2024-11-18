@@ -20,7 +20,7 @@ contract MetamorphoExtraStrategySetup is MainnetExtendedSetup {
         // reserialize strategies
         contractsJson().reserializeKeyAddress("strategies");
 
-        deployMetamorphoExtra(contracts, false);
+        deployMetamorphoRound1(contracts, false);
     }
 
     function _createAndInitializeMetamorpho(

@@ -41,6 +41,13 @@
                 "address": "0x8f1dF6D7F2db73eECE86a18b4381F4707b918FB1",
                 "timeLimit": 86580
             }
+        },
+        "wbtc": {
+            "address": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+            "priceAggregator": {
+                "address": "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c",
+                "timeLimit": 3780
+            }
         }
     },
     "strategies": {
@@ -340,6 +347,48 @@
                     "0x8207c1FfC5B6804F6024322CcF34F29c3541Ae26"
                 ],
                 "apy": 41100000000,
+                "underlyingAsset": "weth"
+            },
+            "gauntlet-wbtc-core": {
+                "vault": "0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2",
+                "rewards": [],
+                "apy": 49600000000,
+                "underlyingAsset": "wbtc"
+            },
+            "re7-wbtc": {
+                "vault": "0xE0C98605f279e4D7946d25B75869c69802823763",
+                "rewards": [],
+                "apy": 51000000000,
+                "underlyingAsset": "wbtc"
+            },
+            "mev-capital-wbtc": {
+                "vault": "0x1c530D6de70c05A81bF1670157b9d928e9699089",
+                "rewards": [],
+                "apy": 51000000000,
+                "underlyingAsset": "wbtc"
+            },
+            "gauntlet-usdc-core": {
+                "vault": "0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458",
+                "rewards": [],
+                "apy": 274100000000,
+                "underlyingAsset": "usdc"
+            },
+            "usual-boosted-usdc": {
+                "vault": "0xd63070114470f685b75B74D60EEc7c1113d33a3D",
+                "rewards": [],
+                "apy": 261700000000,
+                "underlyingAsset": "usdc"
+            },
+            "relend-usdc": {
+                "vault": "0x0F359FD18BDa75e9c49bC027E7da59a4b01BF32a",
+                "rewards": [],
+                "apy": 191300000000,
+                "underlyingAsset": "usdc"
+            },
+            "mev-capital-weth": {
+                "vault": "0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8",
+                "rewards": [],
+                "apy": 59700000000,
                 "underlyingAsset": "weth"
             }
         },

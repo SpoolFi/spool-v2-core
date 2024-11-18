@@ -11,12 +11,17 @@ import "../ForkTestFixtureDeployment.sol";
 contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
     MockAllocationProvider public mockAllocationProvider;
 
+    string public constant METAMORPHO_DAI_KEY = "metamorpho-gauntlet-dai-core";
+    string public constant METAMORPHO_USDC_KEY = "metamorpho-gauntlet-mkr-blended";
+    string public constant METAMORPHO_USDT_KEY = "metamorpho-gauntlet-usdt-prime";
+    string public constant METAMORPHO_WETH_KEY = "metamorpho-gauntlet-lrt-core";
+
     function setUpForkTestFixture() internal override {
         mainnetForkId = vm.createFork(vm.rpcUrl("mainnet"), MAINNET_FORK_BLOCK_EXTENDED_2);
     }
 
     function setUp() public {
-        _deploy(Extended.METAMORPHO_YEARN_V3); // deploy strategies up to Metamorhpo Gauntlet
+        _deploy(Extended.METAMORPHO_ROUND_0); // deploy strategies up to Metamorhpo Gauntlet
 
         mockAllocationProvider = new MockAllocationProvider();
         vm.startPrank(_spoolAdmin);
@@ -67,7 +72,9 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
 
         address[] memory strategies;
         {
-            address metamorphoStrategy = _getStrategyAddress(METAMORPHO_KEY, assetGroupId);
+            address metamorphoStrategy = _getStrategyAddress(METAMORPHO_DAI_KEY, assetGroupId);
+            console.log("Metamorpho DAI strategy address: %s", metamorphoStrategy);
+            console.log("asset group id: %s", assetGroupId);
             address aaveV2Strategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupId);
 
             strategies = Arrays.toArray(metamorphoStrategy, aaveV2Strategy);
@@ -133,7 +140,7 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
 
         address[] memory strategies;
         {
-            address metamorphoStrategy = _getStrategyAddress(METAMORPHO_KEY, assetGroupId);
+            address metamorphoStrategy = _getStrategyAddress(METAMORPHO_USDC_KEY, assetGroupId);
             address aaveV2Strategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupId);
 
             strategies = Arrays.toArray(metamorphoStrategy, aaveV2Strategy);
@@ -199,7 +206,7 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
 
         address[] memory strategies;
         {
-            address metamorphoStrategy = _getStrategyAddress(METAMORPHO_KEY, assetGroupId);
+            address metamorphoStrategy = _getStrategyAddress(METAMORPHO_USDT_KEY, assetGroupId);
             address aaveV2Strategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupId);
 
             strategies = Arrays.toArray(metamorphoStrategy, aaveV2Strategy);
@@ -265,7 +272,7 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
 
         address[] memory strategies;
         {
-            address metamorphoStrategy = _getStrategyAddress(METAMORPHO_KEY, assetGroupId);
+            address metamorphoStrategy = _getStrategyAddress(METAMORPHO_WETH_KEY, assetGroupId);
             address rEthHoldingStrategy = _getStrategyAddress(RETH_HOLDING_KEY, assetGroupId);
 
             strategies = Arrays.toArray(rEthHoldingStrategy, metamorphoStrategy);
@@ -328,7 +335,7 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
     function test_reallocate_dai() public {
         uint256 assetGroupId = _getAssetGroupId(DAI_KEY);
 
-        address metamorphoStrategy = _getStrategyAddress(METAMORPHO_KEY, assetGroupId);
+        address metamorphoStrategy = _getStrategyAddress(METAMORPHO_DAI_KEY, assetGroupId);
         address aaveV2Strategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupId);
 
         address[] memory strategies = Arrays.toArray(metamorphoStrategy, aaveV2Strategy);
@@ -386,7 +393,7 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
     function test_reallocate_usdc() public {
         uint256 assetGroupId = _getAssetGroupId(USDC_KEY);
 
-        address metamorphoStrategy = _getStrategyAddress(METAMORPHO_KEY, assetGroupId);
+        address metamorphoStrategy = _getStrategyAddress(METAMORPHO_USDC_KEY, assetGroupId);
         address aaveV2Strategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupId);
 
         address[] memory strategies = Arrays.toArray(metamorphoStrategy, aaveV2Strategy);
@@ -444,7 +451,7 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
     function test_reallocate_usdt() public {
         uint256 assetGroupId = _getAssetGroupId(USDT_KEY);
 
-        address metamorphoStrategy = _getStrategyAddress(METAMORPHO_KEY, assetGroupId);
+        address metamorphoStrategy = _getStrategyAddress(METAMORPHO_USDT_KEY, assetGroupId);
         address aaveV2Strategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupId);
 
         address[] memory strategies = Arrays.toArray(metamorphoStrategy, aaveV2Strategy);
@@ -503,7 +510,7 @@ contract E2eMainnetMetamorphoTest is ForkTestFixtureDeployment {
         uint256 assetGroupId = _getAssetGroupId(WETH_KEY);
 
         address rEthHoldingStrategy = _getStrategyAddress(RETH_HOLDING_KEY, assetGroupId);
-        address metamorphoStrategy = _getStrategyAddress(METAMORPHO_KEY, assetGroupId);
+        address metamorphoStrategy = _getStrategyAddress(METAMORPHO_WETH_KEY, assetGroupId);
 
         address[] memory strategies = Arrays.toArray(rEthHoldingStrategy, metamorphoStrategy);
 

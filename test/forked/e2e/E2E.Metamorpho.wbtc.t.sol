@@ -8,15 +8,19 @@ import "../../fixtures/TestFixture.sol";
 import "../../mocks/MockAllocationProvider.sol";
 import "../ForkTestFixtureDeployment.sol";
 
-contract E2E_YearnV3 is ForkTestFixtureDeployment {
+contract E2eMainnetMetamorphoWBTCTest is ForkTestFixtureDeployment {
     MockAllocationProvider public mockAllocationProvider;
 
+    string constant METAMORPHO_GAUNTLET_WBTC_KEY = "metamorpho-gauntlet-wbtc-core";
+    string constant METAMORPHO_RE7_WBTC_KEY = "metamorpho-re7-wbtc";
+    string constant METAMORPHO_MEV_CAPITAL_WBTC_KEY = "metamorpho-mev-capital-wbtc";
+
     function setUpForkTestFixture() internal override {
-        mainnetForkId = vm.createFork(vm.rpcUrl("mainnet"), MAINNET_FORK_BLOCK_EXTENDED_2);
+        mainnetForkId = vm.createFork(vm.rpcUrl("mainnet"), MAINNET_FORK_BLOCK_EXTENDED_6);
     }
 
     function setUp() public {
-        _deploy(Extended.METAMORPHO_ROUND_0);
+        _deploy(Extended.METAMORPHO_ROUND_2);
 
         mockAllocationProvider = new MockAllocationProvider();
         vm.startPrank(_spoolAdmin);
@@ -24,54 +28,16 @@ contract E2E_YearnV3 is ForkTestFixtureDeployment {
         vm.stopPrank();
     }
 
-    function test_deploySpool() public {
-        uint256 assetGroupIdUSDC = _getAssetGroupId(USDC_KEY);
-
-        address aaveStrategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupIdUSDC);
-        address compoundV2Strategy = _getStrategyAddress(COMPOUND_V2_KEY, assetGroupIdUSDC);
-
-        address[] memory strategies = Arrays.toArray(aaveStrategy, compoundV2Strategy);
-
-        uint16a16 allocations = uint16a16Lib.set(uint16a16.wrap(0), Arrays.toArray(FULL_PERCENT / 2, FULL_PERCENT / 2));
-        ISmartVault vault = _createVault(0, 0, assetGroupIdUSDC, strategies, allocations, address(0));
-
-        address alice = address(0xa);
-        _dealTokens(alice);
-
-        // DEPOSIT
-        uint256 depositAmount = 10 ** 10;
-        uint256 depositId = _deposit(vault, alice, depositAmount);
-        _flushVaults(vault);
-
-        // DHW
-        _dhw(strategies);
-
-        // WITHDRAWAL
-        uint256 withdrawalId = _redeemNfts(vault, alice, depositId);
-        _flushVaults(vault);
-
-        // DHW
-        _dhw(strategies);
-
-        // CLAIM
-        uint256 balanceBefore = usdc.balanceOf(alice);
-        _claimWithdrawals(vault, alice, withdrawalId);
-        uint256 balanceAfter = usdc.balanceOf(alice);
-
-        assertApproxEqAbs(balanceAfter - balanceBefore, depositAmount, 3);
-    }
-
-    function test_depositAndWithdraw_dai() public {
-        uint256 assetGroupId = _getAssetGroupId(DAI_KEY);
-        IERC20 asset = dai;
+    function test_depositAndWithdraw_wbtc() public {
+        uint256 assetGroupId = _getAssetGroupId(WBTC_KEY);
+        IERC20 asset = wbtc;
 
         address[] memory strategies;
         {
-            address yearnV3Strategy = _getStrategyAddress(YEARN_V3_GAUGED_KEY, assetGroupId);
-            address aaveV2Strategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupId);
-            address yearnV3Juiced = _getStrategyAddress(YEARN_V3_JUICED_KEY, assetGroupId);
+            address strategyA = _getStrategyAddress(METAMORPHO_GAUNTLET_WBTC_KEY, assetGroupId);
+            address strategyB = _getStrategyAddress(METAMORPHO_RE7_WBTC_KEY, assetGroupId);
 
-            strategies = Arrays.toArray(yearnV3Strategy, aaveV2Strategy, yearnV3Juiced);
+            strategies = Arrays.toArray(strategyA, strategyB);
         }
 
         _setRandomRiskScores(strategies);
@@ -94,7 +60,7 @@ contract E2E_YearnV3 is ForkTestFixtureDeployment {
         _dealTokens(users);
 
         // DEPOSIT
-        uint256[] memory depositAmounts = Arrays.toArray(10 ** 21, 2 * 10 ** 21, 3 * 10 ** 21);
+        uint256[] memory depositAmounts = Arrays.toArray(10 ** 11, 2 * 10 ** 11, 3 * 10 ** 11);
         uint256[] memory depositIds = _deposit(vault, users, depositAmounts);
         _flushVaults(vault);
 
@@ -128,20 +94,18 @@ contract E2E_YearnV3 is ForkTestFixtureDeployment {
         _batchBalanceDiffRel(balancesBefore, balancesAfter, depositAmounts, 1e14);
     }
 
-    function test_reallocate_dai() public {
-        uint256 assetGroupId = _getAssetGroupId(DAI_KEY);
+    function test_reallocate_wbtc() public {
+        uint256 assetGroupId = _getAssetGroupId(WBTC_KEY);
 
-        address yearnV3Strategy = _getStrategyAddress(YEARN_V3_GAUGED_KEY, assetGroupId);
-        address aaveV2Strategy = _getStrategyAddress(AAVE_V2_KEY, assetGroupId);
-        address yearnV3Juiced = _getStrategyAddress(YEARN_V3_JUICED_KEY, assetGroupId);
+        address strategyA = _getStrategyAddress(METAMORPHO_RE7_WBTC_KEY, assetGroupId);
+        address strategyB = _getStrategyAddress(METAMORPHO_MEV_CAPITAL_WBTC_KEY, assetGroupId);
 
-        address[] memory strategies = Arrays.toArray(yearnV3Strategy, aaveV2Strategy, yearnV3Juiced);
+        address[] memory strategies = Arrays.toArray(strategyA, strategyB);
 
         _setRandomRiskScores(strategies);
 
-        mockAllocationProvider.setWeight(yearnV3Strategy, 20);
-        mockAllocationProvider.setWeight(aaveV2Strategy, 50);
-        mockAllocationProvider.setWeight(yearnV3Juiced, 30);
+        mockAllocationProvider.setWeight(strategyA, 60);
+        mockAllocationProvider.setWeight(strategyB, 40);
 
         ISmartVault vault =
             _createVault(0, 0, assetGroupId, strategies, uint16a16.wrap(0), address(mockAllocationProvider));
@@ -151,7 +115,7 @@ contract E2E_YearnV3 is ForkTestFixtureDeployment {
         _dealTokens(alice);
 
         // DEPOSIT
-        uint256 depositAmount = 10 ** 21;
+        uint256 depositAmount = 10 ** 11;
         _deposit(vault, alice, depositAmount);
 
         // FLUSH
@@ -169,21 +133,19 @@ contract E2E_YearnV3 is ForkTestFixtureDeployment {
         _assertAllocationApproxRel(vault, 1e10);
 
         // REALLOCATE
-        mockAllocationProvider.setWeight(yearnV3Strategy, 50);
-        mockAllocationProvider.setWeight(aaveV2Strategy, 40);
-        mockAllocationProvider.setWeight(yearnV3Juiced, 10);
+        mockAllocationProvider.setWeight(strategyA, 10);
+        mockAllocationProvider.setWeight(strategyB, 90);
 
         _reallocate(vault);
 
-        _assertAllocationApproxRel(vault, 1e7);
+        _assertAllocationApproxRel(vault, 1e8);
 
         // advance block number
         vm.roll(block.number + 1);
 
         // REALLOCATE BACK
-        mockAllocationProvider.setWeight(yearnV3Strategy, 20);
-        mockAllocationProvider.setWeight(aaveV2Strategy, 50);
-        mockAllocationProvider.setWeight(yearnV3Juiced, 30);
+        mockAllocationProvider.setWeight(strategyA, 40);
+        mockAllocationProvider.setWeight(strategyB, 60);
 
         _reallocate(vault);
 

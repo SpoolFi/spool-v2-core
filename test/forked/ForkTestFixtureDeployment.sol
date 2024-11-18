@@ -10,6 +10,7 @@ import "../../script/mainnet/MainnetInitialSetup.s.sol";
 import "../libraries/Arrays.sol";
 import "./ForkTestFixture.sol";
 import "../libraries/TimeUtils.sol";
+import "../libraries/StringUtils.sol";
 import "../libraries/VaultValueHelpers.sol";
 
 string constant TEST_CONSTANTS_PATH = "deploy/fork-test-mainnet.constants.json";
@@ -70,6 +71,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
     IERC20 internal usdc;
     IERC20 internal usdt;
     IERC20 internal weth;
+    IERC20 internal wbtc;
 
     uint256 private _rn = 10;
 
@@ -117,6 +119,12 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
             assetGroupId = _deploySpool.assetGroups(WETH_KEY);
             assetGroup = _deploySpool.assetGroupRegistry().listAssetGroup(assetGroupId);
             weth = IERC20(assetGroup[0]);
+
+            if (extended >= Extended.METAMORPHO_ROUND_2) {
+                assetGroupId = _deploySpool.assetGroups(WBTC_KEY);
+                assetGroup = _deploySpool.assetGroupRegistry().listAssetGroup(assetGroupId);
+                wbtc = IERC20(assetGroup[0]);
+            }
         }
 
         _smartVaultManager = _deploySpool.smartVaultManager();
@@ -557,16 +565,27 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
     }
 
     function _dealTokens(address account) internal {
+        // DAI
         deal(address(dai), account, 1e18 * 1e6, true);
+
+        // USDC
         // TODO: forge throw errors on dealing USDC (somehow related to proxy https://github.com/foundry-rs/forge-std/issues/318)
         vm.startPrank(USDC_WHALE);
         IERC20(usdc).transfer(account, 1e6 * 1e6);
         vm.stopPrank();
         // deal(address(usdc), account, 1e6 * 1e6, true);
+
+        // USDT
         deal(address(usdt), account, 1e6 * 1e6, true);
 
+        // WETH
         IWETH9(address(weth)).deposit{value: 1e18 * 1e6}();
         weth.safeTransfer(address(account), 1e18 * 1e6);
+
+        // WBTC
+        if (address(wbtc) != address(0)) {
+            deal(address(wbtc), account, 1e8 * 1e6, true);
+        }
     }
 
     function _setRiskScores(uint8[] memory risks, address[] memory strategies) internal prank(_riskProvider) {
@@ -673,7 +692,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                     _setInitialDhwParametersGeneric(parameters, i, j, 4);
                 } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                     _setInitialDhwParametersGeneric(parameters, i, j, 4);
-                } else if (Strings.equal(strategyKey, METAMORPHO_KEY)) {
+                } else if (StringUtils.contains(strategyKey, METAMORPHO_KEY)) {
                     _setInitialDhwParametersGeneric(parameters, i, j, 6);
                 } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
                     _setInitialDhwParametersGeneric(parameters, i, j, 6);
@@ -725,7 +744,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
                 } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
-                } else if (Strings.equal(strategyKey, METAMORPHO_KEY)) {
+                } else if (StringUtils.contains(strategyKey, METAMORPHO_KEY)) {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 1);
                 } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
                     _updateDhwParametersGeneric(parameters, i, j, strategy, logs, 0);
@@ -928,7 +947,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
-            } else if (Strings.equal(strategyKey, METAMORPHO_KEY)) {
+            } else if (StringUtils.contains(strategyKey, METAMORPHO_KEY)) {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
             } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
                 strategySlippages[i] = _getRedeemFastSlippagesSimple(strategies[i]);
@@ -1039,7 +1058,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
             } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
-            } else if (Strings.equal(strategyKey, METAMORPHO_KEY)) {
+            } else if (StringUtils.contains(strategyKey, METAMORPHO_KEY)) {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
             } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
                 _setInitialReallocateParamsGeneric(params, i, 3, 3);
@@ -1086,7 +1105,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else if (Strings.equal(strategyKey, YEARN_V2_KEY)) {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);
-            } else if (Strings.equal(strategyKey, METAMORPHO_KEY)) {
+            } else if (StringUtils.contains(strategyKey, METAMORPHO_KEY)) {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);
             } else if (Strings.equal(strategyKey, YEARN_V3_GAUGED_KEY)) {
                 _updateReallocateParamsGeneric(params, i, strategy, logs);

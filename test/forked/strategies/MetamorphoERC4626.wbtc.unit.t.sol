@@ -19,7 +19,7 @@ import "../EthereumForkConstants.sol";
 
 import "forge-std/console.sol";
 
-contract MetamorphoERC4626USDTTest is TestFixture, ForkTestFixture {
+contract MetamorphoERC4626WBTCTest is TestFixture, ForkTestFixture {
     address[] private assetGroup;
     uint256 private assetGroupId;
     uint256[] private assetGroupExchangeRates;
@@ -28,16 +28,16 @@ contract MetamorphoERC4626USDTTest is TestFixture, ForkTestFixture {
     address implementation;
 
     // ******* Underlying specific constants **************
-    IERC4626 public vault = IERC4626(METAMORPHO_RE7_USDT);
-    IERC20Metadata tokenUnderlying = IERC20Metadata(USDT);
-    uint256 toDeposit = 100_000 * 10 ** 6;
+    IERC4626 public vault = IERC4626(METAMORPHO_RE7_WBTC);
+    IERC20Metadata tokenUnderlying = IERC20Metadata(WBTC);
+    uint256 toDeposit = 100 * 10 ** 8;
     uint256 rewardTokenAmount = 13396529259569365546568;
-    uint256 underlyingPriceUSD = 1001;
+    uint256 underlyingPriceUSD = 89000000;
 
     // ****************************************************
 
     function setUpForkTestFixture() internal override {
-        mainnetForkId = vm.createFork(vm.rpcUrl("mainnet"), MAINNET_FORK_BLOCK_EXTENDED_2);
+        mainnetForkId = vm.createFork(vm.rpcUrl("mainnet"), MAINNET_FORK_BLOCK_EXTENDED_6);
     }
 
     function setUp() public {
@@ -59,7 +59,7 @@ contract MetamorphoERC4626USDTTest is TestFixture, ForkTestFixture {
 
         address[] memory rewards = new address[](2);
         rewards[0] = DAI;
-        rewards[1] = USDT;
+        rewards[1] = WBTC;
         metamorphoStrategy.initialize("MetamorphoStrategy", assetGroupId, vault, 10 ** (vault.decimals() * 2), rewards);
 
         vm.prank(address(strategyRegistry));
@@ -205,7 +205,7 @@ contract MetamorphoERC4626USDTTest is TestFixture, ForkTestFixture {
             assertEq(rewardAddresses.length, 2);
             assertEq(rewardAmounts.length, rewardAddresses.length);
             assertEq(rewardAddresses[0], address(DAI));
-            assertEq(rewardAddresses[1], address(USDT));
+            assertEq(rewardAddresses[1], address(WBTC));
             assertEq(rewardAmounts[0], 0);
             assertEq(rewardAmounts[1], 0);
         }
@@ -213,9 +213,9 @@ contract MetamorphoERC4626USDTTest is TestFixture, ForkTestFixture {
             // rewards for Morpho should be claimed by an off-chain service
             // so we will emulate simple transfer of tokens
             uint256 daiReward = 987 * 10 ** 6;
-            uint256 usdtReward = 10_000 * 10 ** 6;
+            uint256 wbtcReward = 10 * 10 ** 8;
             deal(DAI, address(metamorphoStrategy), daiReward);
-            deal(USDT, address(metamorphoStrategy), usdtReward);
+            deal(WBTC, address(metamorphoStrategy), wbtcReward);
 
             vm.startPrank(address(0), address(0));
             (address[] memory rewardAddresses, uint256[] memory rewardAmounts) = metamorphoStrategy.getProtocolRewards();
@@ -224,9 +224,9 @@ contract MetamorphoERC4626USDTTest is TestFixture, ForkTestFixture {
             assertEq(rewardAddresses.length, 2);
             assertEq(rewardAmounts.length, rewardAddresses.length);
             assertEq(rewardAddresses[0], address(DAI));
-            assertEq(rewardAddresses[1], address(USDT));
+            assertEq(rewardAddresses[1], address(WBTC));
             assertEq(rewardAmounts[0], daiReward);
-            // USDT is underlying therefore its reward amount should be zero
+            // WBTC is underlying therefore its reward amount should be zero
             assertEq(rewardAmounts[1], 0);
         }
     }
@@ -252,10 +252,10 @@ contract MetamorphoERC4626USDTTest is TestFixture, ForkTestFixture {
         // rewards for Morpho should be claimed by an off-chain service
         // so we will emulate simple transfer of tokens
         uint256 daiReward = 987 * 10 ** 6;
-        uint256 usdtReward = 1000 * 10 ** 6;
+        uint256 wbtcReward = 10 * 10 ** 8;
         deal(DAI, address(metamorphoStrategy), daiReward);
-        // simulate USDT transfer for user deposits + reward
-        deal(USDT, address(metamorphoStrategy), toDeposit + usdtReward);
+        // simulate WBTC transfer for user deposits + reward
+        deal(WBTC, address(metamorphoStrategy), toDeposit + wbtcReward);
         SwapInfo[] memory compoundSwapInfo = new SwapInfo[](1);
         compoundSwapInfo[0] = SwapInfo({
             swapTarget: address(exchangeDai),
@@ -265,8 +265,8 @@ contract MetamorphoERC4626USDTTest is TestFixture, ForkTestFixture {
 
         slippages = new uint256[](6);
         slippages[3] = 1;
-        // we need to pass USDT reward here
-        slippages[5] = usdtReward;
+        // we need to pass WBTC reward here
+        slippages[5] = wbtcReward;
 
         int256 compoundYieldPercentage = metamorphoStrategy.exposed_compound(assetGroup, compoundSwapInfo, slippages);
 
@@ -279,7 +279,7 @@ contract MetamorphoERC4626USDTTest is TestFixture, ForkTestFixture {
         // deposit part should be not touched upon compounding
         assertEq(tokenUnderlying.balanceOf(address(metamorphoStrategy)), toDeposit, "1");
         assertGt(compoundYieldPercentage, 0, "2");
-        assertApproxEqAbs(compoundYieldPercentage, compoundYieldPercentageExpected, 10, "3");
+        assertApproxEqAbs(compoundYieldPercentage, compoundYieldPercentageExpected, 11, "3");
     }
 
     function test_getUsdWorth() public {
@@ -293,7 +293,7 @@ contract MetamorphoERC4626USDTTest is TestFixture, ForkTestFixture {
         uint256 usdWorth = metamorphoStrategy.exposed_getUsdWorth(assetGroupExchangeRates, priceFeedManager);
 
         // assert
-        assertApproxEqRel(usdWorth, priceFeedManager.assetToUsd(address(tokenUnderlying), toDeposit), 1e7);
+        assertApproxEqRel(usdWorth, priceFeedManager.assetToUsd(address(tokenUnderlying), toDeposit), 1e8);
     }
 }
 

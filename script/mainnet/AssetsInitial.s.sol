@@ -13,17 +13,19 @@ string constant WETH_KEY = "weth";
 string constant DAI_USDC_USDT_KEY = "dai-usdc-usdt";
 string constant USDE_KEY = "usde";
 string constant PYUSD_KEY = "pyusd";
+string constant WBTC_KEY = "wbtc";
 
 enum Extended {
     INITIAL,
     OETH,
     CONVEX_STETH_FRXETH,
     GEARBOX_V3,
-    METAMORPHO_YEARN_V3,
+    METAMORPHO_ROUND_0,
     USDE,
-    METAMORPHO_EXTRA,
+    METAMORPHO_ROUND_1,
     GEARBOX_V3_EXTRA,
     GEARBOX_V3_SWAP,
+    METAMORPHO_ROUND_2,
     CURRENT
 }
 
@@ -54,8 +56,11 @@ contract AssetsInitial {
         if (extended >= Extended.USDE) {
             assetNames[4] = USDE_KEY;
         }
-        if (extended >= Extended.METAMORPHO_EXTRA) {
+        if (extended >= Extended.METAMORPHO_ROUND_1) {
             assetNames[5] = PYUSD_KEY;
+        }
+        if (extended >= Extended.METAMORPHO_ROUND_2) {
+            assetNames[6] = WBTC_KEY;
         }
 
         _setAssets(assetGroupRegistry, priceFeedManager, assetNames);
@@ -103,8 +108,11 @@ contract AssetsInitial {
             _createAssetGroup(assetGroupRegistry, ArraysHelper.toArray(USDE_KEY));
         }
 
-        if (extended >= Extended.METAMORPHO_EXTRA) {
+        if (extended >= Extended.METAMORPHO_ROUND_1) {
             _createAssetGroup(assetGroupRegistry, ArraysHelper.toArray(PYUSD_KEY));
+        }
+        if (extended >= Extended.METAMORPHO_ROUND_2) {
+            _createAssetGroup(assetGroupRegistry, ArraysHelper.toArray(WBTC_KEY));
         }
     }
 
@@ -135,8 +143,11 @@ contract AssetsInitial {
         if (extended >= Extended.USDE) {
             assetNames[4] = USDE_KEY;
         }
-        if (extended >= Extended.METAMORPHO_EXTRA) {
+        if (extended >= Extended.METAMORPHO_ROUND_1) {
             assetNames[5] = PYUSD_KEY;
+        }
+        if (extended >= Extended.METAMORPHO_ROUND_2) {
+            assetNames[6] = WBTC_KEY;
         }
 
         for (uint256 i; i < assetNames.length; ++i) {
@@ -172,9 +183,14 @@ contract AssetsInitial {
             _assetGroups[USDE_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
         }
 
-        if (extended >= Extended.METAMORPHO_EXTRA) {
+        if (extended >= Extended.METAMORPHO_ROUND_1) {
             assetGroup[0] = _assets[PYUSD_KEY];
             _assetGroups[PYUSD_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
+        }
+
+        if (extended >= Extended.METAMORPHO_ROUND_2) {
+            assetGroup[0] = _assets[WBTC_KEY];
+            _assetGroups[WBTC_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
         }
     }
 
@@ -183,7 +199,10 @@ contract AssetsInitial {
         if (extended >= Extended.USDE) {
             numAssets++;
         }
-        if (extended >= Extended.METAMORPHO_EXTRA) {
+        if (extended >= Extended.METAMORPHO_ROUND_1) {
+            numAssets++;
+        }
+        if (extended >= Extended.METAMORPHO_ROUND_2) {
             numAssets++;
         }
     }
