@@ -78,8 +78,8 @@ contract StrategiesInitial {
     mapping(address => string) public addressToStrategyKey;
 
     // reused implementations during deployStrategies. Issues with reading JSON writes during execution.
-    address implementation_metamorpho;
-    address implementation_gearboxV3;
+    MetamorphoStrategy implementation_metamorpho;
+    GearboxV3Strategy implementation_gearboxV3;
 
     function deployStrategies(
         ISpoolAccessControl accessControl,
@@ -135,17 +135,17 @@ contract StrategiesInitial {
             deployYearnV3WithJuice(contracts, true);
         }
         if (extended >= Extended.METAMORPHO_ROUND_1) {
-            deployMetamorphoRound1(contracts, true);
+            deployMetamorphoRound1(contracts, implementation_metamorpho, true);
         }
         if (extended >= Extended.GEARBOX_V3_ROUND_1) {
-            deployGearboxV3Round1(contracts, true);
+            deployGearboxV3Round1(contracts, implementation_gearboxV3, true);
         }
         if (extended >= Extended.GEARBOX_V3_SWAP) {
             deployGearboxV3Swap(contracts, priceFeedManager, true);
         }
         if (extended >= Extended.METAMORPHO_ROUND_2) {
-            deployMetamorphoRound2(contracts, true);
-            deployGearboxV3Round2(contracts, true);
+            deployMetamorphoRound2(contracts, implementation_metamorpho, true);
+            deployGearboxV3Round2(contracts, implementation_gearboxV3, true);
         }
     }
 
@@ -841,20 +841,32 @@ contract StrategiesInitial {
         }
     }
 
-    function deployMetamorphoRound1(StandardContracts memory contracts, bool register) public {
-        deployMetamorpho(contracts, MetamorphoStrategy(implementation_metamorpho), register, 1);
+    function deployMetamorphoRound1(
+        StandardContracts memory contracts,
+        MetamorphoStrategy implementation,
+        bool register
+    ) public {
+        deployMetamorpho(contracts, implementation, register, 1);
     }
 
-    function deployMetamorphoRound2(StandardContracts memory contracts, bool register) public {
-        deployMetamorpho(contracts, MetamorphoStrategy(implementation_metamorpho), register, 2);
+    function deployMetamorphoRound2(
+        StandardContracts memory contracts,
+        MetamorphoStrategy implementation,
+        bool register
+    ) public {
+        deployMetamorpho(contracts, implementation, register, 2);
     }
 
-    function deployGearboxV3Round1(StandardContracts memory contracts, bool register) public {
-        deployGearboxV3(contracts, GearboxV3Strategy(implementation_gearboxV3), register, 1);
+    function deployGearboxV3Round1(StandardContracts memory contracts, GearboxV3Strategy implementation, bool register)
+        public
+    {
+        deployGearboxV3(contracts, implementation, register, 1);
     }
 
-    function deployGearboxV3Round2(StandardContracts memory contracts, bool register) public {
-        deployGearboxV3(contracts, GearboxV3Strategy(implementation_gearboxV3), register, 2);
+    function deployGearboxV3Round2(StandardContracts memory contracts, GearboxV3Strategy implementation, bool register)
+        public
+    {
+        deployGearboxV3(contracts, implementation, register, 2);
     }
 
     function deployGearboxV3Swap(
@@ -893,10 +905,10 @@ contract StrategiesInitial {
     function deployMetamorphoImplementation(StandardContracts memory contracts) public returns (MetamorphoStrategy) {
         // create implementation contract
         implementation_metamorpho =
-            address(new MetamorphoStrategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper));
-        contractsJson().addVariantStrategyImplementation(METAMORPHO_KEY, implementation_metamorpho);
+            new MetamorphoStrategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper);
+        contractsJson().addVariantStrategyImplementation(METAMORPHO_KEY, address(implementation_metamorpho));
 
-        return MetamorphoStrategy(implementation_metamorpho);
+        return implementation_metamorpho;
     }
 
     function deployMetamorpho(
@@ -979,12 +991,18 @@ contract StrategiesInitial {
         MetamorphoStrategy(variant).initialize(variantName, assetGroupId, vault, 10 ** (vault.decimals() * 2), rewards);
     }
 
+    function getMetamorphoImplementation() public view returns (MetamorphoStrategy) {
+        return MetamorphoStrategy(
+            contractsJson().getAddress(string.concat(".strategies.", METAMORPHO_KEY, ".implementation"))
+        );
+    }
+
     function deployGearboxV3Implementation(StandardContracts memory contracts) public returns (GearboxV3Strategy) {
         implementation_gearboxV3 =
-            address(new GearboxV3Strategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper));
-        contractsJson().addVariantStrategyImplementation(GEARBOX_V3_KEY, implementation_gearboxV3);
+            new GearboxV3Strategy(contracts.assetGroupRegistry, contracts.accessControl, contracts.swapper);
+        contractsJson().addVariantStrategyImplementation(GEARBOX_V3_KEY, address(implementation_gearboxV3));
 
-        return GearboxV3Strategy(implementation_gearboxV3);
+        return implementation_gearboxV3;
     }
 
     function deployGearboxV3SwapImplementation(

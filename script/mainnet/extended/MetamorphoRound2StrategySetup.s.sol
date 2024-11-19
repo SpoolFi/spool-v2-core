@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "../MainnetExtendedSetup.s.sol";
 
-contract MetamorphoExtraStrategySetup is MainnetExtendedSetup {
+contract MetamorphoRound2StrategySetup is MainnetExtendedSetup {
     function broadcast() public override {
         _deployerPrivateKey = vm.envUint("PRIVATE_KEY");
     }
@@ -20,7 +20,7 @@ contract MetamorphoExtraStrategySetup is MainnetExtendedSetup {
         // reserialize strategies
         contractsJson().reserializeKeyAddress("strategies");
 
-        deployMetamorphoRound1(contracts, getMetamorphoImplementation(), false);
+        deployMetamorphoRound2(contracts, getMetamorphoImplementation(), false);
     }
 
     function _createAndInitializeMetamorpho(

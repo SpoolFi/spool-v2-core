@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "../MainnetExtendedSetup.s.sol";
 
-contract MetamorphoExtraStrategySetup is MainnetExtendedSetup {
+contract GearboxV3Round2StrategySetup is MainnetExtendedSetup {
     function broadcast() public override {
         _deployerPrivateKey = vm.envUint("PRIVATE_KEY");
     }
@@ -20,20 +20,18 @@ contract MetamorphoExtraStrategySetup is MainnetExtendedSetup {
         // reserialize strategies
         contractsJson().reserializeKeyAddress("strategies");
 
-        deployMetamorphoRound1(contracts, getMetamorphoImplementation(), false);
+        deployGearboxV3Round2(contracts, getGearboxV3Implementation(), false);
     }
 
-    function _createAndInitializeMetamorpho(
+    function _createAndInitializeGearboxV3(
         StandardContracts memory contracts,
-        MetamorphoStrategy implementation,
+        GearboxV3Strategy implementation,
         string memory variantName,
         uint256 assetGroupId,
-        IERC4626 vault,
-        address[] memory rewards
+        IFarmingPool sdToken
     ) internal override returns (address variant) {
         vm.startBroadcast(_deployerPrivateKey);
-        variant =
-            super._createAndInitializeMetamorpho(contracts, implementation, variantName, assetGroupId, vault, rewards);
+        variant = super._createAndInitializeGearboxV3(contracts, implementation, variantName, assetGroupId, sdToken);
         vm.stopBroadcast();
     }
 }
