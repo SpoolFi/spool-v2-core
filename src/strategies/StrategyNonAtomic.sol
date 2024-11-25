@@ -55,6 +55,43 @@ struct DhwContinuationExecutionInfo {
 uint256 constant DEPOSIT_CONTINUATION = 1;
 uint256 constant WITHDRAWAL_CONTINUATION = 2;
 
+// Base contract for non-atomic strategies
+//                                                                             |
+// Works for various strategies that have non-atomic operations with the
+// underlying protocol. The strategy supports atomic and non-atomic deposits
+// and withdrawals in all combinations. But there are some limitations:
+//
+// - the interaction must be fully atomic or fully non-atomic. This means that
+//   it does not support the case where, e.g., part of withdrawal is executed
+//   atomically, and the other part is executed non-atomically.
+// - the interaction must be fully completed either in the `doHardWork` or in a
+//   single `doHardWorkContinue` call. This means that it does not support the
+//   case where, e.g., `doHardWorkContinue` should be called multiple times to
+//   complete the interaction.
+//
+// The flow is as following:
+//
+// - `doHardWork` is called
+//   - base yield is calculated
+//   - withdrawal is calculated as if there is no compound yield
+//     - withdrawals do not get compound yield since last DHW
+//   - compound is prepared
+//   - withdrawals are matched with deposits and compound yield
+//     - first match whole compound yield, then deposits
+//   - protocol interaction is initiated (either deposit or withdrawal)
+//   - if interaction is atomic
+//     - DHW finishes
+//   - else
+//     - preparations are made for continuation
+// - `doHardWorkContinue` is called
+//   - base yield since `doHardWork` is calculated
+//   - protocol interaction is finalized
+//   - fees are calculated
+//     - fees for withdrawal are calculated based on `doHardWork` base yield
+//     - fees for matched deposits are calculated based on `doHardWorkContinue` base yield
+//     - fees for legacy deposits are calculated based on full yield
+//   - DHW finishes
+
 abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable, IStrategy, IStrategyNonAtomic {
     using SafeERC20 for IERC20;
 
@@ -773,7 +810,10 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
         return assetsWithdrawn;
     }
 
-    function _tryRedeemFromProtocol(address[] calldata tokens, uint256 ssts, uint256[] calldata slippages)
+    /**
+     * @dev Will try to withdraw. If not atomic it will revert.
+     */
+    function _tryRedeemFromProtocol(address[] calldata tokens, uint256 shares, uint256[] calldata slippages)
         internal
         returns (uint256[] memory withdrawnAssets)
     {
@@ -782,7 +822,7 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
             withdrawnAssets[i] = IERC20(tokens[i]).balanceOf(address(this));
         }
 
-        bool finished = _initializeWithdrawalFromProtocol(tokens, ssts, slippages);
+        bool finished = _initializeWithdrawalFromProtocol(tokens, shares, slippages);
         if (!finished) {
             revert ProtocolActionNotFinished();
         }
