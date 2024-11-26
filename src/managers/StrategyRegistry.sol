@@ -14,6 +14,7 @@ import "../interfaces/Constants.sol";
 import "../access/SpoolAccessControllable.sol";
 import "../libraries/ArrayMapping.sol";
 import "../libraries/SpoolUtils.sol";
+import "../libraries/StrategyRegistryLib.sol";
 
 /**
  * @notice Used when strategy apy is out of bounds.
@@ -220,7 +221,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
     function getDhwYield(address[] calldata strategies, uint16a16 dhwIndexes) external view returns (int256[] memory) {
         int256[] memory yields = new int256[](strategies.length);
-        for (uint256 i; i < strategies.length; i++) {
+        for (uint256 i; i < strategies.length; ++i) {
             yields[i] = _stateAtDhw[strategies[i]][dhwIndexes.get(i)].yield;
         }
 
@@ -295,7 +296,16 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
      * @notice Remove strategy from registry
      */
     function removeStrategy(address strategy) external onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender) {
-        _removeStrategy(strategy);
+        StrategyRegistryLib.removeStrategy(
+            strategy,
+            _accessControl,
+            _masterWallet,
+            emergencyWithdrawalWallet,
+            _currentIndexes,
+            _assetsDeposited,
+            _removedStrategies,
+            _assetsNotClaimed
+        );
     }
 
     function doHardWork(DoHardWorkParameterBag calldata dhwParams) external whenNotPaused nonReentrant {
@@ -590,7 +600,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
             uint256 latestIndex = _currentIndexes[strategy];
             indexes = indexes.set(i, latestIndex);
 
-            for (uint256 j = 0; j < amounts[i].length; j++) {
+            for (uint256 j = 0; j < amounts[i].length; ++j) {
                 _assetsDeposited[strategy][latestIndex][j] += amounts[i][j];
             }
         }
@@ -621,34 +631,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256[] memory)
     {
-        uint256[] memory withdrawnAssets = new uint256[](redeemFastParams.assetGroup.length);
-
-        for (uint256 i; i < redeemFastParams.strategies.length; ++i) {
-            if (redeemFastParams.strategies[i] == _ghostStrategy || redeemFastParams.strategyShares[i] == 0) {
-                continue;
-            }
-
-            if (_dhwStatus[redeemFastParams.strategies[i]] > DHW_FINISHED) {
-                revert StrategyNotReady();
-            }
-
-            uint256[] memory strategyWithdrawnAssets = IStrategy(redeemFastParams.strategies[i]).redeemFast(
-                redeemFastParams.strategyShares[i],
-                address(_masterWallet),
-                redeemFastParams.assetGroup,
-                redeemFastParams.withdrawalSlippages[i]
-            );
-
-            for (uint256 j = 0; j < strategyWithdrawnAssets.length; j++) {
-                withdrawnAssets[j] += strategyWithdrawnAssets[j];
-            }
-
-            emit StrategySharesFastRedeemed(
-                redeemFastParams.strategies[i], redeemFastParams.strategyShares[i], strategyWithdrawnAssets
-            );
-        }
-
-        return withdrawnAssets;
+        return StrategyRegistryLib.redeemFast(redeemFastParams, _ghostStrategy, _masterWallet, _dhwStatus);
     }
 
     function claimWithdrawals(address[] calldata strategies_, uint16a16 dhwIndexes, uint256[] calldata strategyShares)
@@ -681,29 +664,16 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                 revert DhwNotRunYetForIndex(strategy, dhwIndex);
             }
 
-            uint256[] memory withdrawnAssets = _claimWithdrawnAssets(strategy, dhwIndex, strategyShares[i], assetGroup);
-            for (uint256 j = 0; j < totalWithdrawnAssets.length; j++) {
-                totalWithdrawnAssets[j] += withdrawnAssets[j];
+            for (uint256 j = 0; j < totalWithdrawnAssets.length; ++j) {
+                uint256 withdrawnAssets =
+                    _assetsWithdrawn[strategy][dhwIndex][j] * strategyShares[i] / _sharesRedeemed[strategy][dhwIndex];
+                totalWithdrawnAssets[j] += withdrawnAssets;
+                _assetsNotClaimed[strategy][j] -= withdrawnAssets;
+                // there will be dust left after all vaults sync
             }
         }
 
         return totalWithdrawnAssets;
-    }
-
-    function _claimWithdrawnAssets(
-        address strategy_,
-        uint256 dhwIndex_,
-        uint256 strategyShares_,
-        address[] memory assetGroup_
-    ) private returns (uint256[] memory withdrawnAssets) {
-        withdrawnAssets = new uint256[](assetGroup_.length);
-
-        for (uint256 i = 0; i < assetGroup_.length; ++i) {
-            withdrawnAssets[i] =
-                _assetsWithdrawn[strategy_][dhwIndex_][i] * strategyShares_ / _sharesRedeemed[strategy_][dhwIndex_];
-            _assetsNotClaimed[strategy_][i] -= withdrawnAssets[i];
-            // there will be dust left after all vaults sync
-        }
     }
 
     function emergencyWithdraw(
@@ -711,24 +681,21 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         uint256[][] calldata withdrawalSlippages,
         bool removeStrategies
     ) external {
-        if (!_isViewExecution()) {
-            _checkRole(ROLE_EMERGENCY_WITHDRAWAL_EXECUTOR, msg.sender);
-        }
-
-        for (uint256 i; i < strategies.length; ++i) {
-            if (strategies[i] == _ghostStrategy) {
-                continue;
-            }
-            _checkRole(ROLE_STRATEGY, strategies[i]);
-
-            IStrategy(strategies[i]).emergencyWithdraw(withdrawalSlippages[i], emergencyWithdrawalWallet);
-
-            emit StrategyEmergencyWithdrawn(strategies[i]);
-
-            if (removeStrategies) {
-                _removeStrategy(strategies[i]);
-            }
-        }
+        StrategyRegistryLib.emergencyWithdraw(
+            strategies,
+            withdrawalSlippages,
+            EmergencyWithdrawParams({
+                removeStrategies: removeStrategies,
+                accessControl: _accessControl,
+                ghostStrategy: _ghostStrategy,
+                emergencyWithdrawalWallet: emergencyWithdrawalWallet,
+                masterWallet: _masterWallet
+            }),
+            _currentIndexes,
+            _assetsDeposited,
+            _removedStrategies,
+            _assetsNotClaimed
+        );
     }
 
     function redeemStrategyShares(
@@ -736,7 +703,9 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         uint256[] calldata shares,
         uint256[][] calldata withdrawalSlippages
     ) external checkNonReentrant {
-        _redeemStrategyShares(strategies, shares, withdrawalSlippages, msg.sender);
+        StrategyRegistryLib.redeemStrategyShares(
+            strategies, shares, withdrawalSlippages, msg.sender, _accessControl, _ghostStrategy, _dhwStatus
+        );
     }
 
     function redeemStrategySharesView(
@@ -748,34 +717,18 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         if (!_isViewExecution()) {
             revert OnlyViewExecution(tx.origin);
         }
-        _redeemStrategyShares(strategies, shares, withdrawalSlippages, redeemer);
+        StrategyRegistryLib.redeemStrategyShares(
+            strategies, shares, withdrawalSlippages, redeemer, _accessControl, _ghostStrategy, _dhwStatus
+        );
     }
 
     function redeemStrategySharesAsync(address[] calldata strategies, uint256[] calldata shares)
         external
         checkNonReentrant
     {
-        if (strategies.length != shares.length) {
-            revert InvalidArrayLength();
-        }
-
-        for (uint256 i; i < strategies.length; ++i) {
-            address strategy = strategies[i];
-
-            if (strategy == _ghostStrategy) {
-                revert GhostStrategyUsed();
-            }
-            _checkRole(ROLE_STRATEGY, strategy);
-
-            uint256 strategyShares = shares[i];
-            uint256 index = _currentIndexes[strategy];
-            _sharesRedeemed[strategy][index] += strategyShares;
-            _userSharesWithdrawn[msg.sender][strategy][index] += strategyShares;
-
-            IStrategy(strategy).releaseShares(msg.sender, strategyShares);
-
-            emit StrategySharesRedeemInitiated(strategy, msg.sender, strategyShares, index);
-        }
+        StrategyRegistryLib.redeemStrategySharesAsync(
+            strategies, shares, _ghostStrategy, _accessControl, _currentIndexes, _sharesRedeemed, _userSharesWithdrawn
+        );
     }
 
     function claimStrategyShareWithdrawals(
@@ -783,77 +736,20 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         uint256[] calldata strategyIndexes,
         address recipient
     ) external checkNonReentrant {
-        if (strategies.length != strategyIndexes.length) {
-            revert InvalidArrayLength();
-        }
-
-        uint256 assetGroupId;
-        address[] memory assetGroup;
-        uint256[] memory totalWithdrawnAssets;
-
-        for (uint256 i; i < strategies.length; ++i) {
-            address strategy = strategies[i];
-
-            if (strategy == _ghostStrategy) {
-                continue;
-            }
-            _checkRole(ROLE_STRATEGY, strategy);
-
-            uint256 strategyAssetGroupId = IStrategy(strategy).assetGroupId();
-            if (assetGroup.length == 0) {
-                assetGroupId = strategyAssetGroupId;
-                assetGroup = IStrategy(strategy).assets();
-                totalWithdrawnAssets = new uint256[](assetGroup.length);
-            } else {
-                if (assetGroupId != strategyAssetGroupId) {
-                    revert NotSameAssetGroup();
-                }
-            }
-
-            uint256 strategyIndex = strategyIndexes[i];
-            uint256 strategyShares = _userSharesWithdrawn[msg.sender][strategy][strategyIndex];
-
-            _userSharesWithdrawn[msg.sender][strategy][strategyIndex] = 0;
-
-            uint256[] memory withdrawnAssets =
-                _claimWithdrawnAssets(strategy, strategyIndex, strategyShares, assetGroup);
-            for (uint256 j = 0; j < totalWithdrawnAssets.length; ++j) {
-                totalWithdrawnAssets[j] += withdrawnAssets[j];
-            }
-
-            emit StrategySharesRedeemClaimed(strategy, msg.sender, recipient, strategyShares, withdrawnAssets);
-        }
-
-        for (uint256 i; i < totalWithdrawnAssets.length; ++i) {
-            if (totalWithdrawnAssets[i] > 0) {
-                _masterWallet.transfer(IERC20(assetGroup[i]), recipient, totalWithdrawnAssets[i]);
-            }
-        }
-    }
-
-    function _redeemStrategyShares(
-        address[] calldata strategies,
-        uint256[] calldata shares,
-        uint256[][] calldata withdrawalSlippages,
-        address redeemer
-    ) private {
-        for (uint256 i; i < strategies.length; ++i) {
-            if (strategies[i] == _ghostStrategy || shares[i] == 0) {
-                continue;
-            }
-            _checkRole(ROLE_STRATEGY, strategies[i]);
-
-            if (_dhwStatus[strategies[i]] > DHW_FINISHED) {
-                revert StrategyNotReady();
-            }
-
-            address[] memory assetGroup = IStrategy(strategies[i]).assets();
-
-            uint256[] memory withdrawnAssets =
-                IStrategy(strategies[i]).redeemShares(shares[i], redeemer, assetGroup, withdrawalSlippages[i]);
-
-            emit StrategySharesRedeemed(strategies[i], redeemer, redeemer, shares[i], withdrawnAssets);
-        }
+        StrategyRegistryLib.claimStrategyShareWithdrawals(
+            strategies,
+            strategyIndexes,
+            ClaimStrategyShareWithdrawalsParams({
+                recipient: recipient,
+                accessControl: _accessControl,
+                ghostStrategy: _ghostStrategy,
+                masterWallet: _masterWallet
+            }),
+            _userSharesWithdrawn,
+            _assetsWithdrawn,
+            _sharesRedeemed,
+            _assetsNotClaimed
+        );
     }
 
     function setStrategyApy(address strategy, int256 apy) external onlyRole(ROLE_STRATEGY_APY_SETTER, msg.sender) {
@@ -985,27 +881,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     }
 
     /* ========== PRIVATE FUNCTIONS ========== */
-
-    function _removeStrategy(address strategy) private {
-        if (!_accessControl.hasRole(ROLE_STRATEGY, strategy)) revert InvalidStrategy({address_: strategy});
-
-        // send flushed and non-claimed funds to emergency withdrawal wallet
-        uint256 dhwIndex = _currentIndexes[strategy];
-        address[] memory tokens = IStrategy(strategy).assets();
-        for (uint256 i; i < tokens.length; ++i) {
-            uint256 amount = _assetsDeposited[strategy][dhwIndex][i] + _assetsNotClaimed[strategy][i];
-
-            if (amount > 0) {
-                _masterWallet.transfer(IERC20(tokens[i]), emergencyWithdrawalWallet, amount);
-            }
-        }
-
-        // remove strategy
-        _accessControl.revokeRole(ROLE_STRATEGY, strategy);
-        _removedStrategies[strategy] = true;
-
-        emit StrategyRemoved(strategy);
-    }
 
     function _isViewExecution() private view returns (bool) {
         return tx.origin == address(0);

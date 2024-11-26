@@ -384,12 +384,6 @@ interface IStrategyRegistry {
     event StrategyRegistered(address indexed strategy, uint256 atomicityClassification);
 
     /**
-     * @notice Strategy was removed
-     * @param strategy Strategy address
-     */
-    event StrategyRemoved(address indexed strategy);
-
-    /**
      * @notice Strategy DHW was executed
      * @param strategy Strategy address
      * @param dhwIndex DHW index
@@ -428,57 +422,6 @@ interface IStrategyRegistry {
     event EmergencyWithdrawalWalletSet(address indexed wallet);
 
     /**
-     * @notice Strategy shares have been redeemed
-     * @param strategy Strategy address
-     * @param owner Address that owns the shares
-     * @param recipient Address that received the withdrawn funds
-     * @param shares Amount of shares that were redeemed
-     * @param assetsWithdrawn Amounts of withdrawn assets
-     */
-    event StrategySharesRedeemed(
-        address indexed strategy,
-        address indexed owner,
-        address indexed recipient,
-        uint256 shares,
-        uint256[] assetsWithdrawn
-    );
-
-    /**
-     * @notice Strategy shares redeem has been initiated
-     * @param strategy Strategy address
-     * @param owner Address that owns the shares
-     * @param shares Amount of shares that were redeemed
-     * @param strategyIndex DHW index of the strategy
-     */
-    event StrategySharesRedeemInitiated(
-        address indexed strategy, address indexed owner, uint256 shares, uint256 strategyIndex
-    );
-
-    /**
-     * @notice Strategy shares redeem has been claimed
-     * @param strategy Strategy address
-     * @param owner Address that redeemed the shares
-     * @param recipient Address that received the withdrawn funds
-     * @param shares Amount of shares that were redeemed
-     * @param assetsWithdrawn Amounts of withdrawn assets
-     */
-    event StrategySharesRedeemClaimed(
-        address indexed strategy,
-        address indexed owner,
-        address indexed recipient,
-        uint256 shares,
-        uint256[] assetsWithdrawn
-    );
-
-    /**
-     * @notice Strategy shares were fast redeemed
-     * @param strategy Strategy address
-     * @param shares Amount of shares redeemed
-     * @param assetsWithdrawn Amounts of withdrawn assets
-     */
-    event StrategySharesFastRedeemed(address indexed strategy, uint256 shares, uint256[] assetsWithdrawn);
-
-    /**
      * @notice Strategy APY value was updated
      * @param strategy Strategy address
      * @param apy New APY value
@@ -487,12 +430,6 @@ interface IStrategyRegistry {
 }
 
 interface IEmergencyWithdrawal {
-    /**
-     * @notice Emitted when a strategy is emergency withdrawn from.
-     * @param strategy Strategy that was emergency withdrawn from.
-     */
-    event StrategyEmergencyWithdrawn(address indexed strategy);
-
     /**
      * @notice Set a new address that will receive assets withdrawn if emergency withdrawal is executed.
      * @dev Requirements:

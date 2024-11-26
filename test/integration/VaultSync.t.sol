@@ -361,4 +361,70 @@ contract VaultSyncTest is IntegrationTestFixture {
         assertEq(smartVault.balanceOf(alice), 0);
         assertEq(smartVault.balanceOf(alice, nftId), 0);
     }
+
+    function test_simulateSyncWithBurn() public {
+        createVault();
+
+        TestBag memory bag;
+
+        // initial deposit
+        bag.depositAmounts = Arrays.toArray(100 ether, 7.237 ether, 438.8 ether);
+
+        vm.startPrank(bob);
+        smartVaultManager.deposit(DepositBag(address(smartVault), bag.depositAmounts, bob, address(0), true));
+        vm.stopPrank();
+
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
+
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        uint256 totalSupplyInitial = smartVault.totalSupply();
+
+        // deposit 1
+        vm.startPrank(alice);
+        uint256 nftId1 =
+            smartVaultManager.deposit(DepositBag(address(smartVault), bag.depositAmounts, alice, address(0), true));
+        vm.stopPrank();
+
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
+
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        uint256 totalSupply1 = smartVault.totalSupply();
+
+        // deposit 2
+        bag.depositAmounts = Arrays.toArray(100 ether * 2, 7.237 ether * 2, 438.8 ether * 2);
+        vm.startPrank(alice);
+        uint256 nftId2 =
+            smartVaultManager.deposit(DepositBag(address(smartVault), bag.depositAmounts, alice, address(0), true));
+        vm.stopPrank();
+
+        // should give SVTs from NFT 1
+        uint256 simulatedBalanceA =
+            smartVaultManager.simulateSyncWithBurn(address(smartVault), alice, Arrays.toArray(nftId1, nftId2));
+
+        vm.startPrank(doHardWorker);
+        strategyRegistry.doHardWork(generateDhwParameterBag(smartVaultStrategies, assetGroup));
+        vm.stopPrank();
+
+        // should give SVTs from NFT 1 and NFT 2
+        uint256 simulatedBalanceB =
+            smartVaultManager.simulateSyncWithBurn(address(smartVault), alice, Arrays.toArray(nftId1, nftId2));
+
+        smartVaultManager.syncSmartVault(address(smartVault), true);
+
+        // should give SVTs from NFT1 and NFT 2
+        uint256 simulatedBalanceC =
+            smartVaultManager.simulateSyncWithBurn(address(smartVault), alice, Arrays.toArray(nftId1, nftId2));
+
+        uint256 totalSupply2 = smartVault.totalSupply();
+
+        assertEq(simulatedBalanceA, totalSupply1 - totalSupplyInitial);
+        assertEq(simulatedBalanceB, totalSupply2 - totalSupplyInitial);
+        assertEq(simulatedBalanceC, totalSupply2 - totalSupplyInitial);
+    }
 }

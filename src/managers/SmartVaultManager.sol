@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
-import "forge-std/console.sol";
-
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/utils/math/Math.sol";
+import "../access/SpoolAccessControllable.sol";
+import "../interfaces/CommonErrors.sol";
+import "../interfaces/Constants.sol";
 import "../interfaces/IAction.sol";
 import "../interfaces/IAssetGroupRegistry.sol";
 import "../interfaces/IDepositManager.sol";
@@ -18,13 +19,11 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 import "../interfaces/IUsdPriceFeedManager.sol";
 import "../interfaces/IWithdrawalManager.sol";
-import "../interfaces/CommonErrors.sol";
-import "../interfaces/Constants.sol";
 import "../interfaces/RequestType.sol";
-import "../access/SpoolAccessControllable.sol";
 import "../libraries/ArrayMapping.sol";
-import "../libraries/uint16a16Lib.sol";
 import "../libraries/ReallocationLib.sol";
+import "../libraries/SmartVaultManagerLib.sol";
+import "../libraries/uint16a16Lib.sol";
 
 struct VaultSyncUserBag {
     address[] tokens;
@@ -253,7 +252,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     }
 
     function claimSmartVaultTokens(address smartVault, uint256[] calldata nftIds, uint256[] calldata nftAmounts)
-        public
+        external
         whenNotPaused
         checkNonReentrant
         returns (uint256)
@@ -272,7 +271,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         uint256[] calldata nftIds,
         uint256[] calldata nftAmounts,
         address receiver
-    ) public whenNotPaused checkNonReentrant returns (uint256[] memory, uint256) {
+    ) external whenNotPaused checkNonReentrant returns (uint256[] memory, uint256) {
         _onlyRegisteredSmartVault(smartVault);
         uint256 assetGroupId_ = _smartVaultAssetGroups[smartVault];
         address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId_);
@@ -367,7 +366,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
 
     /* ========== BOOKKEEPING ========== */
 
-    function flushSmartVault(address smartVault) public whenNotPaused checkNonReentrant {
+    function flushSmartVault(address smartVault) external whenNotPaused checkNonReentrant {
         _onlyRegisteredSmartVault(smartVault);
 
         address[] memory strategies_ = _smartVaultStrategies[smartVault];
@@ -383,7 +382,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         );
     }
 
-    function syncSmartVault(address smartVault, bool revertIfError) public whenNotPaused checkNonReentrant {
+    function syncSmartVault(address smartVault, bool revertIfError) external whenNotPaused checkNonReentrant {
         _onlyRegisteredSmartVault(smartVault);
         _syncSmartVault(
             smartVault,
@@ -597,7 +596,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * Can be used to retrieve the number of SSTs the vault would claim during sync.
      */
     function simulateSync(address smartVault)
-        public
+        external
         view
         returns (uint256 oldTotalSVTs, uint256, uint256, uint256[] memory)
     {
@@ -663,106 +662,26 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
      * - Flush index can't be synced, if all DHWs haven't been completed yet.
      * - W-NFTs and NFTs with fractional balance of 0 will be skipped.
      */
-    function simulateSyncWithBurn(address smartVault, address userAddress, uint256[] memory nftIds)
-        public
+    function simulateSyncWithBurn(address smartVault, address userAddress, uint256[] calldata nftIds)
+        external
         view
         returns (uint256 newBalance)
     {
-        VaultSyncUserBag memory bag2;
-        FlushIndex memory flushIndex;
-
-        {
-            bag2.metadata = ISmartVault(smartVault).getMetadata(nftIds);
-            bag2.nftBalances = ISmartVault(smartVault).balanceOfFractionalBatch(userAddress, nftIds);
-            bag2.tokens = _assetGroupRegistry.listAssetGroup(_smartVaultAssetGroups[smartVault]);
-            bag2.strategies = _smartVaultStrategies[smartVault];
-            flushIndex = _flushIndexes[smartVault];
-        }
-
-        // Burn any NFTs that have already been synced
-        newBalance += _simulateNFTBurn(smartVault, nftIds, bag2, 0, flushIndex, false);
-
-        // Check if latest flush index has already been synced.
-        if (flushIndex.toSync == flushIndex.current) {
-            return newBalance;
-        }
-
-        uint16a16 indexes = _dhwIndexes[smartVault][flushIndex.toSync];
-
-        // If DHWs haven't been run yet, we can't sync
-        if (
-            !_areAllDhwRunsCompleted(
-                _strategyRegistry.currentIndex(bag2.strategies),
-                indexes,
-                _strategyRegistry.dhwStatuses(bag2.strategies),
-                bag2.strategies,
-                false
-            )
-        ) {
-            return newBalance;
-        }
-
-        uint256[2] memory packedParams;
-        {
-            uint256 lastDhwTimestamp = _lastDhwTimestampSynced[smartVault];
-            packedParams = [flushIndex.toSync, lastDhwTimestamp];
-        }
-        SmartVaultFees memory fees = _smartVaultFees[smartVault];
-
-        SimulateDepositParams memory params = SimulateDepositParams(
-            smartVault,
-            packedParams,
-            bag2.strategies,
-            bag2.tokens,
-            indexes,
-            _getPreviousDhwIndexes(smartVault, flushIndex.toSync),
-            fees
+        return SmartVaultManagerLib.simulateSyncWithBurn(
+            nftIds,
+            SimulateSyncWithBurnParams({
+                smartVault: smartVault,
+                userAddress: userAddress,
+                assetGroupRegistry: _assetGroupRegistry,
+                depositManager: _depositManager
+            }),
+            _flushIndexes,
+            _smartVaultAssetGroups,
+            _lastDhwTimestampSynced,
+            _smartVaultStrategies,
+            _dhwIndexes,
+            _smartVaultFees
         );
-
-        // Simulate deposit sync (DHW)
-        DepositSyncResult memory syncResult = _depositManager.syncDepositsSimulate(params);
-
-        // Burn any NFTs that would be synced as part of this flush cycle
-        newBalance += _simulateNFTBurn(smartVault, nftIds, bag2, syncResult.mintedSVTs, flushIndex, true);
-        return newBalance;
-    }
-
-    /**
-     * @dev Check how many SVTs would be received by burning the given array of NFTs
-     * @param smartVault vault address
-     * @param nftIds array of D-NFT ids
-     * @param bag NFT balances, token addresses and NFT metadata
-     * @param mintedSVTs amount of SVTs minted when syncing flush index
-     * @param flushIndex global flush index
-     * @param onlyCurrentFlushIndex whether to burn NFTs for current synced flush index or previously synced ones
-     */
-    function _simulateNFTBurn(
-        address smartVault,
-        uint256[] memory nftIds,
-        VaultSyncUserBag memory bag,
-        uint256 mintedSVTs,
-        FlushIndex memory flushIndex,
-        bool onlyCurrentFlushIndex
-    ) private view returns (uint256 SVTs) {
-        for (uint256 i; i < nftIds.length; ++i) {
-            // Skip W-NFTs
-            if (nftIds[i] > MAXIMAL_DEPOSIT_ID) continue;
-
-            // Skip D-NFTs with 0 balance
-            if (bag.nftBalances[i] == 0) continue;
-
-            DepositMetadata memory data = abi.decode(bag.metadata[i], (DepositMetadata));
-
-            // we're burning NFTs that have already been synced previously
-            if (!onlyCurrentFlushIndex && data.flushIndex >= flushIndex.toSync) continue;
-
-            // we're burning NFTs for current synced flushIndex
-            if (onlyCurrentFlushIndex && data.flushIndex != flushIndex.toSync) continue;
-
-            SVTs += _depositManager.getClaimedVaultTokensPreview(
-                smartVault, data, bag.nftBalances[i], mintedSVTs, bag.tokens
-            );
-        }
     }
 
     function _redeem(RedeemBag calldata bag, address receiver, address owner, address executor, bool doFlush)
