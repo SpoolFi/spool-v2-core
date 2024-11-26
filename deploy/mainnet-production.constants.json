@@ -48,6 +48,20 @@
                 "address": "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c",
                 "timeLimit": 3780
             }
+        },
+        "gho": {
+            "address": "0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f",
+            "priceAggregator": {
+                "address": "0x3f12643D3f6f874d39C2a4c9f2Cd6f2DbAC877FC",
+                "timeLimit": 19800
+            }
+        },
+        "crvusd": {
+            "address": "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E",
+            "priceAggregator": {
+                "address": "0xEEf0C605546958c1f899b6fB336C20671f9cD49F",
+                "timeLimit": 86580
+            }
         }
     },
     "strategies": {
@@ -151,17 +165,17 @@
             },
             "crvusd": {
                 "sdToken": "0xfBCA378AeA93EADD6882299A3d74D8641Cc0C4BC",
-                "apy": 0,
+                "apy": 101424154420,
                 "underlyingAsset": "usdc"
             },
             "gho": {
                 "sdToken": "0xE2037090f896A858E3168B978668F22026AC52e7",
-                "apy": 0,
+                "apy": 100200131549,
                 "underlyingAsset": "usdc"
             },
             "wbtc": {
                 "sdToken": "0xA8cE662E45E825DAF178DA2c8d5Fae97696A788A",
-                "apy": 0,
+                "apy": 21004514319,
                 "underlyingAsset": "wbtc"
             }
         },
