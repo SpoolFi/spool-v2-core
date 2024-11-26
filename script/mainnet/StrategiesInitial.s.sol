@@ -185,28 +185,23 @@ contract StrategiesInitial {
         // create implementation contract
         ApxEthHoldingStrategy implementation = _deployApxEthImplementation(contracts);
 
-        contractsJson().addVariantStrategyImplementation(APXETH_HOLDING_KEY, address(implementation));
+        string memory variantName = _getVariantName(APXETH_HOLDING_KEY, WETH_KEY);
 
-        // create variant proxies
-        string[] memory variants = new string[](1);
-        variants[0] = WETH_KEY;
+        IPirexEth pirexEth =
+            IPirexEth(constantsJson().getAddress(string.concat(".strategies.", APXETH_HOLDING_KEY, ".pirex")));
 
-        for (uint256 i; i < variants.length; ++i) {
-            string memory variantName = _getVariantName(APXETH_HOLDING_KEY, variants[i]);
+        uint256 assetGroupId = assetGroups(WETH_KEY);
 
-            IPirexEth pirexEth =
-                IPirexEth(constantsJson().getAddress(string.concat(".strategies.", APXETH_HOLDING_KEY, ".pirex")));
-
-            uint256 assetGroupId = assetGroups(variants[i]);
-
-            address variant =
-                _deployApxEthProxyAndInitialize(contracts, implementation, variantName, assetGroupId, pirexEth);
-            if (register) {
-                _registerStrategyVariant(
-                    APXETH_HOLDING_KEY, variants[i], variant, assetGroupId, contracts.strategyRegistry
-                );
-            }
+        address variant =
+            _deployApxEthProxyAndInitialize(contracts, implementation, variantName, assetGroupId, pirexEth);
+        if (register) {
+            _registerStrategy(
+                APXETH_HOLDING_KEY, address(implementation), variant, assetGroupId, contracts.strategyRegistry
+            );
+        } else {
+            contractsJson().addProxyStrategy(APXETH_HOLDING_KEY, address(implementation), variant);
         }
+
     }
 
     function _deployApxEthImplementation(StandardContracts memory contracts)
