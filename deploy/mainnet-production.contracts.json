@@ -111,6 +111,10 @@
       "aave-v2-usdt": "0xCfdEa0499D00f6ecae256F0FC9daCC837D48409e",
       "implementation": "0x3Bb41F7A05535CC05Ab6263dd01a4fa3462bE3c9"
     },
+    "apxeth-holding": {
+      "implementation": "0xfcb81f77267EcB9A14ce6232f45e667B56140547",
+      "proxy": "0xfC21a9A9d9557dDC87cE1281FF50511dD89F27BA"
+    },
     "compound-v2": {
       "compound-v2-dai": "0x013022c7ca735eF6ba55cd3eaccB4Ebb3be484e9",
       "compound-v2-usdc": "0xfC8610aE1D1cc5f30c932E9FF4ac37E3f1a6337d",

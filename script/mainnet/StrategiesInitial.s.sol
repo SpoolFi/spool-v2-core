@@ -201,7 +201,6 @@ contract StrategiesInitial {
         } else {
             contractsJson().addProxyStrategy(APXETH_HOLDING_KEY, address(implementation), variant);
         }
-
     }
 
     function _deployApxEthImplementation(StandardContracts memory contracts)
