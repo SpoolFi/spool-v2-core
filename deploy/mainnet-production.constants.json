@@ -53,7 +53,7 @@
             "address": "0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f",
             "priceAggregator": {
                 "address": "0x3f12643D3f6f874d39C2a4c9f2Cd6f2DbAC877FC",
-                "timeLimit": 19800
+                "timeLimit": 86580
             }
         },
         "crvusd": {
@@ -82,7 +82,7 @@
         },
         "apxeth-holding": {
             "pirex": "0xD664b74274DfEB538d9baC494F3a4760828B02b0",
-             "apy": 638000000000
+             "apy": 64200000000
         },
         "compound-v2": {
             "comptroller": "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B",
@@ -169,17 +169,17 @@
             },
             "crvusd": {
                 "sdToken": "0xfBCA378AeA93EADD6882299A3d74D8641Cc0C4BC",
-                "apy": 101424154420,
+                "apy": 87740200927,
                 "underlyingAsset": "usdc"
             },
             "gho": {
                 "sdToken": "0xE2037090f896A858E3168B978668F22026AC52e7",
-                "apy": 100200131549,
+                "apy": 118079595478,
                 "underlyingAsset": "usdc"
             },
             "wbtc": {
                 "sdToken": "0xA8cE662E45E825DAF178DA2c8d5Fae97696A788A",
-                "apy": 21004514319,
+                "apy": 17502386867,
                 "underlyingAsset": "wbtc"
             }
         },
@@ -375,43 +375,43 @@
             "gauntlet-wbtc-core": {
                 "vault": "0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2",
                 "rewards": [],
-                "apy": 49600000000,
+                "apy": 9800000000,
                 "underlyingAsset": "wbtc"
             },
             "re7-wbtc": {
                 "vault": "0xE0C98605f279e4D7946d25B75869c69802823763",
                 "rewards": [],
-                "apy": 51000000000,
+                "apy": 9800000000,
                 "underlyingAsset": "wbtc"
             },
             "mev-capital-wbtc": {
                 "vault": "0x1c530D6de70c05A81bF1670157b9d928e9699089",
                 "rewards": [],
-                "apy": 51000000000,
+                "apy": 9700000000,
                 "underlyingAsset": "wbtc"
             },
             "gauntlet-usdc-core": {
                 "vault": "0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458",
                 "rewards": [],
-                "apy": 274100000000,
+                "apy": 139100000000,
                 "underlyingAsset": "usdc"
             },
             "usual-boosted-usdc": {
                 "vault": "0xd63070114470f685b75B74D60EEc7c1113d33a3D",
                 "rewards": [],
-                "apy": 261700000000,
+                "apy": 193100000000,
                 "underlyingAsset": "usdc"
             },
             "relend-usdc": {
                 "vault": "0x0F359FD18BDa75e9c49bC027E7da59a4b01BF32a",
                 "rewards": [],
-                "apy": 191300000000,
+                "apy": 82300000000,
                 "underlyingAsset": "usdc"
             },
             "mev-capital-weth": {
                 "vault": "0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8",
                 "rewards": [],
-                "apy": 59700000000,
+                "apy": 17300000000,
                 "underlyingAsset": "weth"
             }
         },
