@@ -10,8 +10,7 @@ import {
 } from "../../../src/strategies/MetamorphoStrategyV2.sol";
 
 /**
- * source .env && FOUNDRY_PROFILE=mainnet-production forge script script/mainnet/upgrade/DeployMetamorphoStrategyV2.s.sol:DeployMetamorphoStrategyV2 --optimizer-runs 1000 --rpc-url=$MAINNET_RPC_URL --with-gas-price 2000000000 --slow --broadcast --legacy
- *   --etherscan-api-key $ETHERSCAN_API_KEY --verify
+ * source .env && FOUNDRY_PROFILE=mainnet-production forge script script/mainnet/upgrade/DeployMetamorphoStrategyV2.s.sol:DeployMetamorphoStrategyV2 --optimizer-runs 1000 --rpc-url=$MAINNET_RPC_URL --with-gas-price 2000000000 --slow --broadcast --legacy --etherscan-api-key $ETHERSCAN_API_KEY --verify
  * @dev Optionally can change `--with-gas-price` to something more reasonable
  */
 contract DeployMetamorphoStrategyV2 is Script {
