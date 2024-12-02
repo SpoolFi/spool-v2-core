@@ -242,6 +242,8 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
         // initiate deposit or withdrawal
         if (executionInfo.withdrawalWorth + executionInfo.depositWorth + executionInfo.compoundWorth == 0) {
             // no action needed - only base yield is processed
+
+            executionInfo.finished = true;
         } else if (executionInfo.depositWorth + executionInfo.compoundWorth > executionInfo.withdrawalWorth) {
             // deposit to protocol is needed
 

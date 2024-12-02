@@ -260,7 +260,7 @@ library StrategyRegistryLib {
             userSharesWithdrawn[msg.sender][strategy][strategyIndex] = 0;
 
             uint256[] memory withdrawnAssets = new uint256[](assetGroup.length);
-            for (uint256 j = 0; j < assetGroup.length; ++i) {
+            for (uint256 j = 0; j < assetGroup.length; ++j) {
                 withdrawnAssets[j] = assetsWithdrawn[strategy][strategyIndex][j] * strategyShares
                     / sharesRedeemed[strategy][strategyIndex];
                 totalWithdrawnAssets[j] += withdrawnAssets[j];
