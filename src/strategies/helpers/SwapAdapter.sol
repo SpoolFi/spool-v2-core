@@ -34,7 +34,7 @@ abstract contract SwapAdapter {
         uint256 offset
     ) internal virtual returns (uint256) {
         // used for parameter gatherer in order to prepare swap calldata
-        if (isViewExecution() && slippages[0] == 1) {
+        if (isViewExecution() && slippages[offset] == 1) {
             emit SwapEstimation(tokenIn, tokenOut, tokenInAmount);
             return 0;
         }

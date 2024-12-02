@@ -422,7 +422,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                     // Bookkeeping.
                     _dhwAssetRatios[strategy] = IStrategy(strategy).assetRatio();
                     for (uint256 k; k < assetGroup.length; ++k) {
-                        _assetsWithdrawn[strategy][dhwIndex][k] += dhwInfo.assetsWithdrawn[k];
+                        _assetsWithdrawn[strategy][dhwIndex][k] = dhwInfo.assetsWithdrawn[k];
                         _assetsNotClaimed[strategy][k] += dhwInfo.assetsWithdrawn[k];
                     }
 

@@ -8,11 +8,11 @@ import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../external/interfaces/strategies/aave/IStakedGho.sol";
 import "../libraries/BytesUint256Lib.sol";
 import "../libraries/PackedRange.sol";
+import "./helpers/SwapAdapter.sol";
 import "./StrategyNonAtomic.sol";
 
 error AaveGhoStakingBeforeDepositCheckFailed();
 error AaveGhoStakingBeforeRedeemalCheckFailed();
-error SwapSlippage();
 
 // slippages
 // - mode selection: slippages[0]
@@ -51,10 +51,8 @@ error SwapSlippage();
 // - swap rewards to underlying asset
 // - include with deposit
 
-contract AaveGhoStakingStrategy is StrategyNonAtomic {
+contract AaveGhoStakingStrategy is StrategyNonAtomic, SwapAdapter {
     using SafeERC20 for IERC20Metadata;
-
-    event SwapEstimation(address tokenIn, address tokenOut, uint256 tokenInAmount);
 
     IERC20Metadata public immutable gho;
     IStakedGho public immutable stakedGho;
@@ -172,7 +170,7 @@ contract AaveGhoStakingStrategy is StrategyNonAtomic {
         uint256[] memory assets,
         uint256[] calldata slippages
     ) internal override returns (bool) {
-        uint256 ghoAmount = _swapFromSlippages(tokens[0], address(gho), assets[0], slippages);
+        uint256 ghoAmount = _swap(_swapper, tokens[0], address(gho), assets[0], slippages, 3);
         if (ghoAmount > 0) {
             gho.approve(address(stakedGho), ghoAmount);
             stakedGho.stake(address(this), ghoAmount);
@@ -193,7 +191,7 @@ contract AaveGhoStakingStrategy is StrategyNonAtomic {
 
         try stakedGho.redeem(address(this), toUnstake) {
             uint256 ghoAmount = gho.balanceOf(address(this));
-            _swapFromSlippages(address(gho), tokens[0], ghoAmount, slippages);
+            _swap(_swapper, address(gho), tokens[0], ghoAmount, slippages, 3);
 
             return true;
         } catch {
@@ -277,38 +275,6 @@ contract AaveGhoStakingStrategy is StrategyNonAtomic {
         rewardTokens = new address[](1);
         rewardTokens[0] = address(stakedGho.REWARD_TOKEN());
         // TODO: check if there are some other rewards to claim (merit program, etc.)
-    }
-
-    function _swapFromSlippages(address tokenIn, address tokenOut, uint256 tokenInAmount, uint256[] calldata slippages)
-        internal
-        returns (uint256)
-    {
-        if (_isViewExecution() && slippages[3] == 1) {
-            emit SwapEstimation(tokenIn, tokenOut, tokenInAmount);
-            return 0;
-        }
-
-        if (slippages.length < 5) {
-            revert SwapSlippage();
-        }
-
-        address swapTarget = address(uint160(slippages[3]));
-        uint256 bytesLength = slippages[4];
-        uint256[] memory toDecode = new uint256[](slippages.length - 5);
-        for (uint256 i; i < toDecode.length; ++i) {
-            toDecode[i] = slippages[5 + i];
-        }
-        bytes memory payload = BytesUint256Lib.decode(toDecode, bytesLength);
-
-        address[] memory tokensIn = new address[](1);
-        tokensIn[0] = tokenIn;
-        SwapInfo[] memory swapInfos = new SwapInfo[](1);
-        swapInfos[0] = SwapInfo(swapTarget, tokenIn, payload);
-        address[] memory tokensOut = new address[](1);
-        tokensOut[0] = tokenOut;
-
-        IERC20Metadata(tokenIn).safeTransfer(address(_swapper), tokenInAmount);
-        return _swapper.swap(tokensIn, swapInfos, tokensOut, address(this))[0];
     }
 
     function _swapWithdrawals(address tokenOut, uint256 tokenInAmount, bytes calldata continuationData)
