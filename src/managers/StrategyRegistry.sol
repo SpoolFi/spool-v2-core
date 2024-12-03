@@ -129,10 +129,10 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
     mapping(address => uint256) internal _atomicityClassification;
 
     /**
-     * @notice Status of the DHW for strategies.
-     * @dev strategy => status
+     * @notice States of the strategies.
+     * @dev strategy => state
      */
-    mapping(address => uint256) internal _dhwStatus;
+    mapping(address => uint256) internal _strategyStates;
 
     /**
      * @notice User shares withdrawn from the strategy.
@@ -260,13 +260,13 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         return classifications;
     }
 
-    function dhwStatuses(address[] calldata strategies) external view returns (uint256[] memory) {
-        uint256[] memory statuses = new uint256[](strategies.length);
+    function strategyStates(address[] calldata strategies) external view returns (uint256[] memory) {
+        uint256[] memory states = new uint256[](strategies.length);
         for (uint256 i; i < strategies.length; ++i) {
-            statuses[i] = _dhwStatus[strategies[i]];
+            states[i] = _strategyStates[strategies[i]];
         }
 
-        return statuses;
+        return states;
     }
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
@@ -389,7 +389,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                         revert NotSameAssetGroup();
                     }
 
-                    if (_dhwStatus[strategy] == DHW_IN_PROGRESS) {
+                    if (_strategyStates[strategy] == DHW_IN_PROGRESS) {
                         revert StrategyDhwInProgress(strategy);
                     }
 
@@ -430,7 +430,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                     ++_currentIndexes[strategy];
 
                     if (dhwInfo.continuationNeeded) {
-                        _dhwStatus[strategy] = DHW_IN_PROGRESS;
+                        _strategyStates[strategy] = DHW_IN_PROGRESS;
                     } else {
                         int256 yield = int256(_stateAtDhw[strategy][dhwIndex - 1].yield);
                         yield += dhwInfo.yieldPercentage + yield * dhwInfo.yieldPercentage / YIELD_FULL_PERCENT_INT;
@@ -535,7 +535,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                         revert NotSameAssetGroup();
                     }
 
-                    if (_dhwStatus[strategy] != DHW_IN_PROGRESS) {
+                    if (_strategyStates[strategy] != DHW_IN_PROGRESS) {
                         revert StrategyDhwFinished(strategy);
                     }
 
@@ -563,7 +563,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                     }
 
                     if (!dhwContInfo.continuationNeeded) {
-                        _dhwStatus[strategy] = DHW_FINISHED;
+                        _strategyStates[strategy] = STRATEGY_IDLE;
 
                         int256 yield = int256(_stateAtDhw[strategy][dhwIndex - 1].yield);
                         yield +=
@@ -631,7 +631,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         onlyRole(ROLE_SMART_VAULT_MANAGER, msg.sender)
         returns (uint256[] memory)
     {
-        return StrategyRegistryLib.redeemFast(redeemFastParams, _ghostStrategy, _masterWallet, _dhwStatus);
+        return StrategyRegistryLib.redeemFast(redeemFastParams, _ghostStrategy, _masterWallet, _strategyStates);
     }
 
     function claimWithdrawals(address[] calldata strategies_, uint16a16 dhwIndexes, uint256[] calldata strategyShares)
@@ -704,7 +704,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
         uint256[][] calldata withdrawalSlippages
     ) external checkNonReentrant {
         StrategyRegistryLib.redeemStrategyShares(
-            strategies, shares, withdrawalSlippages, msg.sender, _accessControl, _ghostStrategy, _dhwStatus
+            strategies, shares, withdrawalSlippages, msg.sender, _accessControl, _ghostStrategy, _strategyStates
         );
     }
 
@@ -718,7 +718,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
             revert OnlyViewExecution(tx.origin);
         }
         StrategyRegistryLib.redeemStrategyShares(
-            strategies, shares, withdrawalSlippages, redeemer, _accessControl, _ghostStrategy, _dhwStatus
+            strategies, shares, withdrawalSlippages, redeemer, _accessControl, _ghostStrategy, _strategyStates
         );
     }
 

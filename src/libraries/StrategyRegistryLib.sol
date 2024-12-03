@@ -173,7 +173,7 @@ library StrategyRegistryLib {
             }
             _checkRole(ROLE_STRATEGY, strategies[i], accessControl);
 
-            if (dhwStatus[strategies[i]] > DHW_FINISHED) {
+            if (dhwStatus[strategies[i]] > STRATEGY_IDLE) {
                 revert StrategyNotReady();
             }
 
@@ -291,7 +291,7 @@ library StrategyRegistryLib {
                 continue;
             }
 
-            if (dhwStatus[redeemFastParams.strategies[i]] > DHW_FINISHED) {
+            if (dhwStatus[redeemFastParams.strategies[i]] > STRATEGY_IDLE) {
                 revert StrategyNotReady();
             }
 

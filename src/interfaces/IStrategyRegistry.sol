@@ -85,7 +85,7 @@ struct StrategyAtIndex {
 
 /**
  * @notice Parameters for calling do hard work.
- * @custom:member strategies Strategies to do-hard-worked upon, grouped by their asset group.
+ * @custom:member strategies Strategies to do-hard-work upon, grouped by their asset group.
  * @custom:member swapInfo Information for swapping assets before depositing into protocol. SwapInfo[] per each strategy.
  * @custom:member compoundSwapInfo Information for swapping rewards before depositing them back into the protocol. SwapInfo[] per each strategy.
  * @custom:member strategySlippages Slippages used to constrain depositing into and withdrawing from the protocol. uint256[] per strategy.
@@ -105,7 +105,15 @@ struct DoHardWorkParameterBag {
     uint256 validUntil;
 }
 
-// TODO: should we only allow one strategy per call?
+/**
+ * @notice Parameters for calling do hard work continuation.
+ * @custom:member strategies Strategies to continue do-hard-work upon, grouped by their asset group.
+ * @custom:member baseYields Base yield percentage the strategy created in the DHW period (applicable only for some strategies).
+ * @custom:member continuationData All data needed to continue the do-hard-work. bytes per each strategy.
+ * @custom:member tokens List of all asset tokens involved in the do hard work.
+ * @custom:member exchangeRateSlippages Slippages used to constrain exchange rates for asset tokens. uint256[2] for each token.
+ * @custom:member validUntil Sets the maximum timestamp the user is willing to wait to start executing 'do hard work continue'.
+ */
 struct DoHardWorkContinuationParameterBag {
     address[][] strategies;
     int256[][] baseYields;
@@ -234,11 +242,11 @@ interface IStrategyRegistry {
         returns (uint256[] memory atomicityClassifications);
 
     /**
-     * @notice Gets DHW statuses for strategies.
+     * @notice Gets current states of strategies.
      * @param strategies Strategies.
-     * @return statuses DHW statuses for strategies.
+     * @return states States for strategies.
      */
-    function dhwStatuses(address[] calldata strategies) external view returns (uint256[] memory statuses);
+    function strategyStates(address[] calldata strategies) external view returns (uint256[] memory states);
 
     /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
 

@@ -509,7 +509,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             !_areAllDhwRunsCompleted(
                 _strategyRegistry.currentIndex(strategies_),
                 indexes,
-                _strategyRegistry.dhwStatuses(strategies_),
+                _strategyRegistry.strategyStates(strategies_),
                 strategies_,
                 revertIfError
             )
@@ -545,7 +545,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         return _areAllDhwRunsCompleted(
             _strategyRegistry.currentIndex(strategies_),
             dhwIndexes_,
-            _strategyRegistry.dhwStatuses(strategies_),
+            _strategyRegistry.strategyStates(strategies_),
             strategies_,
             false
         );
@@ -557,7 +557,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
     function _areAllDhwRunsCompleted(
         uint256[] memory currentStrategyIndexes,
         uint16a16 dhwIndexes_,
-        uint256[] memory dhwStatuses,
+        uint256[] memory strategyStates,
         address[] memory strategies_,
         bool revertIfError
     ) private view returns (bool) {
@@ -569,7 +569,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             uint256 dhwIndex = dhwIndexes_.get(i);
             if (
                 dhwIndex + 1 < currentStrategyIndexes[i]
-                    || (dhwIndex + 1 == currentStrategyIndexes[i] && dhwStatuses[i] < DHW_IN_PROGRESS)
+                    || (dhwIndex + 1 == currentStrategyIndexes[i] && strategyStates[i] < DHW_IN_PROGRESS)
             ) {
                 // DHW for that index completed
                 continue;
@@ -622,7 +622,7 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
             !_areAllDhwRunsCompleted(
                 _strategyRegistry.currentIndex(strategies_),
                 indexes,
-                _strategyRegistry.dhwStatuses(strategies_),
+                _strategyRegistry.strategyStates(strategies_),
                 strategies_,
                 false
             )

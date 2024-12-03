@@ -1087,9 +1087,9 @@ contract NonAtomicStrategiesTest is Test {
             // strategy A implements non-atomic strategy with
             // both deposits and withdrawals being non-atomic
             strategyA =
-            new MockStrategyNonAtomic(assetGroupRegistry, accessControl, assetGroupId, FULLY_NON_ATOMIC_STRATEGY, 2_00);
+            new MockStrategyNonAtomic(assetGroupRegistry, accessControl, assetGroupId, NON_ATOMIC_STRATEGY, 2_00);
             strategyA.initialize("StratA");
-            strategyRegistry.registerStrategy(address(strategyA), 0, FULLY_NON_ATOMIC_STRATEGY);
+            strategyRegistry.registerStrategy(address(strategyA), 0, NON_ATOMIC_STRATEGY);
 
             strategies = Arrays.toArray(address(strategyA));
         }
@@ -1460,9 +1460,9 @@ contract NonAtomicStrategiesTest is Test {
             // strategy A implements non-atomic strategy with
             // both deposits and withdrawals being non-atomic
             strategyA =
-            new MockStrategyNonAtomic(assetGroupRegistry, accessControl, assetGroupId, FULLY_NON_ATOMIC_STRATEGY, 2_00);
+            new MockStrategyNonAtomic(assetGroupRegistry, accessControl, assetGroupId, NON_ATOMIC_STRATEGY, 2_00);
             strategyA.initialize("StratA");
-            strategyRegistry.registerStrategy(address(strategyA), 0, FULLY_NON_ATOMIC_STRATEGY);
+            strategyRegistry.registerStrategy(address(strategyA), 0, NON_ATOMIC_STRATEGY);
 
             strategies = Arrays.toArray(address(strategyA));
         }
@@ -1837,9 +1837,9 @@ contract NonAtomicStrategiesTest is Test {
             // strategy A implements non-atomic strategy with
             // both deposits and withdrawals being non-atomic
             strategyA =
-            new MockStrategyNonAtomic(assetGroupRegistry, accessControl, assetGroupId, FULLY_NON_ATOMIC_STRATEGY, 2_00);
+            new MockStrategyNonAtomic(assetGroupRegistry, accessControl, assetGroupId, NON_ATOMIC_STRATEGY, 2_00);
             strategyA.initialize("StratA");
-            strategyRegistry.registerStrategy(address(strategyA), 0, FULLY_NON_ATOMIC_STRATEGY);
+            strategyRegistry.registerStrategy(address(strategyA), 0, NON_ATOMIC_STRATEGY);
 
             strategies = Arrays.toArray(address(strategyA));
         }
@@ -2228,9 +2228,9 @@ contract NonAtomicStrategiesTest is Test {
             // strategy A implements non-atomic strategy with
             // both deposits and withdrawals being non-atomic
             strategyA =
-            new MockStrategyNonAtomic(assetGroupRegistry, accessControl, assetGroupId, FULLY_NON_ATOMIC_STRATEGY, 2_00);
+            new MockStrategyNonAtomic(assetGroupRegistry, accessControl, assetGroupId, NON_ATOMIC_STRATEGY, 2_00);
             strategyA.initialize("StratA");
-            strategyRegistry.registerStrategy(address(strategyA), 0, FULLY_NON_ATOMIC_STRATEGY);
+            strategyRegistry.registerStrategy(address(strategyA), 0, NON_ATOMIC_STRATEGY);
 
             strategies = Arrays.toArray(address(strategyA));
         }

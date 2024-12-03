@@ -53,7 +53,7 @@ contract MockProtocolNonAtomicTest is Test {
     }
 
     function test_investDivest_nonAtomic() public {
-        MockProtocolNonAtomic protocol = new MockProtocolNonAtomic(address(tokenA), FULLY_NON_ATOMIC_STRATEGY, 2_00);
+        MockProtocolNonAtomic protocol = new MockProtocolNonAtomic(address(tokenA), NON_ATOMIC_STRATEGY, 2_00);
 
         // invest
         vm.startPrank(alice);
