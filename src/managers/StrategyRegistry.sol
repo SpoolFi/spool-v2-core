@@ -446,9 +446,8 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                         _exchangeRates[strategy][dhwIndex].setValues(assetGroupExchangeRates);
 
                         _updateApy(strategy, dhwIndex, dhwInfo.yieldPercentage);
-
-                        emit StrategyDhw(strategy, dhwIndex, dhwInfo);
                     }
+                    emit StrategyDhw(strategy, dhwIndex, dhwInfo);
                 }
             }
         }
@@ -580,9 +579,8 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                         _exchangeRates[strategy][dhwIndex].setValues(assetGroupExchangeRates);
 
                         _updateApy(strategy, dhwIndex, dhwContInfo.yieldPercentage);
-
-                        emit StrategyDhw(strategy, dhwIndex, dhwContInfo);
                     }
+                    emit StrategyDhw(strategy, dhwIndex, dhwContInfo);
                 }
             }
         }
