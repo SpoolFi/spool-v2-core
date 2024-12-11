@@ -18,12 +18,13 @@ contract MockStrategyNonAtomic is StrategyNonAtomic {
         ISpoolAccessControl accessControl_,
         uint256 assetGroupId_,
         uint256 atomicityClassification_,
-        uint256 feePct
+        uint256 feePct,
+        bool deductShares
     ) StrategyNonAtomic(assetGroupRegistry_, accessControl_, assetGroupId_) {
         address[] memory tokens = assetGroupRegistry_.listAssetGroup(assetGroupId_);
         require(tokens.length == 1, "MockStrategyNonAtomic: invalid asset group");
 
-        protocol = new MockProtocolNonAtomic(tokens[0], atomicityClassification_, feePct);
+        protocol = new MockProtocolNonAtomic(tokens[0], atomicityClassification_, feePct, deductShares);
     }
 
     function initialize(string memory strategyName_) external initializer {
@@ -96,8 +97,10 @@ contract MockStrategyNonAtomic is StrategyNonAtomic {
     function _initializeWithdrawalFromProtocol(address[] calldata, uint256 shares, uint256[] calldata)
         internal
         override
-        returns (bool finished)
+        returns (bool finished, bool sharesDeducted)
     {
+        sharesDeducted = protocol.deductShares();
+
         uint256 protocolShares = protocol.shares(address(this)) * shares / totalSupply();
 
         uint256 amountUnderlying;
@@ -175,6 +178,7 @@ contract MockProtocolNonAtomic {
     address public immutable underlying;
     uint256 public immutable atomicityClassification;
     uint256 public immutable feePct;
+    bool public immutable deductShares;
 
     uint256 public totalUnderlying;
     uint256 public totalShares;
@@ -184,10 +188,11 @@ contract MockProtocolNonAtomic {
     mapping(address => uint256) public pendingInvestments;
     mapping(address => uint256) public pendingDivestments;
 
-    constructor(address underlying_, uint256 atomicityClassification_, uint256 feePct_) {
+    constructor(address underlying_, uint256 atomicityClassification_, uint256 feePct_, bool deductShares_) {
         underlying = underlying_;
         atomicityClassification = atomicityClassification_;
         feePct = feePct_;
+        deductShares = deductShares_;
     }
 
     // public
@@ -228,6 +233,10 @@ contract MockProtocolNonAtomic {
         require(pendingDivestments[msg.sender] > 0, "MockProtocolNonAtomic: no pending divestment");
 
         amountUnderlying = _divestInternal(pendingDivestments[msg.sender], msg.sender);
+
+        if (!deductShares) {
+            shares[msg.sender] -= pendingDivestments[msg.sender];
+        }
 
         pendingDivestments[msg.sender] = 0;
     }
@@ -304,7 +313,10 @@ contract MockProtocolNonAtomic {
 
     function _divestNonAtomic(uint256 amountShares) private {
         pendingDivestments[msg.sender] = amountShares;
-        shares[msg.sender] -= amountShares;
+
+        if (deductShares) {
+            shares[msg.sender] -= amountShares;
+        }
     }
 
     function _divestInternal(uint256 amountShares, address beneficiary) private returns (uint256 divestmentAmount) {

@@ -22,7 +22,7 @@ import "../libraries/StrategyRegistryLib.sol";
 error BadStrategyApy(int256);
 
 /**
- * @notice Used when doHardWord is run after its expiry time
+ * @notice Used when doHardWork is run after its expiry time
  */
 error DoHardWorkParametersExpired();
 
@@ -447,6 +447,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
                         _updateApy(strategy, dhwIndex, dhwInfo.yieldPercentage);
                     }
+
                     emit StrategyDhw(strategy, dhwIndex, dhwInfo);
                 }
             }
@@ -543,7 +544,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
                     // Continue the hard work on the strategy.
                     DhwInfo memory dhwContInfo = IStrategyNonAtomic(strategy).doHardWorkContinue(
-                        StrategyDhwContinuationParameterBag({
+                        StrategyDhwContinueParameterBag({
                             assetGroup: assetGroup,
                             exchangeRates: assetGroupExchangeRates,
                             masterWallet: address(_masterWallet),
@@ -580,6 +581,7 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
                         _updateApy(strategy, dhwIndex, dhwContInfo.yieldPercentage);
                     }
+
                     emit StrategyDhw(strategy, dhwIndex, dhwContInfo);
                 }
             }

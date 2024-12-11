@@ -68,11 +68,6 @@ error GhostVault();
  */
 error ReallocationParametersExpired();
 
-/**
- * @notice Used when reallocation is called on a smart vault that contains non-atomic strategies.
- */
-error NonAtomicReallocation();
-
 /* ========== STRUCTS ========== */
 
 /**

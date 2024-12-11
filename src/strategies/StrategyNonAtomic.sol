@@ -21,8 +21,6 @@ import "../access/SpoolAccessControllable.sol";
  */
 error StrategyWorthIsZero();
 
-error ProtocolActionNotFinished();
-
 error InvalidDepositContinuation();
 
 error InvalidDeposit();
@@ -40,6 +38,7 @@ struct DhwExecutionInfo {
     uint256 legacyFeeWorth;
     uint256 usdWorth;
     uint256 totalSupply;
+    uint256 undeductedWithdrawalWorth;
 }
 
 struct DhwContinuationExecutionInfo {
@@ -116,6 +115,7 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
     uint256 internal _withdrawalFeeShares;
     uint256 internal _legacyFeeShares;
     uint256 internal _depositShares;
+    uint256 internal _undeductedWithdrawalShares;
 
     constructor(IAssetGroupRegistry assetGroupRegistry_, ISpoolAccessControl accessControl_, uint256 assetGroupId_)
         SpoolAccessControllable(accessControl_)
@@ -240,11 +240,7 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
         dhwInfo.assetsWithdrawn = new uint256[](dhwParams.assetGroup.length);
 
         // initiate deposit or withdrawal
-        if (executionInfo.withdrawalWorth + executionInfo.depositWorth + executionInfo.compoundWorth == 0) {
-            // no action needed - only base yield is processed
-
-            executionInfo.finished = true;
-        } else if (executionInfo.depositWorth + executionInfo.compoundWorth > executionInfo.withdrawalWorth) {
+        if (executionInfo.depositWorth + executionInfo.compoundWorth > executionInfo.withdrawalWorth) {
             // deposit to protocol is needed
 
             // reserve assets for withdrawal
@@ -271,16 +267,18 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
 
             // match deposits
             if (executionInfo.withdrawalWorth > 0) {
-                executionInfo.compoundedWorth += executionInfo.withdrawalWorth > executionInfo.compoundWorth
+                executionInfo.compoundedWorth = executionInfo.withdrawalWorth > executionInfo.compoundWorth
                     ? executionInfo.compoundWorth
                     : executionInfo.withdrawalWorth;
-                executionInfo.depositedWorth += executionInfo.withdrawalWorth - executionInfo.compoundedWorth;
+                executionInfo.depositedWorth = executionInfo.withdrawalWorth - executionInfo.compoundedWorth;
             }
 
             // deposit assets to protocol
             {
                 executionInfo.finished =
                     _initializeDepositToProtocol(dhwParams.assetGroup, assetsToDeposit, dhwParams.slippages);
+
+                emit DepositInitiated(assetsForDeposit, assetsToDeposit);
 
                 uint256 depositShare = executionInfo.depositWorth - executionInfo.depositedWorth;
                 uint256 compoundShare = executionInfo.compoundWorth - executionInfo.compoundedWorth;
@@ -321,8 +319,15 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
                 uint256 sharesToWithdraw = executionInfo.totalSupply * unmatchedWithdrawalWorth / executionInfo.usdWorth;
 
                 if (sharesToWithdraw > 0) {
-                    executionInfo.finished =
+                    bool sharesDeducted;
+                    (executionInfo.finished, sharesDeducted) =
                         _initializeWithdrawalFromProtocol(dhwParams.assetGroup, sharesToWithdraw, dhwParams.slippages);
+
+                    if (!sharesDeducted) {
+                        executionInfo.undeductedWithdrawalWorth = unmatchedWithdrawalWorth;
+                    }
+
+                    emit WithdrawalInitiated(sharesToWithdraw);
                 } else {
                     executionInfo.finished = true;
                 }
@@ -395,6 +400,18 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
                     _withdrawalFeeShares = feeShares - _legacyFeeShares;
                 }
             }
+            // - add back shares for undeducted withdrawal
+            if (executionInfo.undeductedWithdrawalWorth > 0) {
+                executionInfo.usdWorth += executionInfo.undeductedWithdrawalWorth;
+                uint256 undeductedWithdrawalShares = _calculateShareDilution(
+                    executionInfo.totalSupply, executionInfo.usdWorth, executionInfo.undeductedWithdrawalWorth
+                );
+                executionInfo.totalSupply += undeductedWithdrawalShares;
+
+                if (!executionInfo.finished) {
+                    _undeductedWithdrawalShares = undeductedWithdrawalShares;
+                }
+            }
 
             // process deposits
             if (executionInfo.depositedWorth > 0) {
@@ -433,7 +450,7 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
         dhwInfo.totalSstsAtDhw = executionInfo.totalSupply;
     }
 
-    function doHardWorkContinue(StrategyDhwContinuationParameterBag calldata dhwContParams)
+    function doHardWorkContinue(StrategyDhwContinueParameterBag calldata dhwContParams)
         external
         returns (DhwInfo memory dhwInfo)
     {
@@ -471,6 +488,7 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
 
             dhwInfo.valueAtDhw = _getUsdWorth(dhwContParams.exchangeRates, dhwContParams.priceFeedManager);
             executionInfo.otherWorth = dhwInfo.valueAtDhw;
+            executionInfo.totalSupply -= _undeductedWithdrawalShares;
 
             // collect withdrawn assets
             for (uint256 i; i < dhwContParams.assetGroup.length; ++i) {
@@ -733,13 +751,15 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
         initialShares = INITIAL_LOCKED_SHARES - totalSupply_;
 
         if (afterDepositShares > totalSupply_) {
-            depositShares = afterDepositShares - totalSupply_;
+            unchecked {
+                depositShares = afterDepositShares - totalSupply_;
 
-            if (depositShares < initialShares) {
-                initialShares = depositShares;
+                if (depositShares < initialShares) {
+                    initialShares = depositShares;
+                }
+
+                depositShares -= initialShares;
             }
-
-            depositShares -= initialShares;
         }
         // otherwise no shares should be awarded for the deposit
         // - should not happen in practice
@@ -774,8 +794,12 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
             _mint(platformFees.ecosystemFeeReceiver, feeShares);
 
             // treasury fees
-            feeShares = protocolFeeShares - feeShares;
+            unchecked {
+                feeShares = protocolFeeShares - feeShares;
+            }
             _mint(platformFees.treasuryFeeReceiver, feeShares);
+
+            emit PlatformFeesCollected(address(this), protocolFeeShares);
         }
     }
 
@@ -824,7 +848,7 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
             withdrawnAssets[i] = IERC20(tokens[i]).balanceOf(address(this));
         }
 
-        bool finished = _initializeWithdrawalFromProtocol(tokens, shares, slippages);
+        (bool finished,) = _initializeWithdrawalFromProtocol(tokens, shares, slippages);
         if (!finished) {
             revert ProtocolActionNotFinished();
         }
@@ -877,11 +901,12 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
      * @param shares Amount of strategy shares to withdraw.
      * @param slippages Slippages used to constrain the withdrawal from the protocol.
      * @return finished True if the deposit is finished, i.e., atomic withdrawal; false otherwise.
+     * @return sharesDeducted True if the shares were deducted by the protocol, false otherwise.
      */
     function _initializeWithdrawalFromProtocol(address[] calldata tokens, uint256 shares, uint256[] calldata slippages)
         internal
         virtual
-        returns (bool finished);
+        returns (bool finished, bool sharesDeducted);
 
     /**
      * @dev Continues the deposit to the protocol.

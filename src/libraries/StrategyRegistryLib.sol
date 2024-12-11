@@ -9,6 +9,14 @@ import "../interfaces/ISpoolAccessControl.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyRegistry.sol";
 
+/**
+ * @notice Parameters for emergencyWithdraw function.
+ * @custom:member removeStrategies Whether to remove strategies from the system after withdrawal.
+ * @custom:member accessControl Access control contract.
+ * @custom:member ghostStrategy Address of ghost strategy.
+ * @custom:member emergencyWithdrawalWallet Address of emergency withdrawal wallet.
+ * @custom:member masterWallet Master wallet contract.
+ */
 struct EmergencyWithdrawParams {
     bool removeStrategies;
     ISpoolAccessControl accessControl;
@@ -17,13 +25,22 @@ struct EmergencyWithdrawParams {
     IMasterWallet masterWallet;
 }
 
+/**
+ * @notice Parameters for claimStrategyShareWithdrawals function.
+ * @custom:member recipient Address to receive the claimed assets.
+ * @custom:member ghostStrategy Address of ghost strategy.
+ * @custom:member accessControl Access control contract.
+ * @custom:member masterWallet Master wallet contract.
+ */
 struct ClaimStrategyShareWithdrawalsParams {
     address recipient;
     address ghostStrategy;
     ISpoolAccessControl accessControl;
     IMasterWallet masterWallet;
 }
-
+/**
+ * @dev This library should only be used by the StrategyRegistry contract.
+ */
 library StrategyRegistryLib {
     /**
      * @notice Emitted when a strategy is emergency withdrawn from.
@@ -32,18 +49,18 @@ library StrategyRegistryLib {
     event StrategyEmergencyWithdrawn(address indexed strategy);
 
     /**
-     * @notice Strategy was removed
-     * @param strategy Strategy address
+     * @notice Strategy was removed.
+     * @param strategy Strategy address.
      */
     event StrategyRemoved(address indexed strategy);
 
     /**
-     * @notice Strategy shares have been redeemed
-     * @param strategy Strategy address
-     * @param owner Address that owns the shares
-     * @param recipient Address that received the withdrawn funds
-     * @param shares Amount of shares that were redeemed
-     * @param assetsWithdrawn Amounts of withdrawn assets
+     * @notice Strategy shares have been redeemed.
+     * @param strategy Strategy address.
+     * @param owner Address that owns the shares.
+     * @param recipient Address that received the withdrawn funds.
+     * @param shares Amount of shares that were redeemed.
+     * @param assetsWithdrawn Amounts of withdrawn assets.
      */
     event StrategySharesRedeemed(
         address indexed strategy,
@@ -54,23 +71,23 @@ library StrategyRegistryLib {
     );
 
     /**
-     * @notice Strategy shares redeem has been initiated
-     * @param strategy Strategy address
-     * @param owner Address that owns the shares
-     * @param shares Amount of shares that were redeemed
-     * @param strategyIndex DHW index of the strategy
+     * @notice Strategy shares redeem has been initiated.
+     * @param strategy Strategy address.
+     * @param owner Address that owns the shares.
+     * @param shares Amount of shares that were redeemed.
+     * @param strategyIndex DHW index of the strategy.
      */
     event StrategySharesRedeemInitiated(
         address indexed strategy, address indexed owner, uint256 shares, uint256 strategyIndex
     );
 
     /**
-     * @notice Strategy shares redeem has been claimed
-     * @param strategy Strategy address
-     * @param owner Address that redeemed the shares
-     * @param recipient Address that received the withdrawn funds
-     * @param shares Amount of shares that were redeemed
-     * @param assetsWithdrawn Amounts of withdrawn assets
+     * @notice Strategy shares redeem has been claimed.
+     * @param strategy Strategy address.
+     * @param owner Address that redeemed the shares.
+     * @param recipient Address that received the withdrawn funds.
+     * @param shares Amount of shares that were redeemed.
+     * @param assetsWithdrawn Amounts of withdrawn assets.
      */
     event StrategySharesRedeemClaimed(
         address indexed strategy,
@@ -81,13 +98,23 @@ library StrategyRegistryLib {
     );
 
     /**
-     * @notice Strategy shares were fast redeemed
-     * @param strategy Strategy address
-     * @param shares Amount of shares redeemed
-     * @param assetsWithdrawn Amounts of withdrawn assets
+     * @notice Strategy shares were fast redeemed.
+     * @param strategy Strategy address.
+     * @param shares Amount of shares redeemed.
+     * @param assetsWithdrawn Amounts of withdrawn assets.
      */
     event StrategySharesFastRedeemed(address indexed strategy, uint256 shares, uint256[] assetsWithdrawn);
 
+    /**
+     * @notice Executes emergency withdrawal.
+     * @param strategies Addresses of strategies to emergency withdraw from.
+     * @param withdrawalSlippages Slippages to guard withdrawal.
+     * @param params Parameters for emergency withdrawal.
+     * @param currentIndexes Current DHW indexes of strategies.
+     * @param assetsDeposited Assets deposited into strategies.
+     * @param removedStrategies Registry of removed strategies.
+     * @param assetsNotClaimed Assets not claimed by strategy users.
+     */
     function emergencyWithdraw(
         address[] calldata strategies,
         uint256[][] calldata withdrawalSlippages,
@@ -126,6 +153,17 @@ library StrategyRegistryLib {
         }
     }
 
+    /**
+     * @notice Removes a strategy from registry.
+     * @param strategy Strategy to remove.
+     * @param accessControl Access control contract.
+     * @param masterWallet Master wallet contract.
+     * @param emergencyWithdrawalWallet Address of emergency withdrawal wallet.
+     * @param currentIndexes Current DHW indexes of strategies.
+     * @param assetsDeposited Assets deposited into strategies.
+     * @param removedStrategies Registry of removed strategies.
+     * @param assetsNotClaimed Assets not claimed by strategy users.
+     */
     function removeStrategy(
         address strategy,
         ISpoolAccessControl accessControl,
@@ -158,6 +196,16 @@ library StrategyRegistryLib {
         emit StrategyRemoved(strategy);
     }
 
+    /**
+     * @notice Redeems strategy shares.
+     * @param strategies Strategies from which to redeem.
+     * @param shares Amount of shares to redeem.
+     * @param withdrawalSlippages Slippages to guard withdrawal.
+     * @param redeemer User redeeming the shares.
+     * @param accessControl Access control contract.
+     * @param ghostStrategy Address of ghost strategy.
+     * @param dhwStatus DHW status of strategies.
+     */
     function redeemStrategyShares(
         address[] calldata strategies,
         uint256[] calldata shares,
@@ -174,7 +222,7 @@ library StrategyRegistryLib {
             _checkRole(ROLE_STRATEGY, strategies[i], accessControl);
 
             if (dhwStatus[strategies[i]] > STRATEGY_IDLE) {
-                revert StrategyNotReady();
+                revert StrategyNotReady(strategies[i]);
             }
 
             address[] memory assetGroup = IStrategy(strategies[i]).assets();
@@ -186,6 +234,16 @@ library StrategyRegistryLib {
         }
     }
 
+    /**
+     * Initiates redemption of strategy shares asynchronously.
+     * @param strategies Strategies from which to redeem.
+     * @param shares Amount of shares to redeem.
+     * @param ghostStrategy Address of ghost strategy.
+     * @param accessControl Access control contract.
+     * @param currentIndexes Current DHW indexes of strategies.
+     * @param sharesRedeemed Amount of SSTs redeemed from strategies.
+     * @param userSharesWithdrawn Amount of SSTs withdrawn from strategies by users.
+     */
     function redeemStrategySharesAsync(
         address[] calldata strategies,
         uint256[] calldata shares,
@@ -218,6 +276,16 @@ library StrategyRegistryLib {
         }
     }
 
+    /**
+     * @notice Claims strategy share withdrawals from redeemStrategySharesAsync
+     * @param strategies Strategies from which to claim withdrawals.
+     * @param strategyIndexes DHW indexes of strategies when withdrawals were initiated.
+     * @param params Parameters for claiming withdrawals.
+     * @param userSharesWithdrawn Amount of SSTs withdrawn from strategies by users.
+     * @param assetsWithdrawn Amounts of withdrawn assets
+     * @param sharesRedeemed Amount of SSTs redeemed from strategies.
+     * @param assetsNotClaimed Amounts of assets not claimed by strategy users.
+     */
     function claimStrategyShareWithdrawals(
         address[] calldata strategies,
         uint256[] calldata strategyIndexes,
@@ -278,6 +346,14 @@ library StrategyRegistryLib {
         }
     }
 
+    /**
+     * @notice Instantly redeems strategy shares for assets.
+     * @param redeemFastParams Parameters for calling redeem fast.
+     * @param ghostStrategy Address of ghost strategy.
+     * @param masterWallet Master wallet contract.
+     * @param dhwStatus DHW status of strategies.
+     * @return Amounts of withdrawn assets.
+     */
     function redeemFast(
         RedeemFastParameterBag calldata redeemFastParams,
         address ghostStrategy,
@@ -292,7 +368,7 @@ library StrategyRegistryLib {
             }
 
             if (dhwStatus[redeemFastParams.strategies[i]] > STRATEGY_IDLE) {
-                revert StrategyNotReady();
+                revert StrategyNotReady(redeemFastParams.strategies[i]);
             }
 
             uint256[] memory strategyWithdrawnAssets = IStrategy(redeemFastParams.strategies[i]).redeemFast(

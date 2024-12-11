@@ -435,7 +435,7 @@ library ReallocationLib {
             // toDeposit[strategies.length]: is there something to deposit
         }
 
-        // Distribute matched shares and withdraw unamatched ones.
+        // Distribute matched shares and withdraw unmatched ones.
         for (uint256 i; i < strategies.length; ++i) {
             // Calculate amount of shares to distribute and amount of shares to redeem.
             uint256 sharesToRedeem;

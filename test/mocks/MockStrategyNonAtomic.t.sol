@@ -20,7 +20,7 @@ contract MockProtocolNonAtomicTest is Test {
     }
 
     function test_investDivest_atomic() public {
-        MockProtocolNonAtomic protocol = new MockProtocolNonAtomic(address(tokenA), ATOMIC_STRATEGY, 2_00);
+        MockProtocolNonAtomic protocol = new MockProtocolNonAtomic(address(tokenA), ATOMIC_STRATEGY, 2_00, true);
 
         // invest
         vm.startPrank(alice);
@@ -52,8 +52,8 @@ contract MockProtocolNonAtomicTest is Test {
         assertEq(protocol.shares(alice), 48 ether * protocol.PROTOCOL_INITIAL_SHARE_MULTIPLIER());
     }
 
-    function test_investDivest_nonAtomic() public {
-        MockProtocolNonAtomic protocol = new MockProtocolNonAtomic(address(tokenA), NON_ATOMIC_STRATEGY, 2_00);
+    function test_investDivest_nonAtomic1() public {
+        MockProtocolNonAtomic protocol = new MockProtocolNonAtomic(address(tokenA), NON_ATOMIC_STRATEGY, 2_00, true);
 
         // invest
         vm.startPrank(alice);
@@ -108,6 +108,87 @@ contract MockProtocolNonAtomicTest is Test {
         );
 
         assertEq(protocol.shares(alice), 48 ether * protocol.PROTOCOL_INITIAL_SHARE_MULTIPLIER(), "divest alice shares");
+
+        // claim divestment
+        vm.startPrank(alice);
+        protocol.claimDivestment();
+        vm.stopPrank();
+
+        assertEq(tokenA.balanceOf(address(protocol)), 51 ether, "divest claim protocol balance");
+        assertEq(tokenA.balanceOf(alice), 949 ether, "divest claim alice balance");
+
+        assertEq(protocol.totalUnderlying(), 48 ether, "divest claim total underlying");
+        assertEq(protocol.fees(), 3 ether, "divest claim fees");
+        assertEq(
+            protocol.totalShares(), 48 ether * protocol.PROTOCOL_INITIAL_SHARE_MULTIPLIER(), "divest claim total shares"
+        );
+        assertEq(
+            protocol.pendingDivestments(alice),
+            0 ether * protocol.PROTOCOL_INITIAL_SHARE_MULTIPLIER(),
+            "divest claim pending divestments"
+        );
+
+        assertEq(
+            protocol.shares(alice), 48 ether * protocol.PROTOCOL_INITIAL_SHARE_MULTIPLIER(), "divest claim alice shares"
+        );
+    }
+
+    function test_investDivest_nonAtomic2() public {
+        MockProtocolNonAtomic protocol = new MockProtocolNonAtomic(address(tokenA), NON_ATOMIC_STRATEGY, 2_00, false);
+
+        // invest
+        vm.startPrank(alice);
+        tokenA.approve(address(protocol), 100 ether);
+        protocol.invest(100 ether);
+        vm.stopPrank();
+
+        assertEq(tokenA.balanceOf(address(protocol)), 100 ether, "invest protocol balance");
+        assertEq(tokenA.balanceOf(alice), 900 ether, "invest alice balance");
+
+        assertEq(protocol.totalUnderlying(), 0 ether, "invest total underlying");
+        assertEq(protocol.fees(), 0 ether, "invest fees");
+        assertEq(protocol.totalShares(), 0 ether * protocol.PROTOCOL_INITIAL_SHARE_MULTIPLIER(), "invest total shares");
+        assertEq(protocol.pendingInvestments(alice), 100 ether, "invest pending investments");
+
+        assertEq(protocol.shares(alice), 0 ether * protocol.PROTOCOL_INITIAL_SHARE_MULTIPLIER(), "invest alice shares");
+
+        // claim investment
+        vm.startPrank(alice);
+        protocol.claimInvestment();
+        vm.stopPrank();
+
+        assertEq(tokenA.balanceOf(address(protocol)), 100 ether, "invest claim protocol balance");
+        assertEq(tokenA.balanceOf(alice), 900 ether, "invest claim alice balance");
+
+        assertEq(protocol.totalUnderlying(), 98 ether, "invest claim total underlying");
+        assertEq(protocol.fees(), 2 ether, "invest claim fees");
+        assertEq(
+            protocol.totalShares(), 98 ether * protocol.PROTOCOL_INITIAL_SHARE_MULTIPLIER(), "invest claim total shares"
+        );
+        assertEq(protocol.pendingInvestments(alice), 0 ether, "invest claim pending investments");
+
+        assertEq(
+            protocol.shares(alice), 98 ether * protocol.PROTOCOL_INITIAL_SHARE_MULTIPLIER(), "invest claim alice shares"
+        );
+
+        // divest
+        vm.startPrank(alice);
+        protocol.divest(50 ether * protocol.PROTOCOL_INITIAL_SHARE_MULTIPLIER());
+        vm.stopPrank();
+
+        assertEq(tokenA.balanceOf(address(protocol)), 100 ether, "divest protocol balance");
+        assertEq(tokenA.balanceOf(alice), 900 ether, "divest alice balance");
+
+        assertEq(protocol.totalUnderlying(), 98 ether, "divest total underlying");
+        assertEq(protocol.fees(), 2 ether, "divest fees");
+        assertEq(protocol.totalShares(), 98 ether * protocol.PROTOCOL_INITIAL_SHARE_MULTIPLIER(), "divest total shares");
+        assertEq(
+            protocol.pendingDivestments(alice),
+            50 ether * protocol.PROTOCOL_INITIAL_SHARE_MULTIPLIER(),
+            "divest pending divestments"
+        );
+
+        assertEq(protocol.shares(alice), 98 ether * protocol.PROTOCOL_INITIAL_SHARE_MULTIPLIER(), "divest alice shares");
 
         // claim divestment
         vm.startPrank(alice);

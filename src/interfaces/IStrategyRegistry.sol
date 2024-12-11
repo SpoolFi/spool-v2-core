@@ -366,6 +366,7 @@ interface IStrategyRegistry {
     /**
      * @notice Redeems strategy shares.
      * Used by recipients of platform fees.
+     * Cannot handle strategies with non-atomic withdrawals - use redeemStrategySharesAsync instead.
      * @param strategies Strategies from which to redeem.
      * @param shares Amount of shares to redeem from each strategy.
      * @param withdrawalSlippages Slippages to guard redeemal process.
@@ -376,8 +377,21 @@ interface IStrategyRegistry {
         uint256[][] calldata withdrawalSlippages
     ) external;
 
+    /**
+     * @notice Initiates redemption of strategy shares asynchronously.
+     * Used by recipients of platform fees.
+     * Can handle strategies with non-atomic withdrawals.
+     * @param strategies Strategies from which to redeem.
+     * @param shares Amount of shares to redeem from each strategy.
+     */
     function redeemStrategySharesAsync(address[] calldata strategies, uint256[] calldata shares) external;
 
+    /**
+     * @notice Claims strategy share withdrawals from redeemStrategySharesAsync.
+     * @param strategies Strategies from which to claim withdrawals.
+     * @param strategyIndexes DHW indexes of strategies when withdrawals were initiated.
+     * @param recipient Address to receive the claimed assets.
+     */
     function claimStrategyShareWithdrawals(
         address[] calldata strategies,
         uint256[] calldata strategyIndexes,

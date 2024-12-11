@@ -182,23 +182,23 @@ contract AaveGhoStakingStrategy is StrategyNonAtomic, SwapAdapter {
     function _initializeWithdrawalFromProtocol(address[] calldata tokens, uint256 shares, uint256[] calldata slippages)
         internal
         override
-        returns (bool)
+        returns (bool, bool)
     {
         uint256 toUnstake = stakedGho.balanceOf(address(this)) * shares / totalSupply();
         if (toUnstake == 0) {
-            return true;
+            return (true, true);
         }
 
         try stakedGho.redeem(address(this), toUnstake) {
             uint256 ghoAmount = gho.balanceOf(address(this));
             _swap(_swapper, address(gho), tokens[0], ghoAmount, slippages, 3);
 
-            return true;
+            return (true, true);
         } catch {
             stakedGho.cooldown();
             _toUnstake = toUnstake;
 
-            return false;
+            return (false, false);
         }
     }
 

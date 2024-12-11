@@ -417,11 +417,10 @@ contract SmartVaultManager is ISmartVaultManager, SpoolAccessControllable {
         }
 
         {
-            uint256[] memory atomicityClassifications =
-                _strategyRegistry.atomicityClassifications(reallocateParams.strategies);
-            for (uint256 i; i < reallocateParams.strategies.length; ++i) {
-                if (atomicityClassifications[i] > ATOMIC_STRATEGY) {
-                    revert NonAtomicReallocation();
+            uint256[] memory strategyStates = _strategyRegistry.strategyStates(reallocateParams.strategies);
+            for (uint256 i; i < strategyStates.length; ++i) {
+                if (strategyStates[i] > STRATEGY_IDLE) {
+                    revert StrategyNotReady(reallocateParams.strategies[i]);
                 }
             }
         }

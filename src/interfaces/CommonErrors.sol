@@ -44,6 +44,14 @@ error AddressNotContract(address address_);
  */
 error OnlyViewExecution(address address_);
 
-error NonAtomicStrategy();
+/**
+ * @notice Used when a strategy is not ready to perform an action.
+ * E.g., when trying to execute a DHW on a strategy that already has a DHW in progress.
+ * @param strategy Address of the strategy.
+ */
+error StrategyNotReady(address strategy);
 
-error StrategyNotReady();
+/**
+ * @notice Used when a protocol action did not finished atomically, but was expected to.
+ */
+error ProtocolActionNotFinished();

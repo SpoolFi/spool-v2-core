@@ -77,7 +77,7 @@ abstract contract StrategyHarnessNonAtomic is StrategyNonAtomic {
         address[] calldata tokens,
         uint256 shares,
         uint256[] calldata slippages
-    ) external returns (bool) {
+    ) external returns (bool, bool) {
         return _initializeWithdrawalFromProtocol(tokens, shares, slippages);
     }
 
