@@ -198,7 +198,12 @@ contract StrategiesInitial {
             _deployApxEthProxyAndInitialize(contracts, implementation, variantName, assetGroupId, pirexEth);
         if (register) {
             _registerStrategy(
-                APXETH_HOLDING_KEY, address(implementation), variant, assetGroupId, contracts.strategyRegistry
+                APXETH_HOLDING_KEY,
+                address(implementation),
+                variant,
+                assetGroupId,
+                ATOMIC_STRATEGY,
+                contracts.strategyRegistry
             );
         } else {
             contractsJson().addProxyStrategy(APXETH_HOLDING_KEY, address(implementation), variant);

@@ -41,6 +41,7 @@ struct ClaimStrategyShareWithdrawalsParams {
 /**
  * @dev This library should only be used by the StrategyRegistry contract.
  */
+
 library StrategyRegistryLib {
     /**
      * @notice Emitted when a strategy is emergency withdrawn from.
