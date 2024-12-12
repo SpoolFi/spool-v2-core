@@ -7,11 +7,10 @@ import "../../external/interfaces/strategies/convex/IBaseRewardPool.sol";
 import "../../external/interfaces/strategies/convex/IBooster.sol";
 import "../../libraries/PackedRange.sol";
 import "../curve/CurveAdapter.sol";
+import "../libraries/ConvexAlUsdStrategyLib.sol";
 import "../Strategy.sol";
 import "../helpers/StrategyManualYieldVerifier.sol";
 
-error StratBeforeDepositCheckFailed();
-error StratBeforeRedeemalCheckFailed();
 error StratDepositSlippagesFailed();
 error StratRedeemSlippagesFailed();
 error StratCompoundSlippagesFailed();
@@ -177,27 +176,15 @@ contract ConvexAlusdStrategy is
                 return;
             }
 
-            if (slippages[0] > 2) {
-                revert StratBeforeDepositCheckFailed();
-            }
-
-            for (uint256 i; i < tokenLength; ++i) {
-                if (!PackedRange.isWithinRange(slippages[i + 1], amounts[i])) {
-                    revert StratBeforeDepositCheckFailed();
-                }
-            }
-
-            for (uint256 i; i < N_COINS; ++i) {
-                if (!PackedRange.isWithinRange(slippages[i + 4], ICurvePoolUint256(address(_pool)).balances(i))) {
-                    revert StratBeforeDepositCheckFailed();
-                }
-            }
-
-            for (uint256 i; i < N_COINS_META; ++i) {
-                if (!PackedRange.isWithinRange(slippages[i + 7], ICurvePoolUint256(address(_poolMeta)).balances(i))) {
-                    revert StratBeforeDepositCheckFailed();
-                }
-            }
+            ConvexAlUsdStrategyLib.beforeDepositCheck(
+                amounts,
+                slippages,
+                tokenLength,
+                _pool,
+                _poolMeta,
+                N_COINS,
+                N_COINS_META
+            );
         }
     }
 
@@ -207,18 +194,7 @@ contract ConvexAlusdStrategy is
             return;
         }
 
-        uint256 slippage;
-        if (slippages[0] < 2) {
-            slippage = slippages[9];
-        } else if (slippages[0] == 2) {
-            slippage = slippages[1];
-        } else {
-            revert StratBeforeRedeemalCheckFailed();
-        }
-
-        if (!PackedRange.isWithinRange(slippage, ssts)) {
-            revert StratBeforeRedeemalCheckFailed();
-        }
+        ConvexAlUsdStrategyLib.beforeRedeemalCheck(ssts, slippages);
     }
 
     function _depositToProtocol(address[] calldata tokens, uint256[] memory amounts, uint256[] calldata slippages)
@@ -261,13 +237,11 @@ contract ConvexAlusdStrategy is
 
         _redeemInner(totalSupply(), slippages, 1);
 
-        address[] memory tokens = _assetGroupRegistry.listAssetGroup(assetGroupId());
-
-        unchecked {
-            for (uint256 i; i < tokenLength; ++i) {
-                IERC20(tokens[i]).safeTransfer(recipient, IERC20(tokens[i]).balanceOf(address(this)));
-            }
-        }
+        ConvexAlUsdStrategyLib.emergencyWithdraw(
+            _assetGroupRegistry,
+            assetGroupId(),
+            recipient
+        );
     }
 
     function _compound(address[] calldata tokens, SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)
