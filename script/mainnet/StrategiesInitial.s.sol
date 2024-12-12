@@ -6,6 +6,7 @@ import "@openzeppelin/utils/math/SafeCast.sol";
 import "@openzeppelin/utils/Strings.sol";
 import "../../src/libraries/uint16a16Lib.sol";
 import "../../src/strategies/AaveV2Strategy.sol";
+import {AaveGhoStakingStrategy, IStakedGho} from "../../src/strategies/AaveGhoStakingStrategy.sol";
 import "../../src/strategies/ApxEthHoldingStrategy.sol";
 import "../../src/strategies/CompoundV2Strategy.sol";
 import "../../src/strategies/convex/Convex3poolStrategy.sol";
@@ -31,6 +32,7 @@ import "../helper/JsonHelper.sol";
 import "./AssetsInitial.s.sol";
 
 string constant AAVE_V2_KEY = "aave-v2";
+string constant AAVE_GHO_STAKING_KEY = "aave-gho-staking";
 string constant APXETH_HOLDING_KEY = "apxeth-holding";
 string constant COMPOUND_V2_KEY = "compound-v2";
 string constant CONVEX_BASE_KEY = "convex-base";
@@ -82,6 +84,7 @@ contract StrategiesInitial {
     // reused implementations during deployStrategies. Issues with reading JSON writes during execution.
     MetamorphoStrategy implementation_metamorpho;
     GearboxV3Strategy implementation_gearboxV3;
+    AaveGhoStakingStrategy implementation_aaveGhoStaking;
 
     function deployStrategies(
         ISpoolAccessControl accessControl,
@@ -151,6 +154,10 @@ contract StrategiesInitial {
         }
         if (extended >= Extended.APXETH) {
             deployApxEth(contracts, true);
+        }
+        if (extended >= Extended.AAVE_GHO_STAKING_ROUND_0) {
+            deployAaveGhoStakingImplementation(contracts, priceFeedManager);
+            deployAaveGhoStakingVariants(contracts, priceFeedManager, implementation_aaveGhoStaking, true, 0);
         }
     }
 
@@ -1275,6 +1282,69 @@ contract StrategiesInitial {
             )
         );
         contractsJson().addVariantStrategyImplementation(ETHENA_KEY, implementation);
+    }
+
+    function deployAaveGhoStakingImplementation(
+        StandardContracts memory contracts,
+        IUsdPriceFeedManager priceFeedManager
+    ) public returns (AaveGhoStakingStrategy) {
+        console.log("deployAaveGhoStakingImplementation");
+        address gho = constantsJson().getAddress(".assets.gho.address");
+        address stakedGho =
+            constantsJson().getAddress(string.concat(".strategies.", AAVE_GHO_STAKING_KEY, ".stakedGho"));
+        console.log("gho", gho);
+        console.log("stakedGho", stakedGho);
+
+        implementation_aaveGhoStaking = new AaveGhoStakingStrategy(
+            contracts.assetGroupRegistry,
+            contracts.accessControl,
+            IERC20Metadata(gho),
+            IStakedGho(stakedGho),
+            priceFeedManager,
+            contracts.swapper
+        );
+
+        contractsJson().addVariantStrategyImplementation(AAVE_GHO_STAKING_KEY, address(implementation_aaveGhoStaking));
+
+        return implementation_aaveGhoStaking;
+    }
+
+    function deployAaveGhoStakingVariants(
+        StandardContracts memory contracts,
+        IUsdPriceFeedManager priceFeedManager,
+        AaveGhoStakingStrategy implementation,
+        bool register,
+        uint256 round
+    ) public {
+        // grab variants
+        string[] memory variants;
+        if (round == 0) {
+            variants = new string[](1);
+            variants[0] = USDC_KEY;
+        }
+        require(variants.length > 0, "Invalid round");
+
+        // deploy variants
+        for (uint256 i; i < variants.length; ++i) {
+            string memory variantName = _getVariantName(AAVE_GHO_STAKING_KEY, variants[i]);
+            uint256 assetGroupId = assetGroups(variants[i]);
+
+            address variant = _newProxy(address(implementation), contracts.proxyAdmin);
+            AaveGhoStakingStrategy(variant).initialize(variantName, assetGroupId);
+
+            if (register) {
+                _registerStrategyVariant(
+                    AAVE_GHO_STAKING_KEY,
+                    variants[i],
+                    variant,
+                    assetGroupId,
+                    NON_ATOMIC_WITHDRAWAL_STRATEGY,
+                    contracts.strategyRegistry
+                );
+            } else {
+                contractsJson().addVariantStrategyVariant(AAVE_GHO_STAKING_KEY, variantName, variant);
+            }
+        }
     }
 
     function _newProxy(address implementation, address proxyAdmin) private returns (address) {

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "forge-std/console.sol";
-
 import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "../../../src/external/interfaces/strategies/aave/IStakedGho.sol";
 import "../../../src/strategies/AaveGhoStakingStrategy.sol";
@@ -40,9 +38,9 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
         setUpBase();
 
         tokenUsdc = IERC20Metadata(USDC);
-        tokenGho = IERC20Metadata(0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f);
+        tokenGho = IERC20Metadata(0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f); // TODO: read from constants
         tokenAave = IERC20Metadata(0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9);
-        stakedGho = IStakedGho(0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d);
+        stakedGho = IStakedGho(0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d); // TODO: read from constants
 
         priceFeedManager.setExchangeRate(address(tokenUsdc), USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenGho), USD_DECIMALS_MULTIPLIER);
@@ -124,11 +122,10 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
         uint256 USDC_DECIMALS_MULTIPLIER = 10 ** tokenUsdc.decimals();
         uint256 STAKED_GHO_DECIMALS_MULTIPLIER = 10 ** stakedGho.decimals();
 
-        {
-            console.log("deposit 1,000 USDC");
-
+        {  // deposit 1,000 USDC
             _dealUsdc(address(aaveGhoStakingStrategy), 1_000 * USDC_DECIMALS_MULTIPLIER);
 
+            // - get data for the swap
             uint256 snapshotId = vm.snapshot();
             vm.startPrank(address(0), address(0));
             vm.getRecordedLogs();
@@ -148,33 +145,35 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
             assertEq(logs[0].topics[0], keccak256("SwapEstimation(address,address,uint256)"));
 
             slippages = _encodeSwapToSlippages(usdcGhoExchange, logs[0].data);
+
+            // - do the actual deposit
             aaveGhoStakingStrategy.exposed_initializeDepositToProtocol(
                 assetGroup, Arrays.toArray(1_000 * USDC_DECIMALS_MULTIPLIER), slippages
             );
 
+            // - assert state
             assertEq(tokenUsdc.balanceOf(address(aaveGhoStakingStrategy)), 0);
             assertEq(tokenGho.balanceOf(address(aaveGhoStakingStrategy)), 0);
             assertEq(stakedGho.balanceOf(address(aaveGhoStakingStrategy)), 1_000 * STAKED_GHO_DECIMALS_MULTIPLIER);
 
+            // - bookkeeping
             aaveGhoStakingStrategy.exposed_mint(100);
         }
 
-        {
-            console.log("initialize withdrawal of half the shares");
-
+        {  // withdrawal 1
+            // - initialize withdrawal
             aaveGhoStakingStrategy.exposed_initializeWithdrawalFromProtocol(assetGroup, 50, new uint256[](0));
 
+            // - assert state - nothing should change
             assertEq(tokenUsdc.balanceOf(address(aaveGhoStakingStrategy)), 0);
             assertEq(tokenGho.balanceOf(address(aaveGhoStakingStrategy)), 0);
             assertEq(stakedGho.balanceOf(address(aaveGhoStakingStrategy)), 1_000 * STAKED_GHO_DECIMALS_MULTIPLIER);
-        }
 
-        {
-            console.log("wait 21 days and continue withdrawal");
-
+            // - wait 21 days
             vm.roll(block.number + 100);
             skip(21 * 24 * 60 * 60);
 
+            // - get data for the swap
             uint256 snapshotId = vm.snapshot();
             vm.startPrank(address(0), address(0));
             vm.getRecordedLogs();
@@ -191,21 +190,28 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
             assertEq(logs[logs.length - 1].topics[0], keccak256("SwapEstimation(address,address,uint256)"));
 
             continuationData = _encodeSwapToBytes(usdcGhoExchange, logs[logs.length - 1].data);
+
+            // - do the actual withdrawal continuation
             aaveGhoStakingStrategy.exposed_continueWithdrawalFromProtocol(assetGroup, continuationData);
 
+            // - assert state
             assertEq(tokenUsdc.balanceOf(address(aaveGhoStakingStrategy)), 500 * USDC_DECIMALS_MULTIPLIER);
             assertEq(tokenGho.balanceOf(address(aaveGhoStakingStrategy)), 0);
             assertEq(stakedGho.balanceOf(address(aaveGhoStakingStrategy)), 500 * STAKED_GHO_DECIMALS_MULTIPLIER);
 
+            // - bookkeeping
             aaveGhoStakingStrategy.exposed_burn(50);
         }
 
-        {
-            console.log("wait 0.5 days and withdraw again");
-
+        {  // withdrawal 2
+            // - wait 0.5 days
             vm.roll(block.number + 100);
             skip(0.5 * 24 * 60 * 60);
 
+            // - we are still within the unstake window from last withdrawal
+            // - withdrawal should be atomic now
+
+            // - get data for the swap
             uint256 snapshotId = vm.snapshot();
             vm.startPrank(address(0), address(0));
             vm.getRecordedLogs();
@@ -223,24 +229,28 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
             assertEq(logs[logs.length - 1].topics[0], keccak256("SwapEstimation(address,address,uint256)"));
 
             slippages = _encodeSwapToSlippages(usdcGhoExchange, logs[logs.length - 1].data);
+
+            // - do the actual withdrawal
             aaveGhoStakingStrategy.exposed_initializeWithdrawalFromProtocol(assetGroup, 25, slippages);
 
+            // - assert state
             assertEq(tokenUsdc.balanceOf(address(aaveGhoStakingStrategy)), 750 * USDC_DECIMALS_MULTIPLIER);
             assertEq(tokenGho.balanceOf(address(aaveGhoStakingStrategy)), 0);
             assertEq(stakedGho.balanceOf(address(aaveGhoStakingStrategy)), 250 * STAKED_GHO_DECIMALS_MULTIPLIER);
 
+            // - bookkeeping
             aaveGhoStakingStrategy.exposed_burn(25);
         }
 
-        {
-            console.log("check rewards and start compound");
-
+        {  // check rewards and start compound
+            // - check rewards
             (address[] memory rewardTokens, uint256[] memory rewardAmounts) =
                 aaveGhoStakingStrategy.exposed_getProtocolRewardsInternal();
 
             assertEq(rewardTokens[0], address(tokenAave));
             assertEq(rewardAmounts[0], 28206822345662000);
 
+            // - start compound
             SwapInfo[] memory compoundSwapInfo = new SwapInfo[](1);
             compoundSwapInfo[0] = SwapInfo({
                 swapTarget: address(usdcAaveExchange),
@@ -259,15 +269,17 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
             assertEq(tokenUsdc.balanceOf(address(aaveGhoStakingStrategy)), 750_000000 + 2_820682);
         }
 
-        {
-            console.log("check yield and usd worth");
-
+        {  // check yield and usd worth
+            // - base yield should be 0 under normal circumstances
             int256 baseYieldPercentage = aaveGhoStakingStrategy.exposed_getYieldPercentage(0);
             uint256 usdWorth = aaveGhoStakingStrategy.exposed_getUsdWorth(assetGroupExchangeRates, priceFeedManager);
 
             assertEq(baseYieldPercentage, 0);
             assertEq(usdWorth, 250 * USD_DECIMALS_MULTIPLIER);
 
+            // - simulate a refund of slashed funds, since it is easier than slashing funds
+            //   - this will give a positive yield
+            //   - slashing would give a negative yield
             address refunder = address(0xefd);
             uint256 refundAmount = stakedGho.totalSupply();
             deal(address(tokenGho), refunder, refundAmount, false);
@@ -276,180 +288,13 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
             stakedGho.returnFunds(refundAmount);
             vm.stopPrank();
 
+            // - base yield should be 100% now
             baseYieldPercentage = aaveGhoStakingStrategy.exposed_getYieldPercentage(0);
             usdWorth = aaveGhoStakingStrategy.exposed_getUsdWorth(assetGroupExchangeRates, priceFeedManager);
 
             assertEq(baseYieldPercentage, YIELD_FULL_PERCENT_INT);
             assertEq(usdWorth, 500 * USD_DECIMALS_MULTIPLIER);
         }
-    }
-
-    function test_plainInteraction() public {
-        IERC20Metadata rewardToken = IERC20Metadata(stakedGho.REWARD_TOKEN());
-
-        console.log("tokenGho:");
-        console.log("  address:", address(tokenGho));
-        console.log("  name:", tokenGho.name());
-        console.log("  symbol:", tokenGho.symbol());
-        console.log("  decimals:", tokenGho.decimals());
-
-        console.log("stakedGho:");
-        console.log("  address:", address(stakedGho));
-        console.log("  name:", stakedGho.name());
-        console.log("  symbol:", stakedGho.symbol());
-        console.log("  decimals:", stakedGho.decimals());
-
-        console.log("rewardToken:");
-        console.log("  address:", stakedGho.REWARD_TOKEN());
-        console.log("  name:", rewardToken.name());
-        console.log("  symbol:", rewardToken.symbol());
-        console.log("  decimals:", rewardToken.decimals());
-
-        console.log("actor:");
-        console.log("  address:", actor);
-        console.log("  tokenGho balance:", tokenGho.balanceOf(actor));
-        console.log("  stakedGho balance:", stakedGho.balanceOf(actor));
-        console.log("  rewardToken balance:", rewardToken.balanceOf(actor));
-        console.log("  pending rewards:", stakedGho.getTotalRewardsBalance(actor));
-
-        console.log("\nDealing GHO to actor\n");
-
-        deal(actor, 100e18);
-        deal(address(tokenGho), actor, 100e18);
-
-        console.log("actor:");
-        console.log("  address:", actor);
-        console.log("  tokenGho balance:", tokenGho.balanceOf(actor));
-        console.log("  stakedGho balance:", stakedGho.balanceOf(actor));
-        console.log("  rewardToken balance:", rewardToken.balanceOf(actor));
-        console.log("  pending rewards:", stakedGho.getTotalRewardsBalance(actor));
-
-        console.log("\nStaking GHO\n");
-
-        vm.startPrank(actor);
-        tokenGho.approve(address(stakedGho), 100e18);
-        stakedGho.stake(actor, 100e18);
-        vm.stopPrank();
-
-        console.log("actor:");
-        console.log("  address:", actor);
-        console.log("  tokenGho balance:", tokenGho.balanceOf(actor));
-        console.log("  stakedGho balance:", stakedGho.balanceOf(actor));
-        console.log("  rewardToken balance:", rewardToken.balanceOf(actor));
-        console.log("  pending rewards:", stakedGho.getTotalRewardsBalance(actor));
-
-        console.log("\nPassing time\n");
-
-        vm.roll(block.number + 100);
-        skip(3600);
-
-        console.log("actor:");
-        console.log("  address:", actor);
-        console.log("  tokenGho balance:", tokenGho.balanceOf(actor));
-        console.log("  stakedGho balance:", stakedGho.balanceOf(actor));
-        console.log("  rewardToken balance:", rewardToken.balanceOf(actor));
-        console.log("  pending rewards:", stakedGho.getTotalRewardsBalance(actor));
-
-        console.log("\nClaiming rewards\n");
-
-        vm.startPrank(actor);
-        stakedGho.claimRewards(actor, stakedGho.getTotalRewardsBalance(actor));
-        vm.stopPrank();
-
-        console.log("actor:");
-        console.log("  address:", actor);
-        console.log("  tokenGho balance:", tokenGho.balanceOf(actor));
-        console.log("  stakedGho balance:", stakedGho.balanceOf(actor));
-        console.log("  rewardToken balance:", rewardToken.balanceOf(actor));
-        console.log("  pending rewards:", stakedGho.getTotalRewardsBalance(actor));
-
-        console.log("\nCooldown staked GHO\n");
-
-        vm.startPrank(actor);
-        stakedGho.cooldown();
-        vm.stopPrank();
-
-        console.log("actor:");
-        console.log("  address:", actor);
-        console.log("  tokenGho balance:", tokenGho.balanceOf(actor));
-        console.log("  stakedGho balance:", stakedGho.balanceOf(actor));
-        console.log("  rewardToken balance:", rewardToken.balanceOf(actor));
-        console.log("  pending rewards:", stakedGho.getTotalRewardsBalance(actor));
-
-        console.log("\nPassing time\n");
-
-        vm.roll(block.number + 100);
-        skip(stakedGho.getCooldownSeconds() + 1);
-
-        console.log("actor:");
-        console.log("  address:", actor);
-        console.log("  tokenGho balance:", tokenGho.balanceOf(actor));
-        console.log("  stakedGho balance:", stakedGho.balanceOf(actor));
-        console.log("  rewardToken balance:", rewardToken.balanceOf(actor));
-        console.log("  pending rewards:", stakedGho.getTotalRewardsBalance(actor));
-
-        console.log("\nRedeeming staked GHO\n");
-
-        vm.startPrank(actor);
-        stakedGho.redeem(actor, stakedGho.balanceOf(actor) / 2);
-        vm.stopPrank();
-
-        console.log("actor:");
-        console.log("  address:", actor);
-        console.log("  tokenGho balance:", tokenGho.balanceOf(actor));
-        console.log("  stakedGho balance:", stakedGho.balanceOf(actor));
-        console.log("  rewardToken balance:", rewardToken.balanceOf(actor));
-        console.log("  pending rewards:", stakedGho.getTotalRewardsBalance(actor));
-
-        console.log("\nPassing time\n");
-
-        vm.roll(block.number + 100);
-        skip(stakedGho.UNSTAKE_WINDOW() / 2);
-
-        console.log("actor:");
-        console.log("  address:", actor);
-        console.log("  tokenGho balance:", tokenGho.balanceOf(actor));
-        console.log("  stakedGho balance:", stakedGho.balanceOf(actor));
-        console.log("  rewardToken balance:", rewardToken.balanceOf(actor));
-        console.log("  pending rewards:", stakedGho.getTotalRewardsBalance(actor));
-
-        console.log("\nRedeeming staked GHO\n");
-
-        vm.startPrank(actor);
-        stakedGho.redeem(actor, stakedGho.balanceOf(actor) / 2);
-        vm.stopPrank();
-
-        console.log("actor:");
-        console.log("  address:", actor);
-        console.log("  tokenGho balance:", tokenGho.balanceOf(actor));
-        console.log("  stakedGho balance:", stakedGho.balanceOf(actor));
-        console.log("  rewardToken balance:", rewardToken.balanceOf(actor));
-        console.log("  pending rewards:", stakedGho.getTotalRewardsBalance(actor));
-
-        console.log("\nPassing time\n");
-
-        vm.roll(block.number + 100);
-        skip(stakedGho.UNSTAKE_WINDOW() / 2);
-
-        console.log("actor:");
-        console.log("  address:", actor);
-        console.log("  tokenGho balance:", tokenGho.balanceOf(actor));
-        console.log("  stakedGho balance:", stakedGho.balanceOf(actor));
-        console.log("  rewardToken balance:", rewardToken.balanceOf(actor));
-        console.log("  pending rewards:", stakedGho.getTotalRewardsBalance(actor));
-
-        console.log("\nRedeeming staked GHO\n");
-
-        vm.startPrank(actor);
-        stakedGho.redeem(actor, stakedGho.balanceOf(actor) / 2);
-        vm.stopPrank();
-
-        console.log("actor:");
-        console.log("  address:", actor);
-        console.log("  tokenGho balance:", tokenGho.balanceOf(actor));
-        console.log("  stakedGho balance:", stakedGho.balanceOf(actor));
-        console.log("  rewardToken balance:", rewardToken.balanceOf(actor));
-        console.log("  pending rewards:", stakedGho.getTotalRewardsBalance(actor));
     }
 }
 

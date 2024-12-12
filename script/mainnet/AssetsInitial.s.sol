@@ -27,6 +27,7 @@ enum Extended {
     GEARBOX_V3_SWAP,
     METAMORPHO_ROUND_2,
     APXETH,
+    AAVE_GHO_STAKING_ROUND_0,
     CURRENT
 }
 

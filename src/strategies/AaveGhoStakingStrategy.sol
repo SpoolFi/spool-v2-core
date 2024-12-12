@@ -14,6 +14,22 @@ import "./StrategyNonAtomic.sol";
 error AaveGhoStakingBeforeDepositCheckFailed();
 error AaveGhoStakingBeforeRedeemalCheckFailed();
 
+// about strategy
+// - single asset
+// - yield
+//   - no base yield under normal conditions
+//     - staked GHO can be slashed to cover losses in the aave protocol
+//       - negative base yield
+//     - after slashing, over-slashed funds can be returned to stakers
+//       - positive base yield
+//   - rewards
+//     - AAVE token
+// - atomic deposit
+// - non-atomic withdrawal
+//   - 20 days cooldown
+//   - 2 days unstake window
+//     - atomic withdrawal is possible during the unstake window
+
 // slippages
 // - mode selection: slippages[0]
 // - DHW with deposit: slippages[0] == 0
@@ -35,11 +51,11 @@ error AaveGhoStakingBeforeRedeemalCheckFailed();
 // - swap underlying asset into GHO
 // - stake GHO
 // withdrawal flow (non-atomic):
-// - already in cooldown period
+// - already in unstake window
 //   - tx 1:
 //     - redeem GHO
 //     - swap GHO into underlying asset
-// - not in cooldown period
+// - not in unstake window
 //   - tx 1:
 //     - trigger cooldown of staked GHO
 //   - wait for cooldown to end, but be careful of the unstake window
@@ -234,7 +250,6 @@ contract AaveGhoStakingStrategy is StrategyNonAtomic, SwapAdapter {
 
             // claim rewards from staking contract
             stakedGho.claimRewards(address(_swapper), stakedGho.getTotalRewardsBalance(address(this)));
-            // TODO: check if there are some other rewards to claim (merit program, etc.)
 
             assetsToCompound = _swapper.swap(_getRewardTokens(), compoundSwapInfo, tokens, address(this));
         }
@@ -259,8 +274,6 @@ contract AaveGhoStakingStrategy is StrategyNonAtomic, SwapAdapter {
         amounts = new uint256[](tokens.length);
 
         amounts[0] = stakedGho.getTotalRewardsBalance(address(this));
-
-        // TODO: check if there are some other rewards to claim (merit program, etc.)
     }
 
     function _underlyingGhoAmount() internal view returns (uint256) {
@@ -274,7 +287,6 @@ contract AaveGhoStakingStrategy is StrategyNonAtomic, SwapAdapter {
     function _getRewardTokens() internal view returns (address[] memory rewardTokens) {
         rewardTokens = new address[](1);
         rewardTokens[0] = address(stakedGho.REWARD_TOKEN());
-        // TODO: check if there are some other rewards to claim (merit program, etc.)
     }
 
     function _swapWithdrawals(address tokenOut, uint256 tokenInAmount, bytes calldata continuationData)
