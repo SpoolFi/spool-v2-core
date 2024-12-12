@@ -177,13 +177,7 @@ contract ConvexAlusdStrategy is
             }
 
             ConvexAlUsdStrategyLib.beforeDepositCheck(
-                amounts,
-                slippages,
-                tokenLength,
-                _pool,
-                _poolMeta,
-                N_COINS,
-                N_COINS_META
+                amounts, slippages, tokenLength, _pool, _poolMeta, N_COINS, N_COINS_META
             );
         }
     }
@@ -237,11 +231,7 @@ contract ConvexAlusdStrategy is
 
         _redeemInner(totalSupply(), slippages, 1);
 
-        ConvexAlUsdStrategyLib.emergencyWithdraw(
-            _assetGroupRegistry,
-            assetGroupId(),
-            recipient
-        );
+        ConvexAlUsdStrategyLib.emergencyWithdraw(_assetGroupRegistry, assetGroupId(), recipient);
     }
 
     function _compound(address[] calldata tokens, SwapInfo[] calldata compoundSwapInfo, uint256[] calldata slippages)

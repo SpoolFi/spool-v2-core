@@ -122,7 +122,8 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
         uint256 USDC_DECIMALS_MULTIPLIER = 10 ** tokenUsdc.decimals();
         uint256 STAKED_GHO_DECIMALS_MULTIPLIER = 10 ** stakedGho.decimals();
 
-        {  // deposit 1,000 USDC
+        {
+            // deposit 1,000 USDC
             _dealUsdc(address(aaveGhoStakingStrategy), 1_000 * USDC_DECIMALS_MULTIPLIER);
 
             // - get data for the swap
@@ -160,7 +161,8 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
             aaveGhoStakingStrategy.exposed_mint(100);
         }
 
-        {  // withdrawal 1
+        {
+            // withdrawal 1
             // - initialize withdrawal
             aaveGhoStakingStrategy.exposed_initializeWithdrawalFromProtocol(assetGroup, 50, new uint256[](0));
 
@@ -203,7 +205,8 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
             aaveGhoStakingStrategy.exposed_burn(50);
         }
 
-        {  // withdrawal 2
+        {
+            // withdrawal 2
             // - wait 0.5 days
             vm.roll(block.number + 100);
             skip(0.5 * 24 * 60 * 60);
@@ -242,7 +245,8 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
             aaveGhoStakingStrategy.exposed_burn(25);
         }
 
-        {  // check rewards and start compound
+        {
+            // check rewards and start compound
             // - check rewards
             (address[] memory rewardTokens, uint256[] memory rewardAmounts) =
                 aaveGhoStakingStrategy.exposed_getProtocolRewardsInternal();
@@ -269,7 +273,8 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
             assertEq(tokenUsdc.balanceOf(address(aaveGhoStakingStrategy)), 750_000000 + 2_820682);
         }
 
-        {  // check yield and usd worth
+        {
+            // check yield and usd worth
             // - base yield should be 0 under normal circumstances
             int256 baseYieldPercentage = aaveGhoStakingStrategy.exposed_getYieldPercentage(0);
             uint256 usdWorth = aaveGhoStakingStrategy.exposed_getUsdWorth(assetGroupExchangeRates, priceFeedManager);
