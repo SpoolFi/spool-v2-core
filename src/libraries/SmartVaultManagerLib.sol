@@ -43,7 +43,7 @@ struct SimulateNftBurnParams {
 
 library SmartVaultManagerLib {
     /**
-     * Simulate sync when burning dNFTs and return their svts value.
+     * @notice Simulate sync when burning dNFTs and return their svts value.
      * @param nftIds IDs of the NFTs to burn.
      * @param params Parameters for syncing and burning.
      * @param flushIndexes Current flush indexes for smart vaults.

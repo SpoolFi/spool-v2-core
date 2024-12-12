@@ -9,6 +9,7 @@ import "../external/interfaces/strategies/aave/IStakedGho.sol";
 import "../libraries/BytesUint256Lib.sol";
 import "../libraries/PackedRange.sol";
 import "./helpers/SwapAdapter.sol";
+import "./libraries/AaveGhoStakingStrategyLib.sol";
 import "./StrategyNonAtomic.sol";
 
 error AaveGhoStakingBeforeDepositCheckFailed();
@@ -232,11 +233,9 @@ contract AaveGhoStakingStrategy is StrategyNonAtomic, SwapAdapter {
         override
         returns (bool finished)
     {
-        stakedGho.redeem(address(this), _toUnstake);
-
-        _swapWithdrawals(tokens[0], IERC20Metadata(gho).balanceOf(address(this)), continuationData);
-
-        return true;
+        return AaveGhoStakingStrategyLib.continueWithdrawalFromProtocol(
+            tokens, continuationData, gho, stakedGho, _swapper, _toUnstake
+        );
     }
 
     function _prepareCompoundImpl(address[] calldata tokens, SwapInfo[] calldata compoundSwapInfo)
@@ -287,27 +286,5 @@ contract AaveGhoStakingStrategy is StrategyNonAtomic, SwapAdapter {
     function _getRewardTokens() internal view returns (address[] memory rewardTokens) {
         rewardTokens = new address[](1);
         rewardTokens[0] = address(stakedGho.REWARD_TOKEN());
-    }
-
-    function _swapWithdrawals(address tokenOut, uint256 tokenInAmount, bytes calldata continuationData)
-        internal
-        returns (uint256)
-    {
-        (address swapTarget, bytes memory swapCallData) = abi.decode(continuationData, (address, bytes));
-
-        if (_isViewExecution() && swapTarget == address(0)) {
-            emit SwapEstimation(address(gho), tokenOut, tokenInAmount);
-            return 0;
-        }
-
-        address[] memory tokensIn = new address[](1);
-        tokensIn[0] = address(gho);
-        SwapInfo[] memory swapInfos = new SwapInfo[](1);
-        swapInfos[0] = SwapInfo(swapTarget, address(gho), swapCallData);
-        address[] memory tokensOut = new address[](1);
-        tokensOut[0] = tokenOut;
-
-        IERC20Metadata(gho).safeTransfer(address(_swapper), tokenInAmount);
-        return _swapper.swap(tokensIn, swapInfos, tokensOut, address(this))[0];
     }
 }
