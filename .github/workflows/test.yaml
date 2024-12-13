@@ -1,5 +1,4 @@
-name: test
-
+name: Integration
 
 on:
   push:
@@ -7,47 +6,33 @@ on:
   pull_request:
     branches: [ "dev", "main" ]
 
-  workflow_dispatch:
-
 env:
   FOUNDRY_PROFILE: ci
 
 jobs:
   check:
-    strategy:
-      fail-fast: true
-
-    name: Foundry project
+    name: Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
         with:
           submodules: recursive
-
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly-09fe3e041369a816365a020f715ad6f94dbce9f2
-
-      - name: Run Forge fmt check
+      - name: Format check
         run: |
           forge --version
           forge fmt --check
-        id: fmt_check
-
-      - name: Run Forge build
+      - name: Build
         run: |
           forge build --skip script --skip test --sizes
           forge build
-        id: build
-
-      - name: Run Forge tests
-        run: |
-          forge t -vvv
-        id: test
-
-      - name: Run Forge coverage
-        run: |
-          forge coverage
-
-        id: coverage
+      - name: Test
+        run: forge t -vvv
+      # - name: Coverage
+      #   run: forge coverage
