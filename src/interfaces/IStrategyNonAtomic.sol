@@ -42,6 +42,12 @@ interface IStrategyNonAtomic {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
+    /**
+     * @notice Continues do hard work for non-atomic strategies.
+     * @dev This function is called after the initial do hard work call.
+     * @dev Can in principle be called multiple times until completion.
+     * @param params Params for calling do hard work continue.
+     */
     function doHardWorkContinue(StrategyDhwContinueParameterBag calldata params)
         external
         returns (DhwInfo memory dhwInfo);

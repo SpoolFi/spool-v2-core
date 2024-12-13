@@ -32,8 +32,6 @@ Strategies in the Spool ecosystem are wrappers that allow the core contracts to 
 - smart vault is synced
 - deposits / withdrawals can be claimed
 
-TODO: limitations?
-
 ### Redeem strategy shares
 
 sync version (current flow):
@@ -53,8 +51,6 @@ async version (new flow):
 - DHW is finished for the strategy
 - withdrawals can be claimed
 
-TODO: limitations?
-
 ### Redeem fast
 
 - can be used with strategies that support atomic withdrawal
@@ -62,8 +58,6 @@ TODO: limitations?
 - strategy must be idle
 - execute redeem fast
     - withdrawal is immediately executed and assets transferred
-
-TODO: limitations?
 
 > **Note:** users cannot redeem fast from a smart vault if it contains any strategy with non-atomic withdrawal.
 

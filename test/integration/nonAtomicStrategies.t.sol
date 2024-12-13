@@ -2498,7 +2498,7 @@ contract NonAtomicStrategiesTest is Test {
             //   - 1.32525 base yield on continuation
             //   - 0.556605 is taken as protocol fees
             //   - no fees are taken for yield
-            // - how to process
+            // how to process
             //   - legacy users
             //     - 49 token A base
             //     - 20.4575 token A yield
@@ -2891,7 +2891,7 @@ contract NonAtomicStrategiesTest is Test {
             //   - 1.32525 base yield on continuation
             //   - 0.556605 is taken as protocol fees
             //   - no fees are taken for yield
-            // - how to process
+            // how to process
             //   - legacy users
             //     - 49 token A base
             //     - 20.4575 token A yield
@@ -3319,6 +3319,272 @@ contract NonAtomicStrategiesTest is Test {
         }
     }
 
+    function test_nonAtomicStrategyFlow_nonAtomic_equal2() public {
+        // setup asset group with token A
+        uint256 assetGroupId;
+        address[] memory assetGroup;
+        {
+            assetGroup = Arrays.toArray(address(tokenA));
+            assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+
+            priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
+        }
+
+        // setup strategies
+        MockStrategyNonAtomic strategyA;
+        address[] memory strategies;
+        {
+            // strategy A implements non-atomic strategy with
+            // both deposits and withdrawals being non-atomic
+            strategyA =
+            new MockStrategyNonAtomic(assetGroupRegistry, accessControl, assetGroupId, NON_ATOMIC_STRATEGY, 2_00, true);
+            strategyA.initialize("StratA");
+            strategyRegistry.registerStrategy(address(strategyA), 0, NON_ATOMIC_STRATEGY);
+
+            strategies = Arrays.toArray(address(strategyA));
+        }
+
+        // setup smart vaults
+        ISmartVault smartVaultA;
+        ISmartVault smartVaultB;
+        {
+            SmartVaultSpecification memory spec = _getSmartVaultSpecification();
+            spec.strategies = strategies;
+            spec.strategyAllocation = uint16a16.wrap(0).set(0, 100_00);
+            spec.assetGroupId = assetGroupId;
+
+            spec.smartVaultName = "SmartVaultA";
+            smartVaultA = smartVaultFactory.deploySmartVault(spec);
+
+            spec.smartVaultName = "SmartVaultB";
+            smartVaultB = smartVaultFactory.deploySmartVault(spec);
+        }
+
+        uint256 depositNftId1;
+        uint256 depositNftId2;
+        uint256 withdrawalNftId;
+
+        // round 1 - initial deposit + second deposit flushed
+        {
+            // Alice deposits 100 token A into smart vault A
+            vm.startPrank(alice);
+            tokenA.approve(address(smartVaultManager), 100 ether);
+            depositNftId1 = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVaultA),
+                    assets: Arrays.toArray(100 ether),
+                    receiver: alice,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+
+            // flush, DHW
+            smartVaultManager.flushSmartVault(address(smartVaultA));
+
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(_generateDhwParameterBag(strategies, assetGroup));
+            vm.stopPrank();
+
+            // Bob deposits 36.505 token A into smart vault B
+            vm.startPrank(bob);
+            tokenA.approve(address(smartVaultManager), 36.505 ether);
+            depositNftId2 = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVaultB),
+                    assets: Arrays.toArray(36.505 ether),
+                    receiver: bob,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+
+            // flush
+            smartVaultManager.flushSmartVault(address(smartVaultB));
+
+            // continue DHW, sync
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWorkContinue(_generateDhwContinuationParameterBag(strategies, assetGroup));
+            vm.stopPrank();
+
+            smartVaultManager.syncSmartVault(address(smartVaultA), true);
+
+            // claim
+            vm.startPrank(alice);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVaultA), Arrays.toArray(depositNftId1), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+        }
+
+        // check state
+        {
+            // what happened
+            // - Alice deposited 100 token A into smart vault A
+            //   - 2 token A taken as fees on the protocol level
+            //   - 0.000000001 to initial locked shares
+            //   - 97.999999999 to smart vault A
+            // - Bob deposited 36.505 token A into smart vault B
+            //   - 36.505 should be on master wallet
+
+            assertEq(tokenA.balanceOf(address(alice)), 900.0 ether, "tokenA -> Alice");
+            assertEq(tokenA.balanceOf(address(bob)), 963.495 ether, "tokenA -> Bob");
+            assertEq(tokenA.balanceOf(address(masterWallet)), 36.505 ether, "tokenA -> MasterWallet");
+            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 100.0 ether, "tokenA -> protocolA");
+            assertEq(strategyA.protocol().totalUnderlying(), 98.0 ether, "protocolA -> totalUnderlying");
+            assertEq(strategyA.protocol().fees(), 2.0 ether, "protocolA -> fees");
+
+            assertEq(
+                _getStrategySharesAssetBalances(INITIAL_LOCKED_SHARES_ADDRESS, address(strategyA))[0],
+                0.000000001 ether,
+                "strategyA asset balance -> initial locked shares"
+            );
+            assertEq(
+                _getStrategySharesAssetBalances(address(smartVaultA), address(strategyA))[0],
+                97.999999999 ether,
+                "strategyA asset balance -> smart vault A"
+            );
+            assertEq(
+                _getStrategySharesAssetBalances(address(ecosystemFeeRecipient), address(strategyA))[0],
+                0 ether,
+                "strategyA asset balance -> ecosystem fee recipient"
+            );
+            assertEq(
+                _getStrategySharesAssetBalances(address(treasuryFeeRecipient), address(strategyA))[0],
+                0 ether,
+                "strategyA asset balance -> treasury fee recipient"
+            );
+        }
+
+        // round 2 - yield + withdrawal equal to deposits
+        {
+            // generate yield
+            vm.startPrank(charlie);
+            tokenA.approve(address(strategyA.protocol()), 19.6 ether);
+            // - base yield
+            strategyA.protocol().donate(4.9 ether);
+            // - compound yield
+            strategyA.protocol().reward(14.7 ether, address(strategyA));
+            vm.stopPrank();
+
+            // deposits + withdrawals
+            // - Alice withdraws 1/2 of the strategy worth
+            vm.startPrank(alice);
+            withdrawalNftId = smartVaultManager.redeem(
+                RedeemBag({
+                    smartVault: address(smartVaultA),
+                    shares: 49_000000000000000000000,
+                    nftIds: new uint256[](0),
+                    nftAmounts: new uint256[](0)
+                }),
+                alice,
+                false
+            );
+
+            // flush, DHW, sync
+            smartVaultManager.flushSmartVault(address(smartVaultA));
+
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(_generateDhwParameterBag(strategies, assetGroup));
+            vm.stopPrank();
+
+            // claim
+            // - withdrawal by Alice
+            vm.startPrank(alice);
+            smartVaultManager.claimWithdrawal(
+                address(smartVaultA), Arrays.toArray(withdrawalNftId), Arrays.toArray(NFT_MINTED_SHARES), alice
+            );
+            vm.stopPrank();
+            // - deposit by Bob
+            vm.startPrank(bob);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVaultB), Arrays.toArray(depositNftId2), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+        }
+
+        // check state
+        {
+            // what happened
+            // - 4.9 token A base yield was generated
+            //   - 0.49 as fees
+            //   - 4.41 to existing shares
+            // - 14.7 token A compound yield was generated
+            // - Alice withdrew 50% of the strategy worth
+            //   - 51.205 token A (= 49 + 2.205)
+            // - Bob deposited 36.505 token A into smart vault B
+            //   - went into effect from previous round
+            // how to process
+            // - compound yield
+            //   - 14.7 token A (full amount) is matched with withdrawal
+            //     - 1.47 as fees
+            //     - 13.23 to legacy users
+            // - deposit
+            //   - 36.505 token A (full amount) is matched with withdrawal
+            // - withdrawal
+            //   - 51.205 token A (full amount) is matched with deposits
+            // how to distribute
+            // - 51.205 token A as Alice's withdrawal
+            // - 36.505 token A as smart vault B's deposit
+            // - 0 token A as protocol fees
+            // - 1.96 token A (= 0.49 + 1.47) as fees
+            //   - 1.176 to ecosystem fee recipient
+            //   - 0.784 to treasury fee recipient
+            // - 64.435 token A (= 98 + 4.41 - 51.205 + 13.23) for smart vault A
+            // - 36.505 token A for smart vault B
+
+            assertApproxEqAbs(tokenA.balanceOf(address(alice)), 951.205 ether, 1, "tokenA -> Alice");
+            assertApproxEqAbs(tokenA.balanceOf(address(bob)), 963.495 ether, 1, "tokenA -> Bob");
+            assertApproxEqAbs(tokenA.balanceOf(address(masterWallet)), 0 ether, 1, "tokenA -> MasterWallet");
+            assertApproxEqAbs(tokenA.balanceOf(address(strategyA.protocol())), 104.9 ether, 1, "tokenA -> protocolA");
+            assertApproxEqAbs(strategyA.protocol().totalUnderlying(), 102.9 ether, 1, "protocolA -> totalUnderlying");
+            assertApproxEqAbs(strategyA.protocol().fees(), 2.0 ether, 1, "protocolA -> fees");
+
+            assertApproxEqAbs(
+                _getProtocolSharesAssetBalance(
+                    strategyA.protocol().shares(address(strategyA)), address(strategyA.protocol())
+                ),
+                102.9 ether,
+                1,
+                "protocolA asset balance -> strategyA"
+            );
+
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(INITIAL_LOCKED_SHARES_ADDRESS, address(strategyA))[0]
+                    + _getStrategySharesAssetBalances(address(smartVaultA), address(strategyA))[0],
+                64.435 ether,
+                1e7,
+                "strategyA asset balance -> smart vault A"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(smartVaultB), address(strategyA))[0],
+                36.505 ether,
+                1e7,
+                "strategyA asset balance -> smart vault B"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(ecosystemFeeRecipient), address(strategyA))[0],
+                1.176 ether,
+                1e7,
+                "strategyA asset balance -> ecosystem fee recipient"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(treasuryFeeRecipient), address(strategyA))[0],
+                0.784 ether,
+                1e7,
+                "strategyA asset balance -> treasury fee recipient"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(strategyA), address(strategyA))[0],
+                0.0 ether,
+                1e7,
+                "strategyA asset balance -> strategyA"
+            );
+        }
+    }
+
     function test_nonAtomicStrategyFlow_nonAtomic_redeemStrategySharesAsync() public {
         // setup asset group with token A
         uint256 assetGroupId;
@@ -3414,14 +3680,14 @@ contract NonAtomicStrategiesTest is Test {
             //   - Alice deposited 100 token A into smart vault A
             // - round 2
             //   - 4.9 token A base yield was generated
-            // - how to process
+            // how to process
             //   - 100 token A deposit
             //     - 2 token A as fees on protocol level
             //     - 98 token A to smart vault A
             //   - 4.9 token A base yield
             //     - 4.41 token A to smart vault A
             //     - 0.49 token A as fees
-            // - how to distribute
+            // how to distribute
             //   - 2 token A as fees on protocol level
             //   - 102.41 token A for smart vault A
             //   - 0.49 token A for fees
@@ -3552,8 +3818,12 @@ contract NonAtomicStrategiesTest is Test {
             assertApproxEqAbs(
                 tokenA.balanceOf(address(strategyA.protocol())), 109.543191 ether, 1, "tokenA -> protocolA"
             );
-            assertApproxEqAbs(tokenA.balanceOf(ecosystemFeeRecipient), 0.3010854 ether, 1, "tokenA -> protocolA");
-            assertApproxEqAbs(tokenA.balanceOf(treasuryFeeRecipient), 0.2007236 ether, 1, "tokenA -> protocolA");
+            assertApproxEqAbs(
+                tokenA.balanceOf(ecosystemFeeRecipient), 0.3010854 ether, 1, "tokenA -> ecosystemFeeRecipient"
+            );
+            assertApproxEqAbs(
+                tokenA.balanceOf(treasuryFeeRecipient), 0.2007236 ether, 1, "tokenA -> treasuryFeeRecipient"
+            );
             assertApproxEqAbs(
                 strategyA.protocol().totalUnderlying(), 107.53295 ether, 1, "protocolA -> totalUnderlying"
             );
@@ -3593,6 +3863,846 @@ contract NonAtomicStrategiesTest is Test {
                 1e7,
                 "strategyA asset balance -> strategyA"
             );
+        }
+
+        uint256 strategyDhwIndex;
+
+        // round 4 - deposit + redeem strategy shares start - no yield
+        {
+            // Alice deposits 100 token A into smart vault A
+            vm.startPrank(alice);
+            tokenA.approve(address(smartVaultManager), 100 ether);
+            depositNftId = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVaultA),
+                    assets: Arrays.toArray(100 ether),
+                    receiver: alice,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+
+            // flush, DHW
+            smartVaultManager.flushSmartVault(address(smartVaultA));
+
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(_generateDhwParameterBag(strategies, assetGroup));
+            vm.stopPrank();
+
+            // redeem strategy shares
+            // - ecosystem fee recipient redeems all their current shares
+            strategyDhwIndex = strategyRegistry.currentIndex(Arrays.toArray(address(strategyA)))[0];
+            vm.startPrank(ecosystemFeeRecipient);
+            strategyRegistry.redeemStrategySharesAsync(
+                Arrays.toArray(address(strategyA)), Arrays.toArray(strategyA.balanceOf(ecosystemFeeRecipient))
+            );
+            vm.stopPrank();
+
+            // DHW continue, sync
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWorkContinue(_generateDhwContinuationParameterBag(strategies, assetGroup));
+            vm.stopPrank();
+
+            smartVaultManager.syncSmartVault(address(smartVaultA), true);
+
+            // claim
+            vm.startPrank(alice);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVaultA), Arrays.toArray(depositNftId), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+        }
+
+        // check state
+        {
+            // what happened
+            // - Alice deposited 100 token A into smart vault A
+            // - ecosystem fee recipient redeemed all their shares
+            // how to process
+            // - deposit
+            //   - 100 token A deposited
+            //     - 2 token A taken as fees on protocol level
+            //     - 98 token A to smart vault A
+            // - redeemal
+            //   - 0.3087 token A worth
+            //     - waits as shares on strategy level
+
+            assertApproxEqAbs(tokenA.balanceOf(address(alice)), 800.0 ether, 1, "tokenA -> Alice");
+            assertApproxEqAbs(tokenA.balanceOf(address(masterWallet)), 0.0 ether, 1, "tokenA -> MasterWallet");
+            assertApproxEqAbs(
+                tokenA.balanceOf(address(strategyA.protocol())), 209.543191 ether, 1, "tokenA -> protocolA"
+            );
+            assertApproxEqAbs(
+                tokenA.balanceOf(ecosystemFeeRecipient), 0.3010854 ether, 1, "tokenA -> ecosystemFeeRecipient"
+            );
+            assertApproxEqAbs(
+                tokenA.balanceOf(treasuryFeeRecipient), 0.2007236 ether, 1, "tokenA -> treasuryFeeRecipient"
+            );
+            assertApproxEqAbs(
+                strategyA.protocol().totalUnderlying(), 205.53295 ether, 1, "protocolA -> totalUnderlying"
+            );
+            assertApproxEqAbs(strategyA.protocol().fees(), 4.010241 ether, 1, "protocolA -> fees");
+
+            assertApproxEqAbs(
+                _getProtocolSharesAssetBalance(
+                    strategyA.protocol().shares(address(strategyA)), address(strategyA.protocol())
+                ),
+                205.53295 ether,
+                1e7,
+                "protocolA asset balance -> strategyA"
+            );
+
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(INITIAL_LOCKED_SHARES_ADDRESS, address(strategyA))[0]
+                    + _getStrategySharesAssetBalances(address(smartVaultA), address(strategyA))[0],
+                205.01845 ether,
+                1e7,
+                "strategyA asset balance -> smart vault A"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(ecosystemFeeRecipient), address(strategyA))[0],
+                0.0 ether,
+                1e7,
+                "strategyA asset balance -> ecosystem fee recipient"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(treasuryFeeRecipient), address(strategyA))[0],
+                0.2058 ether,
+                1e7,
+                "strategyA asset balance -> treasury fee recipient"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(strategyA), address(strategyA))[0],
+                0.3087 ether,
+                1e7,
+                "strategyA asset balance -> strategyA"
+            );
+        }
+
+        // round 5 - finish redeem strategy shares - no yield
+        {
+            // DHW
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(_generateDhwParameterBag(strategies, assetGroup));
+            strategyRegistry.doHardWorkContinue(_generateDhwContinuationParameterBag(strategies, assetGroup));
+            vm.stopPrank();
+
+            // claim
+            // - ecosystem fee recipient claims their rewards
+            vm.startPrank(ecosystemFeeRecipient);
+            strategyRegistry.claimStrategyShareWithdrawals(
+                Arrays.toArray(address(strategyA)), Arrays.toArray(strategyDhwIndex), ecosystemFeeRecipient
+            );
+            vm.stopPrank();
+        }
+
+        // check state
+        {
+            // what happened
+            // - ecosystem fee recipient redeemed all their shares - finished
+            //   - 0.3087 token A worth
+            // how to process
+            // - redeemal
+            //   - 0.3087 token A withdrawn
+            //     - 0.006174 for fees on protocol level
+            //     - 0.302526 for ecosystem fee recipient
+
+            assertApproxEqAbs(tokenA.balanceOf(address(alice)), 800.0 ether, 3, "tokenA -> Alice");
+            assertApproxEqAbs(tokenA.balanceOf(address(masterWallet)), 0.0 ether, 3, "tokenA -> MasterWallet");
+            assertApproxEqAbs(
+                tokenA.balanceOf(address(strategyA.protocol())), 209.240665 ether, 3, "tokenA -> protocolA"
+            );
+            assertApproxEqAbs(
+                tokenA.balanceOf(ecosystemFeeRecipient), 0.6036114 ether, 3, "tokenA -> ecosystemFeeRecipient"
+            );
+            assertApproxEqAbs(
+                tokenA.balanceOf(treasuryFeeRecipient), 0.2007236 ether, 3, "tokenA -> treasuryFeeRecipient"
+            );
+            assertApproxEqAbs(
+                strategyA.protocol().totalUnderlying(), 205.22425 ether, 3, "protocolA -> totalUnderlying"
+            );
+            assertApproxEqAbs(strategyA.protocol().fees(), 4.016415 ether, 3, "protocolA -> fees");
+
+            assertApproxEqAbs(
+                _getProtocolSharesAssetBalance(
+                    strategyA.protocol().shares(address(strategyA)), address(strategyA.protocol())
+                ),
+                205.22425 ether,
+                1e7,
+                "protocolA asset balance -> strategyA"
+            );
+
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(INITIAL_LOCKED_SHARES_ADDRESS, address(strategyA))[0]
+                    + _getStrategySharesAssetBalances(address(smartVaultA), address(strategyA))[0],
+                205.01845 ether,
+                1e7,
+                "strategyA asset balance -> smart vault A"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(ecosystemFeeRecipient), address(strategyA))[0],
+                0.0 ether,
+                1e7,
+                "strategyA asset balance -> ecosystem fee recipient"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(treasuryFeeRecipient), address(strategyA))[0],
+                0.2058 ether,
+                1e7,
+                "strategyA asset balance -> treasury fee recipient"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(strategyA), address(strategyA))[0],
+                0.0 ether,
+                1e7,
+                "strategyA asset balance -> strategyA"
+            );
+        }
+    }
+
+    function test_nonAtomicStrategyFlow_nonAtomic_redeemStrategyShares() public {
+        // setup asset group with token A
+        uint256 assetGroupId;
+        address[] memory assetGroup;
+        {
+            assetGroup = Arrays.toArray(address(tokenA));
+            assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+
+            priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
+        }
+
+        // setup strategies
+        MockStrategyNonAtomic strategyA;
+        MockStrategyNonAtomic strategyB;
+        {
+            // strategy A implements non-atomic strategy with
+            // atomic deposits and non-atomic withdrawals
+            strategyA =
+            new MockStrategyNonAtomic(assetGroupRegistry, accessControl, assetGroupId, NON_ATOMIC_WITHDRAWAL_STRATEGY, 2_00, true);
+            strategyA.initialize("StratA");
+            strategyRegistry.registerStrategy(address(strategyA), 0, NON_ATOMIC_STRATEGY);
+            // strategy B implements non-atomic strategy with
+            // non-atomic deposits and atomic withdrawals
+            strategyB =
+            new MockStrategyNonAtomic(assetGroupRegistry, accessControl, assetGroupId, NON_ATOMIC_DEPOSIT_STRATEGY, 2_00, true);
+            strategyB.initialize("StratB");
+            strategyRegistry.registerStrategy(address(strategyB), 0, NON_ATOMIC_STRATEGY);
+        }
+
+        // setup smart vaults
+        ISmartVault smartVaultA;
+        ISmartVault smartVaultB;
+        address[] memory strategiesA;
+        address[] memory strategiesB;
+        {
+            SmartVaultSpecification memory spec = _getSmartVaultSpecification();
+            spec.strategyAllocation = uint16a16.wrap(0).set(0, 100_00);
+            spec.assetGroupId = assetGroupId;
+
+            spec.strategies = Arrays.toArray(address(strategyA));
+            spec.smartVaultName = "SmartVaultA";
+            smartVaultA = smartVaultFactory.deploySmartVault(spec);
+            strategiesA = spec.strategies;
+
+            spec.strategies = Arrays.toArray(address(strategyB));
+            spec.smartVaultName = "SmartVaultB";
+            smartVaultB = smartVaultFactory.deploySmartVault(spec);
+            strategiesB = spec.strategies;
+        }
+
+        uint256 depositNftId1;
+        uint256 depositNftId2;
+
+        // round 1 - initial deposit
+        {
+            // Alice deposits 100 token A into smart vault A
+            vm.startPrank(alice);
+            tokenA.approve(address(smartVaultManager), 100 ether);
+            depositNftId1 = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVaultA),
+                    assets: Arrays.toArray(100 ether),
+                    receiver: alice,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+            // Bob deposits 100 token A into smart vault B
+            vm.startPrank(bob);
+            tokenA.approve(address(smartVaultManager), 100 ether);
+            depositNftId2 = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVaultB),
+                    assets: Arrays.toArray(100 ether),
+                    receiver: bob,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+
+            // flush, DHW, sync
+            smartVaultManager.flushSmartVault(address(smartVaultA));
+            smartVaultManager.flushSmartVault(address(smartVaultB));
+
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(_generateDhwParameterBag(strategiesA, assetGroup));
+            strategyRegistry.doHardWork(_generateDhwParameterBag(strategiesB, assetGroup));
+            strategyRegistry.doHardWorkContinue(_generateDhwContinuationParameterBag(strategiesB, assetGroup));
+            vm.stopPrank();
+
+            smartVaultManager.syncSmartVault(address(smartVaultA), true);
+
+            // claim
+            // - by Alice
+            vm.startPrank(alice);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVaultA), Arrays.toArray(depositNftId1), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+            // - by Bob
+            vm.startPrank(bob);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVaultB), Arrays.toArray(depositNftId2), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+        }
+
+        // round 2 - yield
+        {
+            // generate yield
+            vm.startPrank(charlie);
+            // - strategy A base yield
+            tokenA.approve(address(strategyA.protocol()), 4.9 ether);
+            strategyA.protocol().donate(4.9 ether);
+            // - strategy B base yield
+            tokenA.approve(address(strategyB.protocol()), 4.9 ether);
+            strategyB.protocol().donate(4.9 ether);
+            vm.stopPrank();
+
+            // DHW
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(_generateDhwParameterBag(strategiesA, assetGroup));
+            strategyRegistry.doHardWork(_generateDhwParameterBag(strategiesB, assetGroup));
+            vm.stopPrank();
+        }
+
+        // check state
+        {
+            // what happened
+            // - round 1
+            //   - Alice deposited 100 token A into smart vault A
+            // - round 2
+            //   - 4.9 token A base yield was generated
+            // how to process
+            //   - 100 token A deposit
+            //     - 2 token A as fees on protocol level
+            //     - 98 token A to smart vault A
+            //   - 4.9 token A base yield to strategy A
+            //     - 4.41 token A to smart vault A
+            //     - 0.49 token A as fees
+            //   - 4.9 token A base yield to strategy B
+            //     - 4.41 token A to smart vault B
+            //     - 0.49 token A as fees
+            // how to distribute
+            //   - 2 token A as fees on protocol level
+            //   - 2 token B as fees on protocol level
+            //   - 102.41 token A for smart vault A
+            //   - 102.41 token A for smart vault B
+            //   - 0.49 token A for fees on strategy A
+            //     - 0.294 to ecosystem fee recipient
+            //     - 0.196 to treasury fee recipient
+            //   - 0.49 token A for fees on strategy B
+            //     - 0.294 to ecosystem fee recipient
+            //     - 0.196 to treasury fee recipient
+
+            assertEq(tokenA.balanceOf(address(alice)), 900.0 ether, "tokenA -> Alice");
+            assertEq(tokenA.balanceOf(address(bob)), 900.0 ether, "tokenA -> Bob");
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0.0 ether, "tokenA -> MasterWallet");
+            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 104.9 ether, "tokenA -> protocolA");
+            assertEq(strategyA.protocol().totalUnderlying(), 102.9 ether, "protocolA -> totalUnderlying");
+            assertEq(strategyA.protocol().fees(), 2.0 ether, "protocolA -> fees");
+            assertEq(tokenA.balanceOf(address(strategyB.protocol())), 104.9 ether, "tokenA -> protocolB");
+            assertEq(strategyB.protocol().totalUnderlying(), 102.9 ether, "protocolB -> totalUnderlying");
+            assertEq(strategyB.protocol().fees(), 2.0 ether, "protocolB -> fees");
+
+            assertApproxEqAbs(
+                _getProtocolSharesAssetBalance(
+                    strategyA.protocol().shares(address(strategyA)), address(strategyA.protocol())
+                ),
+                102.9 ether,
+                1e7,
+                "protocolA asset balance -> strategyA"
+            );
+            assertApproxEqAbs(
+                _getProtocolSharesAssetBalance(
+                    strategyB.protocol().shares(address(strategyB)), address(strategyB.protocol())
+                ),
+                102.9 ether,
+                1e7,
+                "protocolB asset balance -> strategyB"
+            );
+
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(INITIAL_LOCKED_SHARES_ADDRESS, address(strategyA))[0]
+                    + _getStrategySharesAssetBalances(address(smartVaultA), address(strategyA))[0],
+                102.41 ether,
+                1e7,
+                "strategyA asset balance -> smart vault A"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(ecosystemFeeRecipient), address(strategyA))[0],
+                0.294 ether,
+                1e7,
+                "strategyA asset balance -> ecosystem fee recipient"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(treasuryFeeRecipient), address(strategyA))[0],
+                0.196 ether,
+                1e7,
+                "strategyA asset balance -> treasury fee recipient"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(strategyA), address(strategyA))[0],
+                0 ether,
+                1e7,
+                "strategyA asset balance -> strategyA"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(INITIAL_LOCKED_SHARES_ADDRESS, address(strategyB))[0]
+                    + _getStrategySharesAssetBalances(address(smartVaultB), address(strategyB))[0],
+                102.41 ether,
+                1e7,
+                "strategyB asset balance -> smart vault B"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(ecosystemFeeRecipient), address(strategyB))[0],
+                0.294 ether,
+                1e7,
+                "strategyB asset balance -> ecosystem fee recipient"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(treasuryFeeRecipient), address(strategyB))[0],
+                0.196 ether,
+                1e7,
+                "strategyB asset balance -> treasury fee recipient"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(strategyB), address(strategyB))[0],
+                0 ether,
+                1e7,
+                "strategyB asset balance -> strategyB"
+            );
+        }
+
+        address[] memory strategies;
+        uint256[] memory shares;
+        uint256[][] memory withdrawalSlippages;
+
+        // round 3 - redeem strategy shares
+        {
+            // ecosystem recipient from strategy A
+            strategies = strategiesA;
+            shares = Arrays.toArray(strategyA.balanceOf(ecosystemFeeRecipient));
+            withdrawalSlippages = new uint256[][](1);
+            // - should revert due to non-atomic withdrawal
+            vm.startPrank(ecosystemFeeRecipient);
+            vm.expectRevert(abi.encodeWithSelector(ProtocolActionNotFinished.selector));
+            strategyRegistry.redeemStrategyShares(strategies, shares, withdrawalSlippages);
+            vm.stopPrank();
+
+            // ecosystem recipient from strategy B
+            strategies = strategiesB;
+            shares = Arrays.toArray(strategyB.balanceOf(ecosystemFeeRecipient));
+            withdrawalSlippages = new uint256[][](1);
+            vm.startPrank(ecosystemFeeRecipient);
+            strategyRegistry.redeemStrategyShares(strategies, shares, withdrawalSlippages);
+            vm.stopPrank();
+        }
+
+        // check state
+        {
+            // what happened
+            // - ecosystem fee recipient withdrew all their shares from strategy B
+            //   - 0.294 token A
+            // how to distribute
+            // - 0.294 token A withdrawn from protocol B
+            //   - 0.00588 as fees on protocol level
+            //   - 0.28812 for ecosystem fee recipient
+
+            assertEq(tokenA.balanceOf(address(alice)), 900.0 ether, "tokenA -> Alice");
+            assertEq(tokenA.balanceOf(address(bob)), 900.0 ether, "tokenA -> Alice");
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0.0 ether, "tokenA -> MasterWallet");
+            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 104.9 ether, "tokenA -> protocolA");
+            assertEq(strategyA.protocol().totalUnderlying(), 102.9 ether, "protocolA -> totalUnderlying");
+            assertEq(strategyA.protocol().fees(), 2.0 ether, "protocolA -> fees");
+            assertEq(tokenA.balanceOf(address(strategyB.protocol())), 104.61188 ether, "tokenA -> protocolB");
+            assertApproxEqAbs(strategyB.protocol().totalUnderlying(), 102.606 ether, 1, "protocolB -> totalUnderlying");
+            assertApproxEqAbs(strategyB.protocol().fees(), 2.00588 ether, 1, "protocolB -> fees");
+            assertApproxEqAbs(
+                tokenA.balanceOf(ecosystemFeeRecipient), 0.28812 ether, 1, "tokenA -> ecosystemFeeRecipient"
+            );
+
+            assertApproxEqAbs(
+                _getProtocolSharesAssetBalance(
+                    strategyB.protocol().shares(address(strategyB)), address(strategyB.protocol())
+                ),
+                102.606 ether,
+                1e7,
+                "protocolB asset balance -> strategyB"
+            );
+
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(INITIAL_LOCKED_SHARES_ADDRESS, address(strategyB))[0]
+                    + _getStrategySharesAssetBalances(address(smartVaultB), address(strategyB))[0],
+                102.41 ether,
+                1e7,
+                "strategyB asset balance -> smart vault B"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(ecosystemFeeRecipient), address(strategyB))[0],
+                0.0 ether,
+                1e7,
+                "strategyB asset balance -> ecosystem fee recipient"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(treasuryFeeRecipient), address(strategyB))[0],
+                0.196 ether,
+                1e7,
+                "strategyB asset balance -> treasury fee recipient"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(strategyB), address(strategyB))[0],
+                0 ether,
+                1e7,
+                "strategyB asset balance -> strategyB"
+            );
+        }
+
+        // round 4 - deposit + redeem strategy shares
+        {
+            // Alice deposits 100 token A into smart vault B
+            vm.startPrank(alice);
+            tokenA.approve(address(smartVaultManager), 100 ether);
+            depositNftId1 = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVaultB),
+                    assets: Arrays.toArray(100 ether),
+                    receiver: alice,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+
+            // flush, DHW
+            smartVaultManager.flushSmartVault(address(smartVaultB));
+
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(_generateDhwParameterBag(strategiesB, assetGroup));
+            vm.stopPrank();
+
+            // redeem strategy shares
+            // - treasury fee recipient from strategy B
+            strategies = strategiesB;
+            shares = Arrays.toArray(strategyB.balanceOf(treasuryFeeRecipient));
+            withdrawalSlippages = new uint256[][](1);
+            //   - should revert due to unfinished DHW
+            vm.startPrank(treasuryFeeRecipient);
+            vm.expectRevert(abi.encodeWithSelector(StrategyNotReady.selector, address(strategyB)));
+            strategyRegistry.redeemStrategyShares(strategies, shares, withdrawalSlippages);
+            vm.stopPrank();
+        }
+    }
+
+    function test_nonAtomicStrategyFlow_nonAtomic_redeemFast() public {
+        // setup asset group with token A
+        uint256 assetGroupId;
+        address[] memory assetGroup;
+        {
+            assetGroup = Arrays.toArray(address(tokenA));
+            assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+
+            priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
+        }
+
+        // setup strategies
+        MockStrategyNonAtomic strategyA;
+        MockStrategyNonAtomic strategyB;
+        {
+            // strategy A implements non-atomic strategy with
+            // atomic deposits and non-atomic withdrawals
+            strategyA =
+            new MockStrategyNonAtomic(assetGroupRegistry, accessControl, assetGroupId, NON_ATOMIC_WITHDRAWAL_STRATEGY, 2_00, true);
+            strategyA.initialize("StratA");
+            strategyRegistry.registerStrategy(address(strategyA), 0, NON_ATOMIC_STRATEGY);
+            // strategy B implements non-atomic strategy with
+            // non-atomic deposits and atomic withdrawals
+            strategyB =
+            new MockStrategyNonAtomic(assetGroupRegistry, accessControl, assetGroupId, NON_ATOMIC_DEPOSIT_STRATEGY, 2_00, true);
+            strategyB.initialize("StratB");
+            strategyRegistry.registerStrategy(address(strategyB), 0, NON_ATOMIC_STRATEGY);
+        }
+
+        // setup smart vaults
+        ISmartVault smartVaultA;
+        ISmartVault smartVaultB;
+        address[] memory strategiesA;
+        address[] memory strategiesB;
+        {
+            SmartVaultSpecification memory spec = _getSmartVaultSpecification();
+            spec.strategyAllocation = uint16a16.wrap(0).set(0, 100_00);
+            spec.assetGroupId = assetGroupId;
+
+            spec.strategies = Arrays.toArray(address(strategyA));
+            spec.smartVaultName = "SmartVaultA";
+            smartVaultA = smartVaultFactory.deploySmartVault(spec);
+            strategiesA = spec.strategies;
+
+            spec.strategies = Arrays.toArray(address(strategyB));
+            spec.smartVaultName = "SmartVaultB";
+            smartVaultB = smartVaultFactory.deploySmartVault(spec);
+            strategiesB = spec.strategies;
+        }
+
+        uint256 depositNftId1;
+        uint256 depositNftId2;
+
+        // round 1 - initial deposit
+        {
+            // Alice deposits 100 token A into smart vault A
+            vm.startPrank(alice);
+            tokenA.approve(address(smartVaultManager), 100 ether);
+            depositNftId1 = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVaultA),
+                    assets: Arrays.toArray(100 ether),
+                    receiver: alice,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+            // Bob deposits 100 token A into smart vault B
+            vm.startPrank(bob);
+            tokenA.approve(address(smartVaultManager), 100 ether);
+            depositNftId2 = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVaultB),
+                    assets: Arrays.toArray(100 ether),
+                    receiver: bob,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+
+            // flush, DHW, sync
+            smartVaultManager.flushSmartVault(address(smartVaultA));
+            smartVaultManager.flushSmartVault(address(smartVaultB));
+
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(_generateDhwParameterBag(strategiesA, assetGroup));
+            strategyRegistry.doHardWork(_generateDhwParameterBag(strategiesB, assetGroup));
+            strategyRegistry.doHardWorkContinue(_generateDhwContinuationParameterBag(strategiesB, assetGroup));
+            vm.stopPrank();
+
+            smartVaultManager.syncSmartVault(address(smartVaultA), true);
+
+            // claim
+            // - by Alice
+            vm.startPrank(alice);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVaultA), Arrays.toArray(depositNftId1), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+            // - by Bob
+            vm.startPrank(bob);
+            smartVaultManager.claimSmartVaultTokens(
+                address(smartVaultB), Arrays.toArray(depositNftId2), Arrays.toArray(NFT_MINTED_SHARES)
+            );
+            vm.stopPrank();
+        }
+
+        // check state
+        {
+            // what happened
+            // - Alice deposited 100 token A into smart vault A
+            // how to process
+            //   - 100 token A deposit
+            //     - 2 token A as fees on protocol level
+            //     - 98 token A to smart vault A
+            // how to distribute
+            //   - 2 token A as fees on protocol level
+            //   - 2 token B as fees on protocol level
+            //   - 98 token A for smart vault A
+            //   - 98 token A for smart vault B
+
+            assertEq(tokenA.balanceOf(address(alice)), 900.0 ether, "tokenA -> Alice");
+            assertEq(tokenA.balanceOf(address(bob)), 900.0 ether, "tokenA -> Bob");
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0.0 ether, "tokenA -> MasterWallet");
+            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 100.0 ether, "tokenA -> protocolA");
+            assertEq(strategyA.protocol().totalUnderlying(), 98.0 ether, "protocolA -> totalUnderlying");
+            assertEq(strategyA.protocol().fees(), 2.0 ether, "protocolA -> fees");
+            assertEq(tokenA.balanceOf(address(strategyB.protocol())), 100.0 ether, "tokenA -> protocolB");
+            assertEq(strategyB.protocol().totalUnderlying(), 98.0 ether, "protocolB -> totalUnderlying");
+            assertEq(strategyB.protocol().fees(), 2.0 ether, "protocolB -> fees");
+
+            assertApproxEqAbs(
+                _getProtocolSharesAssetBalance(
+                    strategyA.protocol().shares(address(strategyA)), address(strategyA.protocol())
+                ),
+                98.0 ether,
+                1e7,
+                "protocolA asset balance -> strategyA"
+            );
+            assertApproxEqAbs(
+                _getProtocolSharesAssetBalance(
+                    strategyB.protocol().shares(address(strategyB)), address(strategyB.protocol())
+                ),
+                98.0 ether,
+                1e7,
+                "protocolB asset balance -> strategyB"
+            );
+
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(INITIAL_LOCKED_SHARES_ADDRESS, address(strategyA))[0]
+                    + _getStrategySharesAssetBalances(address(smartVaultA), address(strategyA))[0],
+                98.0 ether,
+                1e7,
+                "strategyA asset balance -> smart vault A"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(strategyA), address(strategyA))[0],
+                0 ether,
+                1e7,
+                "strategyA asset balance -> strategyA"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(INITIAL_LOCKED_SHARES_ADDRESS, address(strategyB))[0]
+                    + _getStrategySharesAssetBalances(address(smartVaultB), address(strategyB))[0],
+                98 ether,
+                1e7,
+                "strategyB asset balance -> smart vault B"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(strategyB), address(strategyB))[0],
+                0 ether,
+                1e7,
+                "strategyB asset balance -> strategyB"
+            );
+        }
+
+        RedeemBag memory redeemBag;
+        uint256[][] memory withdrawalSlippages = new uint256[][](1);
+
+        // round 2 - redeem fast
+        {
+            // Alice withdraws 1/2 of the strategy worth from smart vault A
+            redeemBag = RedeemBag({
+                smartVault: address(smartVaultA),
+                shares: 49_000000000000000000000,
+                nftIds: new uint256[](0),
+                nftAmounts: new uint256[](0)
+            });
+            // - should revert due to non-atomic withdrawal
+            vm.startPrank(alice);
+            vm.expectRevert(abi.encodeWithSelector(ProtocolActionNotFinished.selector));
+            smartVaultManager.redeemFast(redeemBag, withdrawalSlippages);
+            vm.stopPrank();
+            // Bob withdraws 1/2 of the strategy worth from smart vault B
+            redeemBag = RedeemBag({
+                smartVault: address(smartVaultB),
+                shares: 49_000000000000000000000,
+                nftIds: new uint256[](0),
+                nftAmounts: new uint256[](0)
+            });
+            vm.startPrank(bob);
+            smartVaultManager.redeemFast(redeemBag, withdrawalSlippages);
+            vm.stopPrank();
+        }
+
+        // check state
+        {
+            // what happened
+            // - Bob withdrew 49 token A from smart vault B
+            // how to distribute
+            // - 49 token A withdrawn from protocol B
+            //   - 0.98 as fees on protocol level
+            //   - 48.02 for Bob
+
+            assertEq(tokenA.balanceOf(address(alice)), 900.0 ether, "tokenA -> Alice");
+            assertEq(tokenA.balanceOf(address(bob)), 948.02 ether, "tokenA -> Bob");
+            assertEq(tokenA.balanceOf(address(masterWallet)), 0.0 ether, "tokenA -> MasterWallet");
+            assertEq(tokenA.balanceOf(address(strategyA.protocol())), 100.0 ether, "tokenA -> protocolA");
+            assertEq(strategyA.protocol().totalUnderlying(), 98.0 ether, "protocolA -> totalUnderlying");
+            assertEq(strategyA.protocol().fees(), 2.0 ether, "protocolA -> fees");
+            assertEq(tokenA.balanceOf(address(strategyB.protocol())), 51.98 ether, "tokenA -> protocolB");
+            assertEq(strategyB.protocol().totalUnderlying(), 49.0 ether, "protocolB -> totalUnderlying");
+            assertEq(strategyB.protocol().fees(), 2.98 ether, "protocolB -> fees");
+
+            assertApproxEqAbs(
+                _getProtocolSharesAssetBalance(
+                    strategyB.protocol().shares(address(strategyB)), address(strategyB.protocol())
+                ),
+                49.0 ether,
+                1e7,
+                "protocolB asset balance -> strategyB"
+            );
+
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(INITIAL_LOCKED_SHARES_ADDRESS, address(strategyB))[0]
+                    + _getStrategySharesAssetBalances(address(smartVaultB), address(strategyB))[0],
+                49 ether,
+                1e7,
+                "strategyB asset balance -> smart vault B"
+            );
+            assertApproxEqAbs(
+                _getStrategySharesAssetBalances(address(strategyB), address(strategyB))[0],
+                0 ether,
+                1e7,
+                "strategyB asset balance -> strategyB"
+            );
+        }
+
+        // round 3 - deposit + redeem fast
+        {
+            // Alice deposits 100 token A into smart vault B
+            vm.startPrank(alice);
+            tokenA.approve(address(smartVaultManager), 100 ether);
+            depositNftId1 = smartVaultManager.deposit(
+                DepositBag({
+                    smartVault: address(smartVaultB),
+                    assets: Arrays.toArray(100 ether),
+                    receiver: alice,
+                    referral: address(0),
+                    doFlush: false
+                })
+            );
+            vm.stopPrank();
+
+            // flush, DHW
+            smartVaultManager.flushSmartVault(address(smartVaultB));
+
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(_generateDhwParameterBag(strategiesB, assetGroup));
+            vm.stopPrank();
+
+            // redeem fast
+            // - Bob withdraws 1/2 of the strategy worth from smart vault B
+            redeemBag = RedeemBag({
+                smartVault: address(smartVaultB),
+                shares: 24_500000000000000000000,
+                nftIds: new uint256[](0),
+                nftAmounts: new uint256[](0)
+            });
+            //   - should revert due to unfinished DHW
+            vm.startPrank(bob);
+            vm.expectRevert(abi.encodeWithSelector(StrategyNotReady.selector, address(strategyB)));
+            smartVaultManager.redeemFast(redeemBag, withdrawalSlippages);
+            vm.stopPrank();
         }
     }
 
@@ -3895,7 +5005,7 @@ contract NonAtomicStrategiesTest is Test {
             //   - A:C = 60:40 -> 70:30
             // - smart vault B was reallocated
             //   - C:B = 60:40 -> 70:30
-            // - how to process
+            // how to process
             //   - smart vault A had
             //     - 58.8 token A in strategy A
             //     - 39.2 token A in strategy C
@@ -3914,7 +5024,7 @@ contract NonAtomicStrategiesTest is Test {
             //   - withdrawal and deposit incur 2% fees on protocol level
             //     - 9.8 token A withdrawal -> 0.196 for fees, 9.604 withdrawn
             //     - 9.212 token A deposit -> 0.19208 for fees, 9.41192 deposited
-            // - how to distribute
+            // how to distribute
             //   - smart vault A
             //     - 68.21192 token A (= 58.8 + 9.41192) in strategy A
             //     - 29.4 (= 39.2 - 9.8) token A in strategy C

@@ -38,9 +38,9 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
         setUpBase();
 
         tokenUsdc = IERC20Metadata(USDC);
-        tokenGho = IERC20Metadata(0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f); // TODO: read from constants
-        tokenAave = IERC20Metadata(0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9);
-        stakedGho = IStakedGho(0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d); // TODO: read from constants
+        tokenGho = IERC20Metadata(GHO);
+        tokenAave = IERC20Metadata(AAVE);
+        stakedGho = IStakedGho(STAKED_GHO);
 
         priceFeedManager.setExchangeRate(address(tokenUsdc), USD_DECIMALS_MULTIPLIER);
         priceFeedManager.setExchangeRate(address(tokenGho), USD_DECIMALS_MULTIPLIER);

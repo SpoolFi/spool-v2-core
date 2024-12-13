@@ -1,18 +1,23 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.17;
 
-import "forge-std/console.sol";
-
 import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "../external/interfaces/strategies/aave/IStakedGho.sol";
 import "../libraries/BytesUint256Lib.sol";
 import "../libraries/PackedRange.sol";
-import "./helpers/SwapAdapter.sol";
 import "./libraries/AaveGhoStakingStrategyLib.sol";
+import "./helpers/SwapAdapter.sol";
 import "./StrategyNonAtomic.sol";
 
+/**
+ * @notice Used when before deposit checks fail.
+ */
 error AaveGhoStakingBeforeDepositCheckFailed();
+
+/**
+ * @notice Used when before redeemal checks fail.
+ */
 error AaveGhoStakingBeforeRedeemalCheckFailed();
 
 // about strategy

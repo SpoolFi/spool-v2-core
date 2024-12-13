@@ -256,11 +256,7 @@ interface IStrategyRegistry {
      * - caller must have role ROLE_SPOOL_ADMIN
      * @param strategy Address of strategy to register.
      * @param apy Apy of the strategy at the time of the registration.
-     * @param atomicityClassification Atomicity classification of the strategy.
-     *        - 0: atomic
-     *        - 1: non-atomic deposits
-     *        - 2: non-atomic withdrawals
-     *        - 3: non-atomic deposits and withdrawals
+     * @param atomicityClassification Atomicity classification of the strategy. See constants for values.
      */
     function registerStrategy(address strategy, int256 apy, uint256 atomicityClassification) external;
 
@@ -312,6 +308,13 @@ interface IStrategyRegistry {
      */
     function doHardWork(DoHardWorkParameterBag calldata dhwParams) external;
 
+    /**
+     * @notice Continues do hard work on multiple non-atomic strategies.
+     * @dev Requirements:
+     * - caller must have role ROLE_DO_HARD_WORKER
+     * - strategy needs to have a DHW in progress
+     * @param dhwContParams Parameters for do hard work continue.
+     */
     function doHardWorkContinue(DoHardWorkContinuationParameterBag calldata dhwContParams) external;
 
     /**
@@ -399,7 +402,7 @@ interface IStrategyRegistry {
     ) external;
 
     /**
-     * @notice Strategy was registered
+     * @notice Strategy was registered.
      * @param strategy Strategy address
      * @param atomicityClassification Atomicity classification of the strategy
      */

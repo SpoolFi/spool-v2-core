@@ -25,8 +25,12 @@ address constant AAVE = address(0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9);
 address constant COMP = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);
 address constant NOTE = address(0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5);
 address constant stkAAVE = address(0x4da27a545c0c5B758a6BA100e3a049001de870f5);
+address constant GHO = address(0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f);
 
-// Aave V2
+// Aave
+address constant STAKED_GHO = address(0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d);
+
+//   V2
 address constant AAVE_V2_LENDING_POOL_ADDRESSES_PROVIDER = address(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5);
 address constant aUSDC = address(0xBcca60bB61934080951369a648Fb03DF4F96263C);
 
