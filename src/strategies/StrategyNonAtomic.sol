@@ -290,7 +290,8 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
 
                 assetsToDeposit = new uint256[](dhwParams.assetGroup.length);
                 for (uint256 i; i < dhwParams.assetGroup.length; ++i) {
-                    assetsToDeposit[i] = IERC20(dhwParams.assetGroup[i]).balanceOf(address(this));
+                    assetsToDeposit[i] =
+                        IERC20(dhwParams.assetGroup[i]).balanceOf(address(this)) - dhwInfo.assetsWithdrawn[i];
                 }
             } else {
                 assetsToDeposit = assetsForDeposit;
