@@ -413,7 +413,7 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
                     _calculatePlatformFeeWorth(dhwInfo.yieldPercentage, dhwParams.platformFees, executionInfo.usdWorth);
             }
             // - take fees
-            if (executionInfo.legacyFeeWorth + executionInfo.withdrawalFeeWorth > 0) {
+            if (executionInfo.legacyFeeWorth | executionInfo.withdrawalFeeWorth != 0) {
                 executionInfo.usdWorth += executionInfo.withdrawalFeeWorth;
 
                 uint256 feeShares = _calculateShareDilution(
