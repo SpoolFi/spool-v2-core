@@ -343,11 +343,13 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
             // Process each group of strategies in turn.
             for (uint256 i; i < dhwParams.strategies.length; ++i) {
+                uint256 numStrategies = dhwParams.strategies[i].length;
+
                 if (
-                    dhwParams.strategies[i].length != dhwParams.swapInfo[i].length
-                        || dhwParams.strategies[i].length != dhwParams.compoundSwapInfo[i].length
-                        || dhwParams.strategies[i].length != dhwParams.strategySlippages[i].length
-                        || dhwParams.strategies[i].length != dhwParams.baseYields[i].length
+                    dhwParams.swapInfo[i].length != numStrategies
+                        || dhwParams.compoundSwapInfo[i].length != numStrategies
+                        || dhwParams.strategySlippages[i].length != numStrategies
+                        || dhwParams.baseYields[i].length != numStrategies
                 ) {
                     revert InvalidArrayLength();
                 }
@@ -375,7 +377,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                 }
 
                 // Process each strategy in this group.
-                uint256 numStrategies = dhwParams.strategies[i].length;
                 for (uint256 j; j < numStrategies; ++j) {
                     address strategy = dhwParams.strategies[i][j];
 
@@ -491,9 +492,11 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
 
             // Process each group of strategies in turn.
             for (uint256 i; i < dhwContParams.strategies.length; ++i) {
+                uint256 numStrategies = dhwContParams.strategies[i].length;
+
                 if (
-                    dhwContParams.strategies[i].length != dhwContParams.baseYields[i].length
-                        || dhwContParams.strategies[i].length != dhwContParams.continuationData[i].length
+                    dhwContParams.baseYields[i].length != numStrategies
+                        || dhwContParams.continuationData[i].length != numStrategies
                 ) {
                     revert InvalidArrayLength();
                 }
@@ -521,7 +524,6 @@ contract StrategyRegistry is IStrategyRegistry, IEmergencyWithdrawal, Initializa
                 }
 
                 // Process each strategy in this group.
-                uint256 numStrategies = dhwContParams.strategies[i].length;
                 for (uint256 j; j < numStrategies; ++j) {
                     address strategy = dhwContParams.strategies[i][j];
 
