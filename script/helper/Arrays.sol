@@ -154,12 +154,12 @@ library Arrays {
         return result.set(2, x3);
     }
 
-    function toUint16a16(uint256 x1, uint256 x2, uint256 x3, uint256 x4) public pure returns (uint16a16) {
+    function toUint16a16(uint256 x1, uint256 x2, uint256 x3, uint256 x4) public returns (uint16a16) {
         uint16a16 result;
         result = result.set(0, x1);
         result = result.set(1, x2);
-        result = result.set(1, x3);
-        return result.set(2, x4);
+        result = result.set(2, x3);
+        return result.set(3, x4);
     }
 
     function toPackedRange(uint256 lowerRange, uint256 upperRange) public pure returns (uint256) {

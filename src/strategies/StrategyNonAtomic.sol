@@ -562,9 +562,12 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
             uint256 finishedDepositWorth = executionInfo.otherWorth * _depositShares / executionInfo.totalSupply;
             uint256 legacyWorth = executionInfo.otherWorth - withdrawalFeeWorth - finishedDepositWorth;
 
-            uint256 depositedDepositWorth =
-                executionInfo.depositedWorth * _depositShare / (_depositShare + _compoundShare);
-            uint256 depositedCompoundWorth = executionInfo.depositedWorth - depositedDepositWorth;
+            uint256 depositedDepositWorth;
+            uint256 depositedCompoundWorth;
+            if (executionInfo.depositedWorth > 0) {
+                depositedDepositWorth = executionInfo.depositedWorth * _depositShare / (_depositShare + _compoundShare);
+                depositedCompoundWorth = executionInfo.depositedWorth - depositedDepositWorth;
+            }
 
             // calculate deposited compound yield percentage
             if (depositedCompoundWorth > 0) {
