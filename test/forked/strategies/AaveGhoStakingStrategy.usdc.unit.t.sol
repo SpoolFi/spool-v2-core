@@ -159,6 +159,11 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
 
             // - bookkeeping
             aaveGhoStakingStrategy.exposed_mint(100);
+
+            // - check underlying asset amounts
+            uint256[] memory underlyingAssetAmounts = aaveGhoStakingStrategy.getUnderlyingAssetAmounts();
+            assertEq(underlyingAssetAmounts.length, 1);
+            assertEq(underlyingAssetAmounts[0], 1_000 * USDC_DECIMALS_MULTIPLIER);
         }
 
         {

@@ -162,7 +162,7 @@ contract AaveGhoStakingStrategy is StrategyNonAtomic, SwapAdapter {
         address underlying = assets()[0];
 
         amounts = new uint256[](1);
-        amounts[1] =
+        amounts[0] =
             _priceFeedManager.usdToAsset(underlying, _priceFeedManager.assetToUsd(address(gho), _underlyingGhoAmount()));
 
         return amounts;
