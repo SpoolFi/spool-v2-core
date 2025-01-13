@@ -126,10 +126,10 @@
       "mock-drip-weth": "0x303d3fA19679D30e8722DD337f1A28b1A89689Ed"
     },
     "mock2": {
-      "beacon": "0x275De2e8dc0dD06C96907AA82cB2D2f42A437854",
-      "mock2-dai": "0xA612094DaF2CFc1D5dBf0Ce3123e447DC8cF96f8",
-      "mock2-usdc": "0x2AcFcd2987f90548E976Af98dEdDF3Ae92EBECDa",
-      "mock2-usdt": "0x862f226D1d00FF120EeE7109C198Ad1DF902a502"
+      "beacon": "0xdbf01aaedaa58f53c139106361ce0abf01b6804c",
+      "mock2-dai": "0xe8d05bf40c14bb1caee19d8dcf23cdc45c407011",
+      "mock2-usdc": "0xd3920ad286396f9b0f536a80cfde3fc20a5dbdba",
+      "mock2-usdt": "0x0de9a260fed5a3c7200b677f945ebfa51bba8b2f"
     }
   }
 }

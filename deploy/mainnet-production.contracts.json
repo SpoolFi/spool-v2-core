@@ -140,7 +140,8 @@
     "ethena": {
       "ethena-usdc": "0x265cc52678887e59D1b66F3D93BBAB7658Bc0337",
       "ethena-usde": "0xa43DbC866806d0DCdc5f19510de62090B2301d18",
-      "implementation": "0xDd118AEd7643D152708EbFee068aB3eA181F431E"
+      "implementation": "0xDd118AEd7643D152708EbFee068aB3eA181F431E",
+      "implementation-airdrop": "0x68296AF4Cc4195186F7F90C190A4DB98Fb1da580"
     },
     "gearbox-v3": {
       "gearbox-v3-dai": "0xf2362689DC644450a3Ba3352bAC17A9b872b8871",
