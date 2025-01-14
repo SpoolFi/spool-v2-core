@@ -14,6 +14,7 @@ string constant DAI_USDC_USDT_KEY = "dai-usdc-usdt";
 string constant USDE_KEY = "usde";
 string constant PYUSD_KEY = "pyusd";
 string constant WBTC_KEY = "wbtc";
+string constant GHO_KEY = "gho";
 
 enum Extended {
     INITIAL,
@@ -63,6 +64,9 @@ contract AssetsInitial {
         }
         if (extended >= Extended.METAMORPHO_ROUND_2) {
             assetNames[6] = WBTC_KEY;
+        }
+        if (extended >= Extended.AAVE_GHO_STAKING_ROUND_0) {
+            assetNames[7] = GHO_KEY;
         }
 
         _setAssets(assetGroupRegistry, priceFeedManager, assetNames);
@@ -205,6 +209,9 @@ contract AssetsInitial {
             numAssets++;
         }
         if (extended >= Extended.METAMORPHO_ROUND_2) {
+            numAssets++;
+        }
+        if (extended >= Extended.AAVE_GHO_STAKING_ROUND_0) {
             numAssets++;
         }
     }

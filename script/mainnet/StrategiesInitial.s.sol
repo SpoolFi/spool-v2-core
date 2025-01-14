@@ -1288,12 +1288,9 @@ contract StrategiesInitial {
         StandardContracts memory contracts,
         IUsdPriceFeedManager priceFeedManager
     ) public returns (AaveGhoStakingStrategy) {
-        console.log("deployAaveGhoStakingImplementation");
         address gho = constantsJson().getAddress(".assets.gho.address");
         address stakedGho =
             constantsJson().getAddress(string.concat(".strategies.", AAVE_GHO_STAKING_KEY, ".stakedGho"));
-        console.log("gho", gho);
-        console.log("stakedGho", stakedGho);
 
         implementation_aaveGhoStaking = new AaveGhoStakingStrategy(
             contracts.assetGroupRegistry,

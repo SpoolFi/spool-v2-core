@@ -248,9 +248,10 @@ contract AaveGhoStakingStrategy is StrategyNonAtomic, SwapAdapter {
         override
         returns (bool compoundNeeded, uint256[] memory assetsToCompound)
     {
+        assetsToCompound = new uint256[](1);
+
         if (compoundSwapInfo.length > 0) {
             compoundNeeded = true;
-            assetsToCompound = new uint256[](1);
 
             // claim rewards from staking contract
             stakedGho.claimRewards(address(_swapper), stakedGho.getTotalRewardsBalance(address(this)));

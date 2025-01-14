@@ -81,7 +81,10 @@
             }
         },
         "aave-gho-staking": {
-            "stakedGho": "0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d"
+            "stakedGho": "0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d",
+            "usdc": {
+                "apy": 0
+            }
         },
         "apxeth-holding": {
             "pirex": "0xD664b74274DfEB538d9baC494F3a4760828B02b0",
