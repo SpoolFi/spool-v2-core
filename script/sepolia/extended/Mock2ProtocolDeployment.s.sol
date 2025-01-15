@@ -16,7 +16,6 @@ contract Mock2ProtocolDeployment is SepoliaExtendedSetup {
     }
 
     function execute() public override {
-        // deploy TimelockGuard contract
         vm.startBroadcast(privKey);
         _deployProtocol("dai");
         _deployProtocol("usdc");
@@ -28,10 +27,14 @@ contract Mock2ProtocolDeployment is SepoliaExtendedSetup {
         address token = constantsJson().getAddress(string.concat(".assets.", assetKey, ".address"));
         uint256 apy = constantsJson().getUint256(string.concat(".strategies.mock2.", assetKey, ".apyProtocol"));
 
-        address implementation = address(new MockProtocol(token, apy));
+        address implementation = address(new MockProtocol());
 
-        TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "");
-        console.log("Deployed MockProtocol with implementation: ", implementation, " and proxy: ", address(proxy));
+        MockProtocol mockProtocol =
+            MockProtocol(address(new TransparentUpgradeableProxy(address(implementation), address(proxyAdmin), "")));
+
+        mockProtocol.initialize(token, apy);
+        console.log(
+            "Deployed MockProtocol with implementation: ", implementation, " and proxy: ", address(mockProtocol)
+        );
     }
 }

@@ -34,17 +34,17 @@
             "dai": {
                 "apyProtocol": 800,
                 "apy": 80000000000,
-                "address": "0x711643789C4C1D8B5b4C4a70264b8cA23B7d4b44"
-            },
-            "usdt": {
-                "apyProtocol": 800,
-                "apy": 80000000000,
-                "address": "0xDcb7c837458439379E967229b68DE8b888d38775"
+                "address": "0x01Ec22250E666c68157fdEa5Ca38BFd7F7Ab11b6"
             },
             "usdc": {
                 "apyProtocol": 800,
                 "apy": 80000000000,
-                "address": "0x4CF5d3CEC33C5E0381c2BCa55Ad5964f377243CD"
+                "address": "0x8Bb6b3cdE058d0e9B158787F7E7dE29b154C446C"
+            },
+            "usdt": {
+                "apyProtocol": 800,
+                "apy": 80000000000,
+                "address": "0x4f080E5AEdd2D8CDD78E56FE924f9E94a6B8C238"
             }
         }
     },

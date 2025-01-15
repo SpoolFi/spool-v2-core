@@ -41,7 +41,8 @@ contract MockProtocolStrategyTest is TestFixture, ForkTestFixture {
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         assetGroupExchangeRates = SpoolUtils.getExchangeRates(assetGroup, priceFeedManager);
 
-        protocol = new MockProtocol(address(tokenUnderlying), apy);
+        protocol = new MockProtocol();
+        protocol.initialize(address(tokenUnderlying), apy);
 
         mockProtocolStrategy = new MockProtocolStrategyHarness(
             assetGroupRegistry,

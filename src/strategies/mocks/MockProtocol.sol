@@ -3,20 +3,21 @@
 
 pragma solidity 0.8.17;
 
-import "@openzeppelin/access/Ownable.sol";
-import "@openzeppelin/token/ERC20/IERC20.sol";
-import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+
 import "src/interfaces/Constants.sol";
 
-interface IERC20Mintable is IERC20 {
+interface IERC20Mintable is IERC20Upgradeable {
     function mint(address, uint256) external;
 }
 
 /* @dev Simple staking protocol, targetting a yearly yield, for testnet purposes.
  * Uses MasterChef algorithm to distribute rewards amongst users, with APY target based on total deposits.
  */
-contract MockProtocol is Ownable {
-    using SafeERC20 for IERC20;
+contract MockProtocol is Initializable, OwnableUpgradeable {
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
     // ************ STRUCTS ************
     struct User {
@@ -45,8 +46,8 @@ contract MockProtocol is Ownable {
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount, uint256 earned);
 
-    // ************ CONSTRUCTOR ************
-    constructor(address _token, uint256 _apy) {
+    function initialize(address _token, uint256 _apy) external initializer {
+        __Ownable_init();
         token = IERC20Mintable(_token);
         apy = _apy;
         updated = block.timestamp;

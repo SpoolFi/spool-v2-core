@@ -99,6 +99,9 @@
       "proxy": "0x7825983fAD43ca6DCa1e86407B0e0938F28ea86f"
     }
   },
+  "riskProviders": {
+    "spoolLabs": "0x2f75193EbeF14541266696Cd87dD84fF90c02B5C"
+  },
   "strategies": {
     "mock": {
       "beacon": "0xb3752bBb715aCAe2A3E9c28200B5A0B319f583Ef",
@@ -126,10 +129,10 @@
       "mock-drip-weth": "0x303d3fA19679D30e8722DD337f1A28b1A89689Ed"
     },
     "mock2": {
-      "beacon": "0xdbf01aaedaa58f53c139106361ce0abf01b6804c",
-      "mock2-dai": "0xe8d05bf40c14bb1caee19d8dcf23cdc45c407011",
-      "mock2-usdc": "0xd3920ad286396f9b0f536a80cfde3fc20a5dbdba",
-      "mock2-usdt": "0x0de9a260fed5a3c7200b677f945ebfa51bba8b2f"
+      "beacon": "0xbcBA0B62676372d33AaA668803915f70a3791c23",
+      "mock2-dai": "0x19655d181FDa84D26E83926c7b8641C71d316eFc",
+      "mock2-usdc": "0x547ec3Bb46560Adc9a234e9d0e0Dc0B16cd794a5",
+      "mock2-usdt": "0xfF9a2a0b9Ea462c0D9f041b24E25bA564946053e"
     }
   }
 }

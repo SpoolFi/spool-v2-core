@@ -32,7 +32,8 @@ contract MockProtocolTest is TestFixture, ForkTestFixture {
         vm.selectFork(mainnetForkId);
         setUpBase();
 
-        protocol = new MockProtocol(address(tokenUnderlying), apy);
+        protocol = new MockProtocol();
+        protocol.initialize(address(tokenUnderlying), apy);
 
         vm.prank(address(user1));
         tokenUnderlying.approve(address(protocol), type(uint256).max);
