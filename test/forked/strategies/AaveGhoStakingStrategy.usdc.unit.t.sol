@@ -132,7 +132,8 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
             vm.getRecordedLogs();
 
             uint256[] memory slippages = new uint256[](4);
-            slippages[3] = 1;
+            slippages[0] = 0; // dhw with deposit selector
+            slippages[3] = 1; // swap data -> marker for swap estimation
             aaveGhoStakingStrategy.exposed_initializeDepositToProtocol(
                 assetGroup, Arrays.toArray(1_000 * USDC_DECIMALS_MULTIPLIER), slippages
             );
@@ -146,6 +147,7 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
             assertEq(logs[0].topics[0], keccak256("SwapEstimation(address,address,uint256)"));
 
             slippages = _encodeSwapToSlippages(usdcGhoExchange, logs[0].data);
+            slippages[0] = 0; // dhw with deposit selector
 
             // - do the actual deposit
             aaveGhoStakingStrategy.exposed_initializeDepositToProtocol(
@@ -169,7 +171,9 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
         {
             // withdrawal 1
             // - initialize withdrawal
-            aaveGhoStakingStrategy.exposed_initializeWithdrawalFromProtocol(assetGroup, 50, new uint256[](0));
+            uint256[] memory slippages = new uint256[](1);
+            slippages[0] = 0; // dhw with withdrawal selector
+            aaveGhoStakingStrategy.exposed_initializeWithdrawalFromProtocol(assetGroup, 50, Arrays.toArray(1));
 
             // - assert state - nothing should change
             assertEq(tokenUsdc.balanceOf(address(aaveGhoStakingStrategy)), 0);
@@ -225,7 +229,8 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
             vm.getRecordedLogs();
 
             uint256[] memory slippages = new uint256[](4);
-            slippages[3] = 1;
+            slippages[0] = 1; // dhw with withdrawal selector
+            slippages[3] = 1; // swap data -> marker for swap estimation
             aaveGhoStakingStrategy.exposed_initializeWithdrawalFromProtocol(assetGroup, 25, slippages);
 
             Vm.Log[] memory logs = vm.getRecordedLogs();
@@ -237,6 +242,7 @@ contract AaveGhoStakingStrategyUsdcTest is TestFixture, ForkTestFixture {
             assertEq(logs[logs.length - 1].topics[0], keccak256("SwapEstimation(address,address,uint256)"));
 
             slippages = _encodeSwapToSlippages(usdcGhoExchange, logs[logs.length - 1].data);
+            slippages[0] = 1; // dhw with withdrawal selector
 
             // - do the actual withdrawal
             aaveGhoStakingStrategy.exposed_initializeWithdrawalFromProtocol(assetGroup, 25, slippages);

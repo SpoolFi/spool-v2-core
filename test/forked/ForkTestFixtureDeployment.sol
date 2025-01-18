@@ -199,7 +199,7 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         // next run is with correct parameters
         // - update parameters
         _updateDhwParameterBag(parameters, logs);
-        // - run DHW as do-hard-worker with correct parametes
+        // - run DHW as do-hard-worker with correct parameters
         _prank(_doHardWorker);
         _strategyRegistry.doHardWork(parameters);
         vm.stopPrank();
@@ -810,6 +810,57 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
         });
     }
 
+    function _generateDefaultDhwContinuationParameterBag(address[] memory strategies)
+        internal
+        view
+        returns (DoHardWorkContinuationParameterBag memory)
+    {
+        require(strategies.length > 0, "_generateDhwContinuationParameterBag: No strategies");
+
+        address[][] memory strategyGroups = new address[][](1);
+        strategyGroups[0] = strategies;
+
+        uint256 assetGroupId = IStrategy(strategies[0]).assetGroupId();
+        for (uint256 i; i < strategies.length; ++i) {
+            require(
+                assetGroupId == IStrategy(strategies[i]).assetGroupId(),
+                "_generateDhwContinuationParameterBag: Accepts only same asset group id strategies"
+            );
+        }
+
+        int256[][] memory baseYields = new int256[][](1);
+        baseYields[0] = new int256[](strategies.length);
+
+        bytes[][] memory continuationData = new bytes[][](1);
+        continuationData[0] = new bytes[](strategies.length);
+
+        address[] memory tokens = IStrategy(strategies[0]).assets();
+
+        uint256[2][] memory exchangeRateSlippages = new uint256[2][](tokens.length);
+        for (uint256 i; i < tokens.length; ++i) {
+            exchangeRateSlippages[i][0] = 0;
+            exchangeRateSlippages[i][1] = type(uint256).max;
+        }
+
+        return DoHardWorkContinuationParameterBag({
+            strategies: strategyGroups,
+            baseYields: baseYields,
+            continuationData: continuationData,
+            tokens: tokens,
+            exchangeRateSlippages: exchangeRateSlippages,
+            validUntil: TimeUtils.getTimestampInInfiniteFuture()
+        });
+    }
+
+    // struct DoHardWorkContinuationParameterBag {
+    //     address[][] strategies;
+    //     int256[][] baseYields;
+    //     bytes[][] continuationData;
+    //     address[] tokens;
+    //     uint256[2][] exchangeRateSlippages;
+    //     uint256 validUntil;
+    // }
+
     function _setInitialDhwParametersGeneric(
         DoHardWorkParameterBag memory parameters,
         uint256 strategyGroupIdx,
@@ -1114,6 +1165,36 @@ abstract contract ForkTestFixtureDeployment is ForkTestFixture {
             } else {
                 revert(string.concat("_updateReallocateParamBag:: Strategy '", strategyKey, "' not handled."));
             }
+        }
+    }
+
+    function _generateDefaultReallocateParamBag(ISmartVault vault)
+        internal
+        view
+        returns (ReallocateParamBag memory params)
+    {
+        params.smartVaults = Arrays.toArray(address(vault));
+        params.strategies = _smartVaultManager.strategies(address(vault));
+        params.validUntil = TimeUtils.getTimestampInInfiniteFuture();
+
+        params.swapInfo = new SwapInfo[][](params.strategies.length);
+        params.depositSlippages = new uint256[][](params.strategies.length);
+        params.withdrawalSlippages = new uint256[][](params.strategies.length);
+
+        for (uint256 i = 0; i < params.strategies.length; ++i) {
+            params.swapInfo[i] = new SwapInfo[](0);
+            params.depositSlippages[i] = new uint256[](0);
+            params.withdrawalSlippages[i] = new uint256[](0);
+        }
+
+        address[] memory assets = _deploySpool.assetGroupRegistry().listAssetGroup(vault.assetGroupId());
+        uint256[] memory exchangeRates = SpoolUtils.getExchangeRates(assets, _deploySpool.usdPriceFeedManager());
+
+        params.exchangeRateSlippages = new uint256[2][](assets.length);
+
+        for (uint256 i = 0; i < assets.length; ++i) {
+            params.exchangeRateSlippages[i][0] = exchangeRates[i];
+            params.exchangeRateSlippages[i][1] = exchangeRates[i];
         }
     }
 

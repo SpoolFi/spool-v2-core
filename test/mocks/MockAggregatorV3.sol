@@ -83,3 +83,40 @@ contract MockAggregatorV3 is AggregatorV3Interface {
         );
     }
 }
+
+contract SimpleMockAggregatorV3 is AggregatorV3Interface {
+    /* ========== STATE VARIABLES ========== */
+
+    uint8 public decimals;
+    string public description;
+    uint256 public version;
+
+    int256 private _answer;
+
+    /* ========== CONSTRUCTOR ========== */
+
+    constructor(uint8 decimals_, string memory description_, uint256 version_, int256 answer_) {
+        decimals = decimals_;
+        description = description_;
+        version = version_;
+        _answer = answer_;
+    }
+
+    /* ========== EXTERNAL FUNCTIONS ========== */
+
+    function getRoundData(uint80) external pure returns (uint80, int256, uint256, uint256, uint80) {
+        revert("SimpleMockAggregatorV3: not implemented");
+    }
+
+    function latestRoundData()
+        external
+        view
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
+    {
+        roundId = 1;
+        answer = _answer;
+        startedAt = block.timestamp;
+        updatedAt = block.timestamp;
+        answeredInRound = 1;
+    }
+}

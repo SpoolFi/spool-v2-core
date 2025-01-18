@@ -94,8 +94,8 @@ struct SmartVaultRegistrationForm {
  * @custom:member strategies Set of strategies involved in the reallocation. Should not include ghost strategy, even if some smart vault uses it.
  * @custom:member swapInfo Information for swapping assets before depositing into the protocol.
  * @custom:member depositSlippages Slippages used to constrain depositing into the protocol.
- * @custom:member withdrawalSlippages Slippages used to contrain withdrawal from the protocol.
- * @custom:member exchangeRateSlippages Slippages used to constratrain exchange rates for asset tokens.
+ * @custom:member withdrawalSlippages Slippages used to constrain withdrawal from the protocol.
+ * @custom:member exchangeRateSlippages Slippages used to constrain exchange rates for asset tokens.
  * @custom:member validUntil Sets the maximum timestamp the user is willing to wait to start executing reallocation.
  */
 struct ReallocateParamBag {

@@ -20,6 +20,16 @@ error AaveGhoStakingBeforeDepositCheckFailed();
  */
 error AaveGhoStakingBeforeRedeemalCheckFailed();
 
+/**
+ * @notice Used when deposit slippages fail.
+ */
+error AaveGhoStakingDepositSlippagesFailed();
+
+/**
+ * @notice Used when redeem slippages fail.
+ */
+error AaveGhoStakingRedeemSlippagesFailed();
+
 // about strategy
 // - single asset
 // - yield
@@ -45,7 +55,14 @@ error AaveGhoStakingBeforeRedeemalCheckFailed();
 // - DHW with withdrawal: slippages[0] == 1
 //   - beforeDepositCheck: slippages[1]
 //   - beforeRedeemalCheck: slippages[2]
-//   - swap data: slippages[3...]
+//   - swap data (if atomic withdrawal): slippages[3...]
+// - reallocation: slippages[0] == 2
+//   - beforeDepositCheck: depositSlippages[1]
+//   - deposit swap data (if applicable): depositSlippages[2...]
+//   - beforeRedeemalCheck: withdrawalSlippages[1]
+//   - withdrawal swap data (if applicable): withdrawalSlippages[2...]
+// - redeem fast: slippages[0] == 3
+//   - swap data: slippages[1...]
 
 // encoded swap data:
 // - swap data: slippages[i...]
@@ -72,6 +89,15 @@ error AaveGhoStakingBeforeRedeemalCheckFailed();
 // - claim rewards from staking contract
 // - swap rewards to underlying asset
 // - include with deposit
+
+// emergency withdrawal flow:
+// - when not in unstake window
+//   - trigger cooldown
+//   - strategy should not yet be removed from the protocol
+// - when in unstake window
+//   - unstake all GHO
+//   - send GHO directly to recipient, no swapping
+//   - strategy should be removed from the protocol
 
 contract AaveGhoStakingStrategy is StrategyNonAtomic, SwapAdapter {
     using SafeERC20 for IERC20Metadata;
@@ -192,7 +218,16 @@ contract AaveGhoStakingStrategy is StrategyNonAtomic, SwapAdapter {
         uint256[] memory assets,
         uint256[] calldata slippages
     ) internal override returns (bool) {
-        uint256 ghoAmount = _swap(_swapper, tokens[0], address(gho), assets[0], slippages, 3);
+        uint256 offset;
+        if (slippages[0] == 0) {
+            offset = 3;
+        } else if (slippages[0] == 2) {
+            offset = 2;
+        } else {
+            revert AaveGhoStakingDepositSlippagesFailed();
+        }
+
+        uint256 ghoAmount = _swap(_swapper, tokens[0], address(gho), assets[0], slippages, offset);
         if (ghoAmount > 0) {
             gho.approve(address(stakedGho), ghoAmount);
             stakedGho.stake(address(this), ghoAmount);
@@ -211,9 +246,20 @@ contract AaveGhoStakingStrategy is StrategyNonAtomic, SwapAdapter {
             return (true, true);
         }
 
+        uint256 offset;
+        if (slippages[0] == 1) {
+            offset = 3;
+        } else if (slippages[0] == 2) {
+            offset = 2;
+        } else if (slippages[0] == 3) {
+            offset = 1;
+        } else {
+            revert AaveGhoStakingRedeemSlippagesFailed();
+        }
+
         try stakedGho.redeem(address(this), toUnstake) {
             uint256 ghoAmount = gho.balanceOf(address(this));
-            _swap(_swapper, address(gho), tokens[0], ghoAmount, slippages, 3);
+            _swap(_swapper, address(gho), tokens[0], ghoAmount, slippages, offset);
 
             return (true, true);
         } catch {
@@ -263,10 +309,7 @@ contract AaveGhoStakingStrategy is StrategyNonAtomic, SwapAdapter {
     function _swapAssets(address[] memory, uint256[] memory, SwapInfo[] calldata) internal override {}
 
     function _emergencyWithdrawImpl(uint256[] calldata, address recipient) internal override {
-        try stakedGho.redeem(recipient, stakedGho.balanceOf(address(this))) {}
-        catch {
-            stakedGho.cooldown();
-        }
+        AaveGhoStakingStrategyLib.emergencyWithdrawImpl(recipient, stakedGho);
     }
 
     function _getProtocolRewardsInternal()

@@ -80,6 +80,18 @@ library AaveGhoStakingStrategyLib {
         return swapper.swap(tokensIn, swapInfos, tokensOut, address(this))[0];
     }
 
+    /**
+     * @notice Emergency withdraws the GHO from the staked GHO contract.
+     * @param recipient Address to receive the GHO.
+     * @param stakedGho Staked GHO contract.
+     */
+    function emergencyWithdrawImpl(address recipient, IStakedGho stakedGho) external {
+        try stakedGho.redeem(recipient, stakedGho.balanceOf(address(this))) {}
+        catch {
+            stakedGho.cooldown();
+        }
+    }
+
     function _isViewExecution() internal view returns (bool) {
         return tx.origin == address(0);
     }
