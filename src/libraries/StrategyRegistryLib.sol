@@ -87,15 +87,15 @@ library StrategyRegistryLib {
      * @param strategy Strategy address.
      * @param owner Address that redeemed the shares.
      * @param recipient Address that received the withdrawn funds.
-     * @param shares Amount of shares that were redeemed.
      * @param assetsWithdrawn Amounts of withdrawn assets.
+     * @param strategyIndex DHW index of the strategy.
      */
     event StrategySharesRedeemClaimed(
         address indexed strategy,
         address indexed owner,
         address indexed recipient,
-        uint256 shares,
-        uint256[] assetsWithdrawn
+        uint256[] assetsWithdrawn,
+        uint256 strategyIndex
     );
 
     /**
@@ -337,7 +337,7 @@ library StrategyRegistryLib {
                 // there will be dust left after all vaults sync
             }
 
-            emit StrategySharesRedeemClaimed(strategy, msg.sender, params.recipient, strategyShares, withdrawnAssets);
+            emit StrategySharesRedeemClaimed(strategy, msg.sender, params.recipient, withdrawnAssets, strategyIndex);
         }
 
         for (uint256 i; i < totalWithdrawnAssets.length; ++i) {
