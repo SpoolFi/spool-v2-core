@@ -58,8 +58,8 @@ contract DeployVault is SepoliaExtendedSetup {
         address riskProvider = (strategies.length == 1) ? address(0) : riskProvider_;
         address allocationProvider = (strategies.length == 1) ? address(0) : allocationProvider_;
         return SmartVaultSpecification({
-            smartVaultName: "VAULT_NAME",
-            svtSymbol: "VAULT_SYMBOL",
+            smartVaultName: "Piggybank - USDC - 90%",
+            svtSymbol: "PGB-USDC-90",
             baseURI: "https://token-cdn-domain/",
             assetGroupId: Strategy(strategies[0]).assetGroupId(),
             strategies: strategies,
@@ -73,8 +73,8 @@ contract DeployVault is SepoliaExtendedSetup {
             guardRequestTypes: guardRequestTypes,
             managementFeePct: 0,
             depositFeePct: 0,
-            performanceFeePct: 0,
-            allowRedeemFor: false
+            performanceFeePct: 9000,
+            allowRedeemFor: true
         });
     }
 }
