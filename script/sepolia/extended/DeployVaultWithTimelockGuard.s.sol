@@ -34,7 +34,7 @@ contract DeployVaultWithTimelockGuard is SepoliaExtendedSetup {
         // create vault and transfer ownership
         vm.startBroadcast(privKey);
         address vault = address(smartVaultFactoryHpf.deploySmartVault(spec));
-        guard.updateTimelock(vault, 1 days);
+        guard.updateTimelock(vault, 10 days);
         vm.stopBroadcast();
 
         console.log("SmartVault deployed: %s", vault);
@@ -70,7 +70,7 @@ contract DeployVaultWithTimelockGuard is SepoliaExtendedSetup {
         // get strategy from contracts
         address[] memory strategies = new address[](1);
 
-        strategies[0] = _contractsJson.getAddress(".strategies.mock2.mock2-usdc");
+        strategies[0] = _contractsJson.getAddress(".strategies.mock2.mock2-usdc2");
 
         return strategies;
     }
@@ -87,8 +87,8 @@ contract DeployVaultWithTimelockGuard is SepoliaExtendedSetup {
         address riskProvider = (strategies.length == 1) ? address(0) : riskProvider_;
         address allocationProvider = (strategies.length == 1) ? address(0) : allocationProvider_;
         return SmartVaultSpecification({
-            smartVaultName: "Piggybank - USDC (1 day deposit lock)",
-            svtSymbol: "PGB-USDC-L-1D",
+            smartVaultName: "Piggybank - USDC2 - 90% - 10 days deposit lock",
+            svtSymbol: "PGB-USDC2-90-10D",
             baseURI: "https://token-cdn-domain/",
             assetGroupId: Strategy(strategies[0]).assetGroupId(),
             strategies: strategies,

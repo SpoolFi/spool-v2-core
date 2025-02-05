@@ -40,8 +40,8 @@ contract DeployVault is SepoliaExtendedSetup {
         // get strategy from contracts
         address[] memory strategies = new address[](2);
 
-        strategies[0] = _contractsJson.getAddress(".strategies.mock2.mock2-usdc");
-        strategies[1] = _contractsJson.getAddress(".strategies.mock-ape.mock-ape-usdc");
+        strategies[0] = _contractsJson.getAddress(".strategies.mock2.mock2-usdc2");
+        strategies[1] = _contractsJson.getAddress(".strategies.mock-ape.mock-ape-usdc2");
 
         return strategies;
     }
@@ -58,8 +58,8 @@ contract DeployVault is SepoliaExtendedSetup {
         address riskProvider = (strategies.length == 1) ? address(0) : riskProvider_;
         address allocationProvider = (strategies.length == 1) ? address(0) : allocationProvider_;
         return SmartVaultSpecification({
-            smartVaultName: "Piggybank - USDC - 90%",
-            svtSymbol: "PGB-USDC-90",
+            smartVaultName: "Piggybank - USDC2 - 90%",
+            svtSymbol: "PGB-USDC2-90",
             baseURI: "https://token-cdn-domain/",
             assetGroupId: Strategy(strategies[0]).assetGroupId(),
             strategies: strategies,

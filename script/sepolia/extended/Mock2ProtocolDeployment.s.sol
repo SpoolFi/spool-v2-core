@@ -20,6 +20,7 @@ contract Mock2ProtocolDeployment is SepoliaExtendedSetup {
         _deployProtocol("dai");
         _deployProtocol("usdc");
         _deployProtocol("usdt");
+        _deployProtocol("usdc2");
         vm.stopBroadcast();
     }
 

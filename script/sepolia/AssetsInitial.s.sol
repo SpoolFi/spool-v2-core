@@ -11,6 +11,7 @@ string constant DAI_KEY = "dai";
 string constant USDC_KEY = "usdc";
 string constant USDT_KEY = "usdt";
 string constant WETH_KEY = "weth";
+string constant USDC2_KEY = "usdc2";
 
 contract AssetsInitial {
     function constantsJson() internal view virtual returns (JsonReader) {}
@@ -24,11 +25,12 @@ contract AssetsInitial {
     }
 
     function setAssets(IAssetGroupRegistry assetGroupRegistry, UsdPriceFeedManager priceFeedManager) public {
-        string[] memory assetNames = new string[](4);
+        string[] memory assetNames = new string[](5);
         assetNames[0] = DAI_KEY;
         assetNames[1] = USDC_KEY;
         assetNames[2] = USDT_KEY;
         assetNames[3] = WETH_KEY;
+        assetNames[4] = USDC2_KEY;
 
         address[] memory assetAddresses = new address[](assetNames.length);
         address[] memory assetPriceAggregators = new address[](assetNames.length);
@@ -70,6 +72,10 @@ contract AssetsInitial {
         assetGroup[0] = _assets[DAI_KEY];
         assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
         _assetGroups[DAI_KEY] = assetGroupId;
+
+        assetGroup[0] = _assets[USDC2_KEY];
+        assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+        _assetGroups[USDC2_KEY] = assetGroupId;
     }
 
     function loadAssets(IAssetGroupRegistry assetGroupRegistry) public {
@@ -78,11 +84,12 @@ contract AssetsInitial {
     }
 
     function loadAssets() public {
-        string[] memory assetNames = new string[](4);
+        string[] memory assetNames = new string[](5);
         assetNames[0] = DAI_KEY;
         assetNames[1] = USDC_KEY;
         assetNames[2] = USDT_KEY;
         assetNames[3] = WETH_KEY;
+        assetNames[4] = USDC2_KEY;
 
         for (uint256 i; i < assetNames.length; ++i) {
             _assets[assetNames[i]] = constantsJson().getAddress(string.concat(".assets.", assetNames[i], ".address"));
@@ -103,6 +110,9 @@ contract AssetsInitial {
 
         assetGroup[0] = _assets[WETH_KEY];
         _assetGroups[WETH_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
+
+        assetGroup[0] = _assets[USDC2_KEY];
+        _assetGroups[USDC2_KEY] = assetGroupRegistry.checkAssetGroupExists(assetGroup);
     }
 
     function test_mock_AssetsInitial() external pure {}

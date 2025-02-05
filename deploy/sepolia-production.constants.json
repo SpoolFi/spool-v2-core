@@ -27,6 +27,13 @@
                 "address": "0x694AA1769357215DE4FAC081bf1f309aDC325306",
                 "timeLimit": 3780
             }
+        },
+        "usdc2": {
+            "address": "0x7e346eCEfcb876De8C6E21075267bfD5aC90c708",
+            "priceAggregator": {
+                "address": "0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E",
+                "timeLimit": 86580
+            }
         }
     },
     "strategies": {
@@ -45,6 +52,11 @@
                 "apyProtocol": 800,
                 "apy": 80000000000,
                 "address": "0x4f080E5AEdd2D8CDD78E56FE924f9E94a6B8C238"
+            },
+            "usdc2": {
+                "apyProtocol": 800,
+                "apy": 80000000000,
+                "address": "0x581E6a4a29Baf520119a32C66AaF60413cf11B9D"
             }
         }
     },

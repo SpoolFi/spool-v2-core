@@ -66,16 +66,17 @@ contract StrategiesInitial {
     function deployClientMock(StandardContracts memory contracts, string memory name) public {
         UpgradeableBeacon beacon = UpgradeableBeacon(contractsJson().getAddress(".strategies.mock2.beacon"));
         // create variant proxies
-        string[] memory variants = new string[](3);
+        string[] memory variants = new string[](4);
         variants[0] = DAI_KEY;
         variants[1] = USDC_KEY;
         variants[2] = USDT_KEY;
+        variants[3] = USDC2_KEY;
 
         for (uint256 i; i < variants.length; ++i) {
             string memory variantName = _getVariantName(name, variants[i]);
 
             MockProtocol protocol = MockProtocol(
-                constantsJson().getAddress(string.concat(".protocols.", MOCK_KEY, ".", variants[i], ".address"))
+                constantsJson().getAddress(string.concat(".strategies.", MOCK_KEY, ".", variants[i], ".address"))
             );
 
             address variant = _newBeaconProxy(address(beacon));
@@ -87,13 +88,14 @@ contract StrategiesInitial {
 
     function deployMock(StandardContracts memory contracts) public {
         // Deploy beacon proxy
-        UpgradeableBeacon beacon = _deployMockBeacon(contracts);
+        UpgradeableBeacon beacon = UpgradeableBeacon(contractsJson().getAddress(".strategies.mock2.beacon"));
 
         // create variant proxies
-        string[] memory variants = new string[](3);
+        string[] memory variants = new string[](4);
         variants[0] = DAI_KEY;
         variants[1] = USDC_KEY;
         variants[2] = USDT_KEY;
+        variants[3] = USDC2_KEY;
 
         for (uint256 i; i < variants.length; ++i) {
             string memory variantName = _getVariantName(MOCK_KEY, variants[i]);

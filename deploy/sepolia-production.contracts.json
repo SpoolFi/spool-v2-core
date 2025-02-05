@@ -113,6 +113,7 @@
     "mock-ape": {
       "mock-ape-dai": "0x63EA59BcBf3a607FEee0BeDf9952e8178b72EBBB",
       "mock-ape-usdc": "0x53aB5005EF715C020a3860C5BF9d65f83EE354Ae",
+      "mock-ape-usdc2": "0x9428A940E5d5deE9981Ee0216B037F13B9F976E7",
       "mock-ape-usdt": "0x6d4A419A9C7237b9d54968ca0386CaAfA2511EBC",
       "mock-ape-weth": "0x78c175279DdC79e26280b058a357371D23BDA358"
     },
@@ -132,6 +133,7 @@
       "beacon": "0xbcBA0B62676372d33AaA668803915f70a3791c23",
       "mock2-dai": "0x19655d181FDa84D26E83926c7b8641C71d316eFc",
       "mock2-usdc": "0x547ec3Bb46560Adc9a234e9d0e0Dc0B16cd794a5",
+      "mock2-usdc2": "0x729CD5c6324DA20fd556C132F890CE185dc1B60D",
       "mock2-usdt": "0xfF9a2a0b9Ea462c0D9f041b24E25bA564946053e"
     }
   }
