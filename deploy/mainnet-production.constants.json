@@ -81,9 +81,8 @@
             }
         },
         "aave-gho-staking": {
-            "stakedGho": "0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d",
             "usdc": {
-                "apy": 0
+                "apy": 69400000000
             }
         },
         "apxeth-holding": {
@@ -444,6 +443,7 @@
         "note": "0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5",
         "oEth": "0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3",
         "sfrxEth": "0xac3E018457B222d93114458476f3E3416Abbe38F",
+        "stakedGho": "0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d",
         "stkAave": "0x4da27a545c0c5B758a6BA100e3a049001de870f5"
     },
     "proxyAdminOwner": "0x4e736b96920a0f305022CBaAea493Ce7e49Eee6C",

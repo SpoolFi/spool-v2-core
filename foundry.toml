@@ -40,14 +40,18 @@ test = 'no-test'
 # compiler
 optimizer_runs = 99999
 libraries = [
-    "script/helper/Arrays.sol:Arrays:0x1eb431a15a272a3351dcb3be7ad37f4bf7c8ab50",
+    'script/helper/Arrays.sol:Arrays:0x1eb431a15a272a3351dcb3be7ad37f4bf7c8ab50',
     'script/helper/ArraysHelper.sol:ArraysHelper:0x5665Aa09D1A8b3775024e62E82A902Ae760eebbA',
     'src/libraries/ArrayMapping.sol:ArrayMappingUint256:0xB6B08a9ed9282c695ddFbfA81d9ebF208b4c1De0',
+    'src/libraries/ListMap.sol:ListMap:0xdc851a645175655f3c28c7043a72d242a2556351',
     'src/libraries/ReallocationLib.sol:ReallocationLib:0x49CE6640EB2D89F80395C1a3695cc3a01b5C7bc1',
+    'src/libraries/SmartVaultManagerLib.sol:SmartVaultManagerLib:0xae7172956e904371591708989af8c0f4aeaddaee',
     'src/libraries/SpoolUtils.sol:SpoolUtils:0xCB3fECd1D5eabB1b18383604A28352c17Bdfef89',
+    'src/libraries/StrategyRegistryLib.sol:StrategyRegistryLib:0x60b5f63c95cc5499df81e1641f042bc1709798bc',
+    'src/strategies/libraries/AaveGhoStakingStrategyLib.sol:AaveGhoStakingStrategyLib:0x4a6b0af78c5aacfb8d451a8305106e3057f7bb8e',
+    'src/strategies/libraries/ConvexAlUsdStrategyLib.sol:ConvexAlUsdStrategyLib:0x479ef20b34b67cd4e73c8191346d8a252f3f378d',
     'src/strategies/libraries/EthFrxEthAssetGroupAdapter.sol:EthFrxEthAssetGroupAdapter:0xE23681bAA697EF5054E2D8C397ae59145027625D',
-    'src/strategies/libraries/EthStEthAssetGroupAdapter.sol:EthStEthAssetGroupAdapter:0x1516eb3a54377168b6b184326200f4258C3529dF',
-    'src/libraries/ListMap.sol:ListMap:0xdc851a645175655f3c28c7043a72d242a2556351'
+    'src/strategies/libraries/EthStEthAssetGroupAdapter.sol:EthStEthAssetGroupAdapter:0x1516eb3a54377168b6b184326200f4258C3529dF'
 ]
 
 [profile.mainnet-staging]

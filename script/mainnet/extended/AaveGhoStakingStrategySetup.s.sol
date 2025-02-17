@@ -20,6 +20,6 @@ contract AaveGhoStakingStrategyRound0Setup is MainnetExtendedSetup {
         contractsJson().reserializeKeyAddress("strategies");
 
         AaveGhoStakingStrategy implementation = deployAaveGhoStakingImplementation(contracts, usdPriceFeedManager);
-        deployAaveGhoStakingVariants(contracts, usdPriceFeedManager, implementation, false, 0);
+        deployAaveGhoStakingVariants(contracts, implementation, false, 0);
     }
 }

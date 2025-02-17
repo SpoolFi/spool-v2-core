@@ -47,6 +47,7 @@ string constant CURVE_OETH_KEY = "curve-oeth";
 string constant CURVE_STFRXETH_KEY = "curve-stfrxeth";
 string constant ETHENA_KEY = "ethena";
 string constant GEARBOX_V3_KEY = "gearbox-v3";
+string constant GEARBOX_V3_SWAP_KEY = "gearbox-v3-swap";
 string constant IDLE_BEST_YIELD_SENIOR_KEY = "idle-best-yield-senior";
 string constant METAMORPHO_KEY = "metamorpho";
 string constant MORPHO_AAVE_V2_KEY = "morpho-aave-v2";
@@ -157,7 +158,7 @@ contract StrategiesInitial {
         }
         if (extended >= Extended.AAVE_GHO_STAKING_ROUND_0) {
             deployAaveGhoStakingImplementation(contracts, priceFeedManager);
-            deployAaveGhoStakingVariants(contracts, priceFeedManager, implementation_aaveGhoStaking, true, 0);
+            deployAaveGhoStakingVariants(contracts, implementation_aaveGhoStaking, true, 0);
         }
     }
 
@@ -1307,7 +1308,6 @@ contract StrategiesInitial {
 
     function deployAaveGhoStakingVariants(
         StandardContracts memory contracts,
-        IUsdPriceFeedManager priceFeedManager,
         AaveGhoStakingStrategy implementation,
         bool register,
         uint256 round

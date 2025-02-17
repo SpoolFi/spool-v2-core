@@ -54,7 +54,7 @@
   "SmartVaultFactory": "0x8049Fc710D4a1Deea6a6bCeF772C166CEd7A82F5",
   "SmartVaultFactoryHpf": "0x362599Cdc123e3FFEB7c0812d769128D180667E8",
   "SmartVaultManager": {
-    "implementation": "0x16dB68C86EDFdB60ba733563326ed392B319EB2B",
+    "implementation": "0x671c03b1A1Fc632d0DFB9644C87FdA511094E499",
     "proxy": "0x23Daf34e2b9Af02A74dC19cB52Af727B19403874"
   },
   "SpoolAccessControl": {
@@ -67,7 +67,7 @@
   },
   "SpoolMulticall": "0x1a0170FF66169FF3FC14c4A5822f97c835FF9F43",
   "StrategyRegistry": {
-    "implementation": "0x2b4130F3fF714857D15d366e3Cf2cbb1eA03856D",
+    "implementation": "0x3a65427E327e1dbE6A50c20e9B80A1966e759F5a",
     "proxy": "0x554c6bCB54656390aca0a0af38CA954dbE653F15"
   },
   "Swapper": {
@@ -105,43 +105,47 @@
     "DeFi": "0x9098c4936138536849d7ee6447777626ea202bd1"
   },
   "strategies": {
+    "aave-gho-staking": {
+      "aave-gho-staking-usdc": "0xBfCBBf5dc6e747aBA9F3213AAb26037277E3D3f3",
+      "implementation": "0xadf223b66B0791Da8d25b8Af7D8879609fd6355c"
+    },
     "aave-v2": {
       "aave-v2-dai": "0x27f38719608422Af8a31509CBBB5fAcD582f6e1F",
       "aave-v2-usdc": "0xc6C65c730D7CB5FA22903DBcCB64973be4Fd4629",
       "aave-v2-usdt": "0xCfdEa0499D00f6ecae256F0FC9daCC837D48409e",
-      "implementation": "0x3Bb41F7A05535CC05Ab6263dd01a4fa3462bE3c9"
+      "implementation": "0x02508CedFd6888E5D7f22C17Cf68EC521c6349D1"
     },
     "apxeth-holding": {
-      "implementation": "0xfcb81f77267EcB9A14ce6232f45e667B56140547",
+      "implementation": "0x59c882d80D39244f7F9D0A34b824d2ceC1694E34",
       "proxy": "0xfC21a9A9d9557dDC87cE1281FF50511dD89F27BA"
     },
     "compound-v2": {
       "compound-v2-dai": "0x013022c7ca735eF6ba55cd3eaccB4Ebb3be484e9",
       "compound-v2-usdc": "0xfC8610aE1D1cc5f30c932E9FF4ac37E3f1a6337d",
       "compound-v2-usdt": "0xac997F24Ef9f5fc2A3c050eA14d1d017db20a1d1",
-      "implementation": "0x8fE41e9B43bB45d0eFBc86C32Aa4705935Bf8b13"
+      "implementation": "0x5d4B46e81a47a3B9eA331777faAE91648561835E"
     },
     "convex-3pool": {
-      "implementation": "0xbca4677aD780bF59FBdF6194a145cf00A1a7c12b",
+      "implementation": "0x309818FAb51D659bf009E59fFF2cDB8390f90e99",
       "proxy": "0x93f0F12e368b06d7914255FBA5cA47821cd5908d"
     },
     "convex-alusd": {
-      "implementation": "0x7158c40A536dA9E23d8D0A226698A788621adA8A",
+      "implementation": "0x9AD85DAF40fDC828053Fda3167a9d4746ed4a3E1",
       "proxy": "0x2cA41209c87D2a611059d85C62cc0F913068d301"
     },
     "convex-stfrxeth": {
-      "implementation": "0x7f47E9e456F7a74c4D44Cc56B08CbAFFf6BF95e8",
+      "implementation": "0x45F9aCc56c55E6473Dc3260271BD8C24757AF862",
       "proxy": "0x5699181904Ae5781d204a0E189862f8AF9109479"
     },
     "curve-3pool": {
-      "implementation": "0xDB90a96095f53a015f6C69EF5e05f8f7B5a649fD",
+      "implementation": "0x3B90Fef27dBe7a0b0D1D23B5C083e7C97eAfd000",
       "proxy": "0x6EB6251AF926016c60DE17aD976b9C1e2485e1F0"
     },
     "ethena": {
       "ethena-usdc": "0x265cc52678887e59D1b66F3D93BBAB7658Bc0337",
       "ethena-usde": "0xa43DbC866806d0DCdc5f19510de62090B2301d18",
-      "implementation": "0xDd118AEd7643D152708EbFee068aB3eA181F431E",
-      "implementation-airdrop": "0x68296AF4Cc4195186F7F90C190A4DB98Fb1da580"
+      "implementation": "0x6153bCc5351Dd6C87f483De7C484f588940916Ba",
+      "implementation-airdrop": "0x447db7E83C407Bdf7570A3Ca234856C009662C95"
     },
     "gearbox-v3": {
       "gearbox-v3-dai": "0xf2362689DC644450a3Ba3352bAC17A9b872b8871",
@@ -149,16 +153,16 @@
       "gearbox-v3-usdt": "0xc71da0BAB96E83EaeA92E9E6506c0A7fA0BbBB51",
       "gearbox-v3-wbtc": "0x275b44fadFE77ca7D6D381b9360E115b82817839",
       "gearbox-v3-weth": "0xD92B65d2321076FBAc23FCfC9A9Fd5Ed2E98B758",
-      "implementation": "0xb170F18dca153752b2F35304e5ea581373095f4e",
-      "implementation-airdrop": "0x64a21Ca82fe09712af8CeC6C5fED62e97Bae33A1"
+      "implementation": "0x03Cedd0Ce74A5D1b7CCDdE133a646807E69c0eae",
+      "implementation-airdrop": "0xd55aF72438746F74F4d8E6f3301a1EBb580ad543"
     },
     "gearbox-v3-swap": {
       "gearbox-v3-swap-crvusd": "0x4f3FdFE6f376EDC2A53924e1adF9A8bfc128d3c0",
       "gearbox-v3-swap-gho": "0x3FD9F297f7842158CfDC16Ac999eE2A4f5435020",
-      "implementation": "0xCfC4f219E0f49AcE33b6122044852C2234989899"
+      "implementation": "0x450ebbd5E9a5421C5402b5365d5DD61285B03613"
     },
     "metamorpho": {
-      "implementation": "0xDb19e40bD45920b09Ac7fF2778d4A1cA90C0A772",
+      "implementation": "0x565AfF9d7766e650f9800A346f7580008De7086F",
       "metamorpho-bprotocol-flagship-eth": "0xBa57985052Dc49075e353b359c7A8Cc47807F60d",
       "metamorpho-bprotocol-flagship-usdt": "0xF9062A1b7BB1797dEe82A1D61f0a88B2dFD765Fd",
       "metamorpho-gauntlet-dai-core": "0x05d9A563cb7bFC58082935ccb44FEe9dF19D1ee5",
@@ -196,35 +200,35 @@
       "notional-finance-usdc": "0x107D759C58C5933320e636624f4B716d7B199E21"
     },
     "oeth-holding": {
-      "implementation": "0x120da9fA3F56D2179FACab9Ce9b3D00dF4BE1575",
+      "implementation": "0xEd99B3b172D48127717134212e95c32D95b8962c",
       "proxy": "0x39E5c2a796082eB553c1b0656e09E49583D12CB8"
     },
     "reth-holding": {
-      "implementation": "0x56a20C5D76d41338fBd5D7cB7Db37e937143f910",
+      "implementation": "0x23dA6Ebc0A5DB76d426CD242a509Fca588dD636e",
       "proxy": "0x019834Ef2ec086e495668aa4E06B4d31119beC71"
     },
     "sfrxeth-holding": {
-      "implementation": "0xeFD8CE62CA1cd5C309ee1421496E8657036E9373",
+      "implementation": "0x8133015D79DAB576c3C7cA644E374d823948F029",
       "proxy": "0x6d0e6242FE023675487BccA4Ab989a91D0932a51"
     },
     "steth-holding": {
-      "implementation": "0xc4962991713ff1e5EF4Ac4BA6f5B2292D5b65383",
+      "implementation": "0x7D96007A2346F39D6f8B17Bb9f55bA02aC59C6Da",
       "proxy": "0x504d272aC93e7ffAcAcB7DD69061c9b4D0781410"
     },
     "yearn-v2": {
-      "implementation": "0xb7F6FBbB8d11946951b14cC349DDcF7e11F74D7e",
+      "implementation": "0x687f86e801a8c4B5dE3632789397eEe280B90E66",
       "yearn-v2-dai": "0xb8943E7eBB7B919AAFaE261343c38F02e4182CA6",
       "yearn-v2-usdc": "0xc61E829DF3fbD6Cf5B2f5881F190C69eE48d20DF",
       "yearn-v2-usdt": "0x24416AE2794C222725185734c7050c008fC1d2f8"
     },
     "yearn-v3-gauged": {
-      "implementation": "0xC4f43e85f10Fd6F29BC973c45160DC3f78E80D15",
+      "implementation": "0x2ecCDaba13138A8f1e57987c93f70e7a52d8EDAd",
       "yearn-v3-gauged-dai": "0x98732e2FEb854bAd400D4b5336f4439E7E53fe88",
       "yearn-v3-gauged-usdc": "0x90b8695EDCdEfAFA678Df6d819307573f7B1a18C",
       "yearn-v3-gauged-weth": "0x95a02e5ac5Ca7D633287f922f6FFe1129F92E39C"
     },
     "yearn-v3-juiced": {
-      "implementation": "0x123dB049CC5Ee36010f5148000754181aB87b3B3",
+      "implementation": "0x52c6B0f4fc62D8f635108d70f063DEebb097eE35",
       "yearn-v3-juiced-dai": "0x2e988479F14Ff61586F8Fd0F09E8720484Eb6030"
     }
   }
