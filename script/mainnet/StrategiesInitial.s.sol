@@ -1289,8 +1289,7 @@ contract StrategiesInitial {
         IUsdPriceFeedManager priceFeedManager
     ) public returns (AaveGhoStakingStrategy) {
         address gho = constantsJson().getAddress(".assets.gho.address");
-        address stakedGho =
-            constantsJson().getAddress(string.concat(".strategies.", AAVE_GHO_STAKING_KEY, ".stakedGho"));
+        address stakedGho = constantsJson().getAddress(string.concat(".tokens.stakedGho"));
 
         implementation_aaveGhoStaking = new AaveGhoStakingStrategy(
             contracts.assetGroupRegistry,

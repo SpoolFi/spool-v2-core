@@ -348,7 +348,10 @@ abstract contract StrategyNonAtomic is ERC20Upgradeable, SpoolAccessControllable
             {
                 uint256 unmatchedWithdrawalWorth =
                     executionInfo.withdrawalWorth - executionInfo.depositWorth - executionInfo.compoundWorth;
-                uint256 sharesToWithdraw = executionInfo.totalSupply * unmatchedWithdrawalWorth / executionInfo.usdWorth;
+                uint256 sharesToWithdraw;
+                if (unmatchedWithdrawalWorth > 0) {
+                    sharesToWithdraw = executionInfo.totalSupply * unmatchedWithdrawalWorth / executionInfo.usdWorth;
+                }
 
                 if (sharesToWithdraw > 0) {
                     bool sharesDeducted;

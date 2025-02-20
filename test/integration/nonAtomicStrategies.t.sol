@@ -1448,6 +1448,39 @@ contract NonAtomicStrategiesTest is Test {
         }
     }
 
+    function test_nonAtomicStrategyFlow_atomic_equal2() public {
+        // setup asset group with token A
+        uint256 assetGroupId;
+        address[] memory assetGroup;
+        {
+            assetGroup = Arrays.toArray(address(tokenA));
+            assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+
+            priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
+        }
+
+        // setup strategies
+        MockStrategyNonAtomic strategyA;
+        address[] memory strategies;
+        {
+            // strategy A implements non-atomic strategy with
+            // both deposits and withdrawals being non-atomic
+            strategyA =
+                new MockStrategyNonAtomic(assetGroupRegistry, accessControl, assetGroupId, ATOMIC_STRATEGY, 2_00, true);
+            strategyA.initialize("StratA");
+            strategyRegistry.registerStrategy(address(strategyA), 0, ATOMIC_STRATEGY);
+
+            strategies = Arrays.toArray(address(strategyA));
+        }
+
+        // round 1 - just DHW to update APY
+        {
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(_generateDhwParameterBag(strategies, assetGroup));
+            vm.stopPrank();
+        }
+    }
+
     function test_nonAtomicStrategyFlow_nonAtomic_moreDeposits1() public {
         // setup asset group with token A
         uint256 assetGroupId;
@@ -3582,6 +3615,39 @@ contract NonAtomicStrategiesTest is Test {
                 1e7,
                 "strategyA asset balance -> strategyA"
             );
+        }
+    }
+
+    function test_nonAtomicStrategyFlow_nonAtomic_equal3() public {
+        // setup asset group with token A
+        uint256 assetGroupId;
+        address[] memory assetGroup;
+        {
+            assetGroup = Arrays.toArray(address(tokenA));
+            assetGroupId = assetGroupRegistry.registerAssetGroup(assetGroup);
+
+            priceFeedManager.setExchangeRate(address(tokenA), 1 * USD_DECIMALS_MULTIPLIER);
+        }
+
+        // setup strategies
+        MockStrategyNonAtomic strategyA;
+        address[] memory strategies;
+        {
+            // strategy A implements non-atomic strategy with
+            // both deposits and withdrawals being non-atomic
+            strategyA =
+            new MockStrategyNonAtomic(assetGroupRegistry, accessControl, assetGroupId, NON_ATOMIC_STRATEGY, 2_00, true);
+            strategyA.initialize("StratA");
+            strategyRegistry.registerStrategy(address(strategyA), 0, NON_ATOMIC_STRATEGY);
+
+            strategies = Arrays.toArray(address(strategyA));
+        }
+
+        // round 1 - just DHW to update APY
+        {
+            vm.startPrank(doHardWorker);
+            strategyRegistry.doHardWork(_generateDhwParameterBag(strategies, assetGroup));
+            vm.stopPrank();
         }
     }
 

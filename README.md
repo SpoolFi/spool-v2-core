@@ -11,25 +11,26 @@ Documentation available [here](https://archit3ct.gitbook.io/spool-v2-technical-d
 
 ## Testing and coverage
 
-To run tests execute
+### Setup
 
-```
-forge test
-```
+- set `.env` file
+  - all tests
+    - `FOUNDRY_PROFILE=default`
+  - forked tests
+    - `MAINNET_RPC_URL=...`
+    - `ARBITRUM_RPC_URL=...`
+    - `SEPOLIA_RPC_URL=...`
 
-This will only execute tests that can run locally. To run tests that require forking, first set `NETWORK` and `<NETWORK>_RPC_URL` in `.env` file. See `.env.sample`.
+### Running
 
-then run the tests by executing
+- locally run tests:
+  - `forge test`
+- forked tests:
+  - `forge test --no-match-path "." --match-path "./test/forked/**`
+- all tests:
+  - `forge test --no-match-path "."`
 
-```
-forge test --no-match-path "." --match-path "./test/forked/**"
-```
-
-or to run all tests
-
-```
-forge test --no-match-path "."
-```
+### Coverage
 
 To generate the full test coverage report, both local and fork tests need to be analyzed. Setup the `RPC_URL` environment variable as described above, and then run
 
@@ -41,6 +42,8 @@ genhtml lcov.info --branch-coverage --output-dir coverage
 The html report is then available at `./coverage/src/index.html`.
 
 The `genhtml` tool is not available for Windows, but WSL can be used to bypass this limitation.
+
+### Test deployment
 
 To locally test mainnet deployment, set `PRIVATE_KEY` in the `.env` file. Use `.env.sample` as a guide.
 
